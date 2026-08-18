@@ -10,26 +10,25 @@
 
 <header>
   <p class="eyebrow"><a href="index.html" style="color:inherit;text-decoration:none;">← Home</a></p>
-  <h1>Fixed expenses</h1>
-  <p class="sub">Rent, electricity, gas, packaging, maintenance — the costs that show up whether you sell one item or a thousand. Feeds Non-Labour Fixed Cost into the breakeven pages.</p>
+  <h1>Fixed &amp; variable expenses</h1>
+  <p class="sub">Add any cost category this outlet has — rent, electricity, insurance, whatever comes up. Tag each as Fixed or Variable. Feeds the breakeven pages.</p>
 </header>
 
 <section>
-  <div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div>
+  <div class="section-head"><h2>Which outlet?</h2><span class="tag">required</span></div>
   <div class="stack">
     <div class="row">
-      <span class="rlabel">Outlet ID</span>
-      <input type="text" id="outletId" placeholder="e.g. 1" style="width:60px;">
-    </div>
-    <div class="row">
-      <span class="rlabel">Outlet Name (for your reference)</span>
-      <input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px;">
+      <span class="rlabel">Outlet</span>
+      <select id="outletSelect" style="flex:1;padding:6px;border:1px solid var(--ink-soft);border-radius:3px;font-size:13px;"></select>
     </div>
   </div>
+  <p id="noOutletsNote" style="display:none;font-size:12.5px;color:var(--loss);text-align:center;padding:14px;">
+    No outlets set up yet. <a href="outlets.html">Set up outlets first →</a>
+  </p>
 </section>
 
 <section>
-  <div class="section-head"><h2>Google Sheets sync</h2><span class="tag">reads &amp; writes the Outlets tab</span></div>
+  <div class="section-head"><h2>Google Sheets sync</h2><span class="tag">reads &amp; writes Outlet_Expenses</span></div>
   <div class="stack">
     <div class="row">
       <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
@@ -39,15 +38,14 @@
 </section>
 
 <section>
-  <div class="section-head"><h2>Daily fixed costs</h2><span class="tag">₹/day</span></div>
-  <div class="stack">
-    <div class="row"><span class="rlabel">Rent</span><input type="number" id="rent" min="0" value="0"></div>
-    <div class="row"><span class="rlabel">Electricity (EB)</span><input type="number" id="eb" min="0" value="0"></div>
-    <div class="row"><span class="rlabel">LPG / Gas</span><input type="number" id="lpg" min="0" value="0"></div>
-    <div class="row"><span class="rlabel">Packaging</span><input type="number" id="packaging" min="0" value="0"></div>
-    <div class="row"><span class="rlabel">Maintenance</span><input type="number" id="maintenance" min="0" value="0"></div>
+  <div class="section-head"><h2>Expense line items</h2><span class="tag" id="expenseCountTag">0 items</span></div>
+  <div id="expenseList"></div>
+  <div class="fill-row" style="border-bottom:none;">
+    <button type="button" id="addExpenseBtn">+ Add expense</button>
   </div>
-  <div class="totals-row"><span>Total non-labour fixed / day</span><span class="num" id="totalFixed">₹0</span></div>
+  <div class="totals-row"><span>Total Fixed / day</span><span class="num" id="totalFixed">₹0</span></div>
+  <div class="totals-row" style="padding-top:0;"><span>Total Variable / day</span><span class="num" id="totalVariable">₹0</span></div>
+  <div class="totals-row" style="border-top:1px solid var(--rule);padding-top:8px;"><span>Total / day</span><span class="num" id="totalAll">₹0</span></div>
 </section>
 
 <section>
@@ -63,94 +61,131 @@
   <button class="export-btn" id="syncBtn" type="button">🔄 Sync to Google Sheet</button>
 </div>
 
-<footer>Saves in this browser automatically. Sync writes these figures to this outlet's row on the Outlets tab.</footer>
+<footer>Saves in this browser automatically. Sync replaces this outlet's expense list on the Outlet_Expenses tab.</footer>
 
 <script>
-const STORAGE_KEY = 'fixed-expenses-state';
+const OUTLETS_KEY = 'outlets-master';
 const URL_KEY = 'sheets-sync-url';
-const OUTLET_KEY = 'outlet-selection';
 let saveTimer = null;
-
+let outlets = [];
+let currentOutletId = null;
+let expenses = []; // [{name, type: 'Fixed'|'Variable', amount}]
+function storageKey(){ return `fixed-expenses-state-${currentOutletId}`; }
 function fmt(n){ return Math.round(n).toLocaleString('en-IN'); }
-const FIELDS = ['rent','eb','lpg','packaging','maintenance'];
+
+const DEFAULT_EXPENSES = [
+  {name:'Rent', type:'Fixed', amount:750},
+  {name:'Electricity (EB)', type:'Fixed', amount:333.33},
+  {name:'LPG / Gas', type:'Fixed', amount:66.67},
+  {name:'Packaging', type:'Variable', amount:116.67},
+  {name:'Maintenance', type:'Fixed', amount:100},
+];
+
+function currentOutlet(){ return outlets.find(o => String(o.id) === String(currentOutletId)); }
+
+function populateOutletSelect(){
+  const sel = document.getElementById('outletSelect');
+  sel.innerHTML = outlets.map(o => `<option value="${o.id}">${o.name} (${o.shortCode||o.id})</option>`).join('');
+}
+
+function renderExpenses(){
+  const list = document.getElementById('expenseList');
+  list.innerHTML = expenses.map((x, idx) => `
+    <div class="row" style="flex-wrap:wrap;gap:6px;">
+      <input type="text" class="eName" data-idx="${idx}" value="${x.name||''}" placeholder="Category name" style="flex:1;min-width:110px;text-align:left;">
+      <select class="eType" data-idx="${idx}" style="padding:5px;border:1px solid var(--ink-soft);border-radius:3px;font-size:11.5px;">
+        <option value="Fixed" ${x.type!=='Variable'?'selected':''}>Fixed</option>
+        <option value="Variable" ${x.type==='Variable'?'selected':''}>Variable</option>
+      </select>
+      <input type="number" class="eAmount" data-idx="${idx}" value="${x.amount||0}" min="0" style="width:70px;" title="₹/day">
+      <button type="button" class="eRemove" data-idx="${idx}" style="background:var(--loss);color:#fff;border:none;border-radius:3px;padding:6px 8px;font-size:10.5px;cursor:pointer;">✕</button>
+    </div>`).join('');
+
+  list.querySelectorAll('.eName').forEach(el => el.addEventListener('input', e => { expenses[e.target.dataset.idx].name = e.target.value; recalcAndSave(); }));
+  list.querySelectorAll('.eType').forEach(el => el.addEventListener('change', e => { expenses[e.target.dataset.idx].type = e.target.value; recalcAndSave(); }));
+  list.querySelectorAll('.eAmount').forEach(el => el.addEventListener('input', e => { expenses[e.target.dataset.idx].amount = parseFloat(e.target.value)||0; recalcAndSave(); }));
+  list.querySelectorAll('.eRemove').forEach(el => el.addEventListener('click', e => {
+    expenses.splice(parseInt(e.target.dataset.idx), 1);
+    renderExpenses(); recalcAndSave();
+  }));
+
+  document.getElementById('expenseCountTag').textContent = expenses.length + (expenses.length===1?' item':' items');
+}
 
 function recalc(){
-  const total = FIELDS.reduce((s,f) => s + (parseFloat(document.getElementById(f).value)||0), 0);
-  document.getElementById('totalFixed').textContent = '₹'+fmt(total);
+  const fixed = expenses.filter(x => x.type !== 'Variable').reduce((s,x) => s+(x.amount||0), 0);
+  const variable = expenses.filter(x => x.type === 'Variable').reduce((s,x) => s+(x.amount||0), 0);
+  document.getElementById('totalFixed').textContent = '₹'+fmt(fixed);
+  document.getElementById('totalVariable').textContent = '₹'+fmt(variable);
+  document.getElementById('totalAll').textContent = '₹'+fmt(fixed+variable);
 }
+
+function recalcAndSave(){ recalc(); saveState(); }
+
+document.getElementById('addExpenseBtn').addEventListener('click', () => {
+  expenses.push({name:'', type:'Fixed', amount:0});
+  renderExpenses(); recalcAndSave();
+});
 
 function saveState(){
   const statusEl = document.getElementById('saveStatus');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try{
-      const state = {};
-      FIELDS.forEach(f => state[f] = document.getElementById(f).value);
-      state.desiredHeadcount = document.getElementById('desiredHeadcount').value;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const state = { expenses, desiredHeadcount: document.getElementById('desiredHeadcount').value };
+      localStorage.setItem(storageKey(), JSON.stringify(state));
       statusEl.textContent = 'Saved';
       setTimeout(()=>{statusEl.textContent='';}, 1200);
     } catch(e){ statusEl.textContent = 'Could not save'; }
   }, 500);
 }
 
-async function loadSaved(){
+async function loadOutletData(){
+  const statusEl = document.getElementById('saveStatus');
+  let hasLocal = false;
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey());
     if(raw){
+      hasLocal = true;
       const state = JSON.parse(raw);
-      FIELDS.forEach(f => { if(state[f] !== undefined) document.getElementById(f).value = state[f]; });
-      if(state.desiredHeadcount !== undefined) document.getElementById('desiredHeadcount').value = state.desiredHeadcount;
+      expenses = state.expenses || [];
+      document.getElementById('desiredHeadcount').value = state.desiredHeadcount !== undefined ? state.desiredHeadcount : 5;
+      statusEl.textContent = 'Loaded your last saved figures for this outlet';
+    } else {
+      expenses = DEFAULT_EXPENSES.map(x => ({...x}));
+      document.getElementById('desiredHeadcount').value = 5;
+      statusEl.textContent = 'Starting from default categories for this outlet';
     }
   } catch(e){}
 
-  try{
-    const rawUrl = localStorage.getItem(URL_KEY);
-    if(rawUrl){
-      document.getElementById('sheetsUrl').value = rawUrl;
-      document.getElementById('syncStatus').textContent = 'Configured ✓';
-      document.getElementById('syncStatus').style.color = 'var(--profit)';
-    }
-  } catch(e){}
-
-  let outletId = '';
-  try{
-    const rawOutlet = localStorage.getItem(OUTLET_KEY);
-    if(rawOutlet){
-      const o = JSON.parse(rawOutlet);
-      outletId = o.id || '';
-      document.getElementById('outletId').value = outletId;
-      document.getElementById('outletName').value = o.name || '';
-    }
-  } catch(e){}
-
-  // If nothing saved locally yet, try pulling this outlet's current figures from the Sheet.
-  const hasLocal = !!localStorage.getItem(STORAGE_KEY);
+  // If nothing saved locally yet, try pulling this outlet's current expense list from the Sheet.
   const url = document.getElementById('sheetsUrl').value.trim();
-  if(!hasLocal && url && outletId){
+  if(!hasLocal && url && currentOutletId){
     try{
-      const res = await fetch(url + '?action=outlets');
+      const res = await fetch(url + '?action=expenses');
       const data = await res.json();
       if(data.ok){
-        const match = (data.outlets||[]).find(o => String(o['Outlet ID']) === String(outletId));
-        if(match){
-          document.getElementById('rent').value = match['Rent/day'] || 0;
-          document.getElementById('eb').value = match['EB/day'] || 0;
-          document.getElementById('lpg').value = match['LPG/day'] || 0;
-          document.getElementById('packaging').value = match['Packaging/day'] || 0;
-          document.getElementById('maintenance').value = match['Maintenance/day'] || 0;
-          document.getElementById('desiredHeadcount').value = match['Desired Headcount'] || 5;
+        const mine = (data.expenses||[]).filter(x => String(x['Outlet ID']) === String(currentOutletId));
+        if(mine.length){
+          expenses = mine.map(x => ({name:x['Category Name'], type:x['Type (Fixed/Variable)'], amount:Number(x['Amount/day'])||0}));
+          statusEl.textContent = 'Loaded from your Google Sheet for this outlet';
         }
+      }
+      const outletRes = await fetch(url + '?action=outlets');
+      const outletData = await outletRes.json();
+      if(outletData.ok){
+        const match = (outletData.outlets||[]).find(o => String(o['Outlet ID']) === String(currentOutletId));
+        if(match) document.getElementById('desiredHeadcount').value = match['Desired Headcount'] || 5;
       }
     } catch(e){}
   }
 
+  renderExpenses();
   recalc();
+  setTimeout(()=>{statusEl.textContent='';}, 2500);
 }
 
-FIELDS.concat(['desiredHeadcount']).forEach(f => {
-  document.getElementById(f).addEventListener('input', () => { recalc(); saveState(); });
-});
+document.getElementById('desiredHeadcount').addEventListener('input', () => { saveState(); });
 
 async function syncToSheet(){
   const url = document.getElementById('sheetsUrl').value.trim();
@@ -161,21 +196,22 @@ async function syncToSheet(){
     statusEl.style.color = 'var(--loss)';
     return;
   }
-  const outletId = document.getElementById('outletId').value.trim();
-  if(!outletId){
-    statusEl.textContent = 'Enter an Outlet ID above first — syncing without one loses the data into an "unassigned" bucket.';
+  const outlet = currentOutlet();
+  if(!outlet){
+    statusEl.textContent = 'Select an outlet above first';
     statusEl.style.color = 'var(--loss)';
     return;
   }
-  const outletName = document.getElementById('outletName').value.trim() || '';
+  const outletId = outlet.id, outletName = outlet.name || '';
   btn.disabled = true;
   btn.textContent = 'Syncing…';
   try{
-    const body = { method:'fixedexpenses', outletId, outletName, timestamp: new Date().toISOString() };
-    FIELDS.forEach(f => body[f] = document.getElementById(f).value);
-    body.desiredHeadcount = document.getElementById('desiredHeadcount').value;
+    const body = {
+      method:'fixedexpenses', outletId, outletName, timestamp: new Date().toISOString(),
+      expenses, desiredHeadcount: document.getElementById('desiredHeadcount').value
+    };
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
-    statusEl.textContent = 'Synced to Sheet ✓';
+    statusEl.textContent = 'Synced to Sheet ✓ (' + expenses.length + ' items sent)';
     statusEl.style.color = 'var(--profit)';
   } catch(e){
     statusEl.textContent = 'Sync failed — check URL';
@@ -192,16 +228,48 @@ document.getElementById('sheetsUrl').addEventListener('change', () => {
   document.getElementById('syncStatus').textContent = url ? 'Configured ✓' : 'Not configured';
   document.getElementById('syncStatus').style.color = url ? 'var(--profit)' : 'var(--ink)';
 });
-function saveOutlet(){
-  localStorage.setItem(OUTLET_KEY, JSON.stringify({
-    id: document.getElementById('outletId').value.trim(),
-    name: document.getElementById('outletName').value.trim()
-  }));
-}
-document.getElementById('outletId').addEventListener('change', saveOutlet);
-document.getElementById('outletName').addEventListener('change', saveOutlet);
 
-loadSaved();
+document.getElementById('outletSelect').addEventListener('change', (e) => {
+  currentOutletId = e.target.value;
+  localStorage.setItem('selected-outlet-id', currentOutletId);
+  loadOutletData();
+});
+
+function init(){
+  try{
+    const raw = localStorage.getItem(OUTLETS_KEY);
+    outlets = raw ? (JSON.parse(raw)||[]) : [];
+  } catch(e){ outlets = []; }
+
+  try{
+    const rawUrl = localStorage.getItem(URL_KEY);
+    if(rawUrl){
+      document.getElementById('sheetsUrl').value = rawUrl;
+      document.getElementById('syncStatus').textContent = 'Configured ✓';
+      document.getElementById('syncStatus').style.color = 'var(--profit)';
+    }
+  } catch(e){}
+
+  if(outlets.length === 0){
+    document.getElementById('noOutletsNote').style.display = 'block';
+    document.getElementById('outletSelect').disabled = true;
+    return;
+  }
+
+  populateOutletSelect();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramOutlet = urlParams.get('outlet');
+  const savedOutlet = localStorage.getItem('selected-outlet-id');
+  const match = outlets.find(o => String(o.id) === String(paramOutlet)) ||
+                outlets.find(o => String(o.id) === String(savedOutlet)) ||
+                outlets[0];
+  currentOutletId = match.id;
+  document.getElementById('outletSelect').value = currentOutletId;
+
+  loadOutletData();
+}
+init();
 </script>
 </body>
 </html>
