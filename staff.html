@@ -3,39 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Staff Details</title>
+<title>Staff Master</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
   <p class="eyebrow"><a href="index.html" style="color:inherit;text-decoration:none;">← Home</a></p>
-  <h1>Staff details</h1>
-  <p class="sub">Who's on the books, their daily wage, and who's actually working today. Feeds Labour Cost into the breakeven pages.</p>
+  <h1>Staff master</h1>
+  <p class="sub">One shared list for every staff member, across all outlets. Set today's status per person — Off, or which outlet/shift they're covering — and hours + labour cost work out automatically.</p>
 </header>
 
 <section>
-  <div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div>
-  <div class="stack">
-    <div class="row">
-      <span class="rlabel">Outlet ID</span>
-      <input type="text" id="outletId" placeholder="e.g. 1" style="width:60px;">
-    </div>
-    <div class="row">
-      <span class="rlabel">Outlet Name (for your reference)</span>
-      <input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px;">
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="section-head"><h2>Google Sheets sync</h2><span class="tag">reads &amp; writes the Staff/Roster tabs</span></div>
+  <div class="section-head"><h2>Google Sheets sync</h2><span class="tag">reads &amp; writes Staff/Roster</span></div>
   <div class="stack">
     <div class="row">
       <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
     </div>
     <div class="row"><span class="rlabel">Status</span><span id="syncStatus" style="font-size:12px;font-weight:600;">Not configured</span></div>
   </div>
+  <p id="noOutletsNote" style="display:none;font-size:12.5px;color:var(--loss);text-align:center;padding:14px;">
+    No outlets set up yet — Today Status needs at least one outlet to offer shift options. <a href="outlets.html">Set up outlets first →</a>
+  </p>
 </section>
 
 <section>
@@ -53,34 +42,104 @@
   <button class="export-btn" id="syncBtn" type="button">🔄 Sync to Google Sheet</button>
 </div>
 
-<footer>Saves in this browser automatically. Sync pushes your staff list and today's working status to the Staff and Roster tabs.</footer>
+<footer>Saves in this browser automatically. Sync replaces the Staff list and today's Roster entries in your Sheet.</footer>
 
 <script>
 const STORAGE_KEY = 'staff-state';
 const URL_KEY = 'sheets-sync-url';
-const OUTLET_KEY = 'outlet-selection';
+const OUTLETS_KEY = 'outlets-master';
 let saveTimer = null;
-let staff = []; // [{name, role, wage, workingToday}]
+let staff = []; // [{staffId, name, wage, statusValue, startTime, endTime}]
+let outlets = [];
 
 function fmt(n){ return Math.round(n).toLocaleString('en-IN'); }
 
+function statusOptionsHtml(selected){
+  let html = `<option value="off" ${selected==='off'?'selected':''}>Off</option>`;
+  outlets.forEach(o => {
+    const n = parseInt(o.numShifts) || 0;
+    for(let s=1; s<=n; s++){
+      const val = `${o.id}|${s}`;
+      html += `<option value="${val}" ${selected===val?'selected':''}>${o.shortCode||o.id}-SHIFT ${s}</option>`;
+    }
+  });
+  return html;
+}
+
+function computeHours(start, end){
+  if(!start || !end) return 0;
+  const [sh,sm] = start.split(':').map(Number);
+  const [eh,em] = end.split(':').map(Number);
+  let mins = (eh*60+em) - (sh*60+sm);
+  if(mins < 0) mins += 24*60; // overnight shift wraps past midnight
+  return Math.round((mins/60)*100)/100;
+}
+
+function nextStaffId(){
+  const nums = staff.map(s => parseInt(s.staffId)).filter(n => !isNaN(n));
+  return nums.length ? Math.max(...nums)+1 : 1;
+}
+
 function renderStaff(){
   const list = document.getElementById('staffList');
-  list.innerHTML = staff.map((s, idx) => `
-    <div class="row" style="flex-wrap:wrap;gap:6px;">
-      <input type="text" class="sName" data-idx="${idx}" value="${s.name||''}" placeholder="Name" style="flex:1;min-width:90px;text-align:left;">
-      <input type="text" class="sRole" data-idx="${idx}" value="${s.role||''}" placeholder="Role" style="flex:1;min-width:90px;text-align:left;">
-      <input type="number" class="sWage" data-idx="${idx}" value="${s.wage||0}" min="0" style="width:70px;" title="Daily wage ₹">
-      <label style="font-size:10.5px;color:var(--ink-soft);display:flex;align-items:center;gap:3px;white-space:nowrap;">
-        <input type="checkbox" class="sWorking" data-idx="${idx}" ${s.workingToday!==false?'checked':''}> today
-      </label>
-      <button type="button" class="sRemove" data-idx="${idx}" style="background:var(--loss);color:#fff;border:none;border-radius:3px;padding:6px 8px;font-size:10.5px;cursor:pointer;">✕</button>
-    </div>`).join('');
+  list.innerHTML = staff.map((s, idx) => {
+    const showTimes = s.statusValue && s.statusValue !== 'off';
+    return `
+    <div class="stack" style="margin-top:${idx===0?'0':'8px'};">
+      <div class="row" style="flex-wrap:wrap;gap:6px;">
+        <input type="text" class="sName" data-idx="${idx}" value="${s.name||''}" placeholder="Name" style="flex:1;min-width:100px;text-align:left;">
+        <input type="text" class="sId" data-idx="${idx}" value="${s.staffId||''}" placeholder="ID" style="width:50px;" title="Staff ID">
+        <button type="button" class="sRemove" data-idx="${idx}" style="background:var(--loss);color:#fff;border:none;border-radius:3px;padding:6px 8px;font-size:10.5px;cursor:pointer;">✕</button>
+      </div>
+      <div class="row">
+        <span class="rlabel" style="font-size:11px;">Today status</span>
+        <select class="sStatus" data-idx="${idx}" style="flex:1;padding:5px;border:1px solid var(--ink-soft);border-radius:3px;font-size:12px;">
+          ${statusOptionsHtml(s.statusValue)}
+        </select>
+      </div>
+      <div class="sTimesRow" data-idx="${idx}" style="display:${showTimes?'flex':'none'};gap:8px;padding:8px 0;">
+        <div style="flex:1;">
+          <label style="font-size:9.5px;color:var(--ink-soft);display:block;margin-bottom:2px;">Start time</label>
+          <input type="time" class="sStart" data-idx="${idx}" value="${s.startTime||''}" style="width:100%;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:9.5px;color:var(--ink-soft);display:block;margin-bottom:2px;">End time</label>
+          <input type="time" class="sEnd" data-idx="${idx}" value="${s.endTime||''}" style="width:100%;">
+        </div>
+        <div style="flex:1;text-align:right;">
+          <label style="font-size:9.5px;color:var(--ink-soft);display:block;margin-bottom:2px;">Shift hours</label>
+          <span class="num" style="font-weight:700;font-size:13px;" id="hours-${idx}">${computeHours(s.startTime,s.endTime)}</span>
+        </div>
+      </div>
+      <div class="row" style="border-bottom:none;">
+        <span class="rlabel">Daily wage (₹)</span>
+        <input type="number" class="sWage" data-idx="${idx}" value="${s.wage||0}" min="0" style="width:80px;">
+      </div>
+    </div>`;
+  }).join('');
 
   list.querySelectorAll('.sName').forEach(el => el.addEventListener('input', e => { staff[e.target.dataset.idx].name = e.target.value; recalcAndSave(); }));
-  list.querySelectorAll('.sRole').forEach(el => el.addEventListener('input', e => { staff[e.target.dataset.idx].role = e.target.value; recalcAndSave(); }));
+  list.querySelectorAll('.sId').forEach(el => el.addEventListener('input', e => { staff[e.target.dataset.idx].staffId = e.target.value; recalcAndSave(); }));
   list.querySelectorAll('.sWage').forEach(el => el.addEventListener('input', e => { staff[e.target.dataset.idx].wage = parseFloat(e.target.value)||0; recalcAndSave(); }));
-  list.querySelectorAll('.sWorking').forEach(el => el.addEventListener('change', e => { staff[e.target.dataset.idx].workingToday = e.target.checked; recalcAndSave(); }));
+  list.querySelectorAll('.sStatus').forEach(el => el.addEventListener('change', e => {
+    const idx = e.target.dataset.idx;
+    staff[idx].statusValue = e.target.value;
+    const timesRow = document.querySelector(`.sTimesRow[data-idx="${idx}"]`);
+    timesRow.style.display = e.target.value !== 'off' ? 'flex' : 'none';
+    recalcAndSave();
+  }));
+  list.querySelectorAll('.sStart').forEach(el => el.addEventListener('input', e => {
+    const idx = e.target.dataset.idx;
+    staff[idx].startTime = e.target.value;
+    document.getElementById('hours-'+idx).textContent = computeHours(staff[idx].startTime, staff[idx].endTime);
+    recalcAndSave();
+  }));
+  list.querySelectorAll('.sEnd').forEach(el => el.addEventListener('input', e => {
+    const idx = e.target.dataset.idx;
+    staff[idx].endTime = e.target.value;
+    document.getElementById('hours-'+idx).textContent = computeHours(staff[idx].startTime, staff[idx].endTime);
+    recalcAndSave();
+  }));
   list.querySelectorAll('.sRemove').forEach(el => el.addEventListener('click', e => {
     staff.splice(parseInt(e.target.dataset.idx), 1);
     renderStaff(); recalcAndSave();
@@ -90,7 +149,7 @@ function renderStaff(){
 }
 
 function recalc(){
-  const total = staff.reduce((s,x) => s + (x.workingToday!==false ? (x.wage||0) : 0), 0);
+  const total = staff.reduce((s,x) => s + (x.statusValue && x.statusValue!=='off' ? (x.wage||0) : 0), 0);
   document.getElementById('totalLabour').textContent = '₹'+fmt(total);
 }
 
@@ -109,11 +168,17 @@ function saveState(){
 }
 
 document.getElementById('addStaffBtn').addEventListener('click', () => {
-  staff.push({name:'', role:'', wage:600, workingToday:true});
+  staff.push({staffId: String(nextStaffId()), name:'', wage:600, statusValue:'off', startTime:'', endTime:''});
   renderStaff(); recalcAndSave();
 });
 
 async function loadSaved(){
+  try{
+    const rawOutlets = localStorage.getItem(OUTLETS_KEY);
+    outlets = rawOutlets ? (JSON.parse(rawOutlets)||[]) : [];
+  } catch(e){ outlets = []; }
+  document.getElementById('noOutletsNote').style.display = outlets.length ? 'none' : 'block';
+
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw) staff = JSON.parse(raw) || [];
@@ -128,16 +193,7 @@ async function loadSaved(){
     }
   } catch(e){}
 
-  try{
-    const rawOutlet = localStorage.getItem(OUTLET_KEY);
-    if(rawOutlet){
-      const o = JSON.parse(rawOutlet);
-      document.getElementById('outletId').value = o.id || '';
-      document.getElementById('outletName').value = o.name || '';
-    }
-  } catch(e){}
-
-  // If nothing saved locally yet, try pulling today's staff/roster from the Sheet.
+  // If nothing saved locally yet, try pulling the current Staff list + today's Roster from the Sheet.
   if(staff.length === 0){
     const url = document.getElementById('sheetsUrl').value.trim();
     if(url){
@@ -145,12 +201,18 @@ async function loadSaved(){
         const res = await fetch(url + '?action=staff');
         const data = await res.json();
         if(data.ok && data.staff && data.staff.length){
-          const workingIds = new Set((data.roster||[]).filter(r => r['Weekly Off (Y/N)'] !== 'Y').map(r => String(r['Staff ID'])));
-          const offIds = new Set((data.roster||[]).filter(r => r['Weekly Off (Y/N)'] === 'Y').map(r => String(r['Staff ID'])));
-          staff = data.staff.map(s => ({
-            name: s['Name'] || '', role: s['Role'] || '', wage: Number(s['Daily Wage (₹)'])||0,
-            workingToday: offIds.has(String(s['Staff ID'])) ? false : true
-          }));
+          const rosterByStaff = {};
+          (data.roster||[]).forEach(r => { rosterByStaff[String(r['Staff ID'])] = r; });
+          staff = data.staff.map(s => {
+            const sid = String(s['Staff ID']);
+            const r = rosterByStaff[sid];
+            let statusValue = 'off', startTime = '', endTime = '';
+            if(r && r['Weekly Off (Y/N)'] !== 'Y' && r['Outlet ID']){
+              const shiftNum = (r['Shift Label']||'').replace(/\D/g,'') || '1';
+              statusValue = `${r['Outlet ID']}|${shiftNum}`;
+            }
+            return { staffId: sid, name: s['Name']||'', wage: Number(s['Daily Wage (₹)'])||0, statusValue, startTime, endTime };
+          });
         }
       } catch(e){}
     }
@@ -169,19 +231,22 @@ async function syncToSheet(){
     statusEl.style.color = 'var(--loss)';
     return;
   }
-  const outletId = document.getElementById('outletId').value.trim();
-  if(!outletId){
-    statusEl.textContent = 'Enter an Outlet ID above first — syncing without one loses the data into an "unassigned" bucket.';
-    statusEl.style.color = 'var(--loss)';
-    return;
-  }
-  const outletName = document.getElementById('outletName').value.trim() || '';
   btn.disabled = true;
   btn.textContent = 'Syncing…';
   try{
+    const payload = staff.map(s => {
+      const off = !s.statusValue || s.statusValue === 'off';
+      let outletId = null, shiftNum = null;
+      if(!off){ const [oid, sn] = s.statusValue.split('|'); outletId = oid; shiftNum = sn; }
+      return {
+        staffId: s.staffId, name: s.name, wage: s.wage,
+        status: off ? {off:true} : {outletId, shiftNum},
+        hours: computeHours(s.startTime, s.endTime)
+      };
+    });
     await fetch(url, {
       method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({ method:'staff', outletId, outletName, staff, timestamp: new Date().toISOString() })
+      body: JSON.stringify({ method:'staff', staff: payload, timestamp: new Date().toISOString() })
     });
     statusEl.textContent = 'Synced to Sheet ✓ (' + staff.length + ' staff sent)';
     statusEl.style.color = 'var(--profit)';
@@ -200,14 +265,6 @@ document.getElementById('sheetsUrl').addEventListener('change', () => {
   document.getElementById('syncStatus').textContent = url ? 'Configured ✓' : 'Not configured';
   document.getElementById('syncStatus').style.color = url ? 'var(--profit)' : 'var(--ink)';
 });
-function saveOutlet(){
-  localStorage.setItem(OUTLET_KEY, JSON.stringify({
-    id: document.getElementById('outletId').value.trim(),
-    name: document.getElementById('outletName').value.trim()
-  }));
-}
-document.getElementById('outletId').addEventListener('change', saveOutlet);
-document.getElementById('outletName').addEventListener('change', saveOutlet);
 
 loadSaved();
 </script>
