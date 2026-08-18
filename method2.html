@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Method 2 — Item-wise Quantities</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Method 2</p>
+  <h1>Item-wise quantities</h1>
+  <p class="sub">Type how many of each item you expect to sell today. Saves automatically here, and to your Google Sheet copy if you've set up sync below.</p>
+  <nav class="pagenav">
+    <a href="index.html">Home</a>
+    <a href="method1.html">Method 1</a>
+    <a href="method2.html" class="active">Method 2</a>
+  </nav>
+</header>
+
+<section>
+  <div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div>
+  <div class="stack">
+    <div class="row">
+      <span class="rlabel">Outlet ID</span>
+      <input type="text" id="outletId" placeholder="e.g. 1" style="width:60px;">
+    </div>
+    <div class="row">
+      <span class="rlabel">Outlet Name (for your reference)</span>
+      <input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px;">
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Google Sheets sync</h2><span class="tag">one-time setup</span></div>
+  <div class="stack">
+    <p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.5;">
+      Paste your Apps Script Web App URL here (see chat for setup steps). Once saved, every quantity change also
+      pushes to your Google Sheet copy automatically.
+    </p>
+    <div class="row">
+      <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
+    </div>
+    <div class="row"><span class="rlabel">Status</span><span id="syncStatus" style="font-size:12px;font-weight:600;">Not configured</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Today's totals</h2><span class="tag">live</span></div>
+  <div class="stack" style="display:flex;justify-content:space-around;text-align:center;">
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Total Sale</div>
+      <div class="num" id="grandTotalSale" style="font-size:17px;font-weight:700;">₹0</div>
+    </div>
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Purchase Cost</div>
+      <div class="num" id="grandTotalCost" style="font-size:17px;font-weight:700;color:var(--loss);">₹0</div>
+    </div>
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Gross Profit</div>
+      <div class="num" id="grandTotalProfit" style="font-size:17px;font-weight:700;color:var(--profit);">₹0</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Enter quantities by category</h2><span class="tag">366 items</span></div>
+  <div id="catList"></div>
+</section>
+
+<p class="status" id="saveStatus"></p>
+
+<div class="export-bar">
+  <button class="export-btn" id="syncBtn" type="button">🔄 Sync to Google Sheet</button>
+</div>
+
+<footer>This total feeds into the Home page comparison automatically. Sync sends everything at once, deliberately — safer than syncing on every click.</footer>
+
+<script src="shared_data.js"></script>
+<script>
+const STORAGE_KEY = 'method2-item-state';
+const URL_KEY = 'sheets-sync-url';
+const OUTLET_KEY = 'outlet-selection';
+let saveTimer = null;
+
+function fmt(n){ return Math.round(n).toLocaleString('en-IN'); }
+
+const catList = document.getElementById('catList');
+CAT_ORDER.forEach(cat => {
+  const key = cat.replace(/\s+/g,'_');
+  const short = cat.replace(' Catalogue','');
+  const catDiv = document.createElement('div');
+  catDiv.className = 'cat';
+  catDiv.innerHTML = `
+    <div class="cat-head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="left">
+        <div class="cname">${short} <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(${ITEM_DATA[cat].length})</span></div>
+        <div class="csub" id="sub-${key}">0 units · ₹0</div>
+      </div>
+      <span class="chev">&#9656;</span>
+    </div>
+    <div class="cat-body" id="body-${key}">
+      <div class="fill-row">
+        <button type="button" data-fill="1" data-cat="${cat}">Fill all: 1</button>
+        <button type="button" data-realistic="1" data-cat="${cat}">Realistic pattern</button>
+        <button type="button" data-fill="0" data-cat="${cat}">Clear all</button>
+      </div>
+    </div>`;
+  catList.appendChild(catDiv);
+  const body = document.getElementById('body-'+key);
+  ITEM_DATA[cat].forEach((item,i) => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    let modeControl = '';
+    if (item.eligible) {
+      const recipeNote = item.hasRecipe ? 'real recipe cost' : 'category-average estimate';
+      modeControl = `
+        <select class="modeSelect" data-cat="${cat}" data-i="${i}" title="${recipeNote}">
+          <option value="purchased">Purchased</option>
+          <option value="production">Production</option>
+        </select>`;
+    }
+    row.innerHTML = `<span class="iname">${item.name}<span class="price">₹${item.price}/unit</span>${modeControl}</span>
+      <div class="qtybox">
+        <div class="qtyInputWrap">
+          <label class="qtyLabel">Sold today</label>
+          <input type="number" class="qtyInput" data-cat="${cat}" data-i="${i}" value="0" min="0">
+        </div>
+        <span class="irev num" id="irev-${key}-${i}">₹0</span>
+      </div>`;
+    body.appendChild(row);
+
+    if (item.eligible) {
+      const panel = document.createElement('div');
+      panel.className = 'batchPanel';
+      panel.id = `batch-${key}-${i}`;
+      panel.style.display = 'none';
+      panel.innerHTML = `
+        <div class="batchRow">
+          <span>Production format</span>
+          <select class="formatSelect" data-cat="${cat}" data-i="${i}">
+            <option value="batch">Batch</option>
+            <option value="piece">Individual piece</option>
+            <option value="kg">Kg</option>
+          </select>
+        </div>
+        <div class="batchRow spoilRow" id="spoilRow-${key}-${i}">
+          <span>Spoilage % <span style="font-size:9px;opacity:0.7;">(editable)</span></span>
+          <input type="number" class="spoilInput" data-cat="${cat}" data-i="${i}" value="5" min="0" max="100" step="0.5" style="width:60px;">
+        </div>
+
+        <div class="batchRow batchSizeRow" id="batchSizeRow-${key}-${i}">
+          <span>Batch size (per run)</span>
+          <input type="number" class="batchSizeInput" data-cat="${cat}" data-i="${i}" min="0" step="1">
+        </div>
+        <div class="batchRow batchSizeRow" id="numBatchesRow-${key}-${i}">
+          <span>No. of batches today</span>
+          <input type="number" class="numBatchesInput" data-cat="${cat}" data-i="${i}" min="0" step="1">
+        </div>
+        <div class="batchRow batchSizeRow" id="capacityRow-${key}-${i}">
+          <span>Production capacity/day <span style="font-size:9px;opacity:0.7;">(editable)</span></span>
+          <input type="number" class="capacityInput" data-cat="${cat}" data-i="${i}" min="0" step="1">
+        </div>
+        <div class="batchRow batchSizeRow" id="pieceCapacityRow-${key}-${i}" style="display:none;">
+          <span>Production capacity/day <span style="font-size:9px;opacity:0.7;">(editable)</span></span>
+          <input type="number" class="pieceCapacityInput" data-cat="${cat}" data-i="${i}" min="0" step="1">
+        </div>
+
+        <div id="kgPanel-${key}-${i}" style="display:none;">
+          <div class="batchRow">
+            <span>Batch size, kg (per run)</span>
+            <input type="number" class="kgBatchSizeInput" data-cat="${cat}" data-i="${i}" min="0" step="0.1">
+          </div>
+          <div class="batchRow">
+            <span>No. of batches today</span>
+            <input type="number" class="kgNumBatchesInput" data-cat="${cat}" data-i="${i}" min="0" step="1">
+          </div>
+          <div class="batchRow">
+            <span>Production capacity/day (kg) <span style="font-size:9px;opacity:0.7;">(editable)</span></span>
+            <input type="number" class="kgCapacityInput" data-cat="${cat}" data-i="${i}" min="0" step="0.5">
+          </div>
+          <div class="batchRow" style="font-size:10.5px;color:var(--ink-soft);">
+            <span id="kgProducedInfo-${key}-${i}"></span>
+          </div>
+          <div class="sizeModeChoice" id="sizeModeChoice-${key}-${i}">
+            <div style="font-size:11px;color:var(--ink-soft);margin-bottom:6px;">How do you want to sell this batch?</div>
+            <div class="sizeModeButtons">
+              <button type="button" class="sizeModeBtn" data-cat="${cat}" data-i="${i}" data-mode="fixed">
+                <strong>Fixed sizes</strong><span>2kg / 1kg / 500g / 250g + custom row</span>
+              </button>
+              <button type="button" class="sizeModeBtn" data-cat="${cat}" data-i="${i}" data-mode="custom">
+                <strong>Custom sizes</strong><span>You type your own weight</span>
+              </button>
+            </div>
+          </div>
+          <div id="sellAsSection-${key}-${i}" style="display:none;">
+            <div class="sellAsRows" id="sellAsRows-${key}-${i}"></div>
+            <button type="button" class="addRowBtn" id="addRowBtn-${key}-${i}" data-cat="${cat}" data-i="${i}">+ Add another row</button>
+            <div class="batchRow" style="font-size:10.5px;color:var(--ink-soft);">
+              <span id="allocInfo-${key}-${i}"></span>
+            </div>
+            <div class="wastageBox" id="wastageBox-${key}-${i}">
+              <label>⚠ Wastage (g) — auto-filled, editable</label>
+              <input type="number" class="wastageInput" data-cat="${cat}" data-i="${i}" value="0">
+              <div class="wastageNote" id="wastageNote-${key}-${i}"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="batchInfo" id="batchInfo-${key}-${i}"></div>
+        <div class="costChain" id="costChain-${key}-${i}"></div>`;
+      body.appendChild(panel);
+    }
+  });
+});
+
+let currentTotal = 0;
+
+// ---- Bakery rounding rule: below band midpoint -> nearest rupee, at/above -> next multiple of 5 ----
+function bakeryRound(price) {
+  const n = Math.floor(price / 5) * 5;
+  const midpoint = n + 2.5;
+  if (price < midpoint) {
+    return Math.floor(price + 0.5); // round half up
+  } else {
+    return n + 5;
+  }
+}
+
+// ---- Batch Planning: show/hide panel based on mode, compute cost + wastage ----
+function updateBatchPanel(cat, i) {
+  const item = ITEM_DATA[cat][i];
+  if (!item.eligible) return;
+  const key = cat.replace(/\s+/g,'_');
+  const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+  const panel = document.getElementById(`batch-${key}-${i}`);
+  if (!sel || !panel) return;
+
+  if (sel.value !== 'production') {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  const formatSel = document.querySelector(`.formatSelect[data-cat="${cat}"][data-i="${i}"]`);
+  const batchSizeRow = document.getElementById(`batchSizeRow-${key}-${i}`);
+  const kgPanel = document.getElementById(`kgPanel-${key}-${i}`);
+  const batchInput = document.querySelector(`.batchSizeInput[data-cat="${cat}"][data-i="${i}"]`);
+  const spoilInput = document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`);
+  const infoDiv = document.getElementById(`batchInfo-${key}-${i}`);
+  const costChainDiv = document.getElementById(`costChain-${key}-${i}`);
+  const qtyInput = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`); // this IS Sold Qty now
+  const format = formatSel.value;
+  const spoilPct = parseFloat(spoilInput.value) || 0;
+
+  const baseCost = item.productionCost; // real recipe cost if hasRecipe, else category-average estimate
+
+  if (format === 'piece') {
+    batchSizeRow.style.display = 'none';
+    document.getElementById(`numBatchesRow-${key}-${i}`).style.display = 'none';
+    document.getElementById(`capacityRow-${key}-${i}`).style.display = 'none';
+    document.getElementById(`pieceCapacityRow-${key}-${i}`).style.display = 'flex';
+    kgPanel.style.display = 'none';
+    qtyInput.readOnly = false;
+    qtyInput.style.background = '';
+    delete qtyInput.dataset.unit;
+
+    const pieceCapInput = document.querySelector(`.pieceCapacityInput[data-cat="${cat}"][data-i="${i}"]`);
+    const pieceCap = parseFloat(pieceCapInput.value) || 0;
+    const soldQty = parseFloat(qtyInput.value) || 0;
+
+    if (pieceCap > 0 && soldQty > pieceCap) {
+      infoDiv.innerHTML = `⚠️ Sold (${soldQty}) exceeds your daily production capacity (${pieceCap}).`;
+      infoDiv.className = 'batchInfo batchError';
+      costChainDiv.innerHTML = '';
+      return;
+    }
+    infoDiv.innerHTML = `Made individually. Sold: ${soldQty} of ${pieceCap} capacity.`;
+    infoDiv.className = 'batchInfo';
+    renderCostChain(costChainDiv, baseCost, spoilPct, soldQty, item.price);
+    return;
+  }
+
+  if (format === 'batch') {
+    batchSizeRow.style.display = 'flex';
+    document.getElementById(`pieceCapacityRow-${key}-${i}`).style.display = 'none';
+    document.getElementById(`numBatchesRow-${key}-${i}`).style.display = 'flex';
+    document.getElementById(`capacityRow-${key}-${i}`).style.display = 'flex';
+    kgPanel.style.display = 'none';
+    qtyInput.readOnly = false;
+    qtyInput.style.background = '';
+    delete qtyInput.dataset.unit;
+
+    const batchSize = parseFloat(batchInput.value) || 0;
+    const numBatchesInput = document.querySelector(`.numBatchesInput[data-cat="${cat}"][data-i="${i}"]`);
+    const capacityInput = document.querySelector(`.capacityInput[data-cat="${cat}"][data-i="${i}"]`);
+    const numBatches = parseFloat(numBatchesInput.value) || 0;
+    const capacity = parseFloat(capacityInput.value) || 0;
+    const soldQty = parseFloat(qtyInput.value) || 0;
+
+    if (batchSize <= 0 || numBatches <= 0) {
+      infoDiv.innerHTML = 'Enter batch size and number of batches above.';
+      infoDiv.className = 'batchInfo';
+      costChainDiv.innerHTML = '';
+      return;
+    }
+
+    const producedToday = batchSize * numBatches;
+
+    if (capacity > 0 && producedToday > capacity) {
+      infoDiv.innerHTML = `⚠️ ${numBatches} batches × ${batchSize} = ${producedToday}, exceeds your production capacity of ${capacity}/day.`;
+      infoDiv.className = 'batchInfo batchError';
+      costChainDiv.innerHTML = '';
+      return;
+    }
+    if (soldQty > producedToday) {
+      infoDiv.innerHTML = `⚠️ Sold (${soldQty}) can't exceed what was produced (${producedToday}).`;
+      infoDiv.className = 'batchInfo batchError';
+      return;
+    }
+    const wastage = producedToday - soldQty;
+    infoDiv.innerHTML = `Produced today: ${producedToday} (${numBatches} × ${batchSize}). Sold: ${soldQty}. <span style="color:var(--loss);">Unsold (wastage-tracked): ${wastage}</span>`;
+    infoDiv.className = 'batchInfo';
+    renderCostChain(costChainDiv, baseCost, spoilPct, soldQty, item.price);
+  }
+
+  if (format === 'kg') {
+    batchSizeRow.style.display = 'none';
+    document.getElementById(`numBatchesRow-${key}-${i}`).style.display = 'none';
+    document.getElementById(`capacityRow-${key}-${i}`).style.display = 'none';
+    document.getElementById(`pieceCapacityRow-${key}-${i}`).style.display = 'none';
+
+    if (item.baseUnit !== 'Kg') {
+      kgPanel.style.display = 'none';
+      infoDiv.innerHTML = `⚠️ This item is priced per ${item.baseUnit || 'piece'}, not per kg. Kg format needs a genuine per-kg cost and price — switch back to Batch or Individual piece format instead.`;
+      infoDiv.className = 'batchInfo batchError';
+      costChainDiv.innerHTML = '';
+      return;
+    }
+
+    kgPanel.style.display = 'block';
+    infoDiv.innerHTML = ''; // clear any leftover text from a previously-tested format
+    infoDiv.className = 'batchInfo';
+    updateKgPanel(cat, i, item, spoilPct);
+  }
+}
+
+function renderCostChain(div, baseCost, spoilPct, soldQty, price, isKgTrimAdjusted) {
+  if (!baseCost || soldQty <= 0) { div.innerHTML = ''; return; }
+  const effectiveCost = baseCost * (1 + spoilPct/100);
+  const purchaseCostToday = effectiveCost * soldQty;
+  const unitLabel = isKgTrimAdjusted ? 'True cost/g (trim-adjusted)' : 'Base cost/unit';
+  const soldLabel = isKgTrimAdjusted ? `× ${soldQty} g sold = Purchase Cost` : `× ${soldQty} sold = Purchase Cost`;
+  div.innerHTML = `
+    <div class="ccRow"><span>${unitLabel}</span><span>₹${baseCost.toFixed(4)}</span></div>
+    <div class="ccRow"><span>+ Spoilage (${spoilPct}%)</span><span>₹${effectiveCost.toFixed(4)}</span></div>
+    <div class="ccRow ccBold"><span>${soldLabel}</span><span>₹${purchaseCostToday.toFixed(2)}</span></div>`;
+}
+
+// ---- Kg multi-box: Standard Weight rows + yellow Custom Weight row + red Wastage box ----
+const kgRowState = {}; // per item key: array of {weight, qty}
+
+const sizeModeState = {}; // per item key: 'fixed' or 'custom', unset until user picks
+
+function ensureKgRows(key, mode) {
+  if (!kgRowState[key]) {
+    if (mode === 'custom') {
+      kgRowState[key] = [{weight: 0, qty: 0, custom: true}];
+    } else {
+      kgRowState[key] = [
+        {weight: 2000, qty: 0, custom: false},
+        {weight: 1000, qty: 0, custom: false},
+        {weight: 500, qty: 0, custom: false},
+        {weight: 250, qty: 0, custom: false},
+        {weight: 0, qty: 0, custom: true},
+      ];
+    }
+  }
+  return kgRowState[key];
+}
+
+function renderSellAsRows(cat, i, key) {
+  const container = document.getElementById(`sellAsRows-${key}-${i}`);
+  const mode = sizeModeState[`${key}-${i}`];
+  const rows = ensureKgRows(`${key}-${i}`, mode);
+  container.innerHTML = rows.map((row, idx) => {
+    const isCustom = row.custom === true;
+    const cls = isCustom ? 'sellAsRow customRow' : 'sellAsRow';
+    const label = isCustom ? 'Custom weight (g)' : 'Standard weight (g)';
+    const weightField = isCustom
+      ? `<input type="number" class="sarWeight" data-key="${key}-${i}" data-idx="${idx}" value="${row.weight||''}">`
+      : `<input type="number" class="sarWeight" data-key="${key}-${i}" data-idx="${idx}" value="${row.weight}" readonly style="background:var(--paper-dark);">`;
+    return `<div class="${cls}">
+      <div class="sarField">
+        <label>${label}</label>
+        ${weightField}
+      </div>
+      <div class="sarField">
+        <label>Qty</label>
+        <input type="number" class="sarQty" data-key="${key}-${i}" data-idx="${idx}" value="${row.qty}" min="0">
+      </div>
+    </div>`;
+  }).join('');
+
+  const spoilVal = () => parseFloat(document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`).value)||0;
+  container.querySelectorAll('.sarWeight').forEach(inp => {
+    if (inp.readOnly) return;
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.idx);
+      rows[idx].weight = parseFloat(inp.value) || 0;
+      updateKgPanel(cat, i, ITEM_DATA[cat][i], spoilVal());
+      recalc(); saveState();
+    });
+  });
+  container.querySelectorAll('.sarQty').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.idx);
+      rows[idx].qty = parseFloat(inp.value) || 0;
+      updateKgPanel(cat, i, ITEM_DATA[cat][i], spoilVal());
+      recalc(); saveState();
+    });
+  });
+}
+
+// Shared by both the live display and the sync payload, so they can never disagree.
+// Returns null if this item isn't in Kg format / production mode.
+function getKgFormatData(cat, i) {
+  const key = cat.replace(/\s+/g,'_');
+  const uid = `${key}-${i}`;
+  const item = ITEM_DATA[cat][i];
+  const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+  const formatSel = document.querySelector(`.formatSelect[data-cat="${cat}"][data-i="${i}"]`);
+  if (!sel || sel.value !== 'production' || !formatSel || formatSel.value !== 'kg') return null;
+  if (item.baseUnit !== 'Kg') return null; // not a genuine per-kg item - refuse to compute nonsense
+
+  const kgBatchSizeInput = document.querySelector(`.kgBatchSizeInput[data-cat="${cat}"][data-i="${i}"]`);
+  const kgNumBatchesInput = document.querySelector(`.kgNumBatchesInput[data-cat="${cat}"][data-i="${i}"]`);
+  const kgBatchSize = parseFloat(kgBatchSizeInput.value) || 0;
+  const kgNumBatches = parseFloat(kgNumBatchesInput.value) || 0;
+  const producedKg = kgBatchSize * kgNumBatches;
+  const totalBatchG = producedKg * 1000;
+
+  const rows = kgRowState[uid] || [];
+  const totalAllocatedG = rows.reduce((s,r) => s + r.weight*r.qty, 0);
+
+  const totalBatchCost = item.productionCost ? (item.productionCost / 1000) * totalBatchG : 0;
+  const trueCostPerGram = totalAllocatedG > 0 ? totalBatchCost / totalAllocatedG : 0;
+
+  return { totalAllocatedG, trueCostPerGram, qtyForPricingKg: totalAllocatedG / 1000 };
+}
+
+function updateKgPanel(cat, i, item, spoilPct) {
+  const key = cat.replace(/\s+/g,'_');
+  const uid = `${key}-${i}`;
+  const mode = sizeModeState[uid];
+
+  const choiceDiv = document.getElementById(`sizeModeChoice-${key}-${i}`);
+  const sectionDiv = document.getElementById(`sellAsSection-${key}-${i}`);
+  const addRowBtn = document.getElementById(`addRowBtn-${key}-${i}`);
+
+  if (!mode) {
+    choiceDiv.style.display = 'block';
+    sectionDiv.style.display = 'none';
+    return;
+  }
+  choiceDiv.style.display = 'none';
+  sectionDiv.style.display = 'block';
+  addRowBtn.style.display = mode === 'fixed' ? 'block' : 'none';
+
+  const rows = ensureKgRows(uid, mode);
+  const container = document.getElementById(`sellAsRows-${key}-${i}`);
+  if (!container.dataset.built) {
+    renderSellAsRows(cat, i, key);
+    container.dataset.built = '1';
+  }
+
+  const kgBatchSizeInput = document.querySelector(`.kgBatchSizeInput[data-cat="${cat}"][data-i="${i}"]`);
+  const kgNumBatchesInput = document.querySelector(`.kgNumBatchesInput[data-cat="${cat}"][data-i="${i}"]`);
+  const kgCapacityInput = document.querySelector(`.kgCapacityInput[data-cat="${cat}"][data-i="${i}"]`);
+  const kgProducedInfo = document.getElementById(`kgProducedInfo-${key}-${i}`);
+
+  const kgBatchSize = parseFloat(kgBatchSizeInput.value) || 0;
+  const kgNumBatches = parseFloat(kgNumBatchesInput.value) || 0;
+  const kgCapacity = parseFloat(kgCapacityInput.value) || 0;
+  const producedKg = kgBatchSize * kgNumBatches;
+
+  if (kgCapacity > 0 && producedKg > kgCapacity) {
+    kgProducedInfo.innerHTML = `⚠️ ${kgNumBatches} × ${kgBatchSize}kg = ${producedKg}kg, exceeds capacity of ${kgCapacity}kg/day.`;
+    kgProducedInfo.style.color = 'var(--loss)';
+    return;
+  }
+  kgProducedInfo.innerHTML = `Produced today: ${producedKg} kg (${kgNumBatches} × ${kgBatchSize}kg)`;
+  kgProducedInfo.style.color = 'var(--ink-soft)';
+
+  const totalBatchG = producedKg * 1000;
+  const allocInfo = document.getElementById(`allocInfo-${key}-${i}`);
+  const wastageInput = document.querySelector(`.wastageInput[data-cat="${cat}"][data-i="${i}"]`);
+  const wastageNote = document.getElementById(`wastageNote-${key}-${i}`);
+  const costChainDiv = document.getElementById(`costChain-${key}-${i}`);
+  const qtyInput = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+
+  const totalAllocated = rows.reduce((s,r) => s + r.weight*r.qty, 0);
+  const remaining = totalBatchG - totalAllocated;
+
+  if (remaining < 0) {
+    allocInfo.innerHTML = `<span style="color:var(--loss);font-weight:600;">⚠️ Allocated: ${totalAllocated} g — exceeds batch size (${totalBatchG} g) by ${-remaining} g. Reduce a quantity above.</span>`;
+  } else {
+    allocInfo.textContent = `Allocated: ${totalAllocated} g   Remaining: ${remaining} g`;
+  }
+  const remainingSafe = Math.max(0, remaining);
+
+  if (!wastageInput.dataset.userEdited) {
+    wastageInput.value = remainingSafe;
+  }
+  const wastageVal = parseFloat(wastageInput.value) || 0;
+  wastageNote.textContent = wastageVal === remainingSafe ? '✓ Matches remaining' : '⚠ Does not match remaining — check allocation';
+  wastageNote.style.color = wastageVal === remainingSafe ? 'var(--profit)' : 'var(--loss)';
+
+  // Sold Today auto-computed from allocation, not typed separately - marked as grams
+  // so recalc()/sync know to convert before applying the per-kg price.
+  qtyInput.value = totalAllocated;
+  qtyInput.dataset.unit = 'g';
+  qtyInput.readOnly = true;
+  qtyInput.style.background = 'var(--paper-dark)';
+
+  const kgData = getKgFormatData(cat, i);
+  const trueCostPerGram = kgData ? kgData.trueCostPerGram : 0;
+
+  if (totalAllocated > 0) {
+    renderCostChain(costChainDiv, trueCostPerGram, spoilPct, totalAllocated, item.price, true);
+  } else {
+    costChainDiv.innerHTML = '';
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('sizeModeBtn') || e.target.closest('.sizeModeBtn')) {
+    const btn = e.target.classList.contains('sizeModeBtn') ? e.target : e.target.closest('.sizeModeBtn');
+    const cat = btn.dataset.cat, i = parseInt(btn.dataset.i);
+    const key = cat.replace(/\s+/g,'_');
+    sizeModeState[`${key}-${i}`] = btn.dataset.mode;
+    updateKgPanel(cat, i, ITEM_DATA[cat][i], parseFloat(document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`).value)||0);
+    recalc(); saveState();
+  }
+  if (e.target.classList.contains('addRowBtn')) {
+    const cat = e.target.dataset.cat, i = parseInt(e.target.dataset.i);
+    const key = cat.replace(/\s+/g,'_');
+    const rows = ensureKgRows(`${key}-${i}`, sizeModeState[`${key}-${i}`]);
+    rows.push({weight: 0, qty: 0, custom: true});
+    const container = document.getElementById(`sellAsRows-${key}-${i}`);
+    container.dataset.built = '';
+    updateKgPanel(cat, i, ITEM_DATA[cat][i], parseFloat(document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`).value)||0);
+  }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.classList.contains('wastageInput')) {
+    e.target.dataset.userEdited = '1';
+  }
+});
+
+document.querySelectorAll('.modeSelect').forEach(sel => {
+  sel.addEventListener('change', () => {
+    updateBatchPanel(sel.dataset.cat, parseInt(sel.dataset.i));
+    recalc(); saveState();
+  });
+});
+document.querySelectorAll('.batchSizeInput').forEach(inp => {
+  inp.addEventListener('input', () => {
+    updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+    recalc(); saveState();
+  });
+});
+function clearFormatFields(cat, i) {
+  const key = cat.replace(/\s+/g,'_');
+  const selectors = [
+    `.batchSizeInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.numBatchesInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.capacityInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.pieceCapacityInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.kgBatchSizeInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.kgNumBatchesInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.kgCapacityInput[data-cat="${cat}"][data-i="${i}"]`,
+    `.wastageInput[data-cat="${cat}"][data-i="${i}"]`,
+  ];
+  selectors.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) { el.value = ''; el.dataset.userEdited = ''; }
+  });
+  const qtyInput = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+  if (qtyInput) qtyInput.value = 0;
+  delete kgRowState[`${key}-${i}`];
+  delete sizeModeState[`${key}-${i}`];
+  const container = document.getElementById(`sellAsRows-${key}-${i}`);
+  if (container) container.dataset.built = '';
+}
+
+document.querySelectorAll('.formatSelect').forEach(sel => {
+  sel.addEventListener('change', () => {
+    clearFormatFields(sel.dataset.cat, parseInt(sel.dataset.i));
+    updateBatchPanel(sel.dataset.cat, parseInt(sel.dataset.i));
+    recalc(); saveState();
+  });
+});
+document.querySelectorAll('.spoilInput').forEach(inp => {
+  inp.addEventListener('input', () => {
+    updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+    recalc(); saveState();
+  });
+});
+['.kgBatchSizeInput', '.kgNumBatchesInput', '.kgCapacityInput'].forEach(sel => {
+  document.querySelectorAll(sel).forEach(inp => {
+    inp.addEventListener('input', () => {
+      updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+      recalc(); saveState();
+    });
+  });
+});
+document.querySelectorAll('.numBatchesInput').forEach(inp => {
+  inp.addEventListener('input', () => {
+    updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+    recalc(); saveState();
+  });
+});
+document.querySelectorAll('.capacityInput').forEach(inp => {
+  inp.addEventListener('input', () => {
+    updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+    recalc(); saveState();
+  });
+});
+document.querySelectorAll('.pieceCapacityInput').forEach(inp => {
+  inp.addEventListener('input', () => {
+    updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+    recalc(); saveState();
+  });
+});
+
+function recalc(){
+  let grandRev = 0;
+  let grandCost = 0;
+  CAT_ORDER.forEach(cat => {
+    const key = cat.replace(/\s+/g,'_');
+    let catUnits=0, catRev=0;
+    ITEM_DATA[cat].forEach((item,i) => {
+      const inp = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+      const qty = parseFloat(inp.value)||0;
+      // If this box holds grams (Kg-format production), price is per-kg - convert before pricing
+      const qtyForPricing = inp.dataset.unit === 'g' ? qty / 1000 : qty;
+      const rev = qtyForPricing * item.price;
+      catUnits += qty; catRev += rev;
+      document.getElementById(`irev-${key}-${i}`).textContent = qty>0 ? '₹'+fmt(rev) : '';
+
+      // Same cost logic as the sync payload, so the two totals can never disagree
+      if (qty > 0) {
+        let itemCost = item.purchasedCost;
+        if (item.eligible) {
+          const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+          if (sel && sel.value === 'production') {
+            const spoilInp = document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`);
+            const spoilPct = spoilInp ? (parseFloat(spoilInp.value)||0) : 0;
+            const kgData = getKgFormatData(cat, i);
+            if (kgData) {
+              grandCost += kgData.trueCostPerGram * (1 + spoilPct/100) * qty;
+              itemCost = null; // already added directly above, skip the generic add below
+            } else {
+              itemCost = (item.productionCost || 0) * (1 + spoilPct/100);
+            }
+          }
+        }
+        if (itemCost !== null) grandCost += itemCost * qty;
+      }
+    });
+    document.getElementById('sub-'+key).textContent = fmt(catUnits)+' units · ₹'+fmt(catRev);
+    grandRev += catRev;
+  });
+  currentTotal = grandRev;
+
+  document.getElementById('grandTotalSale').textContent = '₹'+fmt(grandRev);
+  document.getElementById('grandTotalCost').textContent = '₹'+fmt(grandCost);
+  document.getElementById('grandTotalProfit').textContent = '₹'+fmt(grandRev - grandCost);
+}
+
+document.querySelectorAll('button[data-fill]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll(`.qtyInput[data-cat="${btn.dataset.cat}"]`).forEach(inp=>inp.value=btn.dataset.fill);
+    if (btn.dataset.fill === '0') {
+      // Clear All also resets every production batch field in this category, not just Sold Today
+      ITEM_DATA[btn.dataset.cat].forEach((item, i) => {
+        if (item.eligible) {
+          clearFormatFields(btn.dataset.cat, i);
+          const sel = document.querySelector(`.modeSelect[data-cat="${btn.dataset.cat}"][data-i="${i}"]`);
+          if (sel) sel.value = 'purchased';
+          updateBatchPanel(btn.dataset.cat, i);
+        }
+      });
+    }
+    recalc(); saveState();
+  });
+});
+
+document.querySelectorAll('button[data-realistic]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const cat = btn.dataset.cat;
+    ITEM_DATA[cat].forEach((item,i) => {
+      // Cheaper items get higher quantity, plus randomness so it's not a flat curve.
+      // Roughly mimics real footfall patterns without needing real sales history yet.
+      const base = Math.max(1, Math.round(60 / Math.sqrt(item.price)));
+      const jitter = 0.6 + Math.random()*0.8; // 0.6x to 1.4x variation
+      const qty = Math.max(0, Math.round(base * jitter));
+      const inp = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+      if(inp) inp.value = qty;
+    });
+    recalc(); saveState();
+  });
+});
+
+function collectQtys(){
+  const qtys = {};
+  document.querySelectorAll('.qtyInput').forEach(inp => {
+    const v = parseFloat(inp.value)||0;
+    if(v > 0){
+      // Kg-format items store Sold Qty in grams (price is per-kg) - tag the unit so
+      // anything reading this back (Home page, this page on reload) prices it correctly.
+      qtys[inp.dataset.cat+'|'+inp.dataset.i] = inp.dataset.unit === 'g' ? {qty:v, unit:'g'} : v;
+    }
+  });
+  return qtys;
+}
+
+// Full production-mode setup for one item (mode/format/spoilage/batch config), so a
+// reload doesn't silently wipe it back to Purchased - only saved for items actually in
+// Production mode, since Purchased items have nothing beyond their Sold Qty to remember.
+function collectProdState(){
+  const prod = {};
+  CAT_ORDER.forEach(cat => {
+    ITEM_DATA[cat].forEach((item, i) => {
+      if (!item.eligible) return;
+      const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+      if (!sel || sel.value !== 'production') return;
+      const key = cat.replace(/\s+/g,'_');
+      const uid = `${key}-${i}`;
+      const formatSel = document.querySelector(`.formatSelect[data-cat="${cat}"][data-i="${i}"]`);
+      const spoilInp = document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`);
+      const entry = { format: formatSel ? formatSel.value : 'batch', spoil: spoilInp ? spoilInp.value : '5' };
+      if (entry.format === 'batch') {
+        entry.batchSize = document.querySelector(`.batchSizeInput[data-cat="${cat}"][data-i="${i}"]`).value;
+        entry.numBatches = document.querySelector(`.numBatchesInput[data-cat="${cat}"][data-i="${i}"]`).value;
+        entry.capacity = document.querySelector(`.capacityInput[data-cat="${cat}"][data-i="${i}"]`).value;
+      } else if (entry.format === 'piece') {
+        entry.pieceCapacity = document.querySelector(`.pieceCapacityInput[data-cat="${cat}"][data-i="${i}"]`).value;
+      } else if (entry.format === 'kg') {
+        entry.kgBatchSize = document.querySelector(`.kgBatchSizeInput[data-cat="${cat}"][data-i="${i}"]`).value;
+        entry.kgNumBatches = document.querySelector(`.kgNumBatchesInput[data-cat="${cat}"][data-i="${i}"]`).value;
+        entry.kgCapacity = document.querySelector(`.kgCapacityInput[data-cat="${cat}"][data-i="${i}"]`).value;
+        if (sizeModeState[uid]) entry.sizeMode = sizeModeState[uid];
+        if (kgRowState[uid]) entry.kgRows = kgRowState[uid];
+        const wastageInp = document.querySelector(`.wastageInput[data-cat="${cat}"][data-i="${i}"]`);
+        if (wastageInp && wastageInp.dataset.userEdited) entry.wastage = wastageInp.value;
+      }
+      prod[uid] = entry;
+    });
+  });
+  return prod;
+}
+
+// Re-applies saved production setup. Category keys use underscores (not dashes), so the
+// last "-" in a uid is always the split point between key and item index.
+function restoreProdState(prod){
+  Object.keys(prod).forEach(uid => {
+    const idx = uid.lastIndexOf('-');
+    const key = uid.slice(0, idx);
+    const i = uid.slice(idx+1);
+    const cat = CAT_ORDER.find(c => c.replace(/\s+/g,'_') === key);
+    if (!cat) return;
+    const entry = prod[uid];
+    const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+    if (!sel) return;
+    sel.value = 'production';
+    const formatSel = document.querySelector(`.formatSelect[data-cat="${cat}"][data-i="${i}"]`);
+    if (formatSel && entry.format) formatSel.value = entry.format;
+    const spoilInp = document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`);
+    if (spoilInp && entry.spoil !== undefined) spoilInp.value = entry.spoil;
+    if (entry.format === 'batch') {
+      const b = document.querySelector(`.batchSizeInput[data-cat="${cat}"][data-i="${i}"]`);
+      const n = document.querySelector(`.numBatchesInput[data-cat="${cat}"][data-i="${i}"]`);
+      const c = document.querySelector(`.capacityInput[data-cat="${cat}"][data-i="${i}"]`);
+      if (b && entry.batchSize !== undefined) b.value = entry.batchSize;
+      if (n && entry.numBatches !== undefined) n.value = entry.numBatches;
+      if (c && entry.capacity !== undefined) c.value = entry.capacity;
+    } else if (entry.format === 'piece') {
+      const p = document.querySelector(`.pieceCapacityInput[data-cat="${cat}"][data-i="${i}"]`);
+      if (p && entry.pieceCapacity !== undefined) p.value = entry.pieceCapacity;
+    } else if (entry.format === 'kg') {
+      const kb = document.querySelector(`.kgBatchSizeInput[data-cat="${cat}"][data-i="${i}"]`);
+      const kn = document.querySelector(`.kgNumBatchesInput[data-cat="${cat}"][data-i="${i}"]`);
+      const kc = document.querySelector(`.kgCapacityInput[data-cat="${cat}"][data-i="${i}"]`);
+      if (kb && entry.kgBatchSize !== undefined) kb.value = entry.kgBatchSize;
+      if (kn && entry.kgNumBatches !== undefined) kn.value = entry.kgNumBatches;
+      if (kc && entry.kgCapacity !== undefined) kc.value = entry.kgCapacity;
+      if (entry.sizeMode) sizeModeState[uid] = entry.sizeMode;
+      if (entry.kgRows) kgRowState[uid] = entry.kgRows;
+      const w = document.querySelector(`.wastageInput[data-cat="${cat}"][data-i="${i}"]`);
+      if (w && entry.wastage !== undefined) { w.value = entry.wastage; w.dataset.userEdited = '1'; }
+    }
+    updateBatchPanel(cat, parseInt(i));
+  });
+}
+
+async function loadSaved(){
+  const statusEl = document.getElementById('saveStatus');
+  // Reset every mode dropdown to a clean default first - don't trust the browser's own
+  // form-restore behavior - then layer in anything we actually have saved production state for.
+  document.querySelectorAll('.modeSelect').forEach(sel => { sel.value = 'purchased'; });
+  document.querySelectorAll('.spoilInput').forEach(inp => {
+    const v = parseFloat(inp.value);
+    if (!v || v < 0 || v > 100) inp.value = 5; // catch any stray/nonsensical browser-restored value
+  });
+
+  let prod = {};
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const result = {value: raw};
+      const saved = JSON.parse(result.value);
+      // Backward-compatible: older saves were a flat {cat|i: qty} map with no production state.
+      const qtys = (saved && saved.qtys) ? saved.qtys : saved;
+      prod = (saved && saved.prod) ? saved.prod : {};
+      Object.keys(qtys).forEach(k => {
+        const [cat,i] = k.split('|');
+        const inp = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+        const entry = qtys[k];
+        if(inp) inp.value = (entry && typeof entry === 'object') ? entry.qty : entry;
+      });
+      statusEl.textContent = 'Loaded your last saved numbers';
+    } else {
+      statusEl.textContent = 'All quantities start at 0';
+    }
+  } catch(e){ statusEl.textContent = 'All quantities start at 0'; }
+
+  restoreProdState(prod);
+
+  try{
+    const rawUrl = localStorage.getItem(URL_KEY);
+    if(rawUrl){
+      const urlResult = {value: rawUrl};
+      document.getElementById('sheetsUrl').value = urlResult.value;
+      document.getElementById('syncStatus').textContent = 'Configured ✓';
+      document.getElementById('syncStatus').style.color = 'var(--profit)';
+    }
+  } catch(e){}
+
+  try{
+    const rawOutlet = localStorage.getItem(OUTLET_KEY);
+    if(rawOutlet){
+      const outletResult = {value: rawOutlet};
+      const o = JSON.parse(outletResult.value);
+      document.getElementById('outletId').value = o.id || '';
+      document.getElementById('outletName').value = o.name || '';
+    }
+  } catch(e){}
+
+  // Refresh panels for every eligible item (covers ones with no saved production
+  // state too, so their panel correctly stays hidden in Purchased mode).
+  CAT_ORDER.forEach(cat => {
+    ITEM_DATA[cat].forEach((item, i) => {
+      if (item.eligible) updateBatchPanel(cat, i);
+    });
+  });
+
+  recalc();
+  setTimeout(()=>{statusEl.textContent='';}, 2500);
+}
+
+function saveState(){
+  const statusEl = document.getElementById('saveStatus');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({qtys: collectQtys(), prod: collectProdState()}));
+      statusEl.textContent = 'Saved';
+      setTimeout(()=>{statusEl.textContent='';}, 1200);
+    } catch(e){ statusEl.textContent = 'Could not save'; }
+  }, 500);
+}
+
+async function syncToSheet(){
+  const url = document.getElementById('sheetsUrl').value.trim();
+  const statusEl = document.getElementById('syncStatus');
+  const btn = document.getElementById('syncBtn');
+  if(!url){
+    statusEl.textContent = 'Add your Sheet URL above first';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  const outletId = document.getElementById('outletId').value.trim();
+  if(!outletId){
+    statusEl.textContent = 'Enter an Outlet ID above first — syncing without one loses the data into an "unassigned" bucket.';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  const outletName = document.getElementById('outletName').value.trim() || '';
+
+  // Block sync if Sold Qty exceeds what was actually produced today, or Produced exceeds Capacity/day
+  const invalidItems = [];
+  CAT_ORDER.forEach(cat => {
+    ITEM_DATA[cat].forEach((item,i) => {
+      if (!item.eligible) return;
+      const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+      if (!sel || sel.value !== 'production') return;
+      const formatSel = document.querySelector(`.formatSelect[data-cat="${cat}"][data-i="${i}"]`);
+      if (formatSel && formatSel.value === 'piece') {
+        const pieceCapInput = document.querySelector(`.pieceCapacityInput[data-cat="${cat}"][data-i="${i}"]`);
+        const pieceCap = parseFloat(pieceCapInput.value) || 0;
+        const inp2 = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+        const qty2 = parseFloat(inp2.value) || 0;
+        if (qty2 > 0 && pieceCap > 0 && qty2 > pieceCap) {
+          invalidItems.push(`${item.name} (sold ${qty2} exceeds daily capacity ${pieceCap})`);
+        }
+        return;
+      }
+      if (!formatSel || formatSel.value !== 'batch') return;
+      const batchInput = document.querySelector(`.batchSizeInput[data-cat="${cat}"][data-i="${i}"]`);
+      const numBatchesInput = document.querySelector(`.numBatchesInput[data-cat="${cat}"][data-i="${i}"]`);
+      const capacityInput = document.querySelector(`.capacityInput[data-cat="${cat}"][data-i="${i}"]`);
+      const batchSize = parseFloat(batchInput.value) || 0;
+      const numBatches = parseFloat(numBatchesInput.value) || 0;
+      const capacity = parseFloat(capacityInput.value) || 0;
+      const producedToday = batchSize * numBatches;
+      const inp = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+      const qty = parseFloat(inp.value) || 0;
+      if (qty === 0) return;
+      if (capacity > 0 && producedToday > capacity) {
+        invalidItems.push(`${item.name} (produced ${producedToday} exceeds capacity ${capacity}/day)`);
+      } else if (producedToday > 0 && qty > producedToday) {
+        invalidItems.push(`${item.name} (sold ${qty} exceeds produced ${producedToday})`);
+      }
+    });
+  });
+  if (invalidItems.length > 0) {
+    statusEl.textContent = 'Fix these first: ' + invalidItems.join('; ');
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  try{
+    const rows = [];
+    CAT_ORDER.forEach(cat => {
+      ITEM_DATA[cat].forEach((item,i) => {
+        const inp = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
+        const qty = parseFloat(inp.value)||0;
+        if(qty > 0){
+          let mode = 'purchased';
+          let cost = item.purchasedCost;
+          let price = item.price;
+          let qtyForRevenue = qty; // pieces/batch: qty as-is. Kg format overrides this below.
+
+          if(item.eligible){
+            const sel = document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);
+            if(sel && sel.value === 'production'){
+              mode = 'production';
+              const spoilInp = document.querySelector(`.spoilInput[data-cat="${cat}"][data-i="${i}"]`);
+              const spoilPct = spoilInp ? (parseFloat(spoilInp.value)||0) : 0;
+
+              const kgData = getKgFormatData(cat, i);
+              if (kgData) {
+                // Kg format: cost is real trim-adjusted ₹/gram, revenue must use kg-converted qty (price is per-kg)
+                cost = Math.round(kgData.trueCostPerGram * (1 + spoilPct/100) * 10000) / 10000;
+                qtyForRevenue = kgData.qtyForPricingKg;
+              } else {
+                const baseCost = item.productionCost || 0;
+                cost = Math.round(baseCost * (1 + spoilPct/100) * 100) / 100;
+              }
+            }
+          }
+          const revenue = Math.round(qtyForRevenue * price * 100) / 100;
+          rows.push({category:cat, item:item.name, brand:item.brand, type:item.type||(mode==='production'?'Self-Produced':'Resale (Purchased)'), mode:mode, price:price, cost:cost, qty:qty, revenue:revenue});
+        }
+      });
+    });
+    await fetch(url, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({
+        method: 'method2',
+        outletId, outletName,
+        date: new Date().toISOString().slice(0,10),
+        rows, total: currentTotal, timestamp: new Date().toISOString()
+      })
+    });
+    statusEl.textContent = 'Synced to Sheet ✓ (' + rows.length + ' items sent)';
+    statusEl.style.color = 'var(--profit)';
+  } catch(e){
+    statusEl.textContent = 'Sync failed — check URL';
+    statusEl.style.color = 'var(--loss)';
+  }
+  btn.disabled = false;
+  btn.textContent = '🔄 Sync to Google Sheet';
+}
+
+document.getElementById('syncBtn').addEventListener('click', syncToSheet);
+
+document.getElementById('sheetsUrl').addEventListener('change', async () => {
+  const url = document.getElementById('sheetsUrl').value.trim();
+  localStorage.setItem(URL_KEY, url);
+  document.getElementById('syncStatus').textContent = url ? 'Configured ✓' : 'Not configured';
+  document.getElementById('syncStatus').style.color = url ? 'var(--profit)' : 'var(--ink)';
+});
+
+function saveOutlet(){
+  localStorage.setItem(OUTLET_KEY, JSON.stringify({
+    id: document.getElementById('outletId').value.trim(),
+    name: document.getElementById('outletName').value.trim()
+  }));
+}
+document.getElementById('outletId').addEventListener('change', saveOutlet);
+document.getElementById('outletName').addEventListener('change', saveOutlet);
+
+document.querySelectorAll('.qtyInput').forEach(inp => {
+  inp.addEventListener('input', () => {
+    updateBatchPanel(inp.dataset.cat, parseInt(inp.dataset.i));
+    recalc(); saveState();
+  });
+});
+loadSaved();
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Purchase &amp; Production Cost</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow"><a href="index.html" style="color:inherit;text-decoration:none;">← Home</a></p>
+  <h1>Purchase &amp; Production Cost</h1>
+  <p class="sub">Every item you entered a Sold Qty for on Method 2, with its revenue and the cost behind it — purchased rate, or recipe/production cost if you set that item to Production mode.</p>
+</header>
+
+<section>
+  <div class="section-head"><h2>Today's totals</h2><span class="tag">live</span></div>
+  <div class="stack" style="display:flex;justify-content:space-around;text-align:center;">
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Total Sale</div>
+      <div class="num" id="grandSale" style="font-size:17px;font-weight:700;">₹0</div>
+    </div>
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Purchase/Production Cost</div>
+      <div class="num" id="grandCost" style="font-size:17px;font-weight:700;color:var(--loss);">₹0</div>
+    </div>
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Gross Profit</div>
+      <div class="num" id="grandProfit" style="font-size:17px;font-weight:700;color:var(--profit);">₹0</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Items sold today</h2><span class="tag" id="itemCountTag">0 items</span></div>
+  <div id="itemList"></div>
+  <p id="emptyNote" style="font-size:12.5px;color:var(--ink-soft);text-align:center;padding:20px 14px;display:none;">
+    No Sold Qty entered yet. Go to Method 2 and enter what you expect to sell — it'll show up here automatically.
+  </p>
+</section>
+
+<div class="export-bar">
+  <a href="method2.html" style="text-decoration:none;"><button class="export-btn secondary" type="button">Edit quantities on Method 2 →</button></a>
+</div>
+
+<footer>This reads the same saved quantities as Method 2 — nothing to sync, it's live from your browser.</footer>
+
+<script src="shared_data.js"></script>
+<script>
+function fmt(n){ return Math.round(n).toLocaleString('en-IN'); }
+function fmt2(n){ return (Math.round(n*100)/100).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function buildCostingRows(){
+  const rows = [];
+  let grandSale = 0, grandCost = 0;
+  try{
+    const raw = localStorage.getItem('method2-item-state');
+    if(!raw) return {rows, grandSale, grandCost};
+    const saved = JSON.parse(raw);
+    const qtys = (saved && saved.qtys) ? saved.qtys : (saved || {});
+    const prod = (saved && saved.prod) ? saved.prod : {};
+
+    Object.keys(qtys).forEach(k => {
+      const [cat,i] = k.split('|');
+      const item = ITEM_DATA[cat] && ITEM_DATA[cat][i];
+      if(!item) return;
+      const entry = qtys[k];
+      const qty = (entry && typeof entry === 'object') ? entry.qty : entry;
+      const unit = (entry && typeof entry === 'object') ? entry.unit : null;
+      const qtyForPricing = unit === 'g' ? qty / 1000 : qty;
+      const revenue = qtyForPricing * item.price;
+
+      const key = cat.replace(/\s+/g,'_');
+      const p = item.eligible ? prod[`${key}-${i}`] : null;
+
+      let mode = 'Purchased', unitCost = item.purchasedCost || 0, totalCost, costNote = 'purchased rate';
+      if(p){
+        mode = 'Production';
+        const spoilPct = parseFloat(p.spoil) || 0;
+        if(p.format === 'kg'){
+          const producedKg = (parseFloat(p.kgBatchSize)||0) * (parseFloat(p.kgNumBatches)||0);
+          const totalBatchG = producedKg * 1000;
+          const kgRows = p.kgRows || [];
+          const totalAllocatedG = kgRows.reduce((s,r) => s + (r.weight||0)*(r.qty||0), 0);
+          const totalBatchCost = item.productionCost ? (item.productionCost/1000) * totalBatchG : 0;
+          const trueCostPerGram = totalAllocatedG > 0 ? totalBatchCost/totalAllocatedG : 0;
+          unitCost = trueCostPerGram * (1 + spoilPct/100);
+          totalCost = unitCost * qty; // qty is grams for kg-format items
+          costNote = `recipe cost/g incl. ${spoilPct}% spoilage`;
+        } else {
+          unitCost = (item.productionCost||0) * (1 + spoilPct/100);
+          totalCost = unitCost * qty;
+          costNote = (item.hasRecipe ? 'real recipe cost' : 'category-average estimate') + ` incl. ${spoilPct}% spoilage`;
+        }
+      } else {
+        totalCost = unitCost * qty;
+      }
+
+      grandSale += revenue;
+      grandCost += totalCost;
+      rows.push({
+        cat: cat.replace(' Catalogue',''), name: item.name, brand: item.brand,
+        qty, unit: unit === 'g' ? 'g' : 'units', mode, costNote,
+        price: item.price, revenue, unitCost, totalCost, profit: revenue - totalCost
+      });
+    });
+  } catch(e){}
+  rows.sort((a,b) => b.revenue - a.revenue);
+  return {rows, grandSale, grandCost};
+}
+
+function render(){
+  const {rows, grandSale, grandCost} = buildCostingRows();
+  document.getElementById('grandSale').textContent = '₹'+fmt(grandSale);
+  document.getElementById('grandCost').textContent = '₹'+fmt(grandCost);
+  document.getElementById('grandProfit').textContent = '₹'+fmt(grandSale - grandCost);
+  document.getElementById('itemCountTag').textContent = rows.length + (rows.length===1?' item':' items');
+
+  const list = document.getElementById('itemList');
+  const emptyNote = document.getElementById('emptyNote');
+  if(rows.length === 0){
+    list.innerHTML = '';
+    emptyNote.style.display = 'block';
+    return;
+  }
+  emptyNote.style.display = 'none';
+
+  list.innerHTML = rows.map(r => `
+    <div class="item-row" style="flex-wrap:wrap;">
+      <span class="iname" style="flex-basis:100%;">
+        ${r.name}<span class="price">${r.cat}${r.brand ? ' · '+r.brand : ''} · ${r.mode} (${r.costNote})</span>
+      </span>
+      <div style="display:flex;justify-content:space-between;width:100%;margin-top:6px;font-size:11.5px;">
+        <span>Sold: <strong>${fmt(r.qty)} ${r.unit}</strong> × ₹${r.price}${r.unit==='g'?'/kg':''} = <strong class="num">₹${fmt(r.revenue)}</strong></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;width:100%;margin-top:3px;font-size:11.5px;color:var(--ink-soft);">
+        <span>Cost: ₹${fmt2(r.unitCost)}/${r.unit==='g'?'g':'unit'} × ${fmt(r.qty)} = <strong class="num" style="color:var(--loss);">₹${fmt(r.totalCost)}</strong></span>
+        <span style="color:var(--profit);font-weight:700;">Profit ₹${fmt(r.profit)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+render();
+</script>
+</body>
+</html>

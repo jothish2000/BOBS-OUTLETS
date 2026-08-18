@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Outlets Setup</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow"><a href="index.html" style="color:inherit;text-decoration:none;">← Home</a></p>
+  <h1>Outlets setup</h1>
+  <p class="sub">Set up every outlet once here. Method 1, Method 2, and Fixed Expenses will then let you switch between them, each keeping its own separate numbers.</p>
+</header>
+
+<section>
+  <div class="section-head"><h2>How many outlets?</h2><span class="tag">start here</span></div>
+  <div class="stack">
+    <div class="row">
+      <span class="rlabel">Number of outlets</span>
+      <input type="number" id="outletCount" min="1" max="30" value="1" style="width:60px;">
+    </div>
+    <div class="fill-row" style="border-bottom:none;padding:8px 0 0;">
+      <button type="button" id="genBtn">Set up this many outlets</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Outlet details</h2><span class="tag" id="outletCountTag">0 outlets</span></div>
+  <div id="outletCards"></div>
+  <p id="emptyNote" style="font-size:12.5px;color:var(--ink-soft);text-align:center;padding:20px 14px;">
+    Enter a number above and click "Set up this many outlets" to begin.
+  </p>
+</section>
+
+<p class="status" id="saveStatus"></p>
+
+<div class="export-bar">
+  <button class="export-btn" id="saveBtn" type="button">Save outlets</button>
+</div>
+
+<footer>Saved in this browser. Method 1, Method 2, and Fixed Expenses will read this list to build their outlet switchers.</footer>
+
+<script>
+const OUTLETS_KEY = 'outlets-master';
+let outlets = []; // [{id, name, shortCode, numShifts}]
+
+function fmtShiftPreview(o){
+  const n = parseInt(o.numShifts) || 0;
+  if(!o.shortCode || n <= 0) return 'Add a short code + shift count to preview labels';
+  const labels = [];
+  for(let s=1; s<=n; s++) labels.push(`${o.shortCode}-SHIFT ${s}`);
+  return labels.join(', ');
+}
+
+function renderCards(){
+  const container = document.getElementById('outletCards');
+  const emptyNote = document.getElementById('emptyNote');
+  document.getElementById('outletCountTag').textContent = outlets.length + (outlets.length===1?' outlet':' outlets');
+
+  if(outlets.length === 0){
+    container.innerHTML = '';
+    emptyNote.style.display = 'block';
+    return;
+  }
+  emptyNote.style.display = 'none';
+
+  container.innerHTML = outlets.map((o, idx) => `
+    <div class="stack" style="margin-top:${idx===0?'0':'10px'};">
+      <div class="row"><span class="rlabel">Outlet ID</span><input type="text" class="oId" data-idx="${idx}" value="${o.id||''}" placeholder="e.g. 1" style="width:70px;"></div>
+      <div class="row"><span class="rlabel">Outlet Name</span><input type="text" class="oName" data-idx="${idx}" value="${o.name||''}" placeholder="e.g. Rasipuram" style="width:150px;"></div>
+      <div class="row"><span class="rlabel">Short Code</span><input type="text" class="oCode" data-idx="${idx}" value="${o.shortCode||''}" placeholder="e.g. RSP" style="width:70px;text-transform:uppercase;"></div>
+      <div class="row"><span class="rlabel">Number of shifts</span><input type="number" class="oShifts" data-idx="${idx}" value="${o.numShifts||2}" min="1" max="6" style="width:60px;"></div>
+      <div class="row" style="border-bottom:none;">
+        <span class="rlabel" style="font-size:11px;">Status labels preview</span>
+        <span class="num" id="preview-${idx}" style="font-size:11px;font-weight:600;text-align:right;color:var(--ink-soft);">${fmtShiftPreview(o)}</span>
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.oId').forEach(el => el.addEventListener('input', e => { outlets[e.target.dataset.idx].id = e.target.value.trim(); saveState(); }));
+  container.querySelectorAll('.oName').forEach(el => el.addEventListener('input', e => { outlets[e.target.dataset.idx].name = e.target.value.trim(); saveState(); }));
+  container.querySelectorAll('.oCode').forEach(el => el.addEventListener('input', e => {
+    const idx = e.target.dataset.idx;
+    outlets[idx].shortCode = e.target.value.trim().toUpperCase();
+    document.getElementById('preview-'+idx).textContent = fmtShiftPreview(outlets[idx]);
+    saveState();
+  }));
+  container.querySelectorAll('.oShifts').forEach(el => el.addEventListener('input', e => {
+    const idx = e.target.dataset.idx;
+    outlets[idx].numShifts = parseInt(e.target.value) || 1;
+    document.getElementById('preview-'+idx).textContent = fmtShiftPreview(outlets[idx]);
+    saveState();
+  }));
+}
+
+document.getElementById('genBtn').addEventListener('click', () => {
+  const n = Math.max(1, Math.min(30, parseInt(document.getElementById('outletCount').value) || 1));
+  const next = [];
+  for(let i=0; i<n; i++){
+    next.push(outlets[i] || {id:'', name:'', shortCode:'', numShifts:2});
+  }
+  outlets = next;
+  renderCards();
+  saveState();
+});
+
+function saveState(){
+  try{ localStorage.setItem(OUTLETS_KEY, JSON.stringify(outlets)); } catch(e){}
+}
+
+function loadSaved(){
+  try{
+    const raw = localStorage.getItem(OUTLETS_KEY);
+    if(raw) outlets = JSON.parse(raw) || [];
+  } catch(e){ outlets = []; }
+  document.getElementById('outletCount').value = outlets.length || 1;
+  renderCards();
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const statusEl = document.getElementById('saveStatus');
+  const bad = outlets.filter(o => !o.id || !o.name);
+  if(bad.length > 0){
+    statusEl.textContent = 'Every outlet needs at least an Outlet ID and Name before saving.';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  saveState();
+  statusEl.textContent = `Saved ${outlets.length} outlet${outlets.length===1?'':'s'} ✓`;
+  statusEl.style.color = 'var(--profit)';
+  setTimeout(()=>{statusEl.textContent='';}, 2500);
+});
+
+loadSaved();
+</script>
+</body>
+</html>

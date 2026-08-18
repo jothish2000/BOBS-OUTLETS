@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Business Assessment — Home</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Business Assessment</p>
+  <h1>Today's ledger, two ways</h1>
+  <p class="sub">Method 1 works top-down from footfall. Method 2 works bottom-up from what you expect to sell, item by item.</p>
+  <nav class="pagenav">
+    <a href="index.html" class="active">Home</a>
+    <a href="method1.html">Method 1</a>
+    <a href="method2.html">Method 2</a>
+  </nav>
+</header>
+
+<section id="setupGate" style="display:none;">
+  <div class="section-head"><h2>Let's set up your outlets</h2><span class="tag">required first</span></div>
+  <div class="stack" style="text-align:center;padding:24px 14px;">
+    <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin:0 0 16px;">
+      Before anything else, tell us how many outlets you run and give each one an ID, name, and short code (e.g. "RSP"). Everything else on this site — Method 1, Method 2, Fixed Expenses, Breakeven — is organised per outlet from here.
+    </p>
+    <a href="outlets.html" style="text-decoration:none;"><button class="export-btn" type="button" style="width:auto;padding:13px 28px;">Set up outlets →</button></a>
+  </div>
+</section>
+
+<div id="mainContent" style="display:none;">
+
+<div class="hero-cards">
+  <div class="hero-card">
+    <div class="lbl">Method 1 · Hourly</div>
+    <div class="val num" id="m1total">—</div>
+    <a href="method1.html">Open →</a>
+  </div>
+  <div class="hero-card">
+    <div class="lbl">Method 2 · Item-wise</div>
+    <div class="val num" id="m2total">—</div>
+    <a href="method2.html">Open →</a>
+  </div>
+</div>
+
+<section>
+  <div class="section-head"><h2>Consolidated purchase cost</h2><span class="tag">Method 2 only</span></div>
+  <div class="stack" style="display:flex;justify-content:space-around;text-align:center;">
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Purchase Cost</div>
+      <div class="num" id="m2cost" style="font-size:17px;font-weight:700;color:var(--loss);">₹0</div>
+    </div>
+    <div>
+      <div style="font-size:10.5px;color:var(--ink-soft);">Gross Profit</div>
+      <div class="num" id="m2profit" style="font-size:17px;font-weight:700;color:var(--profit);">₹0</div>
+    </div>
+  </div>
+  <p style="font-size:11px;color:var(--ink-soft);margin:8px 2px 0;line-height:1.5;">
+    Method 1 (hourly footfall) doesn't track item-level cost, so this cost/profit figure comes from Method 2's item-wise entries only.
+  </p>
+</section>
+
+<div class="gap-note" id="gapNote">Open both methods at least once to see them compared here.</div>
+
+<section>
+  <div class="section-head"><h2>Dashboard</h2><span class="tag">reports &amp; setup</span></div>
+  <div class="dash-links">
+    <a href="outlets.html" class="dash-link">🏬 Outlets Setup →</a>
+    <a href="costing.html" class="dash-link">📊 Purchase &amp; Production Cost →</a>
+    <a href="staff.html" class="dash-link">👥 Staff Details →</a>
+    <a href="fixed-expenses.html" class="dash-link">🏠 Fixed Expenses →</a>
+    <a href="breakeven-site.html" class="dash-link">⚖️ Breakeven — Per Shop →</a>
+    <a href="breakeven-overall.html" class="dash-link">🏢 Breakeven — Whole Company →</a>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Open in Google Sheet</h2><span class="tag">optional</span></div>
+  <div class="stack">
+    <p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.5;" id="dashIntro">
+      Once Sheets sync is set up (on Method 2) and redeployed with the latest Apps Script, jump straight to any raw tab in your Google Sheet from here.
+    </p>
+    <div id="dashLinks" class="dash-links"></div>
+    <div class="row" style="border-top:none;padding-top:10px;">
+      <span class="rlabel" id="dashStatus" style="font-size:11.5px;">Not loaded yet</span>
+      <button class="export-btn secondary" type="button" id="dashRefreshBtn" style="width:auto;padding:8px 14px;font-size:12px;">Load report links</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Sync everything</h2><span class="tag">one press</span></div>
+  <div class="stack">
+    <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;line-height:1.5;">
+      Pushes whatever's saved locally for Method 1, Method 2, Staff, and Fixed Expenses to your Google Sheet in one go — no need to visit each page separately. Anything with no data saved is skipped.
+    </p>
+    <div class="row"><span class="rlabel">Sync status</span><span id="syncStatus" style="font-size:12.5px;font-weight:600;">Not configured</span></div>
+  </div>
+  <div class="export-bar" style="margin-top:12px;">
+    <button class="export-btn" id="syncAllBtn" type="button">🔄 Sync All to Google Sheet</button>
+  </div>
+  <p class="status" id="syncAllStatus" style="text-align:center;"></p>
+</section>
+
+<div class="export-bar">
+  <a href="method2.html" style="text-decoration:none;"><button class="export-btn secondary" type="button">Set up Sheets sync on Method 2 →</button></a>
+</div>
+
+<footer>Both methods save your entries automatically within this site. If they're far apart, that gap is exactly what deserves your attention before you commit to a number.</footer>
+
+</div>
+
+<script src="shared_data.js"></script>
+<script>
+
+function fmt(n){ return Math.round(n).toLocaleString('en-IN'); }
+
+// Mirrors Method 2's own cost logic (recalc() in method2.html) but reads from saved
+// state instead of live DOM, since this page never renders the item inputs themselves.
+function computeMethod2Cost(qtys, prod){
+  let cost = 0;
+  Object.keys(qtys).forEach(k => {
+    const [cat,i] = k.split('|');
+    const item = ITEM_DATA[cat] && ITEM_DATA[cat][i];
+    if(!item) return;
+    const entry = qtys[k];
+    const qty = (entry && typeof entry === 'object') ? entry.qty : entry;
+
+    const key = cat.replace(/\s+/g,'_');
+    const p = item.eligible ? prod[`${key}-${i}`] : null;
+
+    if(!p){
+      cost += (item.purchasedCost||0) * qty;
+      return;
+    }
+    const spoilPct = parseFloat(p.spoil) || 0;
+    if(p.format === 'kg'){
+      const producedKg = (parseFloat(p.kgBatchSize)||0) * (parseFloat(p.kgNumBatches)||0);
+      const totalBatchG = producedKg * 1000;
+      const rows = p.kgRows || [];
+      const totalAllocatedG = rows.reduce((s,r) => s + (r.weight||0)*(r.qty||0), 0);
+      const totalBatchCost = item.productionCost ? (item.productionCost/1000) * totalBatchG : 0;
+      const trueCostPerGram = totalAllocatedG > 0 ? totalBatchCost/totalAllocatedG : 0;
+      cost += trueCostPerGram * (1 + spoilPct/100) * qty; // qty is grams for kg-format items
+    } else {
+      cost += (item.productionCost||0) * (1 + spoilPct/100) * qty;
+    }
+  });
+  return cost;
+}
+
+async function loadTotals(){
+  try{
+    const outletsRaw = localStorage.getItem('outlets-master');
+    const outletsList = outletsRaw ? (JSON.parse(outletsRaw)||[]) : [];
+    if(outletsList.length === 0){
+      document.getElementById('setupGate').style.display = 'block';
+      document.getElementById('mainContent').style.display = 'none';
+      return;
+    }
+    document.getElementById('setupGate').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+    const m1raw = localStorage.getItem('method1-hourly-state'); const m1 = m1raw ? {value:m1raw} : null;
+    const m2raw = localStorage.getItem('method2-item-state'); const m2 = m2raw ? {value:m2raw} : null;
+    let m1total = 0, m2total = 0, m2cost = 0;
+
+    if(m1 && m1.value){
+      const state = JSON.parse(m1.value);
+      (state.custVals||[]).forEach((c,i) => { m1total += c * ((state.basketVals||[])[i]||0); });
+    }
+    if(m2 && m2.value){
+      const saved = JSON.parse(m2.value);
+      // Backward-compatible: older saves were a flat {cat|i: qty} map with no production state.
+      const qtys = (saved && saved.qtys) ? saved.qtys : (saved || {});
+      const prod = (saved && saved.prod) ? saved.prod : {};
+
+      Object.keys(qtys).forEach(k => {
+        const [cat,i] = k.split('|');
+        const item = ITEM_DATA[cat] && ITEM_DATA[cat][i];
+        if(!item) return;
+        const entry = qtys[k];
+        // Kg-format entries are tagged {qty, unit:'g'} because the item's price is per-kg,
+        // not per-gram - convert before pricing, same as Method 2's own total does.
+        const qty = (entry && typeof entry === 'object') ? entry.qty : entry;
+        const unit = (entry && typeof entry === 'object') ? entry.unit : null;
+        const qtyForPricing = unit === 'g' ? qty / 1000 : qty;
+        m2total += qtyForPricing * item.price;
+      });
+
+      m2cost = computeMethod2Cost(qtys, prod);
+    }
+
+    document.getElementById('m1total').textContent = '₹'+fmt(m1total);
+    document.getElementById('m2total').textContent = '₹'+fmt(m2total);
+    document.getElementById('m2cost').textContent = '₹'+fmt(m2cost);
+    document.getElementById('m2profit').textContent = '₹'+fmt(m2total - m2cost);
+
+    if(m1total>0 || m2total>0){
+      const gap = m1total - m2total;
+      const pct = Math.max(m1total,m2total) ? Math.abs(gap)/Math.max(m1total,m2total)*100 : 0;
+      document.getElementById('gapNote').innerHTML = gap===0 ? 'Both methods agree exactly.' :
+        `Methods differ by <strong>₹${fmt(Math.abs(gap))}</strong> (${fmt(pct)}%) — ${gap>0?'Method 1 is higher':'Method 2 is higher'}.`;
+    }
+
+    const syncUrlRaw = localStorage.getItem('sheets-sync-url'); const syncUrl = syncUrlRaw ? {value:syncUrlRaw} : null;
+    if(syncUrl && syncUrl.value){
+      document.getElementById('syncStatus').textContent = 'Configured ✓';
+      document.getElementById('syncStatus').style.color = 'var(--profit)';
+    }
+  } catch(e){}
+}
+loadTotals();
+
+// ---- Reports & Sheets dashboard: pulls the live tab list + gids from the Apps Script
+// web app (needs the doGet handler + a redeploy) and turns them into direct sheet links. ----
+const DASH_CACHE_KEY = 'sheets-dashboard-links';
+const FRIENDLY_TABS = [
+  { name: 'Staff', label: 'Staff Details' },
+  { name: 'Roster', label: 'Shift Roster' },
+  { name: 'BreakEven_PerShop', label: 'Breakeven — Per Shop' },
+  { name: 'BreakEven_Overall', label: 'Breakeven — Overall' },
+  { name: 'Purchase Master', label: 'Purchase Master (ingredient rates)' },
+  { name: 'Full Catalogue Backup', label: 'Item Purchase vs Sale Cost' },
+  { name: 'Recipe Master', label: 'Production Cost per Item' },
+  { name: 'Outlets', label: 'Outlets' },
+  { name: 'Staffing Advisor', label: 'Staffing Advisor' },
+];
+
+function renderDashLinks(data){
+  const container = document.getElementById('dashLinks');
+  const statusEl = document.getElementById('dashStatus');
+  if(!data || !data.ok){
+    statusEl.textContent = 'Could not load — check the Sheets sync URL on Method 2';
+    container.innerHTML = '';
+    return;
+  }
+  const byName = {};
+  (data.sheets||[]).forEach(s => { byName[s.name] = s.gid; });
+  const rows = FRIENDLY_TABS.filter(t => byName.hasOwnProperty(t.name));
+  const missing = FRIENDLY_TABS.filter(t => !byName.hasOwnProperty(t.name));
+
+  container.innerHTML = rows.map(t =>
+    `<a href="${data.spreadsheetUrl}#gid=${byName[t.name]}" target="_blank" rel="noopener" class="dash-link">${t.label} →</a>`
+  ).join('') + `<a href="${data.spreadsheetUrl}" target="_blank" rel="noopener" class="dash-link" style="font-weight:700;">Open full Google Sheet →</a>`;
+
+  statusEl.textContent = missing.length
+    ? `Loaded ✓ (${missing.length} tab${missing.length>1?'s':''} not created yet: ${missing.map(m=>m.label).join(', ')})`
+    : 'Loaded ✓';
+  statusEl.style.color = 'var(--profit)';
+}
+
+async function loadDashLinks(forceNetwork){
+  const statusEl = document.getElementById('dashStatus');
+  if(!forceNetwork){
+    try{
+      const cached = localStorage.getItem(DASH_CACHE_KEY);
+      if(cached){ renderDashLinks(JSON.parse(cached)); return; }
+    } catch(e){}
+  }
+  const syncUrl = localStorage.getItem('sheets-sync-url');
+  if(!syncUrl){
+    statusEl.textContent = 'Set up Sheets sync on Method 2 first';
+    return;
+  }
+  statusEl.textContent = 'Loading…';
+  try{
+    const res = await fetch(syncUrl + '?action=links');
+    const data = await res.json();
+    localStorage.setItem(DASH_CACHE_KEY, JSON.stringify(data));
+    renderDashLinks(data);
+  } catch(e){
+    statusEl.textContent = 'Could not reach the Sheet — is doGet deployed? (see Apps Script setup notes)';
+  }
+}
+
+document.getElementById('dashRefreshBtn').addEventListener('click', () => loadDashLinks(true));
+loadDashLinks(false);
+
+// ---- Sync All: rebuilds each page's exact payload from saved state (not live DOM,
+// since this page never renders those inputs) and fires all four in one press. ----
+function buildMethod2Rows(){
+  const raw = localStorage.getItem('method2-item-state');
+  if(!raw) return [];
+  const saved = JSON.parse(raw);
+  const qtys = (saved && saved.qtys) ? saved.qtys : (saved || {});
+  const prod = (saved && saved.prod) ? saved.prod : {};
+  const rows = [];
+  Object.keys(qtys).forEach(k => {
+    const [cat,i] = k.split('|');
+    const item = ITEM_DATA[cat] && ITEM_DATA[cat][i];
+    if(!item) return;
+    const entry = qtys[k];
+    const qty = (entry && typeof entry === 'object') ? entry.qty : entry;
+    if(!(qty > 0)) return;
+
+    const key = cat.replace(/\s+/g,'_');
+    const p = item.eligible ? prod[`${key}-${i}`] : null;
+    let mode = 'purchased', cost = item.purchasedCost || 0, price = item.price, qtyForRevenue = qty;
+    if(p){
+      mode = 'production';
+      const spoilPct = parseFloat(p.spoil) || 0;
+      if(p.format === 'kg'){
+        const producedKg = (parseFloat(p.kgBatchSize)||0) * (parseFloat(p.kgNumBatches)||0);
+        const totalBatchG = producedKg * 1000;
+        const kgRows = p.kgRows || [];
+        const totalAllocatedG = kgRows.reduce((s,r) => s + (r.weight||0)*(r.qty||0), 0);
+        const totalBatchCost = item.productionCost ? (item.productionCost/1000) * totalBatchG : 0;
+        const trueCostPerGram = totalAllocatedG > 0 ? totalBatchCost/totalAllocatedG : 0;
+        cost = Math.round(trueCostPerGram * (1 + spoilPct/100) * 10000) / 10000;
+        qtyForRevenue = qty / 1000;
+      } else {
+        cost = Math.round((item.productionCost||0) * (1 + spoilPct/100) * 100) / 100;
+      }
+    }
+    const revenue = Math.round(qtyForRevenue * price * 100) / 100;
+    rows.push({category:cat, item:item.name, brand:item.brand, type: mode==='production'?'Self-Produced':'Resale (Purchased)', mode, price, cost, qty, revenue});
+  });
+  return rows;
+}
+
+async function syncAll(){
+  const statusEl = document.getElementById('syncAllStatus');
+  const btn = document.getElementById('syncAllBtn');
+  const url = localStorage.getItem('sheets-sync-url');
+  if(!url){
+    statusEl.textContent = 'Set up Sheets sync on Method 2 first (paste your Apps Script URL there once).';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  let outletId = '', outletName = '';
+  try{
+    const raw = localStorage.getItem('outlet-selection');
+    if(raw){ const o = JSON.parse(raw); outletId = o.id || ''; outletName = o.name || ''; }
+  } catch(e){}
+  if(!outletId){
+    statusEl.textContent = 'Enter an Outlet ID on Method 2 first — syncing without one loses data into an "unassigned" bucket.';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Syncing all…';
+  const results = [];
+  const today = new Date().toISOString().slice(0,10);
+  const timestamp = new Date().toISOString();
+
+  try{
+    const raw = localStorage.getItem('method1-hourly-state');
+    if(raw){
+      const state = JSON.parse(raw);
+      const rows = HOURS.map((h,i) => {
+        const c = (state.custVals||[])[i] || 0, b = (state.basketVals||[])[i] || 0;
+        return {hour:h[0], customers:c, basket:b, revenue:c*b};
+      }).filter(r => r.customers > 0 || r.basket > 0);
+      if(rows.length){
+        const total = rows.reduce((s,r) => s+r.revenue, 0);
+        await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+          body: JSON.stringify({method:'method1', outletId, outletName, date:today, rows, total, timestamp})});
+        results.push('Method 1 ✓ ('+rows.length+' hours)');
+      } else results.push('Method 1 — no data, skipped');
+    } else results.push('Method 1 — no data, skipped');
+  } catch(e){ results.push('Method 1 ✗ failed'); }
+
+  try{
+    const rows = buildMethod2Rows();
+    if(rows.length){
+      const total = rows.reduce((s,r) => s+r.revenue, 0);
+      await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+        body: JSON.stringify({method:'method2', outletId, outletName, date:today, rows, total, timestamp})});
+      results.push('Method 2 ✓ ('+rows.length+' items)');
+    } else results.push('Method 2 — no data, skipped');
+  } catch(e){ results.push('Method 2 ✗ failed'); }
+
+  try{
+    const raw = localStorage.getItem('staff-state');
+    const staff = raw ? (JSON.parse(raw)||[]) : [];
+    if(staff.length){
+      await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+        body: JSON.stringify({method:'staff', outletId, outletName, staff, timestamp})});
+      results.push('Staff ✓ ('+staff.length+')');
+    } else results.push('Staff — no data, skipped');
+  } catch(e){ results.push('Staff ✗ failed'); }
+
+  try{
+    const raw = localStorage.getItem('fixed-expenses-state');
+    if(raw){
+      const fe = JSON.parse(raw);
+      await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+        body: JSON.stringify({method:'fixedexpenses', outletId, outletName, timestamp,
+          rent: fe.rent||0, eb: fe.eb||0, lpg: fe.lpg||0, packaging: fe.packaging||0,
+          maintenance: fe.maintenance||0, desiredHeadcount: fe.desiredHeadcount||0})});
+      results.push('Fixed Expenses ✓');
+    } else results.push('Fixed Expenses — no data, skipped');
+  } catch(e){ results.push('Fixed Expenses ✗ failed'); }
+
+  statusEl.innerHTML = results.join('<br>');
+  statusEl.style.color = 'var(--ink)';
+  btn.disabled = false;
+  btn.textContent = '🔄 Sync All to Google Sheet';
+}
+
+document.getElementById('syncAllBtn').addEventListener('click', syncAll);
+
+</script>
+</body>
+</html>

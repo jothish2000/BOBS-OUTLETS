@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Breakeven — Per Shop</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow"><a href="index.html" style="color:inherit;text-decoration:none;">← Home</a></p>
+  <h1>Breakeven — per shop</h1>
+  <p class="sub">Pulled live from your Google Sheet's BreakEven_PerShop tab, which combines today's Method 1/2 sales with Staff and Fixed Expenses.</p>
+</header>
+
+<section>
+  <div class="section-head"><h2>Assess using</h2><span class="tag">your choice</span></div>
+  <div class="stack" style="display:flex;gap:8px;padding:10px;">
+    <button type="button" class="methodBtn" data-m="m1" style="flex:1;padding:10px 6px;border-radius:4px;border:1.5px solid var(--ink-soft);background:var(--paper-dark);cursor:pointer;font-size:12px;font-weight:700;">Method 1<br><span style="font-weight:400;font-size:10px;color:var(--ink-soft);">hourly, estimate</span></button>
+    <button type="button" class="methodBtn" data-m="m2" style="flex:1;padding:10px 6px;border-radius:4px;border:1.5px solid var(--ink-soft);background:var(--paper-dark);cursor:pointer;font-size:12px;font-weight:700;">Method 2<br><span style="font-weight:400;font-size:10px;color:var(--ink-soft);">item-wise, real</span></button>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Which outlet?</h2><span class="tag">required</span></div>
+  <div class="stack">
+    <div class="row">
+      <span class="rlabel">Outlet ID</span>
+      <input type="text" id="outletId" placeholder="e.g. 1" style="width:60px;">
+    </div>
+  </div>
+</section>
+
+<div class="export-bar">
+  <button class="export-btn" id="loadBtn" type="button">Load breakeven for this outlet</button>
+</div>
+
+<p class="status" id="loadStatus" style="text-align:center;"></p>
+
+<section id="resultsSection" style="display:none;">
+  <div class="section-head"><h2 id="resultsTitle">Results</h2><span class="tag">today</span></div>
+  <div class="stack" id="results"></div>
+</section>
+
+<footer>Requires Sheets sync to be set up (any page) and the Apps Script redeployed with the latest version.</footer>
+
+<script>
+const URL_KEY = 'sheets-sync-url';
+const OUTLET_KEY = 'outlet-selection';
+const METHOD_KEY = 'breakeven-method-pref';
+function fmt(n){ return Math.round(Number(n)||0).toLocaleString('en-IN'); }
+
+// method: 'shared' rows always show; 'm1'/'m2' rows show only when that method is selected.
+const ROWS = [
+  ['Method 1 Revenue Today', 'num', 'm1'],
+  ['Method 2 Revenue Today', 'num', 'm2'],
+  ['Cost Ratio % (real M2 if synced today, else estimate)', 'pct', 'm1'],
+  ['COGS (M1)', 'num', 'm1'],
+  ['COGS (M2, real)', 'num', 'm2'],
+  ['Gross Profit (M1)', 'num', 'm1'],
+  ['Gross Profit (M2)', 'num', 'm2'],
+  ['Labour Cost Today', 'num', 'shared'],
+  ['Non-Labour Fixed/day', 'num', 'shared'],
+  ['Total Fixed', 'num', 'shared'],
+  ['Net P/L (M1)', 'signed', 'm1'],
+  ['Net P/L (M2)', 'signed', 'm2'],
+  ['Break-even Revenue (M1, estimate)', 'num', 'm1'],
+  ['Real Cost Ratio % (M2, actual)', 'pct', 'm2'],
+  ['Break-even Revenue (M2, REAL)', 'num', 'm2'],
+];
+
+let selectedMethod = localStorage.getItem(METHOD_KEY) || 'm2';
+
+function paintMethodButtons(){
+  document.querySelectorAll('.methodBtn').forEach(btn => {
+    const active = btn.dataset.m === selectedMethod;
+    btn.style.borderColor = active ? 'var(--gold)' : 'var(--ink-soft)';
+    btn.style.background = active ? 'var(--gold)' : 'var(--paper-dark)';
+    btn.style.color = active ? 'var(--ink)' : 'inherit';
+  });
+}
+document.querySelectorAll('.methodBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedMethod = btn.dataset.m;
+    localStorage.setItem(METHOD_KEY, selectedMethod);
+    paintMethodButtons();
+    if(document.getElementById('resultsSection').style.display !== 'none') loadBreakeven();
+  });
+});
+paintMethodButtons();
+
+function renderRow(label, value, kind){
+  let display;
+  if(value === undefined || value === '' || value === null) display = '—';
+  else if(kind === 'pct') display = (Math.round(Number(value)*100)/100) + '%';
+  else if(kind === 'signed'){
+    const n = Number(value)||0;
+    display = (n>=0?'+':'') + '₹' + fmt(n);
+  } else display = '₹'+fmt(value);
+  const color = kind === 'signed' ? (Number(value)>=0 ? 'var(--profit)' : 'var(--loss)') : 'inherit';
+  return `<div class="row"><span class="rlabel">${label}</span><span class="num" style="font-weight:700;color:${color};">${display}</span></div>`;
+}
+
+async function loadBreakeven(){
+  const statusEl = document.getElementById('loadStatus');
+  const resultsSection = document.getElementById('resultsSection');
+  const outletId = document.getElementById('outletId').value.trim();
+  const url = localStorage.getItem(URL_KEY);
+  if(!url){
+    statusEl.textContent = 'Set up Sheets sync first (Sheet URL field on Method 1, Method 2, Staff, or Fixed Expenses).';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  if(!outletId){
+    statusEl.textContent = 'Enter an Outlet ID above.';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  statusEl.textContent = 'Loading…';
+  statusEl.style.color = 'var(--ink-soft)';
+  try{
+    const res = await fetch(url + '?action=breakeven');
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || 'unknown error');
+    const match = (data.perShop||[]).find(r => String(r['Outlet ID']) === String(outletId));
+    if(!match){
+      statusEl.textContent = `No data yet for Outlet ${outletId}. Sync Method 1/2 sales, Staff, and Fixed Expenses for this outlet first.`;
+      statusEl.style.color = 'var(--loss)';
+      resultsSection.style.display = 'none';
+      return;
+    }
+    document.getElementById('resultsTitle').textContent = `Results — ${match['Outlet Name'] || 'Outlet '+outletId}`;
+    const visibleRows = ROWS.filter(([,,m]) => m === 'shared' || m === selectedMethod);
+    document.getElementById('results').innerHTML = visibleRows.map(([label,kind]) => renderRow(label, match[label], kind)).join('');
+    resultsSection.style.display = 'block';
+    statusEl.textContent = 'Loaded ✓';
+    statusEl.style.color = 'var(--profit)';
+  } catch(e){
+    statusEl.textContent = 'Could not reach the Sheet — is doGet deployed? (redeploy the Apps Script as a new version)';
+    statusEl.style.color = 'var(--loss)';
+  }
+}
+
+document.getElementById('loadBtn').addEventListener('click', loadBreakeven);
+
+(function init(){
+  try{
+    const rawOutlet = localStorage.getItem(OUTLET_KEY);
+    if(rawOutlet){
+      const o = JSON.parse(rawOutlet);
+      if(o.id) document.getElementById('outletId').value = o.id;
+    }
+  } catch(e){}
+  if(document.getElementById('outletId').value) loadBreakeven();
+})();
+</script>
+</body>
+</html>

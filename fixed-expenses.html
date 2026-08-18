@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Fixed Expenses</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow"><a href="index.html" style="color:inherit;text-decoration:none;">← Home</a></p>
+  <h1>Fixed expenses</h1>
+  <p class="sub">Rent, electricity, gas, packaging, maintenance — the costs that show up whether you sell one item or a thousand. Feeds Non-Labour Fixed Cost into the breakeven pages.</p>
+</header>
+
+<section>
+  <div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div>
+  <div class="stack">
+    <div class="row">
+      <span class="rlabel">Outlet ID</span>
+      <input type="text" id="outletId" placeholder="e.g. 1" style="width:60px;">
+    </div>
+    <div class="row">
+      <span class="rlabel">Outlet Name (for your reference)</span>
+      <input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px;">
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Google Sheets sync</h2><span class="tag">reads &amp; writes the Outlets tab</span></div>
+  <div class="stack">
+    <div class="row">
+      <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
+    </div>
+    <div class="row"><span class="rlabel">Status</span><span id="syncStatus" style="font-size:12px;font-weight:600;">Not configured</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Daily fixed costs</h2><span class="tag">₹/day</span></div>
+  <div class="stack">
+    <div class="row"><span class="rlabel">Rent</span><input type="number" id="rent" min="0" value="0"></div>
+    <div class="row"><span class="rlabel">Electricity (EB)</span><input type="number" id="eb" min="0" value="0"></div>
+    <div class="row"><span class="rlabel">LPG / Gas</span><input type="number" id="lpg" min="0" value="0"></div>
+    <div class="row"><span class="rlabel">Packaging</span><input type="number" id="packaging" min="0" value="0"></div>
+    <div class="row"><span class="rlabel">Maintenance</span><input type="number" id="maintenance" min="0" value="0"></div>
+  </div>
+  <div class="totals-row"><span>Total non-labour fixed / day</span><span class="num" id="totalFixed">₹0</span></div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Staffing target</h2><span class="tag">optional</span></div>
+  <div class="stack">
+    <div class="row"><span class="rlabel">Desired headcount</span><input type="number" id="desiredHeadcount" min="0" value="5" style="width:60px;"></div>
+  </div>
+</section>
+
+<p class="status" id="saveStatus"></p>
+
+<div class="export-bar">
+  <button class="export-btn" id="syncBtn" type="button">🔄 Sync to Google Sheet</button>
+</div>
+
+<footer>Saves in this browser automatically. Sync writes these figures to this outlet's row on the Outlets tab.</footer>
+
+<script>
+const STORAGE_KEY = 'fixed-expenses-state';
+const URL_KEY = 'sheets-sync-url';
+const OUTLET_KEY = 'outlet-selection';
+let saveTimer = null;
+
+function fmt(n){ return Math.round(n).toLocaleString('en-IN'); }
+const FIELDS = ['rent','eb','lpg','packaging','maintenance'];
+
+function recalc(){
+  const total = FIELDS.reduce((s,f) => s + (parseFloat(document.getElementById(f).value)||0), 0);
+  document.getElementById('totalFixed').textContent = '₹'+fmt(total);
+}
+
+function saveState(){
+  const statusEl = document.getElementById('saveStatus');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{
+      const state = {};
+      FIELDS.forEach(f => state[f] = document.getElementById(f).value);
+      state.desiredHeadcount = document.getElementById('desiredHeadcount').value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      statusEl.textContent = 'Saved';
+      setTimeout(()=>{statusEl.textContent='';}, 1200);
+    } catch(e){ statusEl.textContent = 'Could not save'; }
+  }, 500);
+}
+
+async function loadSaved(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const state = JSON.parse(raw);
+      FIELDS.forEach(f => { if(state[f] !== undefined) document.getElementById(f).value = state[f]; });
+      if(state.desiredHeadcount !== undefined) document.getElementById('desiredHeadcount').value = state.desiredHeadcount;
+    }
+  } catch(e){}
+
+  try{
+    const rawUrl = localStorage.getItem(URL_KEY);
+    if(rawUrl){
+      document.getElementById('sheetsUrl').value = rawUrl;
+      document.getElementById('syncStatus').textContent = 'Configured ✓';
+      document.getElementById('syncStatus').style.color = 'var(--profit)';
+    }
+  } catch(e){}
+
+  let outletId = '';
+  try{
+    const rawOutlet = localStorage.getItem(OUTLET_KEY);
+    if(rawOutlet){
+      const o = JSON.parse(rawOutlet);
+      outletId = o.id || '';
+      document.getElementById('outletId').value = outletId;
+      document.getElementById('outletName').value = o.name || '';
+    }
+  } catch(e){}
+
+  // If nothing saved locally yet, try pulling this outlet's current figures from the Sheet.
+  const hasLocal = !!localStorage.getItem(STORAGE_KEY);
+  const url = document.getElementById('sheetsUrl').value.trim();
+  if(!hasLocal && url && outletId){
+    try{
+      const res = await fetch(url + '?action=outlets');
+      const data = await res.json();
+      if(data.ok){
+        const match = (data.outlets||[]).find(o => String(o['Outlet ID']) === String(outletId));
+        if(match){
+          document.getElementById('rent').value = match['Rent/day'] || 0;
+          document.getElementById('eb').value = match['EB/day'] || 0;
+          document.getElementById('lpg').value = match['LPG/day'] || 0;
+          document.getElementById('packaging').value = match['Packaging/day'] || 0;
+          document.getElementById('maintenance').value = match['Maintenance/day'] || 0;
+          document.getElementById('desiredHeadcount').value = match['Desired Headcount'] || 5;
+        }
+      }
+    } catch(e){}
+  }
+
+  recalc();
+}
+
+FIELDS.concat(['desiredHeadcount']).forEach(f => {
+  document.getElementById(f).addEventListener('input', () => { recalc(); saveState(); });
+});
+
+async function syncToSheet(){
+  const url = document.getElementById('sheetsUrl').value.trim();
+  const statusEl = document.getElementById('syncStatus');
+  const btn = document.getElementById('syncBtn');
+  if(!url){
+    statusEl.textContent = 'Add your Sheet URL above first';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  const outletId = document.getElementById('outletId').value.trim();
+  if(!outletId){
+    statusEl.textContent = 'Enter an Outlet ID above first — syncing without one loses the data into an "unassigned" bucket.';
+    statusEl.style.color = 'var(--loss)';
+    return;
+  }
+  const outletName = document.getElementById('outletName').value.trim() || '';
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  try{
+    const body = { method:'fixedexpenses', outletId, outletName, timestamp: new Date().toISOString() };
+    FIELDS.forEach(f => body[f] = document.getElementById(f).value);
+    body.desiredHeadcount = document.getElementById('desiredHeadcount').value;
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+    statusEl.textContent = 'Synced to Sheet ✓';
+    statusEl.style.color = 'var(--profit)';
+  } catch(e){
+    statusEl.textContent = 'Sync failed — check URL';
+    statusEl.style.color = 'var(--loss)';
+  }
+  btn.disabled = false;
+  btn.textContent = '🔄 Sync to Google Sheet';
+}
+
+document.getElementById('syncBtn').addEventListener('click', syncToSheet);
+document.getElementById('sheetsUrl').addEventListener('change', () => {
+  const url = document.getElementById('sheetsUrl').value.trim();
+  localStorage.setItem(URL_KEY, url);
+  document.getElementById('syncStatus').textContent = url ? 'Configured ✓' : 'Not configured';
+  document.getElementById('syncStatus').style.color = url ? 'var(--profit)' : 'var(--ink)';
+});
+function saveOutlet(){
+  localStorage.setItem(OUTLET_KEY, JSON.stringify({
+    id: document.getElementById('outletId').value.trim(),
+    name: document.getElementById('outletName').value.trim()
+  }));
+}
+document.getElementById('outletId').addEventListener('change', saveOutlet);
+document.getElementById('outletName').addEventListener('change', saveOutlet);
+
+loadSaved();
+</script>
+</body>
+</html>
