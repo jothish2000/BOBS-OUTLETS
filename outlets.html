@@ -55,6 +55,25 @@ function fmtShiftPreview(o){
   return labels.join(', ');
 }
 
+function ensureShiftTimes(o){
+  const n = parseInt(o.numShifts) || 0;
+  if(!o.shiftTimes) o.shiftTimes = [];
+  while(o.shiftTimes.length < n) o.shiftTimes.push({start:'', end:''});
+  o.shiftTimes.length = n;
+}
+
+function shiftTimesRowsHtml(o, idx){
+  ensureShiftTimes(o);
+  return o.shiftTimes.map((st, sIdx) => `
+    <div class="row" style="gap:8px;">
+      <span class="rlabel" style="font-size:11px;">Shift ${sIdx+1} timing</span>
+      <input type="time" class="oShiftStart" data-idx="${idx}" data-sidx="${sIdx}" value="${st.start||''}" style="width:100px;">
+      <span style="font-size:11px;color:var(--ink-soft);">to</span>
+      <input type="time" class="oShiftEnd" data-idx="${idx}" data-sidx="${sIdx}" value="${st.end||''}" style="width:100px;">
+    </div>
+  `).join('');
+}
+
 function renderCards(){
   const container = document.getElementById('outletCards');
   const emptyNote = document.getElementById('emptyNote');
@@ -73,6 +92,7 @@ function renderCards(){
       <div class="row"><span class="rlabel">Outlet Name</span><input type="text" class="oName" data-idx="${idx}" value="${o.name||''}" placeholder="e.g. Rasipuram" style="width:150px;"></div>
       <div class="row"><span class="rlabel">Short Code</span><input type="text" class="oCode" data-idx="${idx}" value="${o.shortCode||''}" placeholder="e.g. RSP" style="width:70px;text-transform:uppercase;"></div>
       <div class="row"><span class="rlabel">Number of shifts</span><input type="number" class="oShifts" data-idx="${idx}" value="${o.numShifts||2}" min="1" max="6" style="width:60px;"></div>
+      <div class="shiftTimesWrap" data-idx="${idx}">${shiftTimesRowsHtml(o, idx)}</div>
       <div class="row" style="border-bottom:none;">
         <span class="rlabel" style="font-size:11px;">Status labels preview</span>
         <span class="num" id="preview-${idx}" style="font-size:11px;font-weight:600;text-align:right;color:var(--ink-soft);">${fmtShiftPreview(o)}</span>
@@ -91,7 +111,24 @@ function renderCards(){
   container.querySelectorAll('.oShifts').forEach(el => el.addEventListener('input', e => {
     const idx = e.target.dataset.idx;
     outlets[idx].numShifts = parseInt(e.target.value) || 1;
+    ensureShiftTimes(outlets[idx]);
+    document.querySelector(`.shiftTimesWrap[data-idx="${idx}"]`).innerHTML = shiftTimesRowsHtml(outlets[idx], idx);
+    attachShiftTimeListeners();
     document.getElementById('preview-'+idx).textContent = fmtShiftPreview(outlets[idx]);
+    saveState();
+  }));
+  attachShiftTimeListeners();
+}
+
+function attachShiftTimeListeners(){
+  document.querySelectorAll('.oShiftStart').forEach(el => el.addEventListener('input', e => {
+    const idx = e.target.dataset.idx, sIdx = e.target.dataset.sidx;
+    outlets[idx].shiftTimes[sIdx].start = e.target.value;
+    saveState();
+  }));
+  document.querySelectorAll('.oShiftEnd').forEach(el => el.addEventListener('input', e => {
+    const idx = e.target.dataset.idx, sIdx = e.target.dataset.sidx;
+    outlets[idx].shiftTimes[sIdx].end = e.target.value;
     saveState();
   }));
 }
@@ -100,9 +137,10 @@ document.getElementById('genBtn').addEventListener('click', () => {
   const n = Math.max(1, Math.min(30, parseInt(document.getElementById('outletCount').value) || 1));
   const next = [];
   for(let i=0; i<n; i++){
-    next.push(outlets[i] || {id:'', name:'', shortCode:'', numShifts:2});
+    next.push(outlets[i] || {id:'', name:'', shortCode:'', numShifts:2, shiftTimes:[]});
   }
   outlets = next;
+  outlets.forEach(ensureShiftTimes);
   renderCards();
   saveState();
 });
@@ -116,6 +154,7 @@ function loadSaved(){
     const raw = localStorage.getItem(OUTLETS_KEY);
     if(raw) outlets = JSON.parse(raw) || [];
   } catch(e){ outlets = []; }
+  outlets.forEach(ensureShiftTimes);
   document.getElementById('outletCount').value = outlets.length || 1;
   renderCards();
 }

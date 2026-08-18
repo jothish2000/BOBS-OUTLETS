@@ -81,6 +81,17 @@ function nextStaffId(){
 }
 
 function renderStaff(){
+  // Auto-fill any shift-assigned staff who don't have times yet (e.g. just loaded from
+  // the Sheet, which only stores computed hours, not the exact start/end).
+  staff.forEach(s => {
+    if(s.statusValue && s.statusValue !== 'off' && !s.startTime){
+      const [oid, sn] = s.statusValue.split('|');
+      const outlet = outlets.find(o => String(o.id) === String(oid));
+      const shiftTime = outlet && outlet.shiftTimes && outlet.shiftTimes[parseInt(sn)-1];
+      if(shiftTime){ s.startTime = shiftTime.start || ''; s.endTime = shiftTime.end || ''; }
+    }
+  });
+
   const list = document.getElementById('staffList');
   list.innerHTML = staff.map((s, idx) => {
     const showTimes = s.statusValue && s.statusValue !== 'off';
@@ -125,7 +136,22 @@ function renderStaff(){
     const idx = e.target.dataset.idx;
     staff[idx].statusValue = e.target.value;
     const timesRow = document.querySelector(`.sTimesRow[data-idx="${idx}"]`);
-    timesRow.style.display = e.target.value !== 'off' ? 'flex' : 'none';
+    if(e.target.value !== 'off'){
+      timesRow.style.display = 'flex';
+      // Auto-fill from this outlet/shift's configured timing - still editable after, for exceptions.
+      const [oid, sn] = e.target.value.split('|');
+      const outlet = outlets.find(o => String(o.id) === String(oid));
+      const shiftTime = outlet && outlet.shiftTimes && outlet.shiftTimes[parseInt(sn)-1];
+      if(shiftTime){
+        staff[idx].startTime = shiftTime.start || '';
+        staff[idx].endTime = shiftTime.end || '';
+        document.querySelector(`.sStart[data-idx="${idx}"]`).value = staff[idx].startTime;
+        document.querySelector(`.sEnd[data-idx="${idx}"]`).value = staff[idx].endTime;
+        document.getElementById('hours-'+idx).textContent = computeHours(staff[idx].startTime, staff[idx].endTime);
+      }
+    } else {
+      timesRow.style.display = 'none';
+    }
     recalcAndSave();
   }));
   list.querySelectorAll('.sStart').forEach(el => el.addEventListener('input', e => {
