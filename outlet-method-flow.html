@@ -38,71 +38,42 @@ function restoreGlobal(m){const d=getData(),o=current(),r=d[o.id]||{},k=m==='met
 function readGlobal(m){try{const raw=localStorage.getItem(m==='method1'?M1_KEY:M2_KEY);return raw?JSON.parse(raw):null}catch(e){return null}}
 function show(e){e.classList.remove('hidden')} function hide(e){e.classList.add('hidden')}
 function render(){const o=current();document.getElementById('outletHeading').textContent=`Outlet ${idx+1} — ${o.name} (${o.id})`;document.getElementById('progressTag').textContent=`${idx+1} of ${outlets.length}`;document.getElementById('finishTag').textContent=o.name;document.getElementById('finishText').textContent=`${o.name} is complete. The selected method analyses are saved against Outlet ${o.id}.`}
+function numberFrom(el){if(!el)return 0;return parseFloat((el.textContent||'').replace(/[^0-9.-]/g,''))||0}
 function getM1Totals(){
   try{
-    const frame=document.getElementById('methodFrame');
-    const doc=frame && frame.contentDocument;
-    // The Method 1 page itself is the authoritative source for the displayed daily total.
-    // Read its final Daily customers / revenue row first, then fall back to the hourly inputs.
-    const revEl=doc && doc.getElementById('totRev');
-    const custEl=doc && doc.getElementById('totCust');
-    if(revEl){
-      const revText=(revEl.textContent||'').replace(/[₹,\s]/g,'');
-      const sales=parseFloat(revText)||0;
-      const customers=parseFloat((custEl?.textContent||'').replace(/[,\s]/g,''))||0;
-      return {sales,customers};
-    }
-    const liveCust=doc ? Array.from(doc.querySelectorAll('.custInput')) : [];
-    const liveBasket=doc ? Array.from(doc.querySelectorAll('.basketInput')) : [];
-    if(liveCust.length || liveBasket.length){
-      let sales=0,customers=0; const n=Math.max(liveCust.length,liveBasket.length);
-      for(let i=0;i<n;i++){const c=parseFloat(liveCust[i]?.value)||0,b=parseFloat(liveBasket[i]?.value)||0;customers+=c;sales+=c*b;}
-      return {sales,customers};
-    }
-    const state=JSON.parse(localStorage.getItem(M1_KEY)||'{}');
-    const cust=Array.isArray(state.custVals)?state.custVals:[],basket=Array.isArray(state.basketVals)?state.basketVals:[];
-    let sales=0,customers=0;
-    for(let i=0;i<Math.max(cust.length,basket.length);i++){const c=parseFloat(cust[i])||0,b=parseFloat(basket[i])||0;customers+=c;sales+=c*b;}
-    return {sales,customers};
+    const frame=document.getElementById('methodFrame');const doc=frame&&frame.contentDocument;
+    const revEl=doc&&doc.getElementById('totRev');const custEl=doc&&doc.getElementById('totCust');
+    if(revEl){return {sales:numberFrom(revEl),customers:numberFrom(custEl)}}
+    const liveCust=doc?Array.from(doc.querySelectorAll('.custInput')):[];const liveBasket=doc?Array.from(doc.querySelectorAll('.basketInput')):[];
+    if(liveCust.length||liveBasket.length){let sales=0,customers=0;const n=Math.max(liveCust.length,liveBasket.length);for(let i=0;i<n;i++){const c=parseFloat(liveCust[i]?.value)||0,b=parseFloat(liveBasket[i]?.value)||0;customers+=c;sales+=c*b}return {sales,customers}}
+    const state=JSON.parse(localStorage.getItem(M1_KEY)||'{}');const cust=Array.isArray(state.custVals)?state.custVals:[],basket=Array.isArray(state.basketVals)?state.basketVals:[];let sales=0,customers=0;for(let i=0;i<Math.max(cust.length,basket.length);i++){const c=parseFloat(cust[i])||0,b=parseFloat(basket[i])||0;customers+=c;sales+=c*b}return {sales,customers}
   }catch(e){return {sales:0,customers:0}}
 }
-function recalcM1(){
-  if(currentMethod!=='method1')return;
-  const t=getM1Totals();
-  const markup=Math.max(0,Math.min(100,parseFloat(document.getElementById('method1Margin').value)||0));
-  const cost=markup>0?t.sales/(1+markup/100):t.sales;
-  const gross=t.sales-cost;
-  document.getElementById('m1Sales').textContent=Math.round(t.sales).toLocaleString('en-IN');
-  document.getElementById('m1Cost').textContent=Math.round(cost).toLocaleString('en-IN');
-  document.getElementById('m1Gross').textContent=Math.round(gross).toLocaleString('en-IN');
+function getM2Totals(){
+  try{
+    const frame=document.getElementById('methodFrame');const doc=frame&&frame.contentDocument;
+    // Method 2 is authoritative: read its own live Today's totals, not a duplicate formula here.
+    const saleEl=doc&&doc.getElementById('grandTotalSale');
+    const costEl=doc&&doc.getElementById('grandTotalCost');
+    const profitEl=doc&&doc.getElementById('grandTotalProfit');
+    if(saleEl||costEl||profitEl){
+      const sales=numberFrom(saleEl),cost=numberFrom(costEl),profit=numberFrom(profitEl);
+      return {sales,cost,profit};
+    }
+    return {sales:0,cost:0,profit:0};
+  }catch(e){return {sales:0,cost:0,profit:0}}
 }
-function loadMethod(m){
-  currentMethod=m;setGlobalOutlet();restoreGlobal(m);hide(document.getElementById('choicePanel'));hide(document.getElementById('askOtherPanel'));hide(document.getElementById('finishPanel'));show(document.getElementById('methodPanel'));
-  document.getElementById('m1CostBox').style.display=m==='method1'?'block':'none';
-  const rec=getData()[current().id]||{};document.getElementById('method1Margin').value=(rec.method1Markup!==undefined?rec.method1Markup:25);
-  document.getElementById('methodTitle').textContent=m==='method1'?'Method 1 — Hourly Footfall':'Method 2 — Item-wise Quantities';
-  document.getElementById('methodTag').textContent=`Outlet ${idx+1} · ${current().name}`;
-  document.getElementById('methodFrame').src=m==='method1'?'method1.html?flow=1':'method2.html?flow=1';
-  if(m==='method1')setTimeout(recalcM1,500);
-}
+function recalcM1(){if(currentMethod!=='method1')return;const t=getM1Totals();const markup=Math.max(0,Math.min(100,parseFloat(document.getElementById('method1Margin').value)||0));const cost=markup>0?t.sales/(1+markup/100):t.sales;const gross=t.sales-cost;document.getElementById('m1Sales').textContent=Math.round(t.sales).toLocaleString('en-IN');document.getElementById('m1Cost').textContent=Math.round(cost).toLocaleString('en-IN');document.getElementById('m1Gross').textContent=Math.round(gross).toLocaleString('en-IN')}
+function loadMethod(m){currentMethod=m;setGlobalOutlet();restoreGlobal(m);hide(document.getElementById('choicePanel'));hide(document.getElementById('askOtherPanel'));hide(document.getElementById('finishPanel'));show(document.getElementById('methodPanel'));document.getElementById('m1CostBox').style.display=m==='method1'?'block':'none';const rec=getData()[current().id]||{};document.getElementById('method1Margin').value=(rec.method1Markup!==undefined?rec.method1Markup:25);document.getElementById('methodTitle').textContent=m==='method1'?'Method 1 — Hourly Footfall':'Method 2 — Item-wise Quantities';document.getElementById('methodTag').textContent=`Outlet ${idx+1} · ${current().name}`;document.getElementById('methodFrame').src=m==='method1'?'method1.html?flow=1':'method2.html?flow=1';if(m==='method1')setTimeout(recalcM1,500)}
 function choice(){hide(document.getElementById('methodPanel'));hide(document.getElementById('askOtherPanel'));hide(document.getElementById('finishPanel'));show(document.getElementById('choicePanel'));render()}
 function saveCurrent(){
-  const o=current(),d=getData();if(!d[o.id])d[o.id]={id:o.id,name:o.name};
-  const k=currentMethod==='method1'?'method1':'method2';d[o.id][k]=readGlobal(currentMethod);d[o.id][currentMethod==='method1'?'method1Selected':'method2Selected']=true;
-  if(currentMethod==='method1'){
-    const t=getM1Totals(),markup=Math.max(0,Math.min(100,parseFloat(document.getElementById('method1Margin').value)||0));
-    const cost=markup>0?t.sales/(1+markup/100):t.sales;d[o.id].method1DailySales=t.sales;d[o.id].method1Markup=markup;d[o.id].method1CostOfSales=cost;d[o.id].method1GrossProfit=t.sales-cost;d[o.id].method1PurchaseCost=cost;
-  }
+  const o=current(),d=getData();if(!d[o.id])d[o.id]={id:o.id,name:o.name};const k=currentMethod==='method1'?'method1':'method2';d[o.id][k]=readGlobal(currentMethod);d[o.id][currentMethod==='method1'?'method1Selected':'method2Selected']=true;
+  if(currentMethod==='method1'){const t=getM1Totals(),markup=Math.max(0,Math.min(100,parseFloat(document.getElementById('method1Margin').value)||0));const cost=markup>0?t.sales/(1+markup/100):t.sales;d[o.id].method1DailySales=t.sales;d[o.id].method1Markup=markup;d[o.id].method1CostOfSales=cost;d[o.id].method1GrossProfit=t.sales-cost;d[o.id].method1PurchaseCost=cost}
+  if(currentMethod==='method2'){const t=getM2Totals();d[o.id].method2DailySales=t.sales;d[o.id].method2PurchaseCost=t.cost;d[o.id].method2GrossProfit=t.profit;}
   saveData(d)
 }
 function askOther(){hide(document.getElementById('methodPanel'));show(document.getElementById('askOtherPanel'));const other=currentMethod==='method1'?'Method 2':'Method 1';document.getElementById('askTitle').textContent=`${currentMethod==='method1'?'Method 1':'Method 2'} saved ✓`;document.getElementById('askText').textContent=`Do you also want to analyse ${current().name} using ${other}?`}
 function finish(){hide(document.getElementById('choicePanel'));hide(document.getElementById('methodPanel'));hide(document.getElementById('askOtherPanel'));show(document.getElementById('finishPanel'));render()}
-document.getElementById('method1Btn').onclick=()=>loadMethod('method1');document.getElementById('method2Btn').onclick=()=>loadMethod('method2');
-document.getElementById('saveContinueBtn').onclick=()=>{saveCurrent();document.getElementById('saveNote').textContent='Saved for this outlet ✓';setTimeout(askOther,250)};
-document.getElementById('cancelMethodBtn').onclick=choice;document.getElementById('yesOtherBtn').onclick=()=>loadMethod(currentMethod==='method1'?'method2':'method1');document.getElementById('noOtherBtn').onclick=finish;
-document.getElementById('nextOutletBtn').onclick=()=>{if(idx<outlets.length-1){idx++;choice()}else location.href='outlet-analysis.html'};
-document.getElementById('method1Margin').addEventListener('input',()=>{clearTimeout(calcTimer);calcTimer=setTimeout(recalcM1,50)});
-document.getElementById('methodFrame').addEventListener('load',()=>{if(currentMethod==='method1')setTimeout(recalcM1,500)});
-setInterval(()=>{if(currentMethod==='method1'&&!document.getElementById('methodPanel').classList.contains('hidden'))recalcM1()},300);
+document.getElementById('method1Btn').onclick=()=>loadMethod('method1');document.getElementById('method2Btn').onclick=()=>loadMethod('method2');document.getElementById('saveContinueBtn').onclick=()=>{saveCurrent();document.getElementById('saveNote').textContent='Saved for this outlet ✓';setTimeout(askOther,250)};document.getElementById('cancelMethodBtn').onclick=choice;document.getElementById('yesOtherBtn').onclick=()=>loadMethod(currentMethod==='method1'?'method2':'method1');document.getElementById('noOtherBtn').onclick=finish;document.getElementById('nextOutletBtn').onclick=()=>{if(idx<outlets.length-1){idx++;choice()}else location.href='outlet-analysis.html'};document.getElementById('method1Margin').addEventListener('input',()=>{clearTimeout(calcTimer);calcTimer=setTimeout(recalcM1,50)});document.getElementById('methodFrame').addEventListener('load',()=>{if(currentMethod==='method1')setTimeout(recalcM1,500)});setInterval(()=>{if(currentMethod==='method1'&&!document.getElementById('methodPanel').classList.contains('hidden'))recalcM1()},300);
 (function init(){try{outlets=JSON.parse(localStorage.getItem(OUTLETS_KEY)||'[]')||[]}catch(e){outlets=[]}const q=new URLSearchParams(location.search);idx=Math.max(0,Math.min(outlets.length-1,parseInt(q.get('outlet')||'0')||0));if(!outlets.length){location.href='outlets.html';return}render()})();
 </script></body></html>
