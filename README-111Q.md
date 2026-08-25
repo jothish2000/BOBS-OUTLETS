@@ -1,0 +1,2 @@
+# 111Q
+Current QA checkpoint: Method 1 purchase cost displayed in Outlet Method Flow/Analysis is not being carried forward from the previously designed Method 1 engine. This must be corrected so the existing method engine remains authoritative for its purchase cost.
