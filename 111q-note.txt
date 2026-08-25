@@ -1,0 +1,3 @@
+111Q checkpoint note
+
+Issue observed: Outlet Analysis / Outlet Method Flow is showing Method 1 purchase cost as ₹0 instead of the previously entered Method 1 purchase cost. Root cause to investigate: the new wrapper is using its own localStorage analysis record rather than reading the existing Method 1 engine's stored purchase-cost value. The Method 1 and Method 2 engines must remain the authoritative sources for their respective purchase-cost values, while the new outlet workflow should pass/store the outlet ID and preserve those values. Do not replace existing method-engine data with zero defaults.
