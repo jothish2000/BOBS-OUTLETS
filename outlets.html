@@ -3,6 +3,20 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Outlets Setup</title><link rel="stylesheet" href="style.css">
+<style>
+#savedSetupModal{position:fixed;inset:0;background:rgba(0,0,0,.48);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+#savedSetupModal.show{display:flex}
+.saved-dialog{width:min(480px,100%);background:var(--paper,#fff);border-radius:14px;box-shadow:0 18px 55px rgba(0,0,0,.28);padding:22px}
+.saved-dialog h2{margin:0 0 9px;font-size:20px}
+.saved-dialog p{margin:7px 0;color:var(--ink-soft);line-height:1.5;font-size:13px}
+.saved-summary{margin:14px 0;padding:11px 13px;background:var(--paper-dark);border-radius:9px;max-height:170px;overflow:auto}
+.saved-summary strong{color:var(--ink)}
+.saved-summary div{padding:4px 0;font-size:12.5px}
+.saved-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.saved-actions button{min-height:40px;padding:9px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.14);font-weight:600;cursor:pointer}
+#keepSavedBtn{background:var(--profit,#2f7d32);color:#fff;border-color:transparent}
+#discardSavedBtn{background:transparent;color:var(--ink)}
+</style>
 </head>
 <body>
 <header>
@@ -14,7 +28,21 @@
 <section><div class="section-head"><h2>Outlet details</h2><span class="tag" id="outletCountTag">0 outlets</span></div><div id="outletCards"></div><p id="emptyNote" style="font-size:12.5px;color:var(--ink-soft);text-align:center;padding:20px 14px;">Enter a number above and click "Set up this many outlets" to begin.</p></section>
 <p class="status" id="saveStatus"></p>
 <div class="export-bar"><button class="export-btn" id="saveBtn" type="button">Save Outlets &amp; Start Analysis →</button></div>
-<footer>Draft entries are temporary. Closing/reopening the page without saving starts a fresh outlet setup. After saving, Outlet 1 starts the Method 1 / Method 2 choice flow. Each outlet can use either method or both, and each method keeps its own purchase-cost record.</footer>
+<footer>Draft entries are temporary. Closing/reopening the page will now ask whether you want to restore a previously saved outlet setup or start a new one. After saving, Outlet 1 starts the Method 1 / Method 2 choice flow. Each outlet can use either method or both, and each method keeps its own purchase-cost record.</footer>
+
+<div id="savedSetupModal" role="dialog" aria-modal="true" aria-labelledby="savedSetupTitle">
+  <div class="saved-dialog">
+    <h2 id="savedSetupTitle">Saved outlet setup found</h2>
+    <p id="savedSetupMessage"></p>
+    <div class="saved-summary" id="savedSetupSummary"></div>
+    <p><strong>Keep Saved Setup</strong> restores the saved outlet details. <strong>Discard &amp; Start New</strong> removes the saved outlet setup and opens a blank setup.</p>
+    <div class="saved-actions">
+      <button type="button" id="discardSavedBtn">Discard &amp; Start New</button>
+      <button type="button" id="keepSavedBtn">Keep Saved Setup</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const OUTLETS_KEY='outlets-master'; let outlets=[];
 const SHIFT_PRESETS=[
@@ -23,13 +51,19 @@ const SHIFT_PRESETS=[
 function ensureShiftTimes(o){const n=parseInt(o.numShifts)||0;if(!o.shiftTimes)o.shiftTimes=[];while(o.shiftTimes.length<n)o.shiftTimes.push({start:'',end:'',name:'',template:''});o.shiftTimes.length=n;}
 function preview(o){const n=parseInt(o.numShifts)||0;if(!o.shortCode||n<=0)return 'Add short code + shift count';return Array.from({length:n},(_,i)=>`${o.shortCode}-SHIFT ${i+1}`).join(', ')}
 function saveState(){try{localStorage.setItem(OUTLETS_KEY,JSON.stringify(outlets))}catch(e){}}
+function loadSavedState(){try{const raw=localStorage.getItem(OUTLETS_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return Array.isArray(parsed)&&parsed.length?parsed:null}catch(e){return null}}
 function presetOptions(selected){let h='<option value="">Select a recommended shift…</option>';SHIFT_PRESETS.forEach((p,i)=>{const v=`${p[1]}|${p[2]}|${p[0]}`;h+=`<option value="${v}" ${selected===v?'selected':''}>${p[0]} — ${p[1]} → ${p[2]}</option>`});h+='<option value="custom">Custom shift</option>';return h}
 function shiftRows(o,idx){ensureShiftTimes(o);return o.shiftTimes.map((st,s)=>{const selected=st.template||'';return `<div class="stack" style="margin:6px 0 0;padding:7px 9px;background:var(--paper-dark);border-radius:8px;"><div class="row" style="gap:8px;"><span class="rlabel" style="font-size:11px;">Shift ${s+1}</span><select class="oShiftPreset" data-idx="${idx}" data-sidx="${s}" style="min-width:235px;max-width:100%;">${presetOptions(selected)}</select></div><div class="row" style="gap:8px;"><span class="rlabel" style="font-size:11px;">Start</span><input type="time" class="oShiftStart" data-idx="${idx}" data-sidx="${s}" value="${st.start||''}" style="width:100px;"><span style="font-size:11px;color:var(--ink-soft);">to</span><input type="time" class="oShiftEnd" data-idx="${idx}" data-sidx="${s}" value="${st.end||''}" style="width:100px;"><span style="font-size:10px;color:var(--ink-soft);">editable</span></div><div class="row" style="border-bottom:none;"><span class="rlabel" style="font-size:11px;">Shift name</span><input type="text" class="oShiftName" data-idx="${idx}" data-sidx="${s}" value="${st.name||''}" placeholder="Auto / custom" style="width:150px;"></div></div>`}).join('')}
 function attachTimes(){document.querySelectorAll('.oShiftPreset').forEach(el=>el.onchange=()=>{const i=+el.dataset.idx,s=+el.dataset.sidx,v=el.value;if(v==='custom'){outlets[i].shiftTimes[s].template='custom';render();return}if(!v)return;const [start,end,name]=v.split('|');outlets[i].shiftTimes[s]={start,end,name,template:v};render()});document.querySelectorAll('.oShiftStart').forEach(el=>el.oninput=()=>{outlets[el.dataset.idx].shiftTimes[el.dataset.sidx].start=el.value});document.querySelectorAll('.oShiftEnd').forEach(el=>el.oninput=()=>{outlets[el.dataset.idx].shiftTimes[el.dataset.sidx].end=el.value});document.querySelectorAll('.oShiftName').forEach(el=>el.oninput=()=>{outlets[el.dataset.idx].shiftTimes[el.dataset.sidx].name=el.value})}
 function render(){const c=document.getElementById('outletCards');document.getElementById('outletCountTag').textContent=outlets.length+(outlets.length===1?' outlet':' outlets');if(!outlets.length){c.innerHTML='';document.getElementById('emptyNote').style.display='block';return}document.getElementById('emptyNote').style.display='none';c.innerHTML=outlets.map((o,i)=>`<div class="stack" style="margin-top:${i?'10px':'0'};"><div class="row"><span class="rlabel">Outlet ID</span><input class="oId" data-idx="${i}" value="${o.id||''}" placeholder="e.g. 1" style="width:70px;"></div><div class="row"><span class="rlabel">Outlet Name</span><input class="oName" data-idx="${i}" value="${o.name||''}" placeholder="e.g. Rasipuram" style="width:150px;"></div><div class="row"><span class="rlabel">Outlet Code</span><input class="oCode" data-idx="${i}" value="${o.shortCode||''}" placeholder="e.g. RSP" style="width:70px;text-transform:uppercase;"></div><div class="row"><span class="rlabel">Number of shifts</span><input class="oShifts" data-idx="${i}" type="number" value="${o.numShifts||2}" min="1" max="6" style="width:60px;"></div><div class="shiftTimesWrap">${shiftRows(o,i)}</div><div class="row" style="border-bottom:none;"><span class="rlabel" style="font-size:11px;">Shift label preview</span><span id="preview-${i}" class="num" style="font-size:11px;color:var(--ink-soft);">${preview(o)}</span></div></div>`).join('');
 document.querySelectorAll('.oId').forEach(el=>el.oninput=()=>{outlets[el.dataset.idx].id=el.value.trim()});document.querySelectorAll('.oName').forEach(el=>el.oninput=()=>{outlets[el.dataset.idx].name=el.value.trim()});document.querySelectorAll('.oCode').forEach(el=>el.oninput=()=>{const i=el.dataset.idx;outlets[i].shortCode=el.value.trim().toUpperCase();document.getElementById('preview-'+i).textContent=preview(outlets[i])});document.querySelectorAll('.oShifts').forEach(el=>el.oninput=()=>{const i=el.dataset.idx;outlets[i].numShifts=parseInt(el.value)||1;ensureShiftTimes(outlets[i]);render()});attachTimes()}
+function showSavedSetupDialog(saved){const modal=document.getElementById('savedSetupModal');const msg=document.getElementById('savedSetupMessage');const summary=document.getElementById('savedSetupSummary');msg.textContent=`You previously saved ${saved.length} outlet${saved.length===1?'':'s'}. Would you like to continue with this saved outlet setup, or start a new one?`;summary.innerHTML=saved.map((o,i)=>{const name=o.name||`Outlet ${i+1}`;const code=o.shortCode?` (${o.shortCode})`:'';return `<div><strong>${o.id||i+1}</strong> — ${name}${code}</div>`}).join('');modal.classList.add('show');document.getElementById('keepSavedBtn').focus()}
+function closeSavedSetupDialog(){document.getElementById('savedSetupModal').classList.remove('show')}
+document.getElementById('keepSavedBtn').onclick=()=>{const saved=loadSavedState();if(!saved){closeSavedSetupDialog();outlets=[];document.getElementById('outletCount').value=1;render();return}outlets=saved;outlets.forEach(ensureShiftTimes);document.getElementById('outletCount').value=outlets.length;render();closeSavedSetupDialog()};
+document.getElementById('discardSavedBtn').onclick=()=>{try{localStorage.removeItem(OUTLETS_KEY)}catch(e){}outlets=[];document.getElementById('outletCount').value=1;render();closeSavedSetupDialog()};
 document.getElementById('genBtn').onclick=()=>{const n=Math.max(1,Math.min(30,parseInt(document.getElementById('outletCount').value)||1));const next=[];for(let i=0;i<n;i++)next.push(outlets[i]||{id:'',name:'',shortCode:'',numShifts:2,shiftTimes:[]});outlets=next;outlets.forEach(ensureShiftTimes);render()};
 document.getElementById('saveBtn').onclick=()=>{const st=document.getElementById('saveStatus');const bad=outlets.filter(o=>!o.id||!o.name);if(bad.length){st.textContent='Every outlet needs at least Outlet ID and Outlet Name.';st.style.color='var(--loss)';return}const ids=outlets.map(o=>String(o.id));if(new Set(ids).size!==ids.length){st.textContent='Outlet IDs must be unique.';st.style.color='var(--loss)';return}outlets.forEach(ensureShiftTimes);saveState();st.textContent='Saved ✓ Starting Outlet 1 method analysis…';st.style.color='var(--profit)';setTimeout(()=>location.href='outlet-method-flow.html?outlet=0',500)};
-// Deliberately do not load saved outlet data here: this page is a fresh setup form until Save is pressed.
+// On open, restore only after the user explicitly chooses to keep the saved setup.
 document.getElementById('outletCount').value=1;render();
+const savedOnOpen=loadSavedState();if(savedOnOpen)showSavedSetupDialog(savedOnOpen);
 </script></body></html>
