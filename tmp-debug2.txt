@@ -1,0 +1,1 @@
+The current 111Q issue is under investigation: Method 1 purchase cost must be fetched from the existing Method 1 engine, not default to zero in the new wrapper.
