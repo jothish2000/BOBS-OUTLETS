@@ -1,29 +1,31 @@
 /* BOBS DATA MANAGER — Phase 1
- * Central ownership rules for permanent outlet profiles, working assessments,
- * and protected snapshots. Compatibility keeps the legacy outlets-master list synchronized.
+ * Central ownership rules for permanent outlet profiles, working assessments.
+ * Compatibility keeps the legacy outlets-master list synchronized on every page load.
  */
 (function(){
   const OUTLET_MASTER='bobs-permanent-outlet-master';
   const LEGACY_OUTLET_MASTER='outlets-master';
   const ACTIVE_OUTLET='outlet-selection';
   const WORKING_PREFIX='bobs-working-assessment:';
-  const VERSION=2;
+  const VERSION=3;
   function read(k,fallback){try{const v=localStorage.getItem(k);return v===null?fallback:JSON.parse(v)}catch(e){return fallback}}
   function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
   function now(){return new Date().toISOString()}
+  function syncLegacy(d){write(LEGACY_OUTLET_MASTER,Object.values(d||{}).map(p=>({...p,shortCode:p.shortCode||p.code||''})))}
   function db(){
     let d=read(OUTLET_MASTER,null);
     const legacy=read(LEGACY_OUTLET_MASTER,null);
     if(!d||typeof d!=='object'||Array.isArray(d))d={};
     if(Object.keys(d).length===0&&Array.isArray(legacy)&&legacy.length){legacy.forEach(o=>{if(o&&o.id)d[String(o.id)]={...o,id:String(o.id),createdAt:o.createdAt||now(),updatedAt:o.updatedAt||now()}});write(OUTLET_MASTER,d)}
+    if(Object.keys(d).length)syncLegacy(d);
     return d;
   }
-  function saveDb(v){const d=v||{};write(OUTLET_MASTER,d);write(LEGACY_OUTLET_MASTER,Object.values(d).map(p=>({...p,shortCode:p.shortCode||p.code||''})));}
+  function saveDb(v){const d=v||{};write(OUTLET_MASTER,d);syncLegacy(d)}
   function activeId(){const x=read(ACTIVE_OUTLET,null);return x&&x.id?String(x.id):localStorage.getItem('selected-outlet-id')||null}
   function profile(id){return db()[String(id)]||null}
   function ensureProfile(outlet){if(!outlet||!outlet.id)throw new Error('Outlet ID is required');const d=db(),id=String(outlet.id),old=d[id]||{};d[id]={...old,...outlet,id,shortCode:outlet.shortCode||outlet.code||old.shortCode||old.code||'',updatedAt:now()};if(!d[id].createdAt)d[id].createdAt=now();saveDb(d);return d[id]}
   function saveMethod2(id,state){id=String(id||activeId()||'');if(!id)throw new Error('No outlet selected');const d=db(),p=d[id]||{id:id,createdAt:now()};d[id]={...p,method2:state,method2SavedAt:now(),updatedAt:now()};saveDb(d);return d[id]}
-  function list(){const d=db();saveDb(d);return d}
+  function list(){const d=db();return d}
   function hasSaved(id){return !!profile(id||activeId())}
   function hasMethod2(id){const p=profile(id||activeId());return !!(p&&p.method2)}
   function workingKey(id){return WORKING_PREFIX+String(id||activeId()||'')}
