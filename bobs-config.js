@@ -2,7 +2,7 @@
 window.BOBS_CONFIG = Object.freeze({
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
   DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jEFIPerRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
-  VERSION: '2026-08-26-phase1-permanent-master-6'
+  VERSION: '2026-08-26-phase1-permanent-master-7'
 });
 try { if (!localStorage.getItem('sheets-sync-url')) localStorage.setItem('sheets-sync-url', window.BOBS_CONFIG.SHEETS_WEB_APP_URL); } catch (e) {}
 
@@ -12,7 +12,7 @@ try { if (!localStorage.getItem('sheets-sync-url')) localStorage.setItem('sheets
   const LEGACY_OUTLET_MASTER='outlets-master';
   const ACTIVE_OUTLET='outlet-selection';
   const WORKING_PREFIX='bobs-working-assessment:';
-  const VERSION=6;
+  const VERSION=7;
   const VAULT_URL=window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL;
   const read=(k,f)=>{try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v)}catch(e){return f}};
   const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -47,30 +47,55 @@ try { if (!localStorage.getItem('sheets-sync-url')) localStorage.setItem('sheets
   function activateOutlet(id){const p=profile(id);if(!p)throw new Error('Permanent outlet profile not found: '+id);write(ACTIVE_OUTLET,{id:p.id,code:p.code||p.shortCode||'',name:p.name||'',activatedAt:now()});localStorage.setItem('selected-outlet-id',String(p.id));return p}
   function summary(id){const p=profile(id||activeId());if(!p)return null;return{id:p.id,code:p.code||p.shortCode||'',name:p.name||'',hasMethod2:!!p.method2,method2SavedAt:p.method2SavedAt||null,updatedAt:p.updatedAt||null}}
   function recoverFromGoogle(onDone){
-    if(!VAULT_URL){if(onDone)onDone(false,0);return;}
+    if(!VAULT_URL){if(onDone)onDone(false,0,'Google Vault URL is not configured');return;}
     const cb='bobsOutletRecovery_'+Date.now()+'_'+Math.random().toString(36).slice(2);
     let finished=false;
-    const finish=(ok,count)=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){};const s=document.getElementById(cb+'_script');if(s)s.remove();if(onDone)onDone(ok,count)};
+    const finish=(ok,count,message)=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){};const s=document.getElementById(cb+'_script');if(s)s.remove();if(onDone)onDone(ok,count,message||'')};
     window[cb]=function(result){
       try{
-        if(result&&result.ok&&Array.isArray(result.outlets)&&result.outlets.length){
+        if(result&&result.ok&&Array.isArray(result.outlets)){
           const d=db();
           result.outlets.forEach(item=>{
             const o=item.data||{},id=String(item.outletId||o.id||'');if(!id)return;
             const existing=d[id]||{};
             d[id]={...existing,...o,id,shortCode:o.shortCode||o.code||item.outletCode||existing.shortCode||'',name:o.name||item.outletName||existing.name||'',createdAt:existing.createdAt||item.createdAt||now(),updatedAt:item.updatedAt||o.updatedAt||now()};
           });
-          saveDb(d);finish(true,result.outlets.length);return;
+          saveDb(d);finish(true,result.outlets.length,result.outlets.length?'Recovered permanent outlets from Google':'Google OUTLET_MASTER is empty');return;
         }
-        finish(true,0);
-      }catch(e){finish(false,0)}
+        finish(false,0,(result&&result.error)||'Google recovery returned no usable result');
+      }catch(e){finish(false,0,String(e))}
     };
-    const s=document.createElement('script');s.id=cb+'_script';s.src=VAULT_URL+'?action=outletList&callback='+encodeURIComponent(cb)+'&t='+Date.now();s.async=true;s.onerror=()=>finish(false,0);document.head.appendChild(s);
-    setTimeout(()=>finish(false,0),8000);
+    const s=document.createElement('script');s.id=cb+'_script';s.src=VAULT_URL+'?action=outletList&callback='+encodeURIComponent(cb)+'&t='+Date.now();s.async=true;s.onerror=()=>finish(false,0,'Unable to contact Google OUTLET_MASTER');document.head.appendChild(s);
+    setTimeout(()=>finish(false,0,'Google recovery timed out'),10000);
   }
   window.BOBSDataManager={version:VERSION,outletMasterKey:OUTLET_MASTER,legacyOutletMasterKey:LEGACY_OUTLET_MASTER,ensureOutlet,saveMethod2,getOutlet:profile,listOutlets:()=>db(),hasSaved:id=>!!profile(id||activeId()),hasMethod2:id=>!!(profile(id||activeId())||{}).method2,getWorking,setWorking,clearWorking,activateOutlet,summary,recoverFromGoogle};
   db();
 })();
 
-(function(){if(window.BOBSOutletMaster)return;const s=document.createElement('script');s.src='bobs-outlet-master.js?v=phase1-6';s.async=false;s.onload=function(){window.dispatchEvent(new Event('bobs-outlet-master-ready'))};document.head.appendChild(s)})();
-(function(){const s=document.createElement('script');s.src='bobs-module-gate.js?v=phase1-3';s.async=false;document.head.appendChild(s)})();
+(function(){
+  function outletBoot(){
+    const page=(location.pathname.split('/').pop()||'').toLowerCase();
+    if(page!=='outlets.html') return;
+    const status=document.getElementById('status');
+    if(status) status.textContent='BOBS Outlet Setup loaded — checking permanent saved outlets…';
+    if(!window.BOBSDataManager) return;
+    const local=window.BOBSDataManager.listOutlets();
+    if(local&&Object.keys(local).length){
+      if(status) status.textContent='Permanent outlet master loaded — '+Object.keys(local).length+' outlet profile(s) available.';
+      return;
+    }
+    window.BOBSDataManager.recoverFromGoogle(function(ok,count,message){
+      const latest=window.BOBSDataManager.listOutlets();
+      if(status) status.textContent=ok&&count ? 'Recovered '+count+' permanent outlet profile(s) from Google OUTLET_MASTER ✓' : (ok ? 'No saved permanent outlets found. Add / Prepare Outlets is ready.' : 'Google permanent outlet recovery could not be completed: '+message);
+      if(ok&&count){
+        const event=new CustomEvent('bobs-permanent-outlets-recovered',{detail:{count:count}});
+        window.dispatchEvent(event);
+        setTimeout(function(){location.reload()},350);
+      }
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',outletBoot); else setTimeout(outletBoot,0);
+})();
+
+(function(){if(window.BOBSOutletMaster)return;const s=document.createElement('script');s.src='bobs-outlet-master.js?v=phase1-7';s.async=false;s.onload=function(){window.dispatchEvent(new Event('bobs-outlet-master-ready'))};document.head.appendChild(s)})();
+(function(){const s=document.createElement('script');s.src='bobs-module-gate.js?v=phase1-4';s.async=false;document.head.appendChild(s)})();
