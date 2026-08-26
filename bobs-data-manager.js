@@ -1,13 +1,15 @@
 /* BOBS DATA MANAGER — Phase 1
- * Central ownership rules for permanent outlet profiles, working assessments.
- * Compatibility keeps the legacy outlets-master list synchronized on every page load.
+ * Permanent outlet profiles live locally for fast operation and are mirrored to
+ * the Google OUTLET_MASTER sheet for durable recovery. Snapshots remain separate.
  */
 (function(){
   const OUTLET_MASTER='bobs-permanent-outlet-master';
   const LEGACY_OUTLET_MASTER='outlets-master';
   const ACTIVE_OUTLET='outlet-selection';
   const WORKING_PREFIX='bobs-working-assessment:';
-  const VERSION=3;
+  const VERSION=4;
+  const CFG=window.BOBS_CONFIG||{};
+  const VAULT_URL=CFG.DATA_VAULT_WEB_APP_URL||'';
   function read(k,fallback){try{const v=localStorage.getItem(k);return v===null?fallback:JSON.parse(v)}catch(e){return fallback}}
   function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
   function now(){return new Date().toISOString()}
@@ -23,9 +25,17 @@
   function saveDb(v){const d=v||{};write(OUTLET_MASTER,d);syncLegacy(d)}
   function activeId(){const x=read(ACTIVE_OUTLET,null);return x&&x.id?String(x.id):localStorage.getItem('selected-outlet-id')||null}
   function profile(id){return db()[String(id)]||null}
-  function ensureProfile(outlet){if(!outlet||!outlet.id)throw new Error('Outlet ID is required');const d=db(),id=String(outlet.id),old=d[id]||{};d[id]={...old,...outlet,id,shortCode:outlet.shortCode||outlet.code||old.shortCode||old.code||'',updatedAt:now()};if(!d[id].createdAt)d[id].createdAt=now();saveDb(d);return d[id]}
-  function saveMethod2(id,state){id=String(id||activeId()||'');if(!id)throw new Error('No outlet selected');const d=db(),p=d[id]||{id:id,createdAt:now()};d[id]={...p,method2:state,method2SavedAt:now(),updatedAt:now()};saveDb(d);return d[id]}
-  function list(){const d=db();return d}
+  function ensureProfile(outlet){
+    if(!outlet||!outlet.id)throw new Error('Outlet ID is required');
+    const d=db(),id=String(outlet.id),old=d[id]||{};
+    d[id]={...old,...outlet,id,shortCode:outlet.shortCode||outlet.code||old.shortCode||old.code||'',updatedAt:now()};
+    if(!d[id].createdAt)d[id].createdAt=now();
+    saveDb(d);
+    queueGoogleOutletSave(d[id]);
+    return d[id];
+  }
+  function saveMethod2(id,state){id=String(id||activeId()||'');if(!id)throw new Error('No outlet selected');const d=db(),p=d[id]||{id:id,createdAt:now()};d[id]={...p,method2:state,method2SavedAt:now(),updatedAt:now()};saveDb(d);queueGoogleOutletSave(d[id]);return d[id]}
+  function list(){return db()}
   function hasSaved(id){return !!profile(id||activeId())}
   function hasMethod2(id){const p=profile(id||activeId());return !!(p&&p.method2)}
   function workingKey(id){return WORKING_PREFIX+String(id||activeId()||'')}
@@ -34,6 +44,45 @@
   function clearWorking(id){id=String(id||activeId()||'');if(id)localStorage.removeItem(workingKey(id))}
   function activate(id){id=String(id||'');const p=profile(id);if(!p)throw new Error('Permanent outlet profile not found: '+id);write(ACTIVE_OUTLET,{id:p.id,code:p.code||p.shortCode||'',name:p.name||'',activatedAt:now()});localStorage.setItem('selected-outlet-id',id);return p}
   function summary(id){const p=profile(id||activeId());if(!p)return null;return{id:p.id,code:p.code||p.shortCode||'',name:p.name||'',hasMethod2:!!p.method2,method2SavedAt:p.method2SavedAt||null,updatedAt:p.updatedAt||null}}
-  window.BOBSDataManager={version:VERSION,outletMasterKey:OUTLET_MASTER,legacyOutletMasterKey:LEGACY_OUTLET_MASTER,ensureOutlet:ensureProfile,saveMethod2,getOutlet:profile,listOutlets:list,hasSaved,hasMethod2,getWorking,setWorking,clearWorking,activateOutlet:activate,summary};
+  function queueGoogleOutletSave(outlet){
+    if(!VAULT_URL||!outlet||!outlet.id)return;
+    try{
+      fetch(VAULT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'outletSave',outlet:outlet}),keepalive:true}).catch(()=>{});
+    }catch(e){}
+  }
+  function recoverFromGoogle(){
+    if(!VAULT_URL||sessionStorage.getItem('bobs-outlet-recovery-attempted')==='1')return;
+    sessionStorage.setItem('bobs-outlet-recovery-attempted','1');
+    const cb='bobsOutletRecovery_'+Date.now();
+    window[cb]=function(result){
+      try{
+        if(result&&result.ok&&Array.isArray(result.outlets)&&result.outlets.length){
+          const d=db();
+          result.outlets.forEach(item=>{
+            const o=item.data||{};
+            const id=String(item.outletId||o.id||'');
+            if(!id)return;
+            const existing=d[id]||{};
+            d[id]={...existing,...o,id,shortCode:o.shortCode||o.code||item.outletCode||existing.shortCode||'',name:o.name||item.outletName||existing.name||'',createdAt:existing.createdAt||item.createdAt||now(),updatedAt:item.updatedAt||o.updatedAt||now()};
+          });
+          saveDb(d);
+          sessionStorage.setItem('bobs-outlet-recovered','1');
+          window.dispatchEvent(new CustomEvent('bobs-outlet-master-recovered',{detail:{count:result.outlets.length}}));
+          if(location.pathname.split('/').pop()==='outlets.html' && !sessionStorage.getItem('bobs-outlet-recovery-reloaded')){
+            sessionStorage.setItem('bobs-outlet-recovery-reloaded','1');
+            setTimeout(()=>location.reload(),150);
+          }
+        }
+      }catch(e){}
+      try{delete window[cb]}catch(e){}
+    };
+    const s=document.createElement('script');
+    s.src=VAULT_URL+'?action=outletList&callback='+encodeURIComponent(cb)+'&t='+Date.now();
+    s.async=true;
+    s.onerror=()=>{try{delete window[cb]}catch(e){}};
+    document.head.appendChild(s);
+  }
+  window.BOBSDataManager={version:VERSION,outletMasterKey:OUTLET_MASTER,legacyOutletMasterKey:LEGACY_OUTLET_MASTER,ensureOutlet:ensureProfile,saveMethod2,getOutlet:profile,listOutlets:list,hasSaved,hasMethod2,getWorking,setWorking,clearWorking,activateOutlet:activate,summary,recoverFromGoogle};
   db();
+  recoverFromGoogle();
 })();
