@@ -4,13 +4,16 @@
 <section><div class="section-head"><h2>Snapshot / restore</h2><span class="tag">SAFE TEST</span></div><div class="stack"><p>Only synthetic QA data is used. This page never calls Start Fresh and never clears BOBS working data.</p>
 <div class="row"><button id="send1" type="button">1. Send test snapshot A</button></div><div class="row"><button id="send2" type="button">2. Send test snapshot B</button></div>
 <div class="row"><button id="list" type="button">3. Read Vault snapshot list</button></div>
-<div class="row"><label for="restoreId">Snapshot ID to restore</label><input id="restoreId" placeholder="Paste QA snapshot ID"><button id="restore" type="button">4. Read snapshot from Vault</button></div>
-<pre id="out" style="white-space:pre-wrap;font-size:12px;line-height:1.5"></pre></div></section><footer>Restore test reads the stored snapshot; it does not modify the Google Vault sheet or BOBS working data.</footer>
+<div class="row"><label for="restoreId">Snapshot ID</label><input id="restoreId" placeholder="Paste QA snapshot ID"><button id="restore" type="button">4. Read snapshot from Vault</button></div>
+<div class="row"><label for="testValue">Synthetic local test value</label><input id="testValue" value="TEST VALUE A"><button id="saveLocal" type="button">5. Save synthetic value locally</button><button id="restoreLocal" type="button">6. Restore snapshot into synthetic test storage</button></div>
+<pre id="out" style="white-space:pre-wrap;font-size:12px;line-height:1.5"></pre></div></section><footer>Steps 5–6 use only the isolated localStorage key <b>bobs-qa-restore-test</b>. They do not touch any BOBS module data.</footer>
 <script>
-const out=document.getElementById('out');function show(x){out.textContent=typeof x==='string'?x:JSON.stringify(x,null,2)}
+const QAKEY='bobs-qa-restore-test',out=document.getElementById('out');function show(x){out.textContent=typeof x==='string'?x:JSON.stringify(x,null,2)}
 async function post(body){try{const r=await fetch(window.BOBSProtection.googleVaultUrl,{method:'POST',mode:'cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return await r.json()}catch(e){throw new Error('Browser could not read the Web App response. '+e.message)}}
 async function send(label,value){const id='QA-'+Date.now()+'-'+label;try{await post({action:'snapshot',snapshotId:id,reason:'BOBS Phase 1 harmless QA '+label,data:{'qa-test':{label,value,createdAt:new Date().toISOString()}}});show('Snapshot confirmed by Web App. ID: '+id)}catch(e){show(e.message+'\n\nIf the snapshot still appears in Google Vault, the write works but browser CORS is blocking the response.')}}
 document.getElementById('send1').onclick=()=>send('A','TEST VALUE A');document.getElementById('send2').onclick=()=>send('B','TEST VALUE B');
 document.getElementById('list').onclick=async()=>{try{show(await post({action:'list'}))}catch(e){show(e.message)}};
-document.getElementById('restore').onclick=async()=>{const id=document.getElementById('restoreId').value.trim();if(!id){show('Enter a snapshot ID first.');return}try{const r=await post({action:'restore',snapshotId:id});show(r)}catch(e){show(e.message)}};
+document.getElementById('restore').onclick=async()=>{const id=document.getElementById('restoreId').value.trim();if(!id){show('Enter a snapshot ID first.');return}try{show(await post({action:'restore',snapshotId:id}))}catch(e){show(e.message)}};
+document.getElementById('saveLocal').onclick=()=>{const v=document.getElementById('testValue').value;localStorage.setItem(QAKEY,v);show({savedSyntheticValue:v,key:QAKEY})};
+document.getElementById('restoreLocal').onclick=async()=>{const id=document.getElementById('restoreId').value.trim();if(!id){show('Enter Snapshot A ID first.');return}try{const r=await post({action:'restore',snapshotId:id});const v=r&&r.data&&r.data['qa-test']&&r.data['qa-test'].value;if(v===undefined)throw new Error('Stored snapshot does not contain qa-test.value');localStorage.setItem(QAKEY,v);document.getElementById('testValue').value=v;show({ok:true,restoredSnapshot:id,restoredSyntheticValue:v,key:QAKEY})}catch(e){show('RESTORE TEST FAILED: '+e.message)}};
 </script></body></html>
