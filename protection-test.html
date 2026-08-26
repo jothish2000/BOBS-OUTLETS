@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOBS Protection QA</title><link rel="stylesheet" href="style.css"><script src="bobs-config.js"></script><script src="bobs-protection.js"></script></head>
+<body><header><p class="eyebrow">BOBS Phase 1</p><h1>Protection QA</h1><p class="sub">Non-destructive Data Vault connection test. This page never clears BOBS working data.</p></header>
+<section><div class="section-head"><h2>Live snapshot test</h2><span class="tag">SAFE TEST</span></div><div class="stack"><p>This creates synthetic test snapshots only. It does not call Start Fresh and does not delete any BOBS data.</p><div class="row"><button id="send1" type="button">1. Send test snapshot A</button></div><div class="row"><button id="send2" type="button">2. Send test snapshot B</button></div><div class="row"><button id="local" type="button">Show local protection state</button></div><pre id="out" style="white-space:pre-wrap;font-size:12px;line-height:1.5"></pre></div></section>
+<footer>After each send, verify the corresponding row in BOBS_SNAPSHOT_VAULT and VAULT_INDEX.</footer>
+<script>
+const out=document.getElementById('out');
+function show(x){out.textContent=typeof x==='string'?x:JSON.stringify(x,null,2)}
+async function send(label,value){
+ const id='QA-'+Date.now()+'-'+label;
+ const data={'qa-test':{label,value,createdAt:new Date().toISOString()}};
+ try{const result=await fetch(window.BOBSProtection.googleVaultUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'snapshot',snapshotId:id,reason:'BOBS Phase 1 harmless QA '+label,data})});show('Request sent. Snapshot ID: '+id+'\nBrowser cannot read the no-cors response; verify the Google Vault sheets for the record.');}
+ catch(e){show('SEND FAILED: '+e.message)}
+}
+document.getElementById('send1').onclick=()=>send('A','TEST VALUE A');
+document.getElementById('send2').onclick=()=>send('B','TEST VALUE B');
+document.getElementById('local').onclick=()=>show({vaultUrl:window.BOBSProtection.googleVaultUrl,localSnapshots:window.BOBSProtection.listSnapshots(),syncQueue:window.BOBSProtection.listSyncQueue()});
+</script></body></html>
