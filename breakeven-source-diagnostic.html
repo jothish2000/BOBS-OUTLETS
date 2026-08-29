@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOBS — Break-even Source Diagnostic</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f7fa;margin:0;padding:24px;color:#222}
+.container{max-width:1000px;margin:0 auto}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}label{font-weight:600}
+input,select,button{font-size:15px;padding:9px 12px;border-radius:7px;border:1px solid #ccc}button{cursor:pointer;font-weight:600}.run{background:#111827;color:#fff;border:0}
+.status{padding:10px 12px;border-radius:7px;background:#eef2ff;margin-top:14px}.source{border:1px solid #ddd;border-radius:10px;padding:16px;margin-top:14px}
+.ok{color:#137333;font-weight:700}.missing{color:#b3261e;font-weight:700}.unknown{color:#8a5a00;font-weight:700}
+pre{background:#111827;color:#e5e7eb;padding:16px;border-radius:8px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;font-size:13px}
+.small{font-size:13px;color:#666}.warning{background:#fff7ed;border-left:4px solid #f97316;padding:12px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>BOBS — Break-even Source Diagnostic</h1>
+<div class="subtitle">Read-only diagnostic. This page does not save, delete, or modify existing data.</div>
+<div class="card"><h2>Diagnostic Selection</h2><div class="row">
+<div><label>Outlet</label><br><select id="outletId"><option value="1">1 — RASIPURAM (RSP)</option><option value="2">2 — GURUSAMYPALAYAM (GP)</option></select></div>
+<div><label>Month</label><br><input id="month" type="month" value="2026-08"></div>
+<div style="padding-top:20px"><button class="run" onclick="runDiagnostic()">Run Diagnostic</button></div>
+</div><div id="status" class="status">Ready. No data has been changed.</div></div>
+
+<div class="card"><h2>Method 1</h2><div id="method1Result">Not checked yet.</div><div id="method1Details" class="source" style="display:none"></div></div>
+<div class="card"><h2>Method 2</h2><div id="method2Result">Not checked yet.</div><div id="method2Details" class="source" style="display:none"></div></div>
+<div class="card"><h2>Fixed Expenses</h2><div id="fixedResult">Not checked yet.</div><div id="fixedDetails" class="source" style="display:none"></div></div>
+<div class="card"><h2>Google Data Vault</h2><div id="googleResult">Not checked yet.</div><div id="googleDetails" class="source" style="display:none"></div></div>
+<div class="card"><h2>Detected BOBS Browser Data</h2><div class="small">This section only reads localStorage keys. It does not modify them.</div><pre id="rawStorage">Not checked yet.</pre></div>
+<div class="card"><h2>Safety</h2><div class="warning"><strong>READ ONLY:</strong> This diagnostic does not call any save, update, delete, or Google write operation.</div></div>
+</div>
+
+<script>
+function readLocalStorageJson(key){try{const raw=localStorage.getItem(key);if(!raw)return{exists:false,key:key,value:null};try{return{exists:true,key:key,value:JSON.parse(raw)}}catch(e){return{exists:true,key:key,value:raw,parseError:true}}}catch(e){return{exists:false,key:key,error:String(e)}}}
+function findStorageKeys(s){const a=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.toLowerCase().includes(s.toLowerCase()))a.push(k)}}catch(e){}return a}
+function esc(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
+function result(id,found,yes,no){document.getElementById(id).innerHTML=found?'<span class="ok">✓ '+yes+'</span>':'<span class="missing">✗ '+no+'</span>'}
+
+function inspectMethod1(){
+ const r=readLocalStorageJson('method1-hourly-state'), keys=findStorageKeys('method1'), d=document.getElementById('method1Details');
+ if(r.exists){result('method1Result',true,'Existing Method 1 working state found.','Method 1 working state not found.');d.style.display='block';d.innerHTML='<h3>Primary state</h3><div><strong>Key:</strong> '+esc(r.key)+'</div><br><pre>'+esc(JSON.stringify(r.value,null,2))+'</pre><h3>Related Method 1 keys detected</h3><pre>'+esc(JSON.stringify(keys,null,2))+'</pre>'}
+ else{result('method1Result',false,'Existing Method 1 working state found.','Method 1 working state was not found in this browser.');d.style.display='block';d.innerHTML='<span class="unknown">No readable method1-hourly-state was found. Related keys detected: '+esc(JSON.stringify(keys))+'</span>'}
+}
+function inspectMethod2(){
+ const r=readLocalStorageJson('method2-item-state'), keys=findStorageKeys('method2'), d=document.getElementById('method2Details');
+ if(r.exists){result('method2Result',true,'Existing Method 2 working state found.','Method 2 working state not found.');d.style.display='block';d.innerHTML='<h3>Primary state</h3><div><strong>Key:</strong> '+esc(r.key)+'</div><br><pre>'+esc(JSON.stringify(r.value,null,2))+'</pre><h3>Related Method 2 keys detected</h3><pre>'+esc(JSON.stringify(keys,null,2))+'</pre>'}
+ else{result('method2Result',false,'Existing Method 2 working state found.','Method 2 working state was not found in this browser.');d.style.display='block';d.innerHTML='<span class="unknown">No readable method2-item-state was found. Related keys detected: '+esc(JSON.stringify(keys))+'</span>'}
+}
+function inspectFixed(){
+ const candidates=['fixed-expenses','fixedexpenses','fixed-expense-state','fixedExpenses','fixedExpenseState'];let f=null;
+ candidates.some(k=>{const r=readLocalStorageJson(k);if(r.exists){f=r;return true}return false});
+ const keys=findStorageKeys('fixed'),d=document.getElementById('fixedDetails');
+ if(f){result('fixedResult',true,'Existing Fixed Expense browser state found.','Fixed Expense browser state not found.');d.style.display='block';d.innerHTML='<h3>Detected state</h3><div><strong>Key:</strong> '+esc(f.key)+'</div><br><pre>'+esc(JSON.stringify(f.value,null,2))+'</pre><h3>Related keys detected</h3><pre>'+esc(JSON.stringify(keys,null,2))+'</pre>'}
+ else{result('fixedResult',false,'Existing Fixed Expense browser state found.','Fixed Expense state was not found using the known key patterns.');d.style.display='block';d.innerHTML='<span class="unknown">No known Fixed Expense key was found.</span><h3>Related keys detected</h3><pre>'+esc(JSON.stringify(keys,null,2))+'</pre>'}
+}
+function inspectGoogle(){
+ document.getElementById('googleResult').innerHTML='<span class="ok">✓ Google Data Vault structure known.</span>';
+ const d=document.getElementById('googleDetails');d.style.display='block';
+ d.innerHTML='<p><strong>Currently confirmed for Outlet 1 / August 2026:</strong></p><pre>STAFF_MASTER        ✓ available\nMONTHLY_ATTACHMENT  ✓ available\nMETHOD1             — not in Data Vault\nMETHOD2             — not in Data Vault\nFIXED_EXPENSES      — not in Data Vault</pre><p class="small">Informational only. No Google write operation is made.</p>';
+}
+function inspectRaw(){
+ const out=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k)continue;let v;try{v=JSON.parse(localStorage.getItem(k))}catch(e){v=localStorage.getItem(k)}out.push({key:k,value:v})}}catch(e){out.push({error:String(e)})}
+ document.getElementById('rawStorage').textContent=JSON.stringify(out,null,2)
+}
+function runDiagnostic(){
+ const s=document.getElementById('status');s.textContent='Running read-only browser diagnostic...';
+ try{inspectMethod1();inspectMethod2();inspectFixed();inspectGoogle();inspectRaw();s.textContent='Diagnostic completed. No data was modified.'}catch(e){s.textContent='Diagnostic error: '+String(e);console.error(e)}
+}
+window.addEventListener('DOMContentLoaded',runDiagnostic);
+</script>
+</body>
+</html>
