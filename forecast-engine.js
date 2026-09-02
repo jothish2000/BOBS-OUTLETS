@@ -1,96 +1,37 @@
-/* BOBS Business Forecast & Scenario Engine — v1.0
+/* BOBS Business Forecast & Scenario Engine — v1.1
  * Pure calculation layer. No Google writes. No accounting-entry logic.
  */
-(function(global){
-  'use strict';
-  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
-  const pct=v=>n(v)/100;
-  const round=(v,d=2)=>{const p=Math.pow(10,d);return Math.round((n(v)+Number.EPSILON)*p)/p};
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-
-  function forecast(input){
-    const sales=n(input.baseDailySales);
-    const cogs=n(input.baseDailyCogs);
-    const gp=Math.max(0,sales-cogs);
-    const gpMargin=sales>0?gp/sales:0;
-    const staff=n(input.baseDailyStaffCost);
-    const fixed=n(input.baseDailyFixedExpense);
-    const variable=n(input.baseDailyVariableExpense);
-    const depreciation=n(input.baseDailyDepreciation);
-    const finance=n(input.baseDailyFinanceCost);
-    const taxRate=clamp(pct(input.taxRate),0,1);
-    const volumeFactor=1+pct(input.salesVolumeChangePct);
-    const priceFactor=1+pct(input.salesPriceChangePct);
-    const cogsFactor=1+pct(input.cogsChangePct);
-    const staffFactor=1+pct(input.staffCostChangePct);
-    const fixedFactor=1+pct(input.fixedExpenseChangePct);
-    const variableFactor=1+pct(input.variableExpenseChangePct);
-    const depFactor=1+pct(input.depreciationChangePct);
-    const financeFactor=1+pct(input.financeCostChangePct);
-    const eventRevenue=n(input.eventRevenue);
-    const bulkRevenue=n(input.bulkRevenue);
-    const additionalRevenue=eventRevenue+bulkRevenue;
-    const forecastSales=sales*volumeFactor*priceFactor+additionalRevenue;
-    const forecastCogs=cogs*volumeFactor*cogsFactor;
-    const forecastGp=forecastSales-forecastCogs;
-    const forecastStaff=staff*staffFactor;
-    const forecastFixed=fixed*fixedFactor;
-    const forecastVariable=variable*volumeFactor*variableFactor;
-    const forecastDep=depreciation*depFactor;
-    const forecastFinance=finance*financeFactor;
-    const pbd=forecastGp-forecastStaff-forecastFixed-forecastVariable;
-    const ebit= pbd-forecastDep;
-    const pbt= ebit-forecastFinance;
-    const tax=Math.max(0,pbt*taxRate);
-    const net=pbt-tax;
-    const margin=forecastSales>0?forecastGp/forecastSales:0;
-    const fixedBurden=forecastStaff+forecastFixed+forecastDep+forecastFinance;
-    const contribution=forecastSales-forecastCogs-forecastVariable;
-    const contributionRatio=forecastSales>0?contribution/forecastSales:0;
-    const breakEvenRevenue=contributionRatio>0?fixedBurden/contributionRatio:Infinity;
-    const gap=Math.max(0,breakEvenRevenue-forecastSales);
-    const requiredSalesForPbd=forecastCogs+forecastVariable+forecastStaff+forecastFixed;
-    const requiredSalesForEbit=requiredSalesForPbd+forecastDep;
-    return {sales:forecastSales,cogs:forecastCogs,grossProfit:forecastGp,grossMargin:margin,staff:forecastStaff,fixed:forecastFixed,variable:forecastVariable,depreciation:forecastDep,finance:forecastFinance,pbdit:pbd,pbit:ebit,pbt, tax, netProfit:net,contribution,contributionRatio,breakEvenRevenue,breakEvenGap:gap,requiredSalesForPBDIT:requiredSalesForPbd,requiredSalesForEBIT:requiredSalesForEbit,baseGrossMargin:gpMargin};
-  }
-
-  function periods(daily,days){const d=n(days);return {daily,period:daily*d,days:d};}
-  function requiredExtraSalesForCostIncrease(input,costKey,changePct){
-    const base=forecast({...input,salesVolumeChangePct:0,salesPriceChangePct:0,cogsChangePct:0,staffCostChangePct:0,fixedExpenseChangePct:0,variableExpenseChangePct:0,depreciationChangePct:0,financeCostChangePct:0});
-    const stressed=forecast({...input,[costKey]:changePct});
-    const target=base.pbdit;
-    const ratio=Math.max(0.000001,1-stressed.cogs/stressed.sales-stressed.variable/stressed.sales);
-    const extra=Math.max(0,(target+stressed.staff+stressed.fixed+stressed.cogs+stressed.variable)-stressed.sales*ratio);
-    return {base,stressed,extraDailySales:Math.max(0,extra)};
-  }
-  function sensitivity(input,steps){
-    const changes=Array.isArray(steps)&&steps.length?steps:[-20,-10,10,15,20,30];
-    const keys=[['Sales volume','salesVolumeChangePct'],['Sales price','salesPriceChangePct'],['COGS / raw material','cogsChangePct'],['Staff cost','staffCostChangePct'],['Fixed expense','fixedExpenseChangePct'],['Variable expense','variableExpenseChangePct']];
-    const base=forecast(input);
-    const rows=[];
-    keys.forEach(([label,key])=>changes.forEach(ch=>{const r=forecast({...input,[key]:ch});const extra=Math.max(0,base.pbdit-r.pbdit)/Math.max(0.000001,r.contributionRatio);rows.push({label,key,changePct:ch,...r,requiredAdditionalDailySales:extra,requiredAdditionalMonthlySales:extra*n(input.periodDays||30)});}));
-    return {base,rows};
-  }
-  function eventScenario(input,event){
-    const e=event||{};
-    const days=Math.max(1,n(e.days||input.periodDays||1));
-    const uplift=pct(e.salesUpliftPct);
-    const normalDaily=n(input.baseDailySales);
-    const eventDaily=normalDaily*(1+uplift)+n(e.extraDailyRevenue);
-    return forecast({...input,baseDailySales:normalDaily,salesVolumeChangePct:uplift*100,eventRevenue:n(e.extraDailyRevenue)*days});
-  }
-  function bulkScenario(input,order){
-    const q=n(order.quantity), price=n(order.pricePerUnit), revenue=n(order.revenue)||q*price;
-    const extraMaterial=n(order.extraMaterialCost),extraLabour=n(order.extraLabourCost),extraDelivery=n(order.extraDeliveryCost);
-    const extraCost=extraMaterial+extraLabour+extraDelivery;
-    const r=forecast({...input,bulkRevenue:revenue});
-    r.bulkOrder={quantity:q,revenue,extraMaterialCost:extraMaterial,extraLabourCost:extraLabour,extraDeliveryCost:extraDelivery,extraCost,bulkGrossContribution:revenue-extraMaterial,bulkNetIncrement:revenue-extraCost};
-    return r;
-  }
-  function capacity(order){
-    const q=n(order.quantity), production=n(order.productionCapacity), staff=n(order.staffCapacity), equipment=n(order.equipmentCapacity), raw=n(order.rawMaterialCapacity);
-    const limits=[production,staff,equipment,raw].filter(x=>x>0);const limiting=limits.length?Math.min(...limits):Infinity;
-    return {quantity:q,productionCapacity:production,staffCapacity:staff,equipmentCapacity:equipment,rawMaterialCapacity:raw,feasible:q<=limiting,maximumFeasibleQuantity:limiting===Infinity?null:limiting,shortfall:limiting===Infinity?0:Math.max(0,q-limiting)};
-  }
-  global.BOBSForecastEngine={version:'1.0',forecast,periods,sensitivity,eventScenario,bulkScenario,capacity,requiredExtraSalesForCostIncrease};
+(function(global){'use strict';
+const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0},pct=v=>n(v)/100,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function forecast(input){
+ const sales=n(input.baseDailySales),cogs=n(input.baseDailyCogs),gp=sales-cogs,gpMargin=sales>0?gp/sales:0;
+ const staff=n(input.baseDailyStaffCost),fixed=n(input.baseDailyFixedExpense),variable=n(input.baseDailyVariableExpense),depreciation=n(input.baseDailyDepreciation),finance=n(input.baseDailyFinanceCost);
+ const taxRate=clamp(pct(input.taxRate),0,1),vf=Math.max(0,1+pct(input.salesVolumeChangePct)),pf=Math.max(0,1+pct(input.salesPriceChangePct));
+ const cf=Math.max(0,1+pct(input.cogsChangePct)),sf=Math.max(0,1+pct(input.staffCostChangePct)),ff=Math.max(0,1+pct(input.fixedExpenseChangePct)),vfExp=Math.max(0,1+pct(input.variableExpenseChangePct));
+ const df=Math.max(0,1+pct(input.depreciationChangePct)),finf=Math.max(0,1+pct(input.financeCostChangePct));
+ const eventDaily=n(input.eventExtraDailyRevenue),bulkDaily=n(input.bulkRevenueDaily||input.bulkRevenue);
+ const forecastSales=sales*vf*pf+eventDaily+bulkDaily;
+ const forecastCogs=cogs*vf*cf;
+ const forecastGp=forecastSales-forecastCogs;
+ const forecastStaff=staff*sf,forecastFixed=fixed*ff,forecastVariable=variable*vf*vfExp,forecastDep=depreciation*df,forecastFinance=finance*finf;
+ const pbdit=forecastGp-forecastStaff-forecastFixed-forecastVariable, pbit=pbdit-forecastDep,pbt=pbit-forecastFinance,tax=Math.max(0,pbt*taxRate),netProfit=pbt-tax;
+ const grossMargin=forecastSales>0?forecastGp/forecastSales:0,contribution=forecastSales-forecastCogs-forecastVariable,contributionRatio=forecastSales>0?contribution/forecastSales:0;
+ const fixedBurden=forecastStaff+forecastFixed+forecastDep+forecastFinance,breakEvenRevenue=contributionRatio>0?fixedBurden/contributionRatio:Infinity;
+ return {sales:forecastSales,cogs:forecastCogs,grossProfit:forecastGp,grossMargin,staff:forecastStaff,fixed:forecastFixed,variable:forecastVariable,depreciation:forecastDep,finance:forecastFinance,pbdit,pbit,pbt,tax,netProfit,contribution,contributionRatio,breakEvenRevenue,breakEvenGap:Math.max(0,breakEvenRevenue-forecastSales),requiredSalesForPBDIT:forecastCogs+forecastVariable+forecastStaff+forecastFixed,requiredSalesForEBIT:forecastCogs+forecastVariable+forecastStaff+forecastFixed+forecastDep,baseGrossMargin:gpMargin};
+}
+function periods(daily,days){const d=n(days);return {daily,period:daily*d,days:d};}
+function requiredExtraSalesForCostIncrease(input,costKey,changePct){
+ const base=forecast({...input,salesVolumeChangePct:0,salesPriceChangePct:0,cogsChangePct:0,staffCostChangePct:0,fixedExpenseChangePct:0,variableExpenseChangePct:0,depreciationChangePct:0,financeCostChangePct:0});
+ const stressed=forecast({...input,[costKey]:changePct});
+ const ratio=Math.max(0.000001,stressed.contributionRatio);const extra=Math.max(0,(base.pbdit-stressed.pbdit)/ratio);
+ return {base,stressed,extraDailySales:extra};
+}
+function sensitivity(input,steps){
+ const changes=Array.isArray(steps)&&steps.length?steps:[-20,-10,10,15,20,30],keys=[['Sales volume','salesVolumeChangePct'],['Sales price','salesPriceChangePct'],['COGS / raw material','cogsChangePct'],['Staff cost','staffCostChangePct'],['Fixed expense','fixedExpenseChangePct'],['Variable expense','variableExpenseChangePct']],base=forecast(input),rows=[];
+ keys.forEach(([label,key])=>changes.forEach(ch=>{const r=forecast({...input,[key]:ch}),extra=Math.max(0,(base.pbdit-r.pbdit)/Math.max(0.000001,r.contributionRatio));rows.push({label,key,changePct:ch,...r,requiredAdditionalDailySales:extra,requiredAdditionalMonthlySales:extra*n(input.periodDays||30)});}));return {base,rows};
+}
+function eventScenario(input,event){const e=event||{},uplift=pct(e.salesUpliftPct);return forecast({...input,salesVolumeChangePct:uplift*100,eventExtraDailyRevenue:n(e.extraDailyRevenue)});}
+function bulkScenario(input,order){const o=order||{},q=n(o.quantity),price=n(o.pricePerUnit),revenue=n(o.revenue)||q*price,extraMaterial=n(o.extraMaterialCost),extraLabour=n(o.extraLabourCost),extraDelivery=n(o.extraDeliveryCost),extraCost=extraMaterial+extraLabour+extraDelivery,r=forecast({...input,bulkRevenueDaily:revenue/Math.max(1,n(input.periodDays||1))});r.bulkOrder={quantity:q,revenue,extraMaterialCost:extraMaterial,extraLabourCost:extraLabour,extraDeliveryCost:extraDelivery,extraCost,bulkGrossContribution:revenue-extraMaterial,bulkNetIncrement:revenue-extraCost};return r;}
+function capacity(order){const o=order||{},q=n(o.quantity),limits=[n(o.productionCapacity),n(o.staffCapacity),n(o.equipmentCapacity),n(o.rawMaterialCapacity)].filter(x=>x>0),lim=limits.length?Math.min(...limits):Infinity;return {quantity:q,productionCapacity:n(o.productionCapacity),staffCapacity:n(o.staffCapacity),equipmentCapacity:n(o.equipmentCapacity),rawMaterialCapacity:n(o.rawMaterialCapacity),feasible:q<=lim,maximumFeasibleQuantity:lim===Infinity?null:lim,shortfall:lim===Infinity?0:Math.max(0,q-lim)};}
+global.BOBSForecastEngine={version:'1.1',forecast,periods,sensitivity,eventScenario,bulkScenario,capacity,requiredExtraSalesForCostIncrease};
 })(window);
