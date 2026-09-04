@@ -1,12 +1,12 @@
 /* BOBS RECOVERY BOOT — recover Method 1 / Method 2 before module initialization.
- * Recovery order: protected browser vault -> emergency recovery copy -> Google Data Vault.
+ * Recovery order: protected browser vault -> emergency recovery copy -> Google Data Vault snapshots -> legacy Google module records.
  * This script never deletes or overwrites permanent Google records.
  */
 (function(){
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 const configs={
-  'method1.html':{key:'method1-hourly-state',label:'Method 1'},
-  'method2.html':{key:'method2-item-state',label:'Method 2'}
+  'method1.html':{key:'method1-hourly-state',label:'Method 1',module:'METHOD1'},
+  'method2.html':{key:'method2-item-state',label:'Method 2',module:'METHOD2'}
 };
 const cfg=configs[path]; if(!cfg)return;
 const VAULT='https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec';
@@ -23,14 +23,25 @@ function restoreObject(data){
   });
   return restored;
 }
+function restoreModulePayload(data){
+  if(!data||typeof data!=='object')return false;
+  /* Legacy BOBS_MODULE_DATA stores the actual module payload in data. */
+  if(cfg.key==='method1-hourly-state'){
+    if(Array.isArray(data.custVals)||Array.isArray(data.basketVals))return setRaw(cfg.key,data);
+    if(data.data&&typeof data.data==='object'&&(Array.isArray(data.data.custVals)||Array.isArray(data.data.basketVals)))return setRaw(cfg.key,data.data);
+  }
+  if(cfg.key==='method2-item-state'){
+    if(data.qtys||data.prod||data.production)return setRaw(cfg.key,data);
+    if(data.data&&typeof data.data==='object'&&(data.data.qtys||data.data.prod||data.data.production))return setRaw(cfg.key,data.data);
+  }
+  return false;
+}
 function restoreLocalSnapshot(){
   try{
-    /* Emergency copy created by the earlier deletion guard. */
     const emergency=localStorage.getItem('bobs-recovery-'+cfg.key);
     if(valid(emergency)){localStorage.setItem(cfg.key,emergency);return true}
   }catch(e){}
   try{
-    /* Browser-side BOBS Data Vault snapshots. */
     const list=JSON.parse(localStorage.getItem('bobs-data-vault')||'[]');
     if(Array.isArray(list)){
       const snaps=list.slice().sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -52,16 +63,29 @@ function call(action,params,timeout){return new Promise((resolve,reject)=>{
 function setReloadFlag(){try{sessionStorage.setItem(FLAG,'1')}catch(e){}}
 function wasReloaded(){try{return sessionStorage.getItem(FLAG)==='1'}catch(e){return false}}
 function clearReloadFlag(){try{sessionStorage.removeItem(FLAG)}catch(e){}}
+async function recoverLegacyModule(){
+  /* The original BOBS Google-first backend stored Method 1 / Method 2 in
+     BOBS_MODULE_DATA and exposed moduleList through the same Web App URL. */
+  let outletId='';
+  try{const selected=JSON.parse(localStorage.getItem('outlet-selection')||'null');outletId=String(selected&&selected.id||'')}catch(e){}
+  if(!outletId){
+    try{const ol=await call('outletList',{});const first=(ol.outlets||[])[0];if(first)outletId=String(first.outletId||'')}catch(e){}
+  }
+  if(!outletId)return false;
+  try{
+    const r=await call('moduleList',{outletId,module:cfg.module});
+    const records=Array.isArray(r.records)?r.records.slice().sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||''))):[];
+    for(const rec of records){if(String(rec.status||'').toUpperCase()==='DELETED')continue;if(restoreModulePayload(rec.data||{})){console.info('BOBS legacy Google module recovery restored '+cfg.key+' for outlet '+outletId);return true}}
+  }catch(e){console.warn('BOBS legacy module recovery unavailable:',e)}
+  return false;
+}
 async function recover(){
   if(localHas()){clearReloadFlag();return}
   if(wasReloaded()){clearReloadFlag();return}
-  /* First use anything that is still present in this browser. This is the safest
-     recovery path and does not require the Google deployment to be current. */
   if(restoreLocalSnapshot()){
     console.info('BOBS local protected recovery restored '+cfg.key);
     setReloadFlag();location.reload();return;
   }
-  /* Then use the Google Data Vault. */
   try{
     const listed=await call('list',{});
     const snaps=(listed.snapshots||[]).filter(s=>String(s.status||'')==='PROTECTED').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -75,6 +99,9 @@ async function recover(){
       }catch(e){}
     }
   }catch(e){console.warn('BOBS Google protected recovery unavailable:',e)}
+  if(await recoverLegacyModule()){
+    setReloadFlag();location.reload();return;
+  }
   clearReloadFlag();
 }
 recover();
