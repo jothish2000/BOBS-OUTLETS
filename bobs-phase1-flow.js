@@ -11,10 +11,17 @@
       (JSON.parse(localStorage.getItem('outlet-selection')||'null')||{}).id||'1';
   }
   function go(page){ location.href=page+'?outlet='+encodeURIComponent(outletId()); }
+  function activeMethod(){
+    const title=(document.getElementById('methodTitle')?.textContent||'').toLowerCase();
+    if(title.indexOf('method 2')!==-1) return 'method2';
+    if(title.indexOf('method 1')!==-1) return 'method1';
+    const frame=document.getElementById('methodFrame');
+    const src=frame?.getAttribute('src')||'';
+    return src.indexOf('method2.html')!==-1?'method2':'method1';
+  }
 
   ready(function(){
     if(path==='outlet-method-flow.html'){
-      let methodWrapped=false;
       const observer=new MutationObserver(function(){
         const saveBtn=document.getElementById('saveContinueBtn');
         if(saveBtn && !saveBtn.dataset.phase1Method){
@@ -22,11 +29,12 @@
           if(typeof original==='function'){
             saveBtn.dataset.phase1Method='1';
             saveBtn.onclick=async function(){
+              const method=activeMethod();
               await original.call(saveBtn);
               const status=document.getElementById('saveNote');
               const text=(status?.textContent||'').toLowerCase();
               if(/failed|error|❌/.test(text)) return;
-              const method=window.currentMethod||null;
+
               const ask=document.getElementById('askOtherPanel');
               const finish=document.getElementById('finishPanel');
               const methodPanel=document.getElementById('methodPanel');
@@ -35,7 +43,7 @@
               const askText=document.getElementById('askText');
               const yes=document.getElementById('yesOtherBtn');
               const no=document.getElementById('noOtherBtn');
-              if(!method || !ask || !yes || !no) return;
+              if(!ask || !yes || !no) return;
 
               if(method==='method1'){
                 methodPanel?.classList.add('hidden');
@@ -43,7 +51,8 @@
                 finish?.classList.add('hidden');
                 ask.classList.remove('hidden');
                 askTitle.textContent='Method 1 saved ✓';
-                const d=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
+                let d={};
+                try{d=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}')||{}}catch(e){}
                 const oid=outletId();
                 const existing=!!(d?.[oid]?.method2Selected || d?.[oid]?.method2);
                 askText.textContent=existing
@@ -54,10 +63,10 @@
                 yes.onclick=function(){
                   ask.classList.add('hidden');
                   if(typeof window.loadMethod==='function') window.loadMethod('method2');
-                  else { window.currentMethod='method2'; location.reload(); }
+                  else { document.getElementById('choicePanel')?.classList.remove('hidden'); }
                 };
                 no.onclick=function(){ go('staff.html'); };
-              }else if(method==='method2'){
+              }else{
                 methodPanel?.classList.add('hidden');
                 choice?.classList.add('hidden');
                 ask?.classList.add('hidden');
@@ -68,8 +77,7 @@
           }
         }
 
-        /* If the page's native logic exposes the old Finish panel, keep it from
-         * bypassing the Phase 1 Staff step. */
+        /* Prevent the native Finish panel from bypassing Staff Master. */
         const finish=document.getElementById('finishPanel');
         const fixed=document.getElementById('fixedExpensesBtn');
         const next=document.getElementById('nextOutletBtn');
