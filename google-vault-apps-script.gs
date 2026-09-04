@@ -1,74 +1,21 @@
 /* BOBS GOOGLE SHEETS DATA VAULT
- * Separate protected snapshot vault + permanent outlet master registry.
- * Start New may clear working assessment data, but must never delete outlet master data.
+ * Permanent outlet master + protected assessment snapshots.
+ * JSONP GET endpoints are supported for browser recovery.
  */
 const VAULT_SPREADSHEET_ID = '19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8';
 const VAULT_SHEET = 'BOBS_SNAPSHOT_VAULT';
 const INDEX_SHEET = 'VAULT_INDEX';
 const OUTLET_MASTER_SHEET = 'BOBS_OUTLET_MASTER';
-
-function doPost(e) {
-  try {
-    const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (body.action === 'snapshot') return json_(saveSnapshot_(body));
-    if (body.action === 'list') return json_(listSnapshots_());
-    if (body.action === 'restore') return json_(restoreSnapshot_(body.snapshotId));
-    if (body.action === 'outletMaster') return json_(saveOutletMaster_(body));
-    if (body.action === 'listOutletMaster') return json_(listOutletMaster_());
-    return json_({ok:false,error:'Unknown action'});
-  } catch (err) { return json_({ok:false,error:String(err)}); }
-}
-
-function doGet(e){
-  try {
-    const p=(e&&e.parameter)||{};
-    if(p.action==='verify' && p.snapshotId){
-      const result=verifySnapshot_(p.snapshotId);
-      const callback=String(p.callback||'').replace(/[^A-Za-z0-9_.$]/g,'');
-      if(callback) return ContentService.createTextOutput(callback+'('+JSON.stringify(result)+');').setMimeType(ContentService.MimeType.JAVASCRIPT);
-      return json_(result);
-    }
-    if(p.action==='list') return json_(listSnapshots_());
-    if(p.action==='listOutletMaster') return json_(listOutletMaster_());
-    return json_({ok:true,service:'BOBS Google Sheets Data Vault'});
-  } catch(err){ return json_({ok:false,error:String(err)}); }
-}
-
-function json_(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-function vault_(){ return SpreadsheetApp.openById(VAULT_SPREADSHEET_ID); }
-function ensure_(){ const ss=vault_(); let v=ss.getSheetByName(VAULT_SHEET); if(!v){v=ss.insertSheet(VAULT_SHEET);v.appendRow(['snapshotId','createdAt','reason','payload']);} let i=ss.getSheetByName(INDEX_SHEET); if(!i){i=ss.insertSheet(INDEX_SHEET);i.appendRow(['snapshotId','createdAt','reason','status']);} return {ss,v,i}; }
-function saveSnapshot_(b){ const x=ensure_(),id=b.snapshotId||('GS-SNAP-'+Date.now()); x.v.appendRow([id,new Date().toISOString(),b.reason||'BOBS protected snapshot',JSON.stringify(b.data||{})]); x.i.appendRow([id,new Date().toISOString(),b.reason||'', 'PROTECTED']); return {ok:true,snapshotId:id}; }
-function listSnapshots_(){ const x=ensure_(),vals=x.i.getDataRange().getValues(); return {ok:true,snapshots:vals.slice(1).map(r=>({snapshotId:r[0],createdAt:r[1],reason:r[2],status:r[3]}))}; }
-function restoreSnapshot_(id){ const x=ensure_(),vals=x.v.getDataRange().getValues(); for(let n=1;n<vals.length;n++){if(String(vals[n][0])===String(id)) return {ok:true,snapshotId:id,data:JSON.parse(vals[n][3])};} return {ok:false,error:'Snapshot not found'}; }
-function verifySnapshot_(id){ const x=ensure_(),vals=x.v.getDataRange().getValues(); for(let n=1;n<vals.length;n++){if(String(vals[n][0])===String(id)){ const idx=x.i.getDataRange().getValues(); let status=''; for(let j=1;j<idx.length;j++){if(String(idx[j][0])===String(id)){status=String(idx[j][3]);break;}} return {ok:true,verified:true,snapshotId:id,status:status}; }} return {ok:false,verified:false,snapshotId:id,error:'Snapshot not found'}; }
-
-function ensureOutletMaster_(){
-  const ss=vault_();
-  let s=ss.getSheetByName(OUTLET_MASTER_SHEET);
-  if(!s){
-    s=ss.insertSheet(OUTLET_MASTER_SHEET);
-    s.appendRow(['outletId','updatedAt','outletName','shortCode','numShifts','shiftTimesJson','recordJson']);
-  }
-  return s;
-}
-function saveOutletMaster_(b){
-  const s=ensureOutletMaster_();
-  const outlets=Array.isArray(b.outlets)?b.outlets:[];
-  const now=new Date().toISOString();
-  const existing=s.getDataRange().getValues();
-  const rowById={};
-  for(let i=1;i<existing.length;i++) rowById[String(existing[i][0])]=i+1;
-  outlets.forEach(o=>{
-    if(!o || o.id===undefined || o.id===null || String(o.id).trim()==='') return;
-    const id=String(o.id);
-    const row=[id,now,o.name||'',o.shortCode||'',Number(o.numShifts)||0,JSON.stringify(o.shiftTimes||[]),JSON.stringify(o)];
-    if(rowById[id]) s.getRange(rowById[id],1,1,row.length).setValues([row]);
-    else {s.appendRow(row);rowById[id]=s.getLastRow();}
-  });
-  return {ok:true,stored:outlets.filter(o=>o&&String(o.id||'').trim()!=='').length,sheet:OUTLET_MASTER_SHEET};
-}
-function listOutletMaster_(){
-  const s=ensureOutletMaster_();
-  const vals=s.getDataRange().getValues();
-  return {ok:true,outlets:vals.slice(1).map(r=>({outletId:r[0],updatedAt:r[1],outletName:r[2],shortCode:r[3],numShifts:r[4],shiftTimes:JSON.parse(r[5]||'[]'),record:JSON.parse(r[6]||'{}')}))};
-}
+function reply_(e,o){const cb=String((e&&e.parameter&&e.parameter.callback)||'').replace(/[^A-Za-z0-9_.$]/g,'');if(cb)return ContentService.createTextOutput(cb+'('+JSON.stringify(o)+');').setMimeType(ContentService.MimeType.JAVASCRIPT);return json_(o)}
+function doPost(e){try{const b=JSON.parse((e&&e.postData&&e.postData.contents)||'{}');if(b.action==='snapshot')return json_(saveSnapshot_(b));if(b.action==='list')return json_(listSnapshots_());if(b.action==='restore')return json_(restoreSnapshot_(b.snapshotId));if(b.action==='outletMaster')return json_(saveOutletMaster_(b));if(b.action==='listOutletMaster')return json_(listOutletMaster_());return json_({ok:false,error:'Unknown action'})}catch(err){return json_({ok:false,error:String(err)})}}
+function doGet(e){try{const p=(e&&e.parameter)||{};if(p.action==='verify'&&p.snapshotId)return reply_(e,verifySnapshot_(p.snapshotId));if(p.action==='list')return reply_(e,listSnapshots_());if(p.action==='restore'&&p.snapshotId)return reply_(e,restoreSnapshot_(p.snapshotId));if(p.action==='listOutletMaster')return reply_(e,listOutletMaster_());return reply_(e,{ok:true,service:'BOBS Google Sheets Data Vault'})}catch(err){return reply_(e,{ok:false,error:String(err)})}}
+function json_(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON)}
+function vault_(){return SpreadsheetApp.openById(VAULT_SPREADSHEET_ID)}
+function ensure_(){const ss=vault_();let v=ss.getSheetByName(VAULT_SHEET);if(!v){v=ss.insertSheet(VAULT_SHEET);v.appendRow(['snapshotId','createdAt','reason','payload'])}let i=ss.getSheetByName(INDEX_SHEET);if(!i){i=ss.insertSheet(INDEX_SHEET);i.appendRow(['snapshotId','createdAt','reason','status'])}return{ss,v,i}}
+function saveSnapshot_(b){const x=ensure_(),id=b.snapshotId||('GS-SNAP-'+Date.now());x.v.appendRow([id,new Date().toISOString(),b.reason||'BOBS protected snapshot',JSON.stringify(b.data||{})]);x.i.appendRow([id,new Date().toISOString(),b.reason||'','PROTECTED']);return{ok:true,snapshotId:id}}
+function listSnapshots_(){const x=ensure_(),vals=x.i.getDataRange().getValues();return{ok:true,snapshots:vals.slice(1).map(r=>({snapshotId:String(r[0]),createdAt:r[1],reason:r[2],status:r[3]}))}}
+function restoreSnapshot_(id){const x=ensure_(),vals=x.v.getDataRange().getValues();for(let n=vals.length-1;n>=1;n--){if(String(vals[n][0])===String(id))return{ok:true,snapshotId:id,data:JSON.parse(vals[n][3]||'{}')}}return{ok:false,error:'Snapshot not found'}}
+function verifySnapshot_(id){const x=ensure_(),vals=x.v.getDataRange().getValues();for(let n=1;n<vals.length;n++){if(String(vals[n][0])===String(id)){const idx=x.i.getDataRange().getValues();let status='';for(let j=1;j<idx.length;j++){if(String(idx[j][0])===String(id)){status=String(idx[j][3]);break}}return{ok:true,verified:true,snapshotId:id,status:status}}}return{ok:false,verified:false,snapshotId:id,error:'Snapshot not found'}}
+function ensureOutletMaster_(){const ss=vault_();let s=ss.getSheetByName(OUTLET_MASTER_SHEET);if(!s){s=ss.insertSheet(OUTLET_MASTER_SHEET);s.appendRow(['outletId','updatedAt','outletName','shortCode','numShifts','shiftTimesJson','recordJson'])}return s}
+function saveOutletMaster_(b){const s=ensureOutletMaster_(),outlets=Array.isArray(b.outlets)?b.outlets:[],now=new Date().toISOString(),existing=s.getDataRange().getValues(),rowById={};for(let i=1;i<existing.length;i++)rowById[String(existing[i][0])]=i+1;outlets.forEach(o=>{if(!o||o.id===undefined||o.id===null||String(o.id).trim()==='')return;const id=String(o.id),row=[id,now,o.name||'',o.shortCode||'',Number(o.numShifts)||0,JSON.stringify(o.shiftTimes||[]),JSON.stringify(o)];if(rowById[id])s.getRange(rowById[id],1,1,row.length).setValues([row]);else{s.appendRow(row);rowById[id]=s.getLastRow()}});return{ok:true,stored:outlets.filter(o=>o&&String(o.id||'').trim()!=='').length,sheet:OUTLET_MASTER_SHEET}}
+function listOutletMaster_(){const s=ensureOutletMaster_(),vals=s.getDataRange().getValues();return{ok:true,outlets:vals.slice(1).map(r=>({outletId:r[0],updatedAt:r[1],outletName:r[2],shortCode:r[3],numShifts:r[4],shiftTimes:JSON.parse(r[5]||'[]'),record:JSON.parse(r[6]||'{}')}))}}
