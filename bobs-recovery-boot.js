@@ -1,12 +1,73 @@
-/* BOBS RECOVERY BOOT — recover protected Google snapshot before module use. */
+/* BOBS RECOVERY BOOT — Google Data Vault recovery for Method 1 / Method 2.
+ * IMPORTANT: recovery runs before normal module data is accepted. If a protected
+ * snapshot is found, restore it to temporary browser state and reload once so
+ * the module itself reads the recovered dataset. Permanent Google records are
+ * never deleted or overwritten by this script.
+ */
 (function(){
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
-const configs={'method1.html':{key:'method1-hourly-state',label:'Method 1'},'method2.html':{key:'method2-item-state',label:'Method 2'}};const cfg=configs[path];if(!cfg)return;
+const configs={
+  'method1.html':{key:'method1-hourly-state',label:'Method 1'},
+  'method2.html':{key:'method2-item-state',label:'Method 2'}
+};
+const cfg=configs[path];
+if(!cfg)return;
 const VAULT='https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec';
-function call(action,params,timeout){return new Promise((resolve,reject)=>{const cb='bobsRecovery_'+Date.now()+'_'+Math.random().toString(36).slice(2);const s=document.createElement('script');let done=false;const clean=()=>{done=true;try{delete window[cb]}catch(e){}s.remove();clearTimeout(t)};const t=setTimeout(()=>{if(!done){clean();reject(new Error('Recovery request timed out'))}},timeout||12000);window[cb]=v=>{if(done)return;clean();v&&v.ok?resolve(v):reject(new Error((v&&v.error)||'Recovery request failed'))};s.onerror=()=>{if(!done){clean();reject(new Error('Unable to contact BOBS Data Vault'))}};s.src=VAULT+'?action='+encodeURIComponent(action)+'&callback='+encodeURIComponent(cb)+'&_='+Date.now()+(params?'&'+new URLSearchParams(params):'');s.async=true;document.head.appendChild(s)})}
+const FLAG='bobs-recovery-reload:'+cfg.key;
 function localHas(){try{const v=localStorage.getItem(cfg.key);return !!v&&v!=='{}'&&v!=='[]'&&v!=='null'}catch(e){return false}}
-function restoreData(data){if(!data||typeof data!=='object')return false;let restored=false;Object.keys(data).forEach(k=>{if(data[k]!==null&&data[k]!==undefined){try{localStorage.setItem(k,typeof data[k]==='string'?data[k]:JSON.stringify(data[k]));if(k===cfg.key)restored=true}catch(e){}}});return restored}
-function showDecision(){if(document.querySelector('.bobs-recovery-decision'))return;const st=document.createElement('style');st.textContent='.bobs-recovery-overlay{position:fixed;inset:0;background:rgba(0,0,0,.52);display:flex;align-items:center;justify-content:center;padding:18px;z-index:100001}.bobs-recovery-box{width:min(560px,100%);background:#fff;color:#222;border-radius:14px;padding:22px;box-shadow:0 20px 70px rgba(0,0,0,.3)}.bobs-recovery-box h2{margin:0 0 8px;font-size:20px}.bobs-recovery-box p{font-size:13px;line-height:1.5;color:#555}.bobs-recovery-actions{display:grid;gap:9px;margin-top:16px}.bobs-recovery-actions button{min-height:48px;border:1px solid #ccc;border-radius:9px;padding:9px 13px;text-align:left;cursor:pointer;font-weight:600}.bobs-r-keep{background:#2f7d32;color:#fff}.bobs-r-new{background:#fff}.bobs-r-note{background:#fff7df;padding:10px;border-radius:8px!important;font-size:12px!important}.bobs-r-status{font-size:11px;color:#555;margin-top:10px}</style>';document.head.appendChild(st);const ov=document.createElement('div');ov.className='bobs-recovery-overlay bobs-recovery-decision';const box=document.createElement('div');box.className='bobs-recovery-box';box.innerHTML='<h2>Existing '+cfg.label+' data recovered</h2><p>BOBS recovered the latest protected '+cfg.label+' working dataset from the Google Data Vault.</p><p class="bobs-r-note"><b>Your recovered data is protected.</b> Nothing has been deleted. Continue to use it, or deliberately start fresh.</p><div class="bobs-recovery-actions"><button class="bobs-r-keep">A. Continue with recovered existing data</button><button class="bobs-r-new">B. Start fresh for this module</button></div><div class="bobs-r-status"></div>';ov.appendChild(box);document.body.appendChild(ov);box.querySelector('.bobs-r-keep').onclick=()=>ov.remove();box.querySelector('.bobs-r-new').onclick=async()=>{if(!confirm('Start Fresh will first create another protected snapshot, then clear only the current '+cfg.label+' working data. Permanent Google records remain safe. Continue?'))return;const b=box.querySelector('.bobs-r-new'),s=box.querySelector('.bobs-r-status');b.disabled=true;b.textContent='Protecting snapshot…';try{const mod=document.createElement('script');mod.src='bobs-protection.js?v=20260904-recovery';await new Promise((r,j)=>{mod.onload=r;mod.onerror=()=>j(new Error('Protection controller could not be loaded'));document.head.appendChild(mod)});await window.BOBSProtection.protectAndPrepareFresh('Start Fresh — '+cfg.label,[cfg.key]);location.reload()}catch(e){b.disabled=false;b.textContent='B. Start fresh for this module';s.textContent='Nothing was cleared: '+e.message}}}
-async function boot(){if(localHas())return;try{const listed=await call('list',{});const snaps=(listed.snapshots||[]).filter(s=>String(s.status||'')==='PROTECTED').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));for(const s of snaps.slice(0,60)){try{const full=await call('restore',{snapshotId:s.snapshotId});if(restoreData(full.data)){console.info('BOBS recovery restored '+cfg.key+' from '+s.snapshotId);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',showDecision,{once:true});else showDecision();return}}catch(e){}}}catch(e){console.warn('BOBS protected recovery unavailable:',e)}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+function call(action,params,timeout){return new Promise((resolve,reject)=>{
+  const cb='bobsRecovery_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  const s=document.createElement('script');let done=false;
+  const clean=()=>{done=true;try{delete window[cb]}catch(e){}s.remove();clearTimeout(t)};
+  const t=setTimeout(()=>{if(!done){clean();reject(new Error('Recovery request timed out'))}},timeout||12000);
+  window[cb]=v=>{if(done)return;clean();if(v&&v.ok)resolve(v);else reject(new Error((v&&v.error)||'Recovery request failed'))};
+  s.onerror=()=>{if(!done){clean();reject(new Error('Unable to contact BOBS Data Vault'))}};
+  s.src=VAULT+'?action='+encodeURIComponent(action)+'&callback='+encodeURIComponent(cb)+'&_='+Date.now()+(params?'&'+new URLSearchParams(params):'');
+  s.async=true;document.head.appendChild(s);
+})}
+function restoreData(data){
+  if(!data||typeof data!=='object')return false;
+  let restored=false;
+  Object.keys(data).forEach(k=>{
+    if(data[k]===null||data[k]===undefined)return;
+    try{
+      localStorage.setItem(k,typeof data[k]==='string'?data[k]:JSON.stringify(data[k]));
+      if(k===cfg.key)restored=true;
+    }catch(e){}
+  });
+  return restored;
+}
+function clearReloadFlag(){try{sessionStorage.removeItem(FLAG)}catch(e){}}
+function setReloadFlag(){try{sessionStorage.setItem(FLAG,'1')}catch(e){}}
+function wasReloaded(){try{return sessionStorage.getItem(FLAG)==='1'}catch(e){return false}}
+function showStatus(msg){
+  if(document.readyState==='loading')return;
+  const p=document.createElement('div');p.textContent=msg;
+  p.style='position:fixed;bottom:14px;right:14px;background:#fff7df;border:1px solid #e2a72b;padding:10px 13px;border-radius:9px;font:12px Arial;z-index:100002;box-shadow:0 5px 20px rgba(0,0,0,.15)';
+  document.body.appendChild(p);setTimeout(()=>p.remove(),3500);
+}
+async function recover(){
+  if(localHas()){clearReloadFlag();return false;}
+  if(wasReloaded()){clearReloadFlag();return false;}
+  try{
+    const listed=await call('list',{});
+    const snaps=(listed.snapshots||[])
+      .filter(s=>String(s.status||'')==='PROTECTED')
+      .sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+    for(const s of snaps.slice(0,80)){
+      try{
+        const full=await call('restore',{snapshotId:s.snapshotId});
+        if(restoreData(full.data||{})){
+          console.info('BOBS protected recovery restored '+cfg.key+' from '+s.snapshotId);
+          setReloadFlag();
+          location.reload();
+          return true;
+        }
+      }catch(e){}
+    }
+  }catch(e){console.warn('BOBS protected recovery unavailable:',e)}
+  clearReloadFlag();
+  return false;
+}
+recover();
 })();
