@@ -5,7 +5,7 @@
 window.BOBS_CONFIG = Object.freeze({
   DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
-  VERSION: '2026-09-04-phase1-central-staff-master-1'
+  VERSION: '2026-09-04-phase1-central-staff-attachment-2'
 });
 
 /* CENTRAL STAFF MASTER
@@ -28,6 +28,8 @@ window.BOBS_CONFIG = Object.freeze({
         if(old)x.legacyStaffId=old;
         x.updatedAt=new Date().toISOString();
       }
+      x.staffId=String(x.staffId||'').toUpperCase();
+      x.monthlyAttachments=x.monthlyAttachments||{};
       return x;
     });
     return {...data,staff:out};
@@ -42,16 +44,12 @@ window.BOBS_CONFIG = Object.freeze({
           const legacyId=u.searchParams.get('outletId');
           const cb=u.searchParams.get('callback');
           if(cb&&typeof window[cb]==='function'){
-            const originalCb=window[cb];
-            let finished=false;
+            const originalCb=window[cb];let finished=false;
             window[cb]=function(payload){
               if(finished)return;
-              if(payload&&payload.ok&&payload.found&&payload.data&&Array.isArray(payload.data.staff)){
-                finished=true;window[cb]=originalCb;originalCb(normalizeStaff(payload));return;
-              }
+              if(payload&&payload.ok&&payload.found&&payload.data&&Array.isArray(payload.data.staff)){finished=true;window[cb]=originalCb;originalCb(normalizeStaff(payload));return}
               const legacy=new URL(u.href);legacy.searchParams.set('outletId',legacyId);legacy.searchParams.set('t',Date.now());
-              const sc=document.createElement('script');
-              sc.src=legacy.href;sc.async=true;
+              const sc=document.createElement('script');sc.src=legacy.href;sc.async=true;
               sc.onerror=function(){finished=true;window[cb]=originalCb;originalCb(payload)};
               window[cb]=function(p2){finished=true;window[cb]=originalCb;originalCb(normalizeStaff(p2))};
               originalAppend.call(document.head,sc);
@@ -65,17 +63,7 @@ window.BOBS_CONFIG = Object.freeze({
   };
   const originalFetch=window.fetch;
   window.fetch=function(input,init){
-    try{
-      const body=init&&init.body;
-      if(typeof body==='string'&&body.indexOf('STAFF_MASTER')!==-1&&body.indexOf('moduleSave')!==-1){
-        const p=JSON.parse(body);
-        if(p.module===MODULE){
-          p.outletId=MASTER_ID;p.recordKey='staff-list';
-          if(p.data)p.data=normalizeStaff(p.data);
-          init={...init,body:JSON.stringify(p)};
-        }
-      }
-    }catch(e){}
+    try{const body=init&&init.body;if(typeof body==='string'&&body.indexOf('STAFF_MASTER')!==-1&&body.indexOf('moduleSave')!==-1){const p=JSON.parse(body);if(p.module===MODULE){p.outletId=MASTER_ID;p.recordKey='staff-list';if(p.data)p.data=normalizeStaff(p.data);init={...init,body:JSON.stringify(p)}}}}catch(e){}
     return originalFetch.call(this,input,init);
   };
 })();
