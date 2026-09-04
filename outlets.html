@@ -5,9 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BOBS — Outlet Setup</title>
 <link rel="stylesheet" href="style.css">
-<script src="bobs-config.js?v=2026-09-04-outlet-recovery-3"></script>
-<script src="bobs-data-manager.js?v=2026-09-04-outlet-recovery-3"></script>
-<script src="bobs-outlet-protection.js?v=2026-09-04-outlet-recovery-3" defer></script>
+<script src="bobs-config.js?v=2026-09-04-outlet-recovery-4"></script>
+<script>
+/* Configuration safety net: a failed/cached config file must never make BOBS silently switch to local-only mode. */
+if(!window.BOBS_CONFIG || !window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL){
+  window.BOBS_CONFIG=Object.freeze({
+    DATA_VAULT_WEB_APP_URL:'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
+    SHEETS_WEB_APP_URL:'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
+    VERSION:'2026-09-04-outlet-recovery-4'
+  });
+}
+</script>
+<script src="bobs-data-manager.js?v=2026-09-04-outlet-recovery-4"></script>
+<script src="bobs-outlet-protection.js?v=2026-09-04-outlet-recovery-4" defer></script>
 <style>
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
 .dialog{width:min(620px,100%);max-height:90vh;overflow:auto;background:var(--paper,#fff);border-radius:14px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.28)}
@@ -50,19 +60,10 @@ function closeModal(){document.getElementById('modal').style.display='none'}
 function prepareNextOutlet(){const nums=outlets.map(x=>parseInt(x&&x.id,10)).filter(Number.isFinite);const nextId=String((nums.length?Math.max(...nums):outlets.length)+1);outlets.push({id:nextId,name:'',shortCode:'',numShifts:2,shiftTimes:[]});shifts(outlets[outlets.length-1]);document.getElementById('count').value=outlets.length;render();closeModal();document.getElementById('status').textContent='Outlet '+nextId+' prepared. Enter its ID, name and code, then save to Google.';document.getElementById('cards').lastElementChild?.scrollIntoView({behavior:'smooth',block:'start'})}
 function existingList(){return '<div class="existing-list">'+outlets.map((o,i)=>'<div class="existing-row"><strong>'+(i+1)+'. '+esc(o.name||'Unnamed outlet')+'</strong><div class="existing-meta">ID: '+esc(o.id||'—')+' &nbsp;|&nbsp; Code: '+esc(o.shortCode||o.code||'—')+'</div></div>').join('')+'</div>'}
 function showExisting(){if(!outlets.length)return false;render();showModal('Existing BOBS outlet data found','Google OUTLET_MASTER contains '+outlets.length+' permanent outlet profile'+(outlets.length===1?'':'s')+'. What would you like to do?','<button class="keep" id="continue" type="button">Continue Using Existing Outlets</button><button class="add" id="add" type="button">Add Another Outlet</button><button class="new" id="new" type="button">Start New Assessment (Keep Permanent Outlets)</button>',existingList()+'<div class="warning"><b>These profiles are stored in Google OUTLET_MASTER.</b><br>Starting a new working assessment clears only working assessment data. It does not delete permanent outlet profiles.</div>');document.getElementById('continue').onclick=closeModal;document.getElementById('add').onclick=prepareNextOutlet;document.getElementById('new').onclick=startNewAssessment;return true}
-function startNewAssessment(){
-  // Only clear the current assessment/session state. Permanent Google outlet profiles are untouched.
-  try{localStorage.removeItem(DATA)}catch(e){}
-  try{localStorage.removeItem(SEL)}catch(e){}
-  try{localStorage.removeItem(M1)}catch(e){}
-  try{localStorage.removeItem(M2)}catch(e){}
-  outlets.forEach(o=>{try{window.BOBSDataManager&&window.BOBSDataManager.clearWorking(o.id)}catch(e){}});
-  closeModal();
-  document.getElementById('status').textContent='New working assessment started. Google permanent outlets retained.';
-}
+function startNewAssessment(){try{localStorage.removeItem(DATA)}catch(e){}try{localStorage.removeItem(SEL)}catch(e){}try{localStorage.removeItem(M1)}catch(e){}try{localStorage.removeItem(M2)}catch(e){}outlets.forEach(o=>{try{window.BOBSDataManager&&window.BOBSDataManager.clearWorking(o.id)}catch(e){}});closeModal();document.getElementById('status').textContent='New working assessment started. Google permanent outlets retained.'}
 async function saveAll(){if(saving)return;if(!googleReady){document.getElementById('status').textContent='Google OUTLET_MASTER is not ready. Please wait and try again.';return}if(outlets.some(o=>!o.id||!o.name)){document.getElementById('status').textContent='Every outlet needs an Outlet ID and Outlet Name.';return}const ids=outlets.map(o=>String(o.id));if(new Set(ids).size!==ids.length){document.getElementById('status').textContent='Outlet IDs must be unique.';return}saving=true;document.getElementById('save').disabled=true;document.getElementById('status').textContent='Saving outlet profiles to Google OUTLET_MASTER…';document.getElementById('sync').textContent='Writing to Google and verifying each outlet…';try{for(const o of outlets){shifts(o);const saved=await window.BOBSDataManager.ensureOutlet({id:String(o.id),name:o.name.trim(),shortCode:(o.shortCode||o.code||'').trim().toUpperCase(),code:(o.shortCode||o.code||'').trim().toUpperCase(),numShifts:o.numShifts||2,shiftTimes:o.shiftTimes||[],method2:o.method2||null});o.id=String(saved.outletId||saved.id||o.id);o.name=saved.outletName||saved.name||o.name;o.shortCode=saved.outletCode||saved.shortCode||o.shortCode;window.BOBSDataManager.activateOutlet(o.id)}document.getElementById('status').textContent='✓ Google OUTLET_MASTER save and read-back verification completed.';document.getElementById('sync').textContent='✓ Permanently saved and verified in Google OUTLET_MASTER.';render();setTimeout(()=>location.href='outlet-method-flow.html?outlet=0',600)}catch(e){document.getElementById('status').textContent='❌ Google save was not verified. Nothing has been treated as permanently saved. '+e.message;document.getElementById('sync').textContent='Save failed verification — please retry.'}finally{saving=false;document.getElementById('save').disabled=false}}
 document.getElementById('prepare').onclick=prepareNextOutlet;document.getElementById('save').onclick=saveAll;
-(async function init(){render();document.getElementById('status').textContent='Checking Google OUTLET_MASTER…';try{const items=await window.BOBSDataManager.recoverFromGoogle();outlets=items.map(item=>{const d=item.data||{};return {id:String(item.outletId||d.id||''),name:d.name||item.outletName||'',shortCode:d.shortCode||d.code||item.outletCode||'',code:d.code||d.shortCode||item.outletCode||'',numShifts:d.numShifts||2,shiftTimes:d.shiftTimes||[],method2:d.method2||null}});googleReady=true;if(outlets.length){document.getElementById('status').textContent='Loaded '+outlets.length+' permanent outlet profile'+(outlets.length===1?'':'s')+' from Google OUTLET_MASTER ✓';showExisting()}else{document.getElementById('status').textContent='No saved permanent outlets found in Google OUTLET_MASTER. Add / Prepare Outlets is ready.';render()}}catch(e){googleReady=false;document.getElementById('status').textContent='❌ Cannot read Google OUTLET_MASTER: '+e.message;document.getElementById('sync').textContent='Google is unavailable. No permanent outlet data was loaded.'}})();
+(async function init(){render();document.getElementById('status').textContent='Checking Google OUTLET_MASTER…';try{if(!window.BOBS_CONFIG||!window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)throw new Error('BOBS configuration could not be loaded');const items=await window.BOBSDataManager.recoverFromGoogle();outlets=items.map(item=>{const d=item.data||{};return {id:String(item.outletId||d.id||''),name:d.name||item.outletName||'',shortCode:d.shortCode||d.code||item.outletCode||'',code:d.code||d.shortCode||item.outletCode||'',numShifts:d.numShifts||2,shiftTimes:d.shiftTimes||[],method2:d.method2||null}});googleReady=true;if(outlets.length){document.getElementById('status').textContent='Loaded '+outlets.length+' permanent outlet profile'+(outlets.length===1?'':'s')+' from Google OUTLET_MASTER ✓';showExisting()}else{document.getElementById('status').textContent='No saved permanent outlets found in Google OUTLET_MASTER. Add / Prepare Outlets is ready.';render()}}catch(e){googleReady=false;document.getElementById('status').textContent='❌ Cannot read Google OUTLET_MASTER: '+e.message;document.getElementById('sync').textContent='Google is unavailable. No permanent outlet data was loaded.'}})();
 </script>
 </body>
 </html>
