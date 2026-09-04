@@ -14,7 +14,7 @@
   const CFG=window.BOBS_CONFIG||{};
   const VAULT_URL=CFG.DATA_VAULT_WEB_APP_URL||'';
 
-  const read=(k,f)=>{try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v)}catch(e){return f}};
+  const read=(k,f)=>{try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v)}catch(e){return f};
   const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
   const now=()=>new Date().toISOString();
   const db=()=>{const d=read(OUTLET_MASTER,{});return d&&typeof d==='object'&&!Array.isArray(d)?d:{}};
@@ -53,7 +53,6 @@
   async function saveToGoogle(outlet){
     if(!outlet||!outlet.id)throw new Error('Outlet ID is required');
     await post('outletSave',outlet);
-    /* POST is intentionally no-cors, so verify by reading Google back. */
     let lastError='';
     for(let attempt=0;attempt<5;attempt++){
       try{
@@ -103,7 +102,7 @@
       return result.outlets||[];
     }catch(e){
       if(onDone)onDone(false,0,String(e));
-      return [];
+      throw e;
     }
   }
 
