@@ -1,0 +1,35 @@
+name: BOBS persistence follow-up
+on:
+  push:
+    paths:
+      - '.bobs-persistence-trigger'
+      - '.github/workflows/bobs-persistence-followup.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Complete durable restore
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('shared_data.js'); s=p.read_text()
+          old="window.BOBS_METHOD_PERSISTENCE_READY=pull();"
+          new="""window.BOBS_METHOD_PERSISTENCE_READY=pull().then(state=>{\n    if(!state)return state;\n    try{\n      if(method==='METHOD1' && Array.isArray(state.custVals)){\n        state.custVals.forEach((v,i)=>{const el=document.querySelector(`.custInput[data-i=\\\"${i}\\\"]`);if(el){el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}});\n        (state.basketVals||[]).forEach((v,i)=>{const el=document.querySelector(`.basketInput[data-i=\\\"${i}\\\"]`);if(el){el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}});\n      }\n      if(method==='METHOD2' && Array.isArray(state.rows)){\n        state.rows.forEach(r=>{const el=document.querySelector(`.qtyInput[data-cat=\\\"${CSS.escape(String(r.category))}\\\"][data-i=\\\"${r.i}\\\"]`);if(el){el.value=r.qty||0;el.dispatchEvent(new Event('input',{bubbles:true}));}const m=document.querySelector(`.modeSelect[data-cat=\\\"${CSS.escape(String(r.category))}\\\"][data-i=\\\"${r.i}\\\"]`);if(m&&r.mode){m.value=r.mode;m.dispatchEvent(new Event('change',{bubbles:true}));}});\n      }\n    }catch(e){}\n    return state;\n  });"""
+          if old in s:
+            s=s.replace(old,new)
+          # Replace the M2 empty state assignment with the saved row payload.
+          s=s.replace("else{state={};const rows=Array.isArray(g.data.rows)?g.data.rows:[];rows.forEach(r=>{if(r.category!==undefined&&r.item!==undefined){try{const cat=String(r.category),idx=Array.from(document.querySelectorAll('.qtyInput')).findIndex(el=>el.dataset.cat===cat&&String(el.dataset.i)===String(r.i));}catch(e){}}});}", "else{state={rows:Array.isArray(g.data.rows)?g.data.rows:[]};}")
+          p.write_text(s)
+          p=Path('bobs-config.js'); s=p.read_text().replace('2026-09-04-phase1-durable-method-staff-fix-1','2026-09-04-phase1-durable-method-staff-fix-2'); p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add shared_data.js bobs-config.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'Restore saved method inputs from Data Vault'
+          git push
