@@ -14,27 +14,28 @@ const FLAG='bobs-recovery-reload:'+cfg.key;
 function valid(v){return !!v&&v!=='{}'&&v!=='[]'&&v!=='null'}
 function localHas(){try{return valid(localStorage.getItem(cfg.key))}catch(e){return false}}
 function setRaw(key,value){try{localStorage.setItem(key,typeof value==='string'?value:JSON.stringify(value));return true}catch(e){return false}}
+function isM1(v){return !!(v&&typeof v==='object'&&(Array.isArray(v.custVals)||Array.isArray(v.basketVals)))}
+function isM2(v){return !!(v&&typeof v==='object'&&(v.qtys||v.prod||v.production))}
 function restoreObject(data){
   if(!data||typeof data!=='object')return false;
   let restored=false;
-  Object.keys(data).forEach(k=>{
-    if(data[k]===null||data[k]===undefined)return;
-    if(setRaw(k,data[k])&&k===cfg.key)restored=true;
-  });
+  if(data[cfg.key]&&typeof data[cfg.key]==='object') restored=setRaw(cfg.key,data[cfg.key]);
+  const seen=new Set(),walk=(v,depth)=>{
+    if(restored||depth>8||v===null||v===undefined||typeof v!=='object')return;
+    if(seen.has(v))return;seen.add(v);
+    if((cfg.key==='method1-hourly-state'&&isM1(v))||(cfg.key==='method2-item-state'&&isM2(v))){restored=setRaw(cfg.key,v);return}
+    if(Array.isArray(v)){for(const x of v)walk(x,depth+1)}else{for(const k of Object.keys(v))walk(v[k],depth+1)}
+  };
+  walk(data,0);
   return restored;
 }
 function restoreModulePayload(data){
   if(!data||typeof data!=='object')return false;
-  /* Legacy BOBS_MODULE_DATA stores the actual module payload in data. */
-  if(cfg.key==='method1-hourly-state'){
-    if(Array.isArray(data.custVals)||Array.isArray(data.basketVals))return setRaw(cfg.key,data);
-    if(data.data&&typeof data.data==='object'&&(Array.isArray(data.data.custVals)||Array.isArray(data.data.basketVals)))return setRaw(cfg.key,data.data);
-  }
-  if(cfg.key==='method2-item-state'){
-    if(data.qtys||data.prod||data.production)return setRaw(cfg.key,data);
-    if(data.data&&typeof data.data==='object'&&(data.data.qtys||data.data.prod||data.data.production))return setRaw(cfg.key,data.data);
-  }
-  return false;
+  if(cfg.key==='method1-hourly-state'&&isM1(data))return setRaw(cfg.key,data);
+  if(cfg.key==='method1-hourly-state'&&data.data&&isM1(data.data))return setRaw(cfg.key,data.data);
+  if(cfg.key==='method2-item-state'&&isM2(data))return setRaw(cfg.key,data);
+  if(cfg.key==='method2-item-state'&&data.data&&isM2(data.data))return setRaw(cfg.key,data.data);
+  return restoreObject(data);
 }
 function restoreLocalSnapshot(){
   try{
@@ -45,7 +46,7 @@ function restoreLocalSnapshot(){
     const list=JSON.parse(localStorage.getItem('bobs-data-vault')||'[]');
     if(Array.isArray(list)){
       const snaps=list.slice().sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
-      for(const s of snaps){if(s&&restoreObject(s.data||{}))return true}
+      for(const s of snaps){if(s&&restoreObject(s.data||s))return true}
     }
   }catch(e){}
   return false;
@@ -64,18 +65,14 @@ function setReloadFlag(){try{sessionStorage.setItem(FLAG,'1')}catch(e){}}
 function wasReloaded(){try{return sessionStorage.getItem(FLAG)==='1'}catch(e){return false}}
 function clearReloadFlag(){try{sessionStorage.removeItem(FLAG)}catch(e){}}
 async function recoverLegacyModule(){
-  /* The original BOBS Google-first backend stored Method 1 / Method 2 in
-     BOBS_MODULE_DATA and exposed moduleList through the same Web App URL. */
   let outletId='';
   try{const selected=JSON.parse(localStorage.getItem('outlet-selection')||'null');outletId=String(selected&&selected.id||'')}catch(e){}
-  if(!outletId){
-    try{const ol=await call('outletList',{});const first=(ol.outlets||[])[0];if(first)outletId=String(first.outletId||'')}catch(e){}
-  }
+  if(!outletId){try{const ol=await call('outletList',{});const first=(ol.outlets||[])[0];if(first)outletId=String(first.outletId||first.id||'')}catch(e){}}
   if(!outletId)return false;
   try{
     const r=await call('moduleList',{outletId,module:cfg.module});
     const records=Array.isArray(r.records)?r.records.slice().sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||''))):[];
-    for(const rec of records){if(String(rec.status||'').toUpperCase()==='DELETED')continue;if(restoreModulePayload(rec.data||{})){console.info('BOBS legacy Google module recovery restored '+cfg.key+' for outlet '+outletId);return true}}
+    for(const rec of records){if(String(rec.status||'').toUpperCase()==='DELETED')continue;if(restoreModulePayload(rec.data||rec)){console.info('BOBS legacy Google module recovery restored '+cfg.key+' for outlet '+outletId);return true}}
   }catch(e){console.warn('BOBS legacy module recovery unavailable:',e)}
   return false;
 }
