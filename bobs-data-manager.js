@@ -9,9 +9,10 @@
   const LEGACY_OUTLET_MASTER='outlets-master';
   const ACTIVE_OUTLET='outlet-selection';
   const WORKING_PREFIX='bobs-working-assessment:';
-  const VERSION=10;
+  const VERSION=11;
+  const DEFAULT_VAULT_URL='https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec';
   const CFG=window.BOBS_CONFIG||{};
-  const VAULT_URL=CFG.DATA_VAULT_WEB_APP_URL||'';
+  const VAULT_URL=String(CFG.DATA_VAULT_WEB_APP_URL||DEFAULT_VAULT_URL).trim();
   const read=(k,f)=>{try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v)}catch(e){return f}};
   const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
   const now=()=>new Date().toISOString();
