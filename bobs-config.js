@@ -5,7 +5,7 @@
 window.BOBS_CONFIG = Object.freeze({
   DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
-  VERSION: '2026-09-04-method-data-safety-1'
+  VERSION: '2026-09-04-outlet-recovery-2'
 });
 
 /* CENTRAL STAFF MASTER */
@@ -21,33 +21,23 @@ window.BOBS_CONFIG = Object.freeze({
   }
   function parseScriptSrc(src){try{return new URL(src,location.href)}catch(e){return null}}
   const originalAppend=HTMLHeadElement.prototype.appendChild;
-  HTMLHeadElement.prototype.appendChild=function(node){
-    try{
-      if(node&&node.tagName==='SCRIPT'&&node.src){const u=parseScriptSrc(node.src);if(u&&u.searchParams.get('action')==='moduleGet'&&u.searchParams.get('module')===MODULE&&u.searchParams.get('recordKey')==='staff-list'&&u.searchParams.get('outletId')!==MASTER_ID){const legacyId=u.searchParams.get('outletId'),cb=u.searchParams.get('callback');if(cb&&typeof window[cb]==='function'){const originalCb=window[cb],finishedState={done:false};window[cb]=function(payload){if(finishedState.done)return;if(payload&&payload.ok&&payload.found&&payload.data&&Array.isArray(payload.data.staff)){finishedState.done=true;window[cb]=originalCb;originalCb(normalizeStaff(payload));return}const legacy=new URL(u.href);legacy.searchParams.set('outletId',legacyId);legacy.searchParams.set('t',Date.now());const sc=document.createElement('script');sc.src=legacy.href;sc.async=true;sc.onerror=function(){finishedState.done=true;window[cb]=originalCb;originalCb(payload)};window[cb]=function(p2){finishedState.done=true;window[cb]=originalCb;originalCb(normalizeStaff(p2))};originalAppend.call(document.head,sc)}u.searchParams.set('outletId',MASTER_ID);u.searchParams.set('t',Date.now());node.src=u.href}}
-    }catch(e){}
-    return originalAppend.call(this,node);
-  };
+  HTMLHeadElement.prototype.appendChild=function(node){try{if(node&&node.tagName==='SCRIPT'&&node.src){const u=parseScriptSrc(node.src);if(u&&u.searchParams.get('action')==='moduleGet'&&u.searchParams.get('module')===MODULE&&u.searchParams.get('recordKey')==='staff-list'&&u.searchParams.get('outletId')!==MASTER_ID){const legacyId=u.searchParams.get('outletId'),cb=u.searchParams.get('callback');if(cb&&typeof window[cb]==='function'){const originalCb=window[cb],finishedState={done:false};window[cb]=function(payload){if(finishedState.done)return;if(payload&&payload.ok&&payload.found&&payload.data&&Array.isArray(payload.data.staff)){finishedState.done=true;window[cb]=originalCb;originalCb(normalizeStaff(payload));return}const legacy=new URL(u.href);legacy.searchParams.set('outletId',legacyId);legacy.searchParams.set('t',Date.now());const sc=document.createElement('script');sc.src=legacy.href;sc.async=true;sc.onerror=function(){finishedState.done=true;window[cb]=originalCb;originalCb(payload)};window[cb]=function(p2){finishedState.done=true;window[cb]=originalCb;originalCb(normalizeStaff(p2))};originalAppend.call(document.head,sc)}u.searchParams.set('outletId',MASTER_ID);u.searchParams.set('t',Date.now());node.src=u.href}}}catch(e){}return originalAppend.call(this,node)};
   const originalFetch=window.fetch;
   window.fetch=function(input,init){try{const body=init&&init.body;if(typeof body==='string'&&body.indexOf('STAFF_MASTER')!==-1&&body.indexOf('moduleSave')!==-1){const p=JSON.parse(body);if(p.module===MODULE){p.outletId=MASTER_ID;p.recordKey='staff-list';if(p.data)p.data=normalizeStaff(p.data);init={...init,body:JSON.stringify(p)}}}}catch(e){}return originalFetch.call(this,input,init)};
 })();
 
-/* METHOD DATA SAFETY GUARD
- * Method 1 hourly basket data and Method 2 item-wise data are working datasets.
- * They must never be erased merely because an outlet summary is not present yet.
- * Before any code can remove either key, preserve a recovery copy instead.
- */
+/* METHOD + WORKING DATA SAFETY GUARD */
 (function(){
-  if(window.__BOBS_METHOD_DELETE_GUARD)return;
-  window.__BOBS_METHOD_DELETE_GUARD=true;
-  const KEYS=new Set(['method1-hourly-state','method2-item-state']);
+  if(window.__BOBS_WORKING_DELETE_GUARD)return;
+  window.__BOBS_WORKING_DELETE_GUARD=true;
+  const KEYS=new Set(['outlet-analysis-data','outlet-selection','method1-hourly-state','method2-item-state']);
   const nativeRemove=Storage.prototype.removeItem;
   Storage.prototype.removeItem=function(key){
     try{
-      if(KEYS.has(String(key))){
-        const value=this.getItem(key);
-        if(value && value!=='{}' && value!=='null'){
-          this.setItem('bobs-recovery-'+key,value);
-        }
+      const k=String(key);
+      if(KEYS.has(k)){
+        const value=this.getItem(k);
+        if(value && value!=='{}' && value!=='null')this.setItem('bobs-recovery-'+k,value);
         return;
       }
     }catch(e){}
