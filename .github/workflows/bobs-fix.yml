@@ -1,0 +1,60 @@
+name: BOBS targeted fixes
+on:
+  push:
+    paths:
+      - '.bobs-fix-trigger'
+      - '.github/workflows/bobs-fix.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply targeted fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          # Staff Master: role list, dynamic position code, and save-before-THP.
+          p=Path('staff.html'); s=p.read_text()
+          s=s.replace("if(x==='TEAMASTER')return'TM';if(x==='HELPER')return'HL';if(x==='CASHIER')return'CS';if(x==='SUPERVISOR')return'SUP';return x.slice(0,4)||'STF'", "if(x==='TEAMASTER')return'TM';if(x==='HELPER')return'HL';if(x==='CASHIER')return'CS';if(x==='SALESASSOCIATE')return'SA';if(x==='SUPERVISOR')return'SUP';return x.slice(0,4)||'STF'")
+          s=s.replace("function makePositionCode(oid,role,index){return outletCode(oid)+'-'+roleCode(role)+'-'+String(index).padStart(2,'0')}", "function makePositionCode(oid,role,index){return outletCode(oid)+roleCode(role)+String(index||1)}")
+          old='<label>Designation / Role<input data-f="role" data-i="${i}" value="${s.role||\'\'}" placeholder="Tea Master / Cashier / Supervisor"></label>'
+          new='<label>Designation / Role<select data-f="role" data-i="${i}"><option value="">Select designation</option><option value="Tea Master" ${s.role===\'Tea Master\'?\'selected\':\'\'}>Tea Master</option><option value="Cashier" ${s.role===\'Cashier\'?\'selected\':\'\'}>Cashier</option><option value="Sales Associate" ${s.role===\'Sales Associate\'?\'selected\':\'\'}>Sales Associate</option><option value="Helper" ${s.role===\'Helper\'?\'selected\':\'\'}>Helper</option></select></label>'
+          if old in s: s=s.replace(old,new)
+          old="if(f==='role')s.role=e.value;if(f==='positionCode')s.positionCode=e.value.trim().toUpperCase();"
+          new="if(f==='role'){s.role=e.value;const attached=(s.monthlyAttachments||{})[month()]||outlet.id;s.positionCode=s.role?makePositionCode(attached,s.role,1):'';}if(f==='positionCode')s.positionCode=e.value.trim().toUpperCase();"
+          if old in s: s=s.replace(old,new)
+          old="document.querySelectorAll('.salary').forEach(e=>e.onclick=()=>{const s=staff[Number(e.dataset.i)];if(!s.staffId||!s.name){status('Enter Employee ID and Name first.','warn');return}location.href='reverse-thp.html?'+new URLSearchParams({outletId:String(outlet.id),staffId:s.staffId,name:s.name,role:s.role||'',positionCode:s.positionCode||'',attachmentOutletId:String((s.monthlyAttachments||{})[month()]||outlet.id),month:month()})});"
+          new="document.querySelectorAll('.salary').forEach(e=>e.onclick=async()=>{const s=staff[Number(e.dataset.i)];if(!s.staffId||!s.name){status('Enter Employee ID and Name first.','warn');return}try{status('Saving employee to Central Staff Master before opening salary…');await saveGoogle();status('Employee saved and verified in Google ✓','ok');location.href='reverse-thp.html?'+new URLSearchParams({outletId:String(outlet.id),staffId:s.staffId,name:s.name,role:s.role||'',positionCode:s.positionCode||'',attachmentOutletId:String((s.monthlyAttachments||{})[month()]||outlet.id),month:month()})}catch(err){status('❌ Employee could not be saved to Google: '+err.message,'warn')}});"
+          if old in s: s=s.replace(old,new)
+          s=s.replace('CTC is routed by HR outlet allocation.','CTC is routed 100% to the employee\'s monthly attached outlet; daily cover does not change financial salary routing.')
+          p.write_text(s)
+
+          # Reverse THP: always read/write the centralized Staff Master directly.
+          p=Path('reverse-thp.html'); s=p.read_text()
+          s=s.replace("async function getStaff(){return jsonp('moduleGet',{outletId:String($('outletId').value),module:'STAFF_MASTER',recordKey:'staff-list'})}", "async function getStaff(){return jsonp('moduleGet',{outletId:'MASTER',module:'STAFF_MASTER',recordKey:'staff-list'})}")
+          s=s.replace("outletId:String(resultData.outletId),module:'STAFF_MASTER'", "outletId:'MASTER',module:'STAFF_MASTER'")
+          p.write_text(s)
+
+          # Persistent Method 1/2 storage: Google Data Vault is the durable source,
+          # localStorage is only a cache. shared_data.js is loaded by both method pages.
+          p=Path('shared_data.js'); s=p.read_text()
+          marker='/* BOBS DURABLE METHOD PERSISTENCE */'
+          if marker not in s:
+            s += r'''\n\n/* BOBS DURABLE METHOD PERSISTENCE */\n(function(){\n  const method=location.pathname.toLowerCase().includes('method2')?'METHOD2':'METHOD1';\n  const storage=method==='METHOD1'?'method1-hourly-state':'method2-item-state';\n  const outletKey='outlet-selection';\n  const url=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec';\n  function outlet(){try{const q=new URLSearchParams(location.search).get('outlet');if(q)return q;const x=JSON.parse(localStorage.getItem(outletKey)||'{}');return x.id||''}catch(e){return ''}}\n  function name(){try{const x=JSON.parse(localStorage.getItem(outletKey)||'{}');return x.name||''}catch(e){return ''}}\n  function jsonp(extra){return new Promise((resolve,reject)=>{const cb='bm_'+Date.now()+'_'+Math.random().toString(36).slice(2),sc=document.createElement('script');let done=false;const finish=(e,d)=>{if(done)return;done=true;clearTimeout(t);try{delete window[cb]}catch(x){}sc.remove();e?reject(e):resolve(d)};const t=setTimeout(()=>finish(new Error('timeout')),10000);window[cb]=d=>finish(null,d);sc.onerror=()=>finish(new Error('unavailable'));sc.src=url+'?'+new URLSearchParams({...extra,callback:cb,t:Date.now()});document.head.appendChild(sc)})}\n  async function pull(){const oid=outlet();if(!oid)return null;try{const g=await jsonp({action:'moduleGet',outletId:oid,module:method,recordKey:new Date().toISOString().slice(0,7)});if(g&&g.ok&&g.found&&g.data){let state=null;if(method==='METHOD1'){const rows=Array.isArray(g.data.rows)?g.data.rows:[];state={custVals:rows.map(r=>Number(r.customers)||0),basketVals:rows.map(r=>Number(r.basket)||0)};}else{state={};const rows=Array.isArray(g.data.rows)?g.data.rows:[];rows.forEach(r=>{if(r.category!==undefined&&r.item!==undefined){try{const cat=String(r.category),idx=Array.from(document.querySelectorAll('.qtyInput')).findIndex(el=>el.dataset.cat===cat&&String(el.dataset.i)===String(r.i));}catch(e){}}});}if(state){localStorage.setItem(storage,JSON.stringify(state));return state}}catch(e){}return null}\n  async function push(){const oid=outlet();if(!oid)return;try{let rows=[],data={};if(method==='METHOD1'){const cust=[...document.querySelectorAll('.custInput')],basket=[...document.querySelectorAll('.basketInput')];rows=cust.map((el,i)=>({hour:typeof HOURS!=='undefined'&&HOURS[i]?HOURS[i][0]:String(i+1),customers:Number(el.value)||0,basket:Number(basket[i]?.value)||0,revenue:(Number(el.value)||0)*(Number(basket[i]?.value)||0)}));data={method:'method1',outletId:oid,outletName:name(),date:new Date().toISOString().slice(0,10),rows,total:rows.reduce((a,r)=>a+r.revenue,0),timestamp:new Date().toISOString()};}else{const q=[...document.querySelectorAll('.qtyInput')];rows=q.filter(el=>(Number(el.value)||0)>0).map(el=>{const cat=el.dataset.cat,i=Number(el.dataset.i),item=(typeof ITEM_DATA!=='undefined'&&ITEM_DATA[cat])?ITEM_DATA[cat][i]:null;const modeEl=document.querySelector(`.modeSelect[data-cat="${cat}"][data-i="${i}"]`);const mode=modeEl?modeEl.value:'purchased';const cost=item?Number(mode==='production'?item.productionCost||0:item.purchasedCost||0):0;return{category:cat,item:item?item.name:'',brand:item?item.brand:'',i,mode,price:item?Number(item.price||0):0,cost,qty:Number(el.value)||0,revenue:(Number(el.value)||0)*(item?Number(item.price||0):0)});});data={method:'method2',outletId:oid,outletName:name(),date:new Date().toISOString().slice(0,10),rows,total:rows.reduce((a,r)=>a+r.revenue,0),timestamp:new Date().toISOString()};}await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'moduleSave',outletId:oid,module:method,recordKey:new Date().toISOString().slice(0,7),data})});}catch(e){}}\n  window.BOBS_METHOD_PERSISTENCE_READY=pull();\n  document.addEventListener('input',e=>{if(e.target&&e.target.matches('.custInput,.basketInput,.qtyInput')){clearTimeout(window._bobsMethodTimer);window._bobsMethodTimer=setTimeout(push,800);}});\n  document.addEventListener('change',e=>{if(e.target&&e.target.matches('.modeSelect,.formatSelect,.spoilInput,.batchSizeInput,.numBatchesInput,.capacityInput,.pieceCapacityInput,.kgBatchSizeInput,.kgNumBatchesInput,.kgCapacityInput,.wastageInput')){clearTimeout(window._bobsMethodTimer);window._bobsMethodTimer=setTimeout(push,800);}});\n})();\n'''
+            p.write_text(s)
+
+          # Make config version visibly new so browser cache is invalidated.
+          p=Path('bobs-config.js'); s=p.read_text().replace('2026-09-04-phase1-central-staff-attachment-2','2026-09-04-phase1-durable-method-staff-fix-1'); p.write_text(s)
+          PY
+      - name: Commit fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add staff.html reverse-thp.html shared_data.js bobs-config.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix durable method storage and staff THP flow'
+          git push
