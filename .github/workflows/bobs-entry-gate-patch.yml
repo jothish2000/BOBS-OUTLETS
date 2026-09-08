@@ -1,0 +1,43 @@
+name: BOBS Entry Gate Patch
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject Google-first entry gate
+        shell: python
+        run: |
+          from pathlib import Path
+          files=['method1.html','method2.html','staff.html','fixed-expenses.html']
+          tag='<script src="bobs-entry-gate.js"></script>'
+          changed=[]
+          for f in files:
+              p=Path(f)
+              if not p.exists(): continue
+              s=p.read_text(encoding='utf-8')
+              if tag not in s:
+                  s=s.replace('</head>',tag+'\n</head>',1)
+                  p.write_text(s,encoding='utf-8')
+                  changed.append(f)
+          if changed:
+              Path('/tmp/changed.txt').write_text('\n'.join(changed))
+          else:
+              Path('/tmp/changed.txt').write_text('')
+      - name: Commit patch
+        shell: bash
+        run: |
+          if [ -s /tmp/changed.txt ]; then
+            git config user.name 'BOBS automation'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add method1.html method2.html staff.html fixed-expenses.html
+            git commit -m 'Integrate Google-first BOBS entry gate'
+            git push
+          else
+            echo 'No files needed patching.'
+          fi
