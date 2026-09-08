@@ -8,16 +8,14 @@ function validM1(v){return !!(v&&Array.isArray(v.custVals)&&Array.isArray(v.bask
 function hasSaved(){try{const v=JSON.parse(localStorage.getItem(cfg.key)||'null');if(cfg.key==='method1-hourly-state')return validM1(v);return !!v&&v!=='{}'&&v!=='[]'&&v!=='null'}catch(e){return false}}
 function currentSaved(){try{return JSON.parse(localStorage.getItem(cfg.key)||'null')}catch(e){return null}}
 function datasets(){try{return JSON.parse(localStorage.getItem('bobs-research-datasets')||'[]')||[]}catch(e){return []}}
-function loadProtection(){return new Promise((resolve,reject)=>{if(window.BOBSProtection){resolve();return}const s=document.createElement('script');s.src='bobs-protection.js?v=20260908-recovery5';s.onload=()=>window.BOBSProtection?resolve():reject(new Error('Protection controller unavailable'));s.onerror=()=>reject(new Error('Protection controller could not be loaded'));document.head.appendChild(s)})}
-function outletId(){try{const o=JSON.parse(localStorage.getItem('outlet-selection')||'null')||{};return String(o.id||new URLSearchParams(location.search).get('outlet')||'')}catch(e){return String(new URLSearchParams(location.search).get('outlet')||'')}}
+function loadProtection(){return new Promise((resolve,reject)=>{if(window.BOBSProtection){resolve();return}const s=document.createElement('script');s.src='bobs-protection.js?v=20260908-m1recovery4';s.onload=()=>window.BOBSProtection?resolve():reject(new Error('Protection controller unavailable'));s.onerror=()=>reject(new Error('Protection controller could not be loaded'));document.head.appendChild(s)})}
+function outletId(){try{const o=JSON.parse(localStorage.getItem('outlet-selection')||'null')||{};const q=new URLSearchParams(location.search).get('outlet');const id=String(o.id||q||'');return id==='0'?'1':id}catch(e){const q=new URLSearchParams(location.search).get('outlet')||'';return q==='0'?'1':q}}
 function applyMethod1State(st){try{localStorage.setItem('method1-hourly-state',JSON.stringify(st))}catch(e){};(st.custVals||[]).forEach((v,i)=>{const el=document.querySelector('.custInput[data-i="'+i+'"]');if(el)el.value=v});(st.basketVals||[]).forEach((v,i)=>{const el=document.querySelector('.basketInput[data-i="'+i+'"]');if(el)el.value=v});if(document.getElementById('outletId'))document.getElementById('outletId').value=st.outletId||'';if(document.getElementById('outletName'))document.getElementById('outletName').value=st.outletName||'';if(typeof window.recalc==='function')window.recalc()}
 async function seedFirstTimeMethod1(googleResult){
  if(cfg.key!=='method1-hourly-state'||outletId()!=='1')return null;
- /* Google was tried first. If it did not return an existing valid METHOD1 record, use the explicitly supplied first-time dataset. */
  if(!googleResult||googleResult.found===true)return null;
  const existing=currentSaved();
  if(validM1(existing)&&existing.source==='RECOVERED_DATASET'){applyMethod1State(existing);return existing;}
- /* Preserve unrelated working edits; only seed when Method 1 has no valid working state. */
  if(validM1(existing))return null;
  const state={...FIRST_TIME_M1,savedAt:new Date().toISOString()};applyMethod1State(state);return state;
 }
