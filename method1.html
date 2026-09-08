@@ -9,70 +9,35 @@
 .hour-head,.hour-row{display:grid;grid-template-columns:minmax(95px,1.2fr) minmax(90px,1fr) minmax(90px,1fr) minmax(85px,1fr);gap:10px;align-items:center}
 .hour-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.15)}
 .hour-row{padding:7px 0;border-bottom:1px solid rgba(0,0,0,.07)}
-.hour-row input{width:100%;box-sizing:border-box}
-.hour-rev{font-weight:700;text-align:right}
+.hour-row input{width:100%;box-sizing:border-box}.hour-rev{font-weight:700;text-align:right}
+.save-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.primary-btn,.next-btn{border:0;border-radius:8px;padding:11px 16px;font-weight:700;cursor:pointer}.primary-btn{background:#111;color:#fff}.next-btn{background:#eee;color:#111}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}.modal{background:#fff;border-radius:14px;max-width:430px;width:100%;padding:24px;box-shadow:0 15px 50px rgba(0,0,0,.25)}.modal h2{margin-top:0}.modal p{line-height:1.5}.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}.modal button{border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
 @media(max-width:600px){.hour-head,.hour-row{grid-template-columns:1.1fr .9fr .9fr .9fr;gap:6px}.hour-head{font-size:9px}.hour-row{font-size:12px}}
 </style>
 </head>
 <body>
-<header>
-<p class="eyebrow">Method 1</p>
-<h1>Hourly footfall</h1>
-<p class="sub">Customers per hour × average basket value. Edit any number — it saves automatically.</p>
-<nav class="pagenav"><a href="index.html">Home</a><a href="method1.html" class="active">Method 1</a><a href="method2.html">Method 2</a></nav>
-</header>
-<section>
-<div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div>
-<div class="stack">
-<div class="row"><span class="rlabel">Outlet ID</span><input type="text" id="outletId" placeholder="e.g. 1" style="width:60px"></div>
-<div class="row"><span class="rlabel">Outlet Name (for your reference)</span><input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px"></div>
-</div></section>
-<section>
-<div class="section-head"><h2>Google Sheets sync</h2><span class="tag">one-time setup</span></div>
-<div class="stack"><div class="row"><input type="text" id="sheetsUrl" placeholder="Google Sheets Web App URL" style="flex:1"></div><div class="row"><span class="rlabel">Status</span><span id="syncStatus" style="font-size:12px;font-weight:600">Not configured</span></div></div>
-</section>
-<section>
-<div class="section-head"><h2>5 AM – 10 PM</h2><span class="tag">17 hours</span></div>
-<div class="hour-head"><span>Time</span><span>No. of Persons</span><span>Basket Value</span><span>Revenue</span></div>
-<div id="hoursList"></div>
-<div class="totals-row"><span>Daily customers / revenue</span><span class="num"><span id="totCust">0</span> · ₹<span id="totRev">0</span></span></div>
-</section>
-<p class="status" id="saveStatus"></p>
-<div class="export-bar"><button class="export-btn" id="syncBtn" type="button">🔄 Sync to Google Sheet</button></div>
-<footer>This total feeds into the Home page comparison automatically. Sync sends everything at once, deliberately.</footer>
+<header><p class="eyebrow">Method 1</p><h1>Hourly footfall</h1><p class="sub">Customers per hour × average basket value. Edit any number — it saves automatically.</p><nav class="pagenav"><a href="index.html">Home</a><a href="method1.html" class="active">Method 1</a><a href="method2.html">Method 2</a></nav></header>
+<section><div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div><div class="stack"><div class="row"><span class="rlabel">Outlet ID</span><input type="text" id="outletId" placeholder="e.g. 1" style="width:60px"></div><div class="row"><span class="rlabel">Outlet Name (for your reference)</span><input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px"></div></div></section>
+<section><div class="section-head"><h2>Google Sheets sync</h2><span class="tag">one-time setup</span></div><div class="stack"><div class="row"><input type="text" id="sheetsUrl" placeholder="Google Sheets Web App URL" style="flex:1"></div><div class="row"><span class="rlabel">Status</span><span id="syncStatus" style="font-size:12px;font-weight:600">Not configured</span></div></div></section>
+<section><div class="section-head"><h2>5 AM – 10 PM</h2><span class="tag">17 hours</span></div><div class="hour-head"><span>Time</span><span>No. of Persons</span><span>Basket Value</span><span>Revenue</span></div><div id="hoursList"></div><div class="totals-row"><span>Daily customers / revenue</span><span class="num"><span id="totCust">0</span> · ₹<span id="totRev">0</span></span></div><div class="save-bar"><button class="primary-btn" id="saveBtn" type="button">💾 Save Method 1 Data</button><button class="next-btn" id="nextBtn" type="button">Continue to Method 2 →</button></div></section>
+<p class="status" id="saveStatus"></p><div class="export-bar"><button class="export-btn" id="syncBtn" type="button">🔄 Sync to Google Sheet</button></div><footer>This total feeds into the Home page comparison automatically. Save keeps the assessment in your browser; Sync sends it to Google Sheets.</footer>
+<div class="modal-backdrop" id="nextModal"><div class="modal"><h2>Analyze this outlet with Method 2?</h2><p>Method 1 is saved. Would you like to continue analyzing the same outlet using Method 2?</p><div class="modal-actions"><button id="stayBtn" type="button">Stay on Method 1</button><button class="primary-btn" id="goMethod2" type="button">Yes, Continue to Method 2</button></div></div></div>
 <script>
-(function(){
-'use strict';
-const STORAGE_KEY='method1-hourly-state';
-const URL_KEY='sheets-sync-url';
-const OUTLET_KEY='outlet-selection';
-const FALLBACK=[
-['5–6 AM',12,35],['6–7 AM',28,38],['7–8 AM',42,42],['8–9 AM',38,40],['9–10 AM',22,38],['10–11 AM',14,35],['11 AM–12 PM',11,35],['12–1 PM',16,45],['1–2 PM',13,42],['2–3 PM',9,35],['3–4 PM',12,38],['4–5 PM',20,45],['5–6 PM',38,52],['6–7 PM',48,58],['7–8 PM',40,55],['8–9 PM',27,48],['9–10 PM',16,40]
-];
-const list=document.getElementById('hoursList');
-FALLBACK.forEach(function(h,i){
- const row=document.createElement('div');row.className='hour-row';
- row.innerHTML='<span class="rlabel">'+h[0]+'</span><input type="number" class="custInput" data-i="'+i+'" value="'+h[1]+'" min="0"><input type="number" class="basketInput" data-i="'+i+'" value="'+h[2]+'" min="0"><span class="hour-rev num" id="rev'+i+'">₹0</span>';
- list.appendChild(row);
-});
-function fmt(n){return Math.round(n).toLocaleString('en-IN');}
-function recalc(){let ctot=0,rtot=0;FALLBACK.forEach(function(h,i){const c=Number(document.querySelector('.custInput[data-i="'+i+'"]').value)||0;const b=Number(document.querySelector('.basketInput[data-i="'+i+'"]').value)||0;const r=c*b;ctot+=c;rtot+=r;document.getElementById('rev'+i).textContent='₹'+fmt(r);});document.getElementById('totCust').textContent=fmt(ctot);document.getElementById('totRev').textContent=fmt(rtot);}
-function collect(){const c=[],b=[];FALLBACK.forEach(function(h,i){c.push(Number(document.querySelector('.custInput[data-i="'+i+'"]').value)||0);b.push(Number(document.querySelector('.basketInput[data-i="'+i+'"]').value)||0);});return{custVals:c,basketVals:b};}
-function load(){
- let usedSaved=false;
- try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(s&&Array.isArray(s.custVals)&&Array.isArray(s.basketVals)&&s.custVals.length===17&&s.basketVals.length===17){s.custVals.forEach((v,i)=>document.querySelector('.custInput[data-i="'+i+'"]').value=v);s.basketVals.forEach((v,i)=>document.querySelector('.basketInput[data-i="'+i+'"]').value=v);usedSaved=true;}}catch(e){}
- try{const o=JSON.parse(localStorage.getItem(OUTLET_KEY)||'null');if(o){document.getElementById('outletId').value=o.id||'';document.getElementById('outletName').value=o.name||'';}}catch(e){}
- try{const u=localStorage.getItem(URL_KEY);if(u){document.getElementById('sheetsUrl').value=u;document.getElementById('syncStatus').textContent='Configured ✓';}}catch(e){}
- recalc();document.getElementById('saveStatus').textContent=usedSaved?'Loaded your last saved numbers':'Loaded Method 1 dataset';setTimeout(function(){document.getElementById('saveStatus').textContent='';},2500);
-}
-let timer;
-function save(){clearTimeout(timer);timer=setTimeout(function(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(collect()));document.getElementById('saveStatus').textContent='Saved';setTimeout(function(){document.getElementById('saveStatus').textContent='';},1000);}catch(e){}},300);}
-document.querySelectorAll('.custInput,.basketInput').forEach(function(x){x.addEventListener('input',function(){recalc();save();});});
-document.getElementById('outletId').addEventListener('change',function(){localStorage.setItem(OUTLET_KEY,JSON.stringify({id:this.value.trim(),name:document.getElementById('outletName').value.trim()}));});
-document.getElementById('outletName').addEventListener('change',function(){localStorage.setItem(OUTLET_KEY,JSON.stringify({id:document.getElementById('outletId').value.trim(),name:this.value.trim()}));});
-document.getElementById('sheetsUrl').addEventListener('change',function(){localStorage.setItem(URL_KEY,this.value.trim());document.getElementById('syncStatus').textContent=this.value.trim()?'Configured ✓':'Not configured';});
-document.getElementById('syncBtn').addEventListener('click',async function(){const url=document.getElementById('sheetsUrl').value.trim();const outletId=document.getElementById('outletId').value.trim();const status=document.getElementById('syncStatus');if(!url){status.textContent='Add the Google Sheets URL first';return;}if(!outletId){status.textContent='Enter an Outlet ID first';return;}const rows=FALLBACK.map(function(h,i){const c=Number(document.querySelector('.custInput[data-i="'+i+'"]').value)||0,b=Number(document.querySelector('.basketInput[data-i="'+i+'"]').value)||0;return{hour:h[0],customers:c,basket:b,revenue:c*b};});try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({method:'method1',outletId:outletId,outletName:document.getElementById('outletName').value.trim(),date:new Date().toISOString().slice(0,10),rows:rows,total:rows.reduce((s,r)=>s+r.revenue,0),timestamp:new Date().toISOString()})});status.textContent='Synced to Sheet ✓';}catch(e){status.textContent='Sync failed — check URL';}});
+(function(){'use strict';
+const STORAGE_KEY='method1-hourly-state',URL_KEY='sheets-sync-url',OUTLET_KEY='outlet-selection';
+const FALLBACK=[['5–6 AM',12,35],['6–7 AM',28,38],['7–8 AM',42,42],['8–9 AM',38,40],['9–10 AM',22,38],['10–11 AM',14,35],['11 AM–12 PM',11,35],['12–1 PM',16,45],['1–2 PM',13,42],['2–3 PM',9,35],['3–4 PM',12,38],['4–5 PM',20,45],['5–6 PM',38,52],['6–7 PM',48,58],['7–8 PM',40,55],['8–9 PM',27,48],['9–10 PM',16,40]];
+const list=document.getElementById('hoursList');FALLBACK.forEach(function(h,i){const row=document.createElement('div');row.className='hour-row';row.innerHTML='<span class="rlabel">'+h[0]+'</span><input type="number" class="custInput" data-i="'+i+'" value="'+h[1]+'" min="0"><input type="number" class="basketInput" data-i="'+i+'" value="'+h[2]+'" min="0"><span class="hour-rev num" id="rev'+i+'">₹0</span>';list.appendChild(row);});
+function fmt(n){return Math.round(n).toLocaleString('en-IN')}
+function collect(){const c=[],b=[];FALLBACK.forEach(function(h,i){c.push(Number(document.querySelector('.custInput[data-i="'+i+'"]').value)||0);b.push(Number(document.querySelector('.basketInput[data-i="'+i+'"]').value)||0)});return{custVals:c,basketVals:b}}
+function recalc(){let ctot=0,rtot=0;FALLBACK.forEach(function(h,i){const c=Number(document.querySelector('.custInput[data-i="'+i+'"]').value)||0,b=Number(document.querySelector('.basketInput[data-i="'+i+'"]').value)||0,r=c*b;ctot+=c;rtot+=r;document.getElementById('rev'+i).textContent='₹'+fmt(r)});document.getElementById('totCust').textContent=fmt(ctot);document.getElementById('totRev').textContent=fmt(rtot)}
+function saveNow(message){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(collect()));document.getElementById('saveStatus').textContent=message||'Method 1 data saved ✓';setTimeout(function(){document.getElementById('saveStatus').textContent=''},1800)}catch(e){document.getElementById('saveStatus').textContent='Could not save locally'}}
+function load(){let saved=false;try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(s&&Array.isArray(s.custVals)&&Array.isArray(s.basketVals)&&s.custVals.length===17&&s.basketVals.length===17){s.custVals.forEach((v,i)=>document.querySelector('.custInput[data-i="'+i+'"]').value=v);s.basketVals.forEach((v,i)=>document.querySelector('.basketInput[data-i="'+i+'"]').value=v);saved=true}}catch(e){}try{const o=JSON.parse(localStorage.getItem(OUTLET_KEY)||'null');if(o){document.getElementById('outletId').value=o.id||'';document.getElementById('outletName').value=o.name||''}}catch(e){}try{const u=localStorage.getItem(URL_KEY);if(u){document.getElementById('sheetsUrl').value=u;document.getElementById('syncStatus').textContent='Configured ✓'}}catch(e){}recalc();document.getElementById('saveStatus').textContent=saved?'Loaded your last saved numbers':'Loaded Method 1 dataset';setTimeout(function(){document.getElementById('saveStatus').textContent=''},2200)}
+document.querySelectorAll('.custInput,.basketInput').forEach(function(x){x.addEventListener('input',function(){recalc();saveNow('Saved ✓')})});
+document.getElementById('saveBtn').addEventListener('click',function(){saveNow('Method 1 data saved ✓')});
+function saveOutlet(){localStorage.setItem(OUTLET_KEY,JSON.stringify({id:document.getElementById('outletId').value.trim(),name:document.getElementById('outletName').value.trim()}))}
+document.getElementById('outletId').addEventListener('change',saveOutlet);document.getElementById('outletName').addEventListener('change',saveOutlet);document.getElementById('sheetsUrl').addEventListener('change',function(){localStorage.setItem(URL_KEY,this.value.trim());document.getElementById('syncStatus').textContent=this.value.trim()?'Configured ✓':'Not configured'});
+document.getElementById('nextBtn').addEventListener('click',function(){saveNow('Method 1 data saved ✓');document.getElementById('nextModal').style.display='flex'});document.getElementById('stayBtn').addEventListener('click',function(){document.getElementById('nextModal').style.display='none'});document.getElementById('goMethod2').addEventListener('click',function(){saveNow('Method 1 data saved ✓');location.href='method2.html'});document.getElementById('nextModal').addEventListener('click',function(e){if(e.target===this)this.style.display='none'});
+document.getElementById('syncBtn').addEventListener('click',async function(){const url=document.getElementById('sheetsUrl').value.trim(),outletId=document.getElementById('outletId').value.trim(),status=document.getElementById('syncStatus');if(!url){status.textContent='Add the Google Sheets URL first';return}if(!outletId){status.textContent='Enter an Outlet ID first';return}saveNow('Preparing Google sync…');const rows=FALLBACK.map(function(h,i){const c=Number(document.querySelector('.custInput[data-i="'+i+'"]').value)||0,b=Number(document.querySelector('.basketInput[data-i="'+i+'"]').value)||0;return{hour:h[0],customers:c,basket:b,revenue:c*b}});try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({method:'method1',outletId:outletId,outletName:document.getElementById('outletName').value.trim(),date:new Date().toISOString().slice(0,10),rows:rows,total:rows.reduce((s,r)=>s+r.revenue,0),timestamp:new Date().toISOString()})});status.textContent='Synced to Sheet ✓'}catch(e){status.textContent='Sync failed — check URL'}});
 load();
 })();
-</script>
-</body></html>
+</script></body></html>
