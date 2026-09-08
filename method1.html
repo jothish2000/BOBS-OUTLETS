@@ -2,14 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1"><title>Method 1 — Hourly Footfall</title><link rel="stylesheet" href="style.css">
-<script src="bobs-config.js?v=20260908-googlefirst1"></script>
+<script src="bobs-config.js?v=20260908-m1recovery2"></script>
 <script>
-/* NORMAL METHOD 1 LOADER — Google first, localStorage only as working cache. */
+/* NORMAL METHOD 1 LOADER — Google first. If Google successfully confirms no METHOD1 record exists, the decision layer may load the original first-time recovery dataset. */
 (function(){
   const OUTLET_KEY='outlet-selection', STORAGE_KEY='method1-hourly-state';
   const CFG=window.BOBS_CONFIG||{};
   const ENDPOINT=String(CFG.SHEETS_WEB_APP_URL||'');
-  function outlet(){try{const o=JSON.parse(localStorage.getItem(OUTLET_KEY)||'null');return o||{}}catch(e){return {}}}
+  function outlet(){
+    try{
+      const o=JSON.parse(localStorage.getItem(OUTLET_KEY)||'null')||{};
+      const q=new URLSearchParams(location.search).get('outlet');
+      if(!o.id&&q)o.id=q;
+      return o;
+    }catch(e){return {id:new URLSearchParams(location.search).get('outlet')||''};}
+  }
   function jsonp(action,params,timeout){return new Promise((resolve,reject)=>{if(!ENDPOINT)return reject(new Error('Google Sheets endpoint is not configured'));const cb='bobsM1_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');let done=false;const clean=()=>{done=true;try{delete window[cb]}catch(e){}s.remove();clearTimeout(timer)},timer=setTimeout(()=>{if(!done){clean();reject(new Error('Google Method 1 lookup timed out'))}},timeout||12000);window[cb]=v=>{if(done)return;clean();if(v&&v.ok)resolve(v);else reject(new Error((v&&v.error)||'Google Method 1 lookup failed'))};s.onerror=()=>{if(!done){clean();reject(new Error('Could not contact Google Method 1 service'))}};const q=new URLSearchParams({action,callback:cb,_:Date.now(),...(params||{})});s.src=ENDPOINT+'?'+q.toString();s.async=true;document.head.appendChild(s)})}
   function valid(st){return !!(st&&Array.isArray(st.custVals)&&Array.isArray(st.basketVals)&&st.custVals.length===17&&st.basketVals.length===17)}
   function normalize(data){
@@ -21,14 +28,16 @@
   }
   async function load(){
     const o=outlet(),outletId=String(o.id||'');
-    if(!outletId||!ENDPOINT)return{found:false};
+    if(!outletId)return{found:false,checked:false,error:'No outlet selected'};
+    if(!ENDPOINT)return{found:false,checked:false,error:'Google Sheets endpoint is not configured'};
     try{
       const r=await jsonp('moduleList',{outletId,module:'METHOD1'});
       const records=Array.isArray(r.records)?r.records.filter(x=>String(x.status||'').toUpperCase()!=='DELETED'):[];
       records.sort((a,b)=>{const ad=a.recordKey==='default'?1:0,bd=b.recordKey==='default'?1:0;if(ad!==bd)return bd-ad;return String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||''))});
-      for(const rec of records){const state=normalize(rec.data||rec);if(valid(state)){state.outletId=state.outletId||outletId;state.outletName=state.outletName||o.name||'';state.source='GOOGLE_SHEETS';localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return{found:true,state,recordKey:rec.recordKey||'default'}}}
-    }catch(e){console.warn('BOBS Method 1 Google load:',e)}
-    return{found:false};
+      for(const rec of records){const state=normalize(rec.data||rec);if(valid(state)){state.outletId=state.outletId||outletId;state.outletName=state.outletName||o.name||'';state.source='GOOGLE_SHEETS';localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return{found:true,checked:true,state,recordKey:rec.recordKey||'default'}}}
+      console.info('BOBS Method 1: Google lookup completed; no METHOD1 record found for outlet '+outletId);
+      return{found:false,checked:true,recordCount:records.length};
+    }catch(e){console.warn('BOBS Method 1 Google load failed:',e);return{found:false,checked:false,error:e.message||String(e)}}
   }
   window.BOBS_GOOGLE_LOAD_PROMISE=load();
   window.BOBS_METHOD1_GOOGLE_SAVE=function(state){
@@ -44,8 +53,8 @@
 <header><p class="eyebrow">Method 1</p><h1>Hourly footfall</h1><p class="sub">Customers per hour × average basket value. Every customer and basket value remains editable and saves automatically.</p><nav class="pagenav"><a href="index.html">Home</a><a href="method1.html" class="active">Method 1</a><a href="method2.html">Method 2</a></nav></header>
 <section><div class="section-head"><h2>Which outlet?</h2><span class="tag">required for sync</span></div><div class="stack"><div class="row"><span class="rlabel">Outlet ID</span><input type="text" id="outletId" placeholder="e.g. 1" style="width:60px;"></div><div class="row"><span class="rlabel">Outlet Name (for your reference)</span><input type="text" id="outletName" placeholder="e.g. Main Street" style="width:140px;"></div></div></section>
 <section><div class="section-head"><h2>5 AM – 10 PM</h2><span class="tag">17 hours</span></div><div class="row" style="font-weight:700;border-bottom:1px solid #ddd;padding-bottom:6px;"><div class="rlabel">Time</div><div style="width:70px;text-align:center;">No. of Persons</div><div style="width:70px;text-align:center;">Basket Value</div><div style="width:80px;text-align:right;">Revenue</div></div><div id="hoursList"></div><div class="totals-row"><span>Daily customers / revenue</span><span class="num"><span id="totCust">0</span> · ₹<span id="totRev">0</span></span></div></section>
-<p class="status" id="saveStatus"></p><footer>Google is the permanent source of truth. Existing Method 1 data is loaded from Google before the decision popup; edits remain editable and sync back to Google.</footer>
-<script src="bobs-recovery-boot.js?v=20260908-googlefirst1"></script><script src="bobs-data-decision.js?v=20260908-googlefirst1"></script><script src="shared_data.js"></script>
+<p class="status" id="saveStatus"></p><footer>Google is the permanent source of truth. Existing Method 1 data is loaded from Google before the decision popup; if Google confirms no record for Outlet 1, the original first-time recovery dataset can be loaded and saved permanently.</footer>
+<script src="bobs-recovery-boot.js?v=20260908-m1recovery2"></script><script src="bobs-data-decision.js?v=20260908-m1recovery2"></script><script src="shared_data.js"></script>
 <script>
 const STORAGE_KEY='method1-hourly-state',OUTLET_KEY='outlet-selection';let saveTimer=null,googleSaveTimer=null;
 function fmt(n){return Math.round(n).toLocaleString('en-IN')}
