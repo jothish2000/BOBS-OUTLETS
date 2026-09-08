@@ -3,9 +3,9 @@
  * Browser storage is only a temporary UI cache.
  */
 window.BOBS_CONFIG = Object.freeze({
-  DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
+  DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jv80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
-  VERSION: '2026-09-08-googlefirst1'
+  VERSION: '2026-09-08-flowfix1'
 });
 
 /* CENTRAL STAFF MASTER */
@@ -26,3 +26,5 @@ window.BOBS_CONFIG = Object.freeze({
 
 /* Phase 1 flow controller */
 try{const s=document.createElement('script');s.src='bobs-phase1-flow.js?v='+encodeURIComponent(window.BOBS_CONFIG.VERSION);s.defer=true;document.head.appendChild(s);}catch(e){}
+/* Method 1 recovery flow fix — loaded after the phase controller so the iframe gets an explicit recovery pass. */
+try{const s=document.createElement('script');s.src='bobs-m1-flow-fix.js?v='+encodeURIComponent(window.BOBS_CONFIG.VERSION);s.defer=true;document.head.appendChild(s);}catch(e){}
