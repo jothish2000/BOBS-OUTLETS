@@ -14,7 +14,7 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          files=['method1.html','method2.html','staff.html','fixed-expenses.html']
+          files=['outlets.html','method1.html','method2.html','staff.html','fixed-expenses.html']
           tag='<script src="bobs-entry-gate.js"></script>'
           changed=[]
           for f in files:
@@ -35,8 +35,8 @@ jobs:
           if [ -s /tmp/changed.txt ]; then
             git config user.name 'BOBS automation'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add method1.html method2.html staff.html fixed-expenses.html
-            git commit -m 'Integrate Google-first BOBS entry gate'
+            git add outlets.html method1.html method2.html staff.html fixed-expenses.html
+            git commit -m 'Integrate Google-first BOBS entry gate including Outlet Setup'
             git push
           else
             echo 'No files needed patching.'
