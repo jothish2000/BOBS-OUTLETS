@@ -1,17 +1,18 @@
-/* BOBS Google-first entry gate — Outlet Setup recovery without replacing the page popup */
+/* BOBS Google-first entry gate — recover data, then let Outlet Setup show its original popup */
 (function(){
 'use strict';
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 const DEFAULT_URL='https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec';
 const URL=(window.BOBS_CONFIG&&window.BOBS_CONFIG.SHEETS_WEB_APP_URL)||DEFAULT_URL;
 const cfg={
- 'outlets.html':{kind:'outlets',key:'outlets-master',label:'Outlet Setup'},
- 'method1.html':{kind:'module',module:'METHOD1',key:'method1-hourly-state',label:'Method 1'},
- 'method2.html':{kind:'module',module:'METHOD2',key:'method2-item-state',label:'Method 2'},
- 'staff.html':{kind:'module',module:'STAFF',key:'staff-data',label:'Staff / HR'},
- 'fixed-expenses.html':{kind:'module',module:'FIXED_EXPENSES',key:'fixed-expenses-data',label:'Fixed Expenses'}
+ 'outlets.html':{kind:'outlets',key:'outlets-master'},
+ 'method1.html':{kind:'module',module:'METHOD1',key:'method1-hourly-state'},
+ 'method2.html':{kind:'module',module:'METHOD2',key:'method2-item-state'},
+ 'staff.html':{kind:'module',module:'STAFF',key:'staff-data'},
+ 'fixed-expenses.html':{kind:'module',module:'FIXED_EXPENSES',key:'fixed-expenses-data'}
 }[path];
 if(!cfg)return;
+const OUTLET_RECOVERED='bobs-outlet-google-recovered-once';
 function outletId(){try{const a=JSON.parse(localStorage.getItem('outlet-selection')||'{}');return String(a.outletId||a.id||a.outletID||'1')}catch(e){return '1'}}
 function localValue(){try{return JSON.parse(localStorage.getItem(cfg.key)||'null')}catch(e){return null}}
 function localHas(){const v=localValue();return !!v&&!(Array.isArray(v)&&!v.length)&&!(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length)}
@@ -31,37 +32,32 @@ function googleState(){
  return request.then(r=>{const rows=rowsFrom(r).filter(x=>String(x.status||'').toUpperCase()!=='DELETED');if(!rows.length)return null;return cfg.kind==='outlets'?rows.map(normalizeOutlet):rows[rows.length-1]});
 }
 function extract(data){if(cfg.kind==='outlets')return data;if(!data)return null;const v=data.data;try{return typeof v==='string'?JSON.parse(v):v}catch(e){return v}}
-function showModuleGate(data){
- const d=extract(data);if(d===null)return;
- try{localStorage.setItem(cfg.key,JSON.stringify(d))}catch(e){}
- window.dispatchEvent(new Event('bobs-data-restored'));
-}
-function showOutletPopupAfterGoogle(data){
- const d=extract(data);if(!Array.isArray(d)||!d.length)return false;
- try{localStorage.setItem('outlets-master',JSON.stringify(d))}catch(e){}
- /* Do not replace the Outlet Setup page's original saved-setup popup.
-    Its own popup is the UI the user already knows and contains the outlet summary. */
- if(typeof window.showModal==='function'){
-   const saved=d;
-   const summary=saved.map((o,i)=>{const name=o.name||('Outlet '+(i+1));const code=o.shortCode?` (${o.shortCode})`:'';return `<div><strong>${o.id||i+1}</strong> — ${name}${code}</div>`}).join('');
-   window.showModal('Existing BOBS setup found',`BOBS found ${saved.length} saved outlet${saved.length===1?'':'s'} in Google. The saved outlet details have been restored without overwriting them.`,`<button class="keep" id="continue">Use Existing Setup</button><button class="add" id="add">Add Another Outlet (next: Outlet ${Math.max(...saved.map(x=>+x.id).filter(Number.isFinite),saved.length)+1})</button><button class="new" id="new">Start New</button>`,`<div class="warning"><b>Saved outlets recovered from Google:</b><br>${summary}</div>`);
-   const c=document.getElementById('continue'),a=document.getElementById('add'),n=document.getElementById('new');
-   if(c)c.onclick=()=>{window.outlets=saved;window.outlets.forEach(o=>{if(typeof window.shifts==='function')window.shifts(o)});const count=document.getElementById('count');if(count)count.value=saved.length;if(typeof window.render==='function')window.render();if(typeof window.closeModal==='function')window.closeModal()};
-   if(a&&typeof window.addMore==='function')a.onclick=window.addMore;
-   if(n&&typeof window.confirmNew==='function')n.onclick=window.confirmNew;
-   return true;
- }
- return false;
-}
 async function init(){
  try{
+  if(cfg.kind==='outlets' && sessionStorage.getItem(OUTLET_RECOVERED)==='1'){
+   sessionStorage.removeItem(OUTLET_RECOVERED);
+   return;
+  }
   const g=await googleState();
-  if(g){if(cfg.kind==='outlets'){showOutletPopupAfterGoogle(g);return}showModuleGate(g);return}
-  if(cfg.kind!=='outlets'&&localHas()){showModuleGate(localValue());return}
-  /* Outlet Setup owns its popup. Do not replace it with a diagnostic popup. */
+  if(g){
+   const d=extract(g);
+   if(d!==null){try{localStorage.setItem(cfg.key,JSON.stringify(d))}catch(e){}}
+   if(cfg.kind==='outlets'){
+    /* Reload once so the existing Outlet Setup page initializes its own original popup.
+       No permanent Google record is written, changed, or deleted here. */
+    try{sessionStorage.setItem(OUTLET_RECOVERED,'1')}catch(e){}
+    location.reload();
+    return;
+   }
+   window.dispatchEvent(new Event('bobs-data-restored'));
+   return;
+  }
+  if(cfg.kind!=='outlets'&&localHas()){
+   const d=localValue();try{localStorage.setItem(cfg.key,JSON.stringify(d))}catch(e){}
+   window.dispatchEvent(new Event('bobs-data-restored'));
+  }
  }catch(e){
-  /* Never erase or overwrite local/permanent data on a read failure. */
-  if(cfg.kind!=='outlets'&&localHas())showModuleGate(localValue());
+  /* Read failure is non-destructive. Never clear local data or write to Google. */
  }
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
