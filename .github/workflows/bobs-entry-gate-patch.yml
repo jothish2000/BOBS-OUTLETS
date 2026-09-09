@@ -1,4 +1,4 @@
-name: BOBS Google-Only Data Layer
+name: BOBS Entry Gate Patch
 on:
   push:
     branches: [ main ]
@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Replace browser-cache gate with Google-only layer
+      - name: Restore stable entry gate
         shell: python
         run: |
           from pathlib import Path
           files=['outlets.html','method1.html','method2.html','staff.html','fixed-expenses.html']
-          old='<script src="bobs-entry-gate.js"></script>'
-          new='<script src="bobs-google-only.js"></script>'
+          old='<script src="bobs-google-only.js"></script>'
+          new='<script src="bobs-entry-gate.js"></script>'
           changed=[]
           for f in files:
               p=Path(f)
@@ -37,7 +37,7 @@ jobs:
             git config user.name 'BOBS automation'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -A -- outlets.html method1.html method2.html staff.html fixed-expenses.html
-            git commit -m 'BOBS: make core modules Google-only and remove browser cache gate'
+            git commit -m 'Restore stable BOBS entry gate after grey-screen regression'
             git push
           else
             echo 'No files needed patching.'
