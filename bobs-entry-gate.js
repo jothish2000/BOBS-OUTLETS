@@ -1,4 +1,4 @@
-/* BOBS Google-first entry gate — diagnostic + recovery */
+/* BOBS Google-first entry gate — Outlet Setup recovery without replacing the page popup */
 (function(){
 'use strict';
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
@@ -15,12 +15,54 @@ if(!cfg)return;
 function outletId(){try{const a=JSON.parse(localStorage.getItem('outlet-selection')||'{}');return String(a.outletId||a.id||a.outletID||'1')}catch(e){return '1'}}
 function localValue(){try{return JSON.parse(localStorage.getItem(cfg.key)||'null')}catch(e){return null}}
 function localHas(){const v=localValue();return !!v&&!(Array.isArray(v)&&!v.length)&&!(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length)}
-function style(){if(document.getElementById('bobs-gate-style'))return;const s=document.createElement('style');s.id='bobs-gate-style';s.textContent='.bobs-entry-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:18px;z-index:2147483647}.bobs-entry-box{width:min(620px,100%);background:#fff;color:#222;border-radius:16px;padding:25px;box-shadow:0 20px 70px rgba(0,0,0,.35);font-family:Arial,sans-serif}.bobs-entry-box h2{margin:0 0 10px}.bobs-entry-box p{line-height:1.5}.bobs-entry-actions{display:grid;gap:10px;margin-top:18px}.bobs-entry-actions button{min-height:52px;border:1px solid #ccc;border-radius:10px;padding:10px 14px;text-align:left;font-weight:700;cursor:pointer}.bobs-entry-continue{background:#2f7d32;color:#fff}.bobs-entry-status{font-size:12px;color:#666;margin-top:12px}.bobs-entry-error{background:#fff3cd;border:1px solid #e0b84c;padding:10px;border-radius:8px;margin-top:12px;font-size:13px}';document.head.appendChild(s)}
 function jsonp(params){return new Promise((resolve,reject)=>{if(!URL)return reject(Error('Google URL missing'));const cb='bobsGate_'+Date.now()+'_'+Math.random().toString(36).slice(2);const s=document.createElement('script');let done=false;function finish(fn,v){if(done)return;done=true;clearTimeout(t);try{delete window[cb]}catch(e){}s.remove();fn(v)}const q=Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');const t=setTimeout(()=>finish(reject,Error('Google response timeout')),10000);window[cb]=d=>finish(resolve,d);s.onerror=()=>finish(reject,Error('Google request failed'));s.src=URL+'?'+q+'&callback='+cb;document.head.appendChild(s)})}
 function rowsFrom(r){if(!r)return[];if(Array.isArray(r.outlets))return r.outlets;if(Array.isArray(r.records))return r.records;if(Array.isArray(r.data))return r.data;if(r.data&&Array.isArray(r.data.records))return r.data.records;return[]}
-function googleState(){return (cfg.kind==='outlets'?jsonp({action:'outletList'}):jsonp({action:'moduleList',outletId:outletId(),module:cfg.module})).then(r=>{const rows=rowsFrom(r).filter(x=>String(x.status||'').toUpperCase()!=='DELETED');if(!rows.length)return null;return cfg.kind==='outlets'?rows:rows[rows.length-1]})}
+function pick(o,names){for(const n of names){if(o&&o[n]!=null&&String(o[n]).trim()!=='')return o[n]}return ''}
+function normalizeOutlet(o,i){
+ const id=pick(o,['id','outletId','outletID','outlet_id','Outlet ID','ID'])||String(i+1);
+ const name=pick(o,['name','outletName','outlet_name','Outlet Name','Name']);
+ const code=pick(o,['shortCode','outletCode','outlet_code','code','Outlet Code','Code']);
+ const shifts=pick(o,['numShifts','numberOfShifts','number_of_shifts','shifts']);
+ const shiftTimes=o&&Array.isArray(o.shiftTimes)?o.shiftTimes:[];
+ return Object.assign({},o,{id:String(id),name:String(name||''),shortCode:String(code||'').toUpperCase(),numShifts:+shifts||2,shiftTimes});
+}
+function googleState(){
+ const request=cfg.kind==='outlets'?jsonp({action:'outletList'}):jsonp({action:'moduleList',outletId:outletId(),module:cfg.module});
+ return request.then(r=>{const rows=rowsFrom(r).filter(x=>String(x.status||'').toUpperCase()!=='DELETED');if(!rows.length)return null;return cfg.kind==='outlets'?rows.map(normalizeOutlet):rows[rows.length-1]});
+}
 function extract(data){if(cfg.kind==='outlets')return data;if(!data)return null;const v=data.data;try{return typeof v==='string'?JSON.parse(v):v}catch(e){return v}}
-function show(data,diagnostic){style();const ov=document.createElement('div');ov.className='bobs-entry-overlay';const box=document.createElement('div');box.className='bobs-entry-box';let html='';if(data){const count=cfg.kind==='outlets'?data.length:1;html='<h2>Existing '+cfg.label+' Data Available</h2><p>'+ (cfg.kind==='outlets'?'BOBS found <b>'+count+'</b> saved outlet record'+(count===1?'':'s')+' in Google. Previously saved Rasipuram / GP records will be recovered if they are in this master.':'BOBS found saved '+cfg.label+' data in Google for Outlet '+outletId()+'.') +'</p><p><b>Choose how to enter this module:</b></p><div class="bobs-entry-actions"><button class="bobs-entry-continue">A. Continue Using Existing Data</button><button class="bobs-entry-modify">B. Add / Modify Existing Data</button><button class="bobs-entry-fresh">C. Start Fresh Assessment</button></div><div class="bobs-entry-status">Google was checked first. Permanent Google records are not deleted by this decision.</div>';}else{html='<h2>Google Data Check</h2><p>'+diagnostic+'</p><div class="bobs-entry-actions"><button class="bobs-entry-continue">Continue to '+cfg.label+'</button></div>'}box.innerHTML=html;ov.appendChild(box);document.body.appendChild(ov);if(data){const d=extract(data);const load=()=>{if(d!==null){try{localStorage.setItem(cfg.key,JSON.stringify(d))}catch(e){}}ov.remove();window.dispatchEvent(new Event('bobs-data-restored'))};box.querySelector('.bobs-entry-continue').onclick=load;box.querySelector('.bobs-entry-modify').onclick=load;box.querySelector('.bobs-entry-fresh').onclick=()=>{try{localStorage.removeItem(cfg.key)}catch(e){}ov.remove();window.dispatchEvent(new Event('bobs-start-fresh'))}}else box.querySelector('button').onclick=()=>ov.remove()}
-async function init(){try{const g=await googleState();if(g){show(g);return}if(localHas()){show(localValue());return}show(null,'No saved records were returned by the Google endpoint. This does NOT mean your permanent Google data was deleted. It means BOBS could not find a readable record through the current endpoint.') }catch(e){show(null,'BOBS could not read the Google endpoint right now. Error: '+e.message+'. The permanent Google records have NOT been deleted.')}}
+function showModuleGate(data){
+ const d=extract(data);if(d===null)return;
+ try{localStorage.setItem(cfg.key,JSON.stringify(d))}catch(e){}
+ window.dispatchEvent(new Event('bobs-data-restored'));
+}
+function showOutletPopupAfterGoogle(data){
+ const d=extract(data);if(!Array.isArray(d)||!d.length)return false;
+ try{localStorage.setItem('outlets-master',JSON.stringify(d))}catch(e){}
+ /* Do not replace the Outlet Setup page's original saved-setup popup.
+    Its own popup is the UI the user already knows and contains the outlet summary. */
+ if(typeof window.showModal==='function'){
+   const saved=d;
+   const summary=saved.map((o,i)=>{const name=o.name||('Outlet '+(i+1));const code=o.shortCode?` (${o.shortCode})`:'';return `<div><strong>${o.id||i+1}</strong> — ${name}${code}</div>`}).join('');
+   window.showModal('Existing BOBS setup found',`BOBS found ${saved.length} saved outlet${saved.length===1?'':'s'} in Google. The saved outlet details have been restored without overwriting them.`,`<button class="keep" id="continue">Use Existing Setup</button><button class="add" id="add">Add Another Outlet (next: Outlet ${Math.max(...saved.map(x=>+x.id).filter(Number.isFinite),saved.length)+1})</button><button class="new" id="new">Start New</button>`,`<div class="warning"><b>Saved outlets recovered from Google:</b><br>${summary}</div>`);
+   const c=document.getElementById('continue'),a=document.getElementById('add'),n=document.getElementById('new');
+   if(c)c.onclick=()=>{window.outlets=saved;window.outlets.forEach(o=>{if(typeof window.shifts==='function')window.shifts(o)});const count=document.getElementById('count');if(count)count.value=saved.length;if(typeof window.render==='function')window.render();if(typeof window.closeModal==='function')window.closeModal()};
+   if(a&&typeof window.addMore==='function')a.onclick=window.addMore;
+   if(n&&typeof window.confirmNew==='function')n.onclick=window.confirmNew;
+   return true;
+ }
+ return false;
+}
+async function init(){
+ try{
+  const g=await googleState();
+  if(g){if(cfg.kind==='outlets'){showOutletPopupAfterGoogle(g);return}showModuleGate(g);return}
+  if(cfg.kind!=='outlets'&&localHas()){showModuleGate(localValue());return}
+  /* Outlet Setup owns its popup. Do not replace it with a diagnostic popup. */
+ }catch(e){
+  /* Never erase or overwrite local/permanent data on a read failure. */
+  if(cfg.kind!=='outlets'&&localHas())showModuleGate(localValue());
+ }
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
