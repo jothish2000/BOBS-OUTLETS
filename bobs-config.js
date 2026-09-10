@@ -1,8 +1,8 @@
 /* BOBS central configuration. Google Sheets and Data Vault are authoritative. */
 window.BOBS_CONFIG = Object.freeze({
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
-  DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxfxZLubLTNd7WjIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec',
-  VERSION: '2026-09-10-data-vault-url-correction'
+  DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec',
+  VERSION: '2026-09-10-new-data-vault-deployment'
 });
 
 /* GitHub Pages cannot read Google Apps Script JSON with fetch because the
