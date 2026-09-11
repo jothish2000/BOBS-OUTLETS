@@ -2,7 +2,7 @@
 window.BOBS_CONFIG = Object.freeze({
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
   DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec',
-  VERSION: '2026-09-10-data-vault-save-fix'
+  VERSION: '2026-09-11-outlet-flow-finish'
 });
 
 /* GitHub Pages cannot read Google Apps Script JSON with fetch because the
@@ -54,3 +54,24 @@ window.BOBS_CONFIG = Object.freeze({
     return nativeFetch(input,init);
   };
 })();
+
+/* A completed outlet is a complete unit of work. The old flow exposed a
+   Next Outlet action here, which conflicts with the BOBS requirement that
+   each outlet be finished before returning to the main BOBS flow. Intercept
+   only that legacy button; do not alter any method calculation or save code. */
+document.addEventListener('click',function(e){
+  const btn=e.target&&e.target.closest?e.target.closest('#nextOutletBtn'):null;
+  if(!btn)return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  window.location.href='index.html';
+},true);
+document.addEventListener('DOMContentLoaded',function(){
+  const btn=document.getElementById('nextOutletBtn');
+  if(btn){
+    btn.textContent='Return to BOBS Flow →';
+    btn.setAttribute('aria-label','Return to BOBS Flow');
+  }
+  const analysis=document.querySelector('#finishPanel a[href="outlet-analysis.html"]');
+  if(analysis)analysis.style.display='none';
+});
