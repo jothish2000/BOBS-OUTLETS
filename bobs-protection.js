@@ -1,8 +1,8 @@
 /* BOBS PROTECTION CONTROLLER — non-destructive reset + Google Sheets Data Vault */
 (function(){
-  const CRITICAL=['outlet-selection','outlet-analysis-data','method1-hourly-state','method2-item-state','staff-data','fixed-expenses-data','production-data','roster-data','bobs-research-datasets','bobs-active-research-dataset'];
+  const CRITICAL=['outlets-master','outlet-selection','outlet-analysis-data','method1-hourly-state','method2-item-state','staff-data','staff-state','fixed-expenses-data','production-data','roster-data','bobs-research-datasets','bobs-active-research-dataset'];
   const VAULT='bobs-data-vault', QUEUE='bobs-sync-queue';
-  const GOOGLE_VAULT_URL=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'https://script.google.com/macros/s/AKfycbxfxZLubLTNdW7jIFepJuRhz02Sch8WDQP4wQPeH38jV80LH-G2Y0tReJ6cWVjrcGQkPQ/exec';
+  const GOOGLE_VAULT_URL=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec';
   function read(k){try{const v=localStorage.getItem(k);return v===null?null:JSON.parse(v)}catch(e){return localStorage.getItem(k)}}
   function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
   function snapshot(reason){let data={};CRITICAL.forEach(k=>{const v=read(k);if(v!==null)data[k]=v});const now=new Date(),id='SNAP-'+now.toISOString().replace(/[-:TZ.]/g,'').slice(0,14)+'-'+Math.random().toString(36).slice(2,7);const rec={id,createdAt:now.toISOString(),reason:reason||'Protected checkpoint',data};let list=read(VAULT)||[];list.push(rec);write(VAULT,list);return rec}
