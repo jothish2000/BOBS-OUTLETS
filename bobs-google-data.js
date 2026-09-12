@@ -23,6 +23,7 @@
     });
   }
   async function saveModule(outletId,module,recordKey,data){
+    if(window.BOBS_TRANSITION_GUARD&&typeof window.BOBS_TRANSITION_GUARD.prepareSave==='function')window.BOBS_TRANSITION_GUARD.prepareSave();
     if(!outletId)throw new Error('outletId is required');
     const body={action:'moduleSave',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default'),data:data||{},timestamp:new Date().toISOString()};
     await fetch(VAULT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
