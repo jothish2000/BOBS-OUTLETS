@@ -1,7 +1,8 @@
 /* BOBS Google-First Data Layer
  * Permanent business data lives in Google Sheets / Data Vault.
  * This helper provides JSONP reads and no-cors writes for GitHub Pages.
- * It deliberately does not use localStorage, sessionStorage, IndexedDB, or cache.
+ * It deliberately does not use localStorage, sessionStorage, IndexedDB, or cache
+ * for permanent business storage.
  */
 (function(){
   'use strict';
@@ -22,12 +23,16 @@
       document.head.appendChild(s);
     });
   }
+  function latestVersion(){return Date.now()*1000+Math.floor(Math.random()*1000)}
   async function saveModule(outletId,module,recordKey,data){
     if(window.BOBS_TRANSITION_GUARD&&typeof window.BOBS_TRANSITION_GUARD.prepareSave==='function')window.BOBS_TRANSITION_GUARD.prepareSave();
     if(!outletId)throw new Error('outletId is required');
-    const body={action:'moduleSave',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default'),data:data||{},timestamp:new Date().toISOString()};
+    const d=(data&&typeof data==='object')?data:{};
+    const stateVersion=latestVersion();
+    const payload=Object.assign({},d,{_bobsMeta:Object.assign({},d._bobsMeta||{}, {stateVersion:stateVersion,savedBy:'BOBS',savedAt:new Date().toISOString()})});
+    const body={action:'moduleSave',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default'),data:payload,stateVersion:stateVersion,timestamp:new Date().toISOString()};
     await fetch(VAULT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
-    return {ok:true,saved:true,source:'GOOGLE_SHEETS',module:module,outletId:String(outletId)};
+    return {ok:true,saved:true,source:'GOOGLE_SHEETS',module:module,outletId:String(outletId),stateVersion:stateVersion};
   }
   async function getModule(outletId,module,recordKey){
     const r=await jsonp({action:'moduleGet',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default')});
