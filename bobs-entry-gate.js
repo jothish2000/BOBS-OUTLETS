@@ -5,7 +5,7 @@ try{const g=document.createElement('script');g.src='bobs-transition-guard.js?v=2
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 if(path==='method2.html'){
   try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-12-111Q-condiments-3';s.defer=true;document.head.appendChild(s)}catch(e){}
-  const CFG={VERSION:'2026-09-12-111Q-method2-google-first-v2',VAULT:'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJDpQ8Nsk12zThc1Yj4A9Pf4A/exec'};
+  const CFG={VERSION:'2026-09-12-111Q-method2-google-first-v3',VAULT:'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec'};
   const hydratedKey='bobs-method2-google-hydrated';
   const outletId=()=>{const q=new URLSearchParams(location.search);if(q.get('outlet'))return String(q.get('outlet'));try{const o=JSON.parse(localStorage.getItem('outlet-selection')||'{}');return String(o.id||'')}catch(e){return ''}};
   const jsonp=(params)=>new Promise((resolve,reject)=>{const cb='bobsM2Gate_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');let done=false;const q=Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k]==null?'':params[k])).join('&');const finish=(ok,v)=>{if(done)return;done=true;clearTimeout(t);try{delete window[cb]}catch(e){}s.remove();ok?resolve(v):reject(v)};const t=setTimeout(()=>finish(false,new Error('Google Data Vault timeout')),12000);window[cb]=d=>finish(true,d);s.onerror=()=>finish(false,new Error('Google Data Vault request failed'));s.src=CFG.VAULT+'?'+q+'&callback='+cb+'&_bobs='+Date.now();document.head.appendChild(s)});
