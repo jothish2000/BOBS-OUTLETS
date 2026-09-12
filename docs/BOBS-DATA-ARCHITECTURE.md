@@ -1,7 +1,7 @@
 # BOBS Data Architecture — Google-First Rule
 
-**Version:** BOBS DATA v2.5  
-**Date:** 2026-09-11
+**Version:** BOBS DATA v2.6  
+**Date:** 2026-09-12
 
 ## 1. Permanent rule
 
@@ -30,16 +30,36 @@ Core outlet master data remains in `OUTLET_MASTER`.
 | Page / module | Permanent Google record | Status |
 |---|---|---|
 | Outlet Setup | `OUTLET_MASTER` | Google-first |
-| Method 1 | `BOBS_MODULE_DATA` / `METHOD1` / outlet | Google-first |
-| Method 2 | `BOBS_MODULE_DATA` / `METHOD2` / outlet | Legacy UI still being migrated; sync bridge writes to Google |
-| Outlet Analysis | Reads `METHOD1` + `METHOD2` from Data Vault | Google-first |
+| Method 1 | `BOBS_MODULE_DATA` / `METHOD1` / outlet | Google-first; edits auto-save to Google |
+| Method 2 | `BOBS_MODULE_DATA` / `METHOD2` / outlet | Google-first recovery + automatic Google persistence bridge |
+| COGS Outlet Analysis | Reads `METHOD1` + `METHOD2` from Data Vault; selected outlets only | Google-first |
 | Staff Master | `BOBS_MODULE_DATA` / `STAFF_MASTER` / `COMPANY` | Google-first |
 | HR Outlet Allocation | `BOBS_MODULE_DATA` / `HR_OUTLET_ALLOCATION` / `COMPANY` | Google-first |
 | Fixed Expenses | `BOBS_MODULE_DATA` / `FIXED_EXPENSES` / outlet | Google-first |
 | Asset Master | `BOBS_MODULE_DATA` / `ASSET_MASTER` / outlet | To be built before the page is considered complete |
 | Break-even modules | Must read permanent outlet/module records; migration/verification required before completion | Pending audit |
 
-## 4. New-page rule
+## 4. Outlet tagging rule
+
+Method records are never one shared browser-level record. Each method is stored separately by outlet:
+
+- Outlet 1 + `METHOD1` + `default`
+- Outlet 1 + `METHOD2` + `default`
+- Outlet 2 + `METHOD1` + `default`
+- Outlet 2 + `METHOD2` + `default`
+
+This prevents Method 1/Method 2 data for one outlet from overwriting another outlet's analysis.
+
+## 5. COGS review rule
+
+After the completed outlet-level method stage, BOBS opens the COGS Outlet Analysis stage.
+
+- If only one permanent outlet exists, show that outlet only.
+- If multiple permanent outlets exist, start with the current outlet and ask which other existing outlets should be reviewed/compared.
+- Comparison is therefore user-selected, not an automatic dump of every outlet.
+- Missing COGS inputs are shown as `INPUT REQUIRED`, not as a misleading zero.
+
+## 6. New-page rule
 
 No new BOBS page is considered complete unless its business data has:
 
@@ -50,13 +70,13 @@ No new BOBS page is considered complete unless its business data has:
 5. Google save/update behavior.
 6. No permanent browser storage dependency.
 
-## 5. Compatibility bridge
+## 7. Compatibility bridge
 
-`bobs-config.js` currently routes legacy "Sync to Google Sheet" POST payloads for Method 2 and other older module pages into `moduleSave`. This protects permanent storage while pages are migrated.
+Some legacy page calculations still use browser working state while the page is open, but the authoritative recovery and permanent save path is Google/Data Vault. This is a migration bridge, not permission to treat browser storage as permanent business storage.
 
-The compatibility bridge is **not** the final architecture. The final state is Google-first read + Google-first write with no browser persistence.
+The target final architecture remains Google-first read + Google-first write with no browser persistence dependency.
 
-## 6. Change control
+## 8. Change control
 
 This architecture is part of the BOBS 111Q change-control system. Each migration is committed separately so the immediately previous known-good Git state remains recoverable.
 
