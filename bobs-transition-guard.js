@@ -1,16 +1,16 @@
-/* BOBS 111Q GLOBAL INPUT / TRANSITION GUARD v3
- * Universal rule:
- * 1) Any user-entered value is protected when another control changes the UI.
- * 2) The user's latest toggle/input remains the latest value.
- * 3) Before Save, the page is synchronised from the protected DOM state so the
- *    module's existing save handler receives the latest values.
- * 4) No permanent Google record is deleted or overwritten by the guard itself.
+/* BOBS 111Q GLOBAL INPUT / TRANSITION GUARD v4
+ * Universal protection for BOBS pages.
+ * Method2 exception: its legacy production/purchased engine owns its own
+ * DOM -> local working-state synchronization. The universal DOM restoration
+ * layer must not fight that engine after a mode toggle. Checkpointing remains
+ * active on Method2, but DOM restoration is skipped there.
  */
 (function(){
 'use strict';
 if(window.__BOBS_TRANSITION_GUARD__)return;
 window.__BOBS_TRANSITION_GUARD__=true;
-const VERSION='2026-09-12-111Q-transition-guard-v3';
+const VERSION='2026-09-12-111Q-transition-guard-v4';
+const IS_METHOD2=(location.pathname.split('/').pop()||'').toLowerCase()==='method2.html';
 const VAULT=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'';
 let restoring=false,lastSnapshot=0,lastBefore=null,lastChangedKey=null,lastChangedValue=null;
 function stableKey(el){
@@ -60,7 +60,7 @@ function emitSync(el){
   try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
 }
 function restoreAll(before,changedKey,changedValue){
-  if(restoring)return;
+  if(IS_METHOD2||restoring)return;
   restoring=true;
   try{
     before.forEach((entry,key)=>{
@@ -77,10 +77,11 @@ function protectChange(target){
   lastChangedKey=stableKey(target);
   lastChangedValue=valueOf(target);
   checkpoint('Before user input transition: '+(lastChangedKey||target.tagName));
+  if(IS_METHOD2)return;
   const restore=()=>restoreAll(before,lastChangedKey,lastChangedValue);
   setTimeout(restore,0);setTimeout(restore,40);setTimeout(restore,150);setTimeout(restore,500);setTimeout(restore,1000);
 }
-function prepareSave(){if(restoring)return;if(lastBefore)restoreAll(lastBefore,lastChangedKey,lastChangedValue)}
+function prepareSave(){if(IS_METHOD2||restoring)return;if(lastBefore)restoreAll(lastBefore,lastChangedKey,lastChangedValue)}
 function isSaveAction(t){
   if(!t)return false;
   const id=((t.id||'')+' '+(t.className||'')).toLowerCase();
@@ -94,7 +95,6 @@ document.addEventListener('input',e=>{
   if(t&&t.matches&&t.matches('input,select,textarea')){
     lastChangedKey=stableKey(t);
     lastChangedValue=valueOf(t);
-    /* A new user edit becomes the new safe baseline. */
     lastBefore=collect();
   }
 },true);
