@@ -51,7 +51,6 @@ function checkpoint(reason){
   const payload={snapshotId:'TRANS-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),createdAt:new Date().toISOString(),reason:reason||'Protected transition checkpoint',version:VERSION,data:localData()};
   try{if(window.BOBSProtection&&typeof window.BOBSProtection.snapshot==='function')window.BOBSProtection.snapshot(reason)}catch(e){}
   try{sessionStorage.setItem('bobs-transition-ledger',JSON.stringify(payload))}catch(e){}
-  /* Best-effort durable safety copy. The normal module save remains responsible for business data. */
   const now=Date.now();if(VAULT&&now-lastSnapshot>500){lastSnapshot=now;try{fetch(VAULT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'snapshot',snapshotId:payload.snapshotId,reason:payload.reason,data:payload.data,source:'BOBS-TRANSITION-GUARD',timestamp:payload.createdAt})}).catch(()=>{})}catch(e){}}
 }
 function find(key){let found=null;document.querySelectorAll('input,select,textarea').forEach(el=>{if(!found&&stableKey(el)===key)found=el});return found}
@@ -68,26 +67,20 @@ function restoreAll(before,changedKey,changedValue){
       if(key===changedKey)return;
       const now=find(key);if(now&&!same(valueOf(now),entry.v)){setValue(now,entry.v);emitSync(now)}
     });
-    /* If the application rebuilt the changed control, preserve the user's new choice too. */
     if(changedKey&&changedValue){const now=find(changedKey);if(now&&!same(valueOf(now),changedValue)){setValue(now,changedValue);emitSync(now)}}
   }finally{restoring=false}
 }
 function protectChange(target){
-  if(restoring||!target||!target.matches)return;
-  if(!target.matches('input,select,textarea'))return;
+  if(restoring||!target||!target.matches||!target.matches('input,select,textarea'))return;
   const before=collect();
   lastBefore=before;
   lastChangedKey=stableKey(target);
   lastChangedValue=valueOf(target);
   checkpoint('Before user input transition: '+(lastChangedKey||target.tagName));
   const restore=()=>restoreAll(before,lastChangedKey,lastChangedValue);
-  /* UI modules may rebuild synchronously, in a microtask, or after a timer. */
   setTimeout(restore,0);setTimeout(restore,40);setTimeout(restore,150);setTimeout(restore,500);setTimeout(restore,1000);
 }
-function prepareSave(){
-  if(restoring)return;
-  if(lastBefore){restoreAll(lastBefore,lastChangedKey,lastChangedValue)}
-}
+function prepareSave(){if(restoring)return;if(lastBefore)restoreAll(lastBefore,lastChangedKey,lastChangedValue)}
 function isSaveAction(t){
   if(!t)return false;
   const id=((t.id||'')+' '+(t.className||'')).toLowerCase();
@@ -97,9 +90,12 @@ function isSaveAction(t){
 document.addEventListener('change',e=>protectChange(e.target),true);
 document.addEventListener('input',e=>{
   if(restoring)return;
-  const t=e.target;if(t&&t.matches&&t.matches('input,select,textarea')){
-    /* Do not rebuild the page on every keystroke; record the newest DOM state. */
-    lastChangedKey=stableKey(t);lastChangedValue=valueOf(t);
+  const t=e.target;
+  if(t&&t.matches&&t.matches('input,select,textarea')){
+    lastChangedKey=stableKey(t);
+    lastChangedValue=valueOf(t);
+    /* A new user edit becomes the new safe baseline. */
+    lastBefore=collect();
   }
 },true);
 document.addEventListener('click',e=>{
@@ -110,10 +106,5 @@ document.addEventListener('click',e=>{
   if(isSaveAction(t))prepareSave();
 },true);
 window.addEventListener('beforeunload',()=>checkpoint('Protected page exit checkpoint'));
-window.BOBS_TRANSITION_GUARD={
-  version:VERSION,
-  protect:function(reason){checkpoint(reason||'Manual protection checkpoint')},
-  prepareSave:prepareSave,
-  getVersion:function(){return VERSION}
-};
+window.BOBS_TRANSITION_GUARD={version:VERSION,protect:function(reason){checkpoint(reason||'Manual protection checkpoint')},prepareSave:prepareSave,getVersion:function(){return VERSION}};
 })();
