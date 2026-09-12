@@ -1,6 +1,7 @@
-/* BOBS 111Q ENTRY GATE — authoritative Google recovery */
+/* BOBS 111Q ENTRY GATE — authoritative Google recovery + global transition protection */
 (function(){
 'use strict';
+try{const g=document.createElement('script');g.src='bobs-transition-guard.js?v=2026-09-12-111Q-transition-guard-v2';document.head.appendChild(g)}catch(e){}
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 if(path==='method2.html'){
   try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-12-111Q-condiments-3';s.defer=true;document.head.appendChild(s)}catch(e){}
