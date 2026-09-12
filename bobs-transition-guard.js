@@ -1,29 +1,35 @@
-/* BOBS 111Q GLOBAL TRANSITION GUARD
- * Purpose: changing a toggle/select/mode must never silently erase unrelated user-entered data.
- * This is a compatibility/protection layer, not a replacement for each module's own save logic.
+/* BOBS 111Q GLOBAL INPUT / TRANSITION GUARD v3
+ * Universal rule:
+ * 1) Any user-entered value is protected when another control changes the UI.
+ * 2) The user's latest toggle/input remains the latest value.
+ * 3) Before Save, the page is synchronised from the protected DOM state so the
+ *    module's existing save handler receives the latest values.
+ * 4) No permanent Google record is deleted or overwritten by the guard itself.
  */
 (function(){
 'use strict';
 if(window.__BOBS_TRANSITION_GUARD__)return;
 window.__BOBS_TRANSITION_GUARD__=true;
-const VERSION='2026-09-12-111Q-transition-guard-v2';
-const VAULT=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec';
-let lastGoogleSnapshot=0;
+const VERSION='2026-09-12-111Q-transition-guard-v3';
+const VAULT=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'';
+let restoring=false,lastSnapshot=0,lastBefore=null,lastChangedKey=null,lastChangedValue=null;
 function stableKey(el){
   if(!el||el.nodeType!==1)return null;
-  const parts=[el.tagName||'',el.id||'',el.name||'',el.dataset&&el.dataset.cat||'',el.dataset&&el.dataset.i||'',el.dataset&&el.dataset.key||'',el.type||''];
+  const d=el.dataset||{};
+  const parts=[el.tagName||'',el.id||'',el.name||'',d.cat||'',d.i||'',d.key||'',d.oid||'',d.si||'',el.type||''];
   const s=parts.join('|');
-  return s==='||||||' ? null : s;
+  return /^\|+$/.test(s)?null:s;
 }
 function valueOf(el){
   if(el instanceof HTMLInputElement){
-    if(el.type==='checkbox'||el.type==='radio')return {type:el.type,checked:!!el.checked,value:el.value};
-    return {type:el.type,value:el.value};
+    if(el.type==='checkbox'||el.type==='radio')return{type:el.type,checked:!!el.checked,value:el.value};
+    return{type:el.type,value:el.value};
   }
-  if(el instanceof HTMLSelectElement)return {type:'select',value:Array.from(el.selectedOptions).map(o=>o.value)};
-  if(el instanceof HTMLTextAreaElement)return {type:'textarea',value:el.value};
+  if(el instanceof HTMLSelectElement)return{type:'select',value:Array.from(el.selectedOptions).map(o=>o.value)};
+  if(el instanceof HTMLTextAreaElement)return{type:'textarea',value:el.value};
   return null;
 }
+function same(a,b){return JSON.stringify(a)===JSON.stringify(b)}
 function setValue(el,v){
   if(!el||!v)return;
   try{
@@ -38,42 +44,76 @@ function collect(){
   return m;
 }
 function localData(){
-  const critical=['outlets-master','outlet-selection','method1-hourly-state','method2-item-state','staff-data','staff-state','fixed-expenses-data','production-data','roster-data','outlet-analysis-data'];
-  const data={};critical.forEach(k=>{try{const v=localStorage.getItem(k);if(v!==null)data[k]=v}catch(e){}});return data;
+  const keys=['outlets-master','outlet-selection','method1-hourly-state','method2-item-state','staff-data','staff-state','fixed-expenses-data','production-data','roster-data','outlet-analysis-data'];
+  const data={};keys.forEach(k=>{try{const v=localStorage.getItem(k);if(v!==null)data[k]=v}catch(e){}});return data;
 }
-function snapshotLocal(reason){
-  try{if(window.BOBSProtection&&typeof window.BOBSProtection.snapshot==='function')window.BOBSProtection.snapshot(reason)}catch(e){}
+function checkpoint(reason){
   const payload={snapshotId:'TRANS-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),createdAt:new Date().toISOString(),reason:reason||'Protected transition checkpoint',version:VERSION,data:localData()};
+  try{if(window.BOBSProtection&&typeof window.BOBSProtection.snapshot==='function')window.BOBSProtection.snapshot(reason)}catch(e){}
   try{sessionStorage.setItem('bobs-transition-ledger',JSON.stringify(payload))}catch(e){}
-  /* A durable pre-change copy goes to Google Vault. Throttle only duplicate page-exit snapshots. */
-  const now=Date.now();if(now-lastGoogleSnapshot<500)return;lastGoogleSnapshot=now;
-  try{fetch(VAULT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'snapshot',snapshotId:payload.snapshotId,reason:payload.reason,data:payload.data,source:'BOBS-TRANSITION-GUARD',timestamp:payload.createdAt})}).catch(()=>{})}catch(e){}
+  /* Best-effort durable safety copy. The normal module save remains responsible for business data. */
+  const now=Date.now();if(VAULT&&now-lastSnapshot>500){lastSnapshot=now;try{fetch(VAULT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'snapshot',snapshotId:payload.snapshotId,reason:payload.reason,data:payload.data,source:'BOBS-TRANSITION-GUARD',timestamp:payload.createdAt})}).catch(()=>{})}catch(e){}}
 }
-function valueChanged(el,v){
-  const n=valueOf(el);if(!n||!v)return false;
-  if(n.type==='checkbox'||n.type==='radio')return n.checked!==!!v.checked||n.value!==v.value;
-  if(n.type==='select')return JSON.stringify(n.value)!==JSON.stringify(v.value);
-  return n.value!==v.value;
+function find(key){let found=null;document.querySelectorAll('input,select,textarea').forEach(el=>{if(!found&&stableKey(el)===key)found=el});return found}
+function emitSync(el){
+  if(!el)return;
+  try{el.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}
+  try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
 }
-function restoreUnrelated(before,target){
-  before.forEach((entry,k)=>{
-    if(entry.el===target)return;
-    let found=null;document.querySelectorAll('input,select,textarea').forEach(el=>{if(!found&&stableKey(el)===k)found=el});
-    if(found&&valueChanged(found,entry.v))setValue(found,entry.v);
-  });
+function restoreAll(before,changedKey,changedValue){
+  if(restoring)return;
+  restoring=true;
+  try{
+    before.forEach((entry,key)=>{
+      if(key===changedKey)return;
+      const now=find(key);if(now&&!same(valueOf(now),entry.v)){setValue(now,entry.v);emitSync(now)}
+    });
+    /* If the application rebuilt the changed control, preserve the user's new choice too. */
+    if(changedKey&&changedValue){const now=find(changedKey);if(now&&!same(valueOf(now),changedValue)){setValue(now,changedValue);emitSync(now)}}
+  }finally{restoring=false}
 }
-function protectTransition(target){
-  if(!target||!target.matches||!target.matches('select,input[type="checkbox"],input[type="radio"]'))return;
-  const before=collect();snapshotLocal('Before toggle transition: '+(stableKey(target)||target.tagName));
-  const restore=()=>restoreUnrelated(before,target);
-  setTimeout(restore,0);setTimeout(restore,50);setTimeout(restore,250);setTimeout(restore,800);
+function protectChange(target){
+  if(restoring||!target||!target.matches)return;
+  if(!target.matches('input,select,textarea'))return;
+  const before=collect();
+  lastBefore=before;
+  lastChangedKey=stableKey(target);
+  lastChangedValue=valueOf(target);
+  checkpoint('Before user input transition: '+(lastChangedKey||target.tagName));
+  const restore=()=>restoreAll(before,lastChangedKey,lastChangedValue);
+  /* UI modules may rebuild synchronously, in a microtask, or after a timer. */
+  setTimeout(restore,0);setTimeout(restore,40);setTimeout(restore,150);setTimeout(restore,500);setTimeout(restore,1000);
 }
-document.addEventListener('change',e=>protectTransition(e.target),true);
-document.addEventListener('click',e=>{
-  const t=e.target&&e.target.closest?e.target.closest('button,[role="button"]'):null;if(!t)return;
-  const text=(t.textContent||'').trim().toLowerCase();
-  if(/start fresh|reset|clear all|delete|remove all/.test(text))snapshotLocal('Before destructive-looking action: '+text.slice(0,80));
+function prepareSave(){
+  if(restoring)return;
+  if(lastBefore){restoreAll(lastBefore,lastChangedKey,lastChangedValue)}
+}
+function isSaveAction(t){
+  if(!t)return false;
+  const id=((t.id||'')+' '+(t.className||'')).toLowerCase();
+  const text=(t.textContent||t.value||'').trim().toLowerCase();
+  return /save|submit|finish|continue/.test(id)||/save|submit|finish|continue/.test(text);
+}
+document.addEventListener('change',e=>protectChange(e.target),true);
+document.addEventListener('input',e=>{
+  if(restoring)return;
+  const t=e.target;if(t&&t.matches&&t.matches('input,select,textarea')){
+    /* Do not rebuild the page on every keystroke; record the newest DOM state. */
+    lastChangedKey=stableKey(t);lastChangedValue=valueOf(t);
+  }
 },true);
-window.addEventListener('beforeunload',()=>snapshotLocal('Protected page exit checkpoint'));
-window.BOBS_TRANSITION_GUARD={version:VERSION,protect:function(reason){snapshotLocal(reason||'Manual protection checkpoint')}};
+document.addEventListener('click',e=>{
+  const t=e.target&&e.target.closest?e.target.closest('button,input[type="submit"],[role="button"]'):null;
+  if(!t)return;
+  const text=(t.textContent||'').trim().toLowerCase();
+  if(/start fresh|reset|clear all|delete|remove all/.test(text))checkpoint('Before destructive-looking action: '+text.slice(0,80));
+  if(isSaveAction(t))prepareSave();
+},true);
+window.addEventListener('beforeunload',()=>checkpoint('Protected page exit checkpoint'));
+window.BOBS_TRANSITION_GUARD={
+  version:VERSION,
+  protect:function(reason){checkpoint(reason||'Manual protection checkpoint')},
+  prepareSave:prepareSave,
+  getVersion:function(){return VERSION}
+};
 })();
