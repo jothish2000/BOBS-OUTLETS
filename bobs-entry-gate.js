@@ -8,6 +8,9 @@ const path=(location.pathname.split('/').pop()||'').toLowerCase();
    Vault authoritative on entry and automatically persist the working state to
    BOBS_MODULE_DATA under METHOD2 + outletId. */
 if(path==='method2.html'){
+  /* Additive 111Q layer: load condiment attachment UI without touching the
+     existing 366-item Method 2 calculation engine. */
+  try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-12-111Q-condiments';s.defer=true;document.head.appendChild(s)}catch(e){}
   const CFG={
     VERSION:'2026-09-12-111Q-method2-google-first',
     VAULT:'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec'
@@ -25,6 +28,7 @@ if(path==='method2.html'){
     const queue=()=>{clearTimeout(autoTimer);autoTimer=setTimeout(()=>{const data=readLocal();saveGoogle(data,id).catch(()=>{});},1200)};
     document.addEventListener('input',queue,true);
     document.addEventListener('change',queue,true);
+    document.addEventListener('bobs-method2-condiment-change',queue,true);
     window.addEventListener('beforeunload',()=>{try{const data=readLocal();navigator.sendBeacon(CFG.VAULT,new Blob([JSON.stringify({action:'moduleSave',outletId:String(id),module:'METHOD2',recordKey:'default',data,source:'BOBS-OUTLETS',event:'METHOD2_AUTO_SAVE',timestamp:new Date().toISOString()})],{type:'text/plain'}))}catch(e){}});
   }
   async function hydrate(){
@@ -35,6 +39,9 @@ if(path==='method2.html'){
       const r=await jsonp({action:'moduleGet',outletId:id,module:'METHOD2',recordKey:'default'});
       const data=r&&r.data!=null?r.data:(r&&r.record&&r.record.data!=null?r.record.data:null);
       const working=data&&typeof data==='object'?data:{qtys:{},prod:{}};
+      if(!working.qtys)working.qtys={};
+      if(!working.prod)working.prod={};
+      if(!working.condiments)working.condiments={};
       localStorage.setItem('method2-item-state',JSON.stringify(working));
       sessionStorage.setItem(hydratedKey+'-'+id,'1');
       location.reload();
