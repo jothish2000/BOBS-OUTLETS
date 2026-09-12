@@ -2,7 +2,7 @@
 window.BOBS_CONFIG = Object.freeze({
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
   DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec',
-  VERSION: '2026-09-11-111Q-google-vault-routing'
+  VERSION: '2026-09-12-111Q-flow-next-stage'
 });
 
 (function(){
@@ -36,5 +36,5 @@ window.BOBS_CONFIG = Object.freeze({
   window.fetch=function(input,init){const method=String((init&&init.method)||'GET').toUpperCase();if(method==='GET'&&isTarget(input))return jsonpRead(typeof input==='string'?input:input.url);if(method==='POST'&&isTarget(input))return saveBatch(input,init);return nativeFetch(input,init)};
 })();
 
-document.addEventListener('click',function(e){const btn=e.target&&e.target.closest?e.target.closest('#nextOutletBtn'):null;if(!btn)return;e.preventDefault();e.stopImmediatePropagation();window.location.href='index.html'},true);
-document.addEventListener('DOMContentLoaded',function(){const btn=document.getElementById('nextOutletBtn');if(btn){btn.textContent='Return to BOBS Flow →';btn.setAttribute('aria-label','Return to BOBS Flow')}const analysis=document.querySelector('#finishPanel a[href="outlet-analysis.html"]');if(analysis)analysis.style.display='none'});
+document.addEventListener('click',function(e){const btn=e.target&&e.target.closest?e.target.closest('#nextOutletBtn'):null;if(!btn)return;e.preventDefault();e.stopImmediatePropagation();const q=new URLSearchParams(window.location.search);const outletIds=q.get('outlets')||'';const target='outlet-analysis.html'+(outletIds?'?outlets='+encodeURIComponent(outletIds):'');window.location.href=target},true);
+document.addEventListener('DOMContentLoaded',function(){const btn=document.getElementById('nextOutletBtn');if(btn){btn.textContent='Continue to COGS Outlet Analysis →';btn.setAttribute('aria-label','Continue to COGS Outlet Analysis')}const analysis=document.querySelector('#finishPanel a[href="outlet-analysis.html"]');if(analysis)analysis.style.display='none'});
