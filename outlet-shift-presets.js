@@ -1,94 +1,132 @@
-/* 111Q: Outlet Setup recommended shift selector.
+/* 111Q: Hour-based Outlet Shift Selector.
    Additive only. Does not replace or delete saved outlet data.
-   Presets populate the existing start/end/name fields; Custom remains fully editable.
+   Select a start time -> default 9-hour end time is calculated automatically.
+   End time remains editable. Duration is also editable when a different shift length is required.
 */
 (function(){
   'use strict';
   if((location.pathname.split('/').pop()||'').toLowerCase()!=='outlets.html') return;
 
-  const PRESETS=[
-    ['Early Morning','04:30','13:30'],
-    ['Early Morning','05:00','14:00'],
-    ['Morning','05:30','14:30'],
-    ['Morning','06:00','15:00'],
-    ['Morning','06:30','15:30'],
-    ['Morning','07:00','16:00'],
-    ['Day','08:00','17:00'],
-    ['Day','09:00','18:00'],
-    ['Day','10:00','19:00'],
-    ['Late Morning','11:00','20:00'],
-    ['Afternoon','12:00','21:00'],
-    ['Evening','13:00','22:00'],
-    ['Evening','13:30','22:30'],
-    ['Evening','14:00','23:00'],
-    ['Evening','14:30','22:30'],
-    ['Evening','15:30','23:30'],
-    ['Late Evening','16:30','22:30'],
-    ['Late Evening','17:30','22:30'],
-    ['Late Evening','18:00','23:00']
-  ];
+  const DEFAULT_HOURS=9;
+  const START_TIMES=[];
+  for(let h=4;h<=18;h++){
+    for(let m=0;m<60;m+=30) START_TIMES.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
+  }
 
   function esc(s){return String(s==null?'':s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
-  function key(a,b,c){return String(a||'')+'|'+String(b||'')+'|'+String(c||'');}
-  function presetValue(s){
-    const exact=PRESETS.find(p=>key(p[1],p[2],p[0])===key(s.start,s.end,s.name));
-    return exact?key(exact[1],exact[2],exact[0]):(s.template&&PRESETS.some(p=>key(p[1],p[2],p[0])===s.template)?s.template:'custom');
+  function toMinutes(t){
+    const m=String(t||'').match(/^(\d{1,2}):(\d{2})$/); if(!m)return null;
+    const h=Number(m[1]),mi=Number(m[2]);
+    return h*60+mi;
   }
-  function options(s){
-    let h='<option value="">Select recommended shift…</option>';
-    PRESETS.forEach(p=>{const v=key(p[1],p[2],p[0]);h+='<option value="'+esc(v)+'">'+esc(p[0])+' — '+esc(p[1])+' → '+esc(p[2])+'</option>';});
-    h+='<option value="custom">Custom shift — enter your own times/name</option>';
+  function toTime(mins){
+    mins=((Number(mins)||0)%1440+1440)%1440;
+    return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+  }
+  function calcEnd(start,hours){
+    const s=toMinutes(start); if(s==null)return '';
+    const hrs=Number(hours); if(!Number.isFinite(hrs)||hrs<=0)return '';
+    return toTime(s+Math.round(hrs*60));
+  }
+  function durationBetween(start,end){
+    const s=toMinutes(start),e=toMinutes(end); if(s==null||e==null)return DEFAULT_HOURS;
+    let d=e-s; if(d<=0)d+=1440; return Math.round((d/60)*100)/100;
+  }
+  function nameForStart(start){
+    const h=toMinutes(start);
+    if(h==null)return '';
+    if(h<6*60)return 'Early Morning';
+    if(h<8*60)return 'Morning';
+    if(h<11*60)return 'Day';
+    if(h<13*60)return 'Late Morning';
+    if(h<17*60)return 'Afternoon';
+    return 'Evening';
+  }
+  function startOptions(current){
+    let h='<option value="">Select start time…</option>';
+    START_TIMES.forEach(t=>{h+='<option value="'+t+'">'+t+'</option>';});
+    h+='<option value="custom">Custom start time — use Start Time field</option>';
     return h;
   }
-  function findRow(select){return select.closest('.shift');}
-  function setField(row,cls,value){const el=row.querySelector('.'+cls);if(el){el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));}}
-  function bindSelect(sel){
-    if(sel.dataset.bobsPresetBound==='1')return;
-    sel.dataset.bobsPresetBound='1';
-    sel.addEventListener('change',function(){
-      const row=findRow(sel); if(!row)return;
-      if(sel.value==='custom'){return;}
-      if(!sel.value)return;
-      const a=sel.value.split('|');
-      setField(row,'st',a[0]);
-      setField(row,'en',a[1]);
-      setField(row,'sn',a[2]);
-      sel.dataset.bobsChosen=sel.value;
-    });
-    const row=findRow(sel);
-    if(row){
-      const start=row.querySelector('.st')?.value||'';
-      const end=row.querySelector('.en')?.value||'';
-      const name=row.querySelector('.sn')?.value||'';
-      sel.value=presetValue({start,end,name});
-      ['st','en','sn'].forEach(cls=>row.querySelector('.'+cls)?.addEventListener('input',()=>{
-        const now={start:row.querySelector('.st')?.value||'',end:row.querySelector('.en')?.value||'',name:row.querySelector('.sn')?.value||''};
-        sel.value=presetValue(now);
-      }));
+  function rowFields(row){
+    return {
+      st:row.querySelector('.st'),
+      en:row.querySelector('.en'),
+      sn:row.querySelector('.sn'),
+      selector:row.querySelector('.bobs-shift-start'),
+      duration:row.querySelector('.bobs-shift-duration')
+    };
+  }
+  function syncSelector(row){
+    const f=rowFields(row); if(!f.selector||!f.st||!f.en)return;
+    const start=f.st.value||'';
+    const end=f.en.value||'';
+    f.selector.value=START_TIMES.includes(start)?start:'custom';
+    if(f.duration && start && end)f.duration.value=durationBetween(start,end);
+  }
+  function autoFill(row,changeName){
+    const f=rowFields(row); if(!f.st||!f.en)return;
+    const start=f.st.value;
+    const hours=Number(f.duration?.value)||DEFAULT_HOURS;
+    const end=calcEnd(start,hours);
+    if(end)f.en.value=end;
+    if(changeName && f.sn && !f.sn.value.trim())f.sn.value=nameForStart(start);
+    [f.st,f.en,f.sn].forEach(el=>el&&el.dispatchEvent(new Event('input',{bubbles:true})));
+    syncSelector(row);
+  }
+  function bindRow(row){
+    if(row.dataset.bobsHourShiftBound==='1')return;
+    row.dataset.bobsHourShiftBound='1';
+    const f=rowFields(row); if(!f.st||!f.en)return;
+
+    if(f.selector){
+      f.selector.addEventListener('change',function(){
+        if(f.selector.value==='custom')return;
+        if(!f.selector.value)return;
+        f.st.value=f.selector.value;
+        autoFill(row,true);
+      });
     }
+    if(f.duration){
+      f.duration.addEventListener('change',function(){
+        autoFill(row,false);
+      });
+    }
+    f.st.addEventListener('input',function(){
+      syncSelector(row);
+    });
+    f.en.addEventListener('input',function(){
+      syncSelector(row);
+    });
+    syncSelector(row);
   }
   function enhance(){
     const cards=document.getElementById('cards'); if(!cards)return;
     cards.querySelectorAll('.shift').forEach(row=>{
-      if(row.querySelector('.bobs-recommended-shift')){bindSelect(row.querySelector('.bobs-recommended-shift'));return;}
+      if(row.querySelector('.bobs-hour-shift-controls')){bindRow(row);return;}
       const grid=row.querySelector('.grid'); if(!grid)return;
       const label=document.createElement('label');
-      label.className='bobs-recommended-shift';
-      label.innerHTML='<span>Recommended shift</span><select class="bobs-recommended-shift" style="width:100%">'+options({})+'</select>';
+      label.className='bobs-hour-shift-controls';
+      label.innerHTML='<span>Recommended start time</span><select class="bobs-shift-start" style="width:100%">'+startOptions()+'</select>';
       grid.insertBefore(label,grid.firstElementChild);
-      const sel=label.querySelector('select');
-      const start=row.querySelector('.st')?.value||'';
-      const end=row.querySelector('.en')?.value||'';
-      const name=row.querySelector('.sn')?.value||'';
-      sel.innerHTML=options({start,end,name});
-      sel.value=presetValue({start,end,name});
-      bindSelect(sel);
+
+      const durationLabel=document.createElement('label');
+      durationLabel.className='bobs-hour-shift-controls';
+      durationLabel.innerHTML='<span>Shift duration (hours)</span><input class="bobs-shift-duration" type="number" min="1" max="24" step="0.5" value="'+DEFAULT_HOURS+'">';
+      grid.insertBefore(durationLabel,grid.children[1]||null);
+
+      bindRow(row);
+      const f=rowFields(row);
+      if(f.st.value){
+        f.duration.value=durationBetween(f.st.value,f.en.value||calcEnd(f.st.value,DEFAULT_HOURS));
+        syncSelector(row);
+      }
     });
   }
   function addStyle(){
     if(document.getElementById('bobs-outlet-shift-preset-style'))return;
     const st=document.createElement('style');st.id='bobs-outlet-shift-preset-style';
-    st.textContent='.bobs-recommended-shift select{min-height:32px;padding:5px 7px;border:1px solid #bbb;border-radius:6px;background:#fff}.bobs-recommended-shift span{display:block;margin-bottom:4px;font-size:12px}';
+    st.textContent='.bobs-hour-shift-controls span{display:block;margin-bottom:4px;font-size:12px;font-weight:600}.bobs-hour-shift-controls select,.bobs-hour-shift-controls input{min-height:32px;padding:5px 7px;border:1px solid #bbb;border-radius:6px;background:#fff;box-sizing:border-box}';
     document.head.appendChild(st);
   }
   document.addEventListener('DOMContentLoaded',()=>{
