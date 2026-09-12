@@ -30,4 +30,7 @@ document.addEventListener('DOMContentLoaded',function(){const btn=document.getEl
   if((location.pathname.split('/').pop()||'').toLowerCase()==='outlet-method-flow.html'){
     const s=document.createElement('script');s.src='flow-shift-selector.js?v=2026-09-12-111Q-shift-selector';document.head.appendChild(s);
   }
+  if((location.pathname.split('/').pop()||'').toLowerCase()==='method2.html'){
+    const s=document.createElement('script');s.src='method2-condiments-rules.js?v=2026-09-12-111Q-rice-packet-rules-1';document.head.appendChild(s);
+  }
 });
