@@ -1,10 +1,12 @@
 /* BOBS 111Q — Method 2 condiment button reliability fix
    Additive only. Provides the actual selection panel even when the legacy
-   batch-panel DOM is unavailable. Uses Recipe Master as the option source. */
+   batch-panel DOM is unavailable. Uses Recipe Master as the option source.
+   The central config no longer loads this compatibility fixer; the primary
+   method2-condiments.js implementation is the single active picker. */
 (function(){
 'use strict';
 if((location.pathname.split('/').pop()||'').toLowerCase()!=='method2.html')return;
-const VAULT='https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJDpQ8Nsk12zThc1Yj4A9Pf4A/exec';
+const VAULT='https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec';
 const RM={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'};
 let recipes=[];
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
