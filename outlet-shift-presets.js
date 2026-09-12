@@ -13,11 +13,9 @@
     for(let m=0;m<60;m+=30) START_TIMES.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
   }
 
-  function esc(s){return String(s==null?'':s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
   function toMinutes(t){
     const m=String(t||'').match(/^(\d{1,2}):(\d{2})$/); if(!m)return null;
-    const h=Number(m[1]),mi=Number(m[2]);
-    return h*60+mi;
+    return Number(m[1])*60+Number(m[2]);
   }
   function toTime(mins){
     mins=((Number(mins)||0)%1440+1440)%1440;
@@ -33,20 +31,13 @@
     let d=e-s; if(d<=0)d+=1440; return Math.round((d/60)*100)/100;
   }
   function nameForStart(start){
-    const h=toMinutes(start);
-    if(h==null)return '';
+    const h=toMinutes(start); if(h==null)return '';
     if(h<6*60)return 'Early Morning';
     if(h<8*60)return 'Morning';
     if(h<11*60)return 'Day';
     if(h<13*60)return 'Late Morning';
     if(h<17*60)return 'Afternoon';
     return 'Evening';
-  }
-  function startOptions(current){
-    let h='<option value="">Select start time…</option>';
-    START_TIMES.forEach(t=>{h+='<option value="'+t+'">'+t+'</option>';});
-    h+='<option value="custom">Custom start time — use Start Time field</option>';
-    return h;
   }
   function rowFields(row){
     return {
@@ -76,49 +67,48 @@
   }
   function bindRow(row){
     if(row.dataset.bobsHourShiftBound==='1')return;
-    row.dataset.bobsHourShiftBound='1';
     const f=rowFields(row); if(!f.st||!f.en)return;
+    row.dataset.bobsHourShiftBound='1';
 
     if(f.selector){
       f.selector.addEventListener('change',function(){
-        if(f.selector.value==='custom')return;
-        if(!f.selector.value)return;
+        if(f.selector.value==='custom'||!f.selector.value)return;
         f.st.value=f.selector.value;
         autoFill(row,true);
       });
     }
     if(f.duration){
-      f.duration.addEventListener('change',function(){
-        autoFill(row,false);
-      });
+      f.duration.addEventListener('change',function(){autoFill(row,false);});
     }
-    f.st.addEventListener('input',function(){
-      syncSelector(row);
-    });
-    f.en.addEventListener('input',function(){
-      syncSelector(row);
-    });
+    f.st.addEventListener('input',function(){syncSelector(row);});
+    f.en.addEventListener('input',function(){syncSelector(row);});
     syncSelector(row);
   }
   function enhance(){
     const cards=document.getElementById('cards'); if(!cards)return;
     cards.querySelectorAll('.shift').forEach(row=>{
-      if(row.querySelector('.bobs-hour-shift-controls')){bindRow(row);return;}
-      const grid=row.querySelector('.grid'); if(!grid)return;
-      const label=document.createElement('label');
-      label.className='bobs-hour-shift-controls';
-      label.innerHTML='<span>Recommended start time</span><select class="bobs-shift-start" style="width:100%">'+startOptions()+'</select>';
-      grid.insertBefore(label,grid.firstElementChild);
+      if(!row.querySelector('.bobs-hour-shift-controls')){
+        const grid=row.querySelector('.grid'); if(!grid)return;
+        const label=document.createElement('label');
+        label.className='bobs-hour-shift-controls';
+        let options='<option value="">Select start time…</option>';
+        START_TIMES.forEach(t=>{options+='<option value="'+t+'">'+t+'</option>';});
+        options+='<option value="custom">Custom start time — use Start Time field</option>';
+        label.innerHTML='<span>Recommended start time</span><select class="bobs-shift-start" style="width:100%">'+options+'</select>';
+        grid.insertBefore(label,grid.firstElementChild);
 
-      const durationLabel=document.createElement('label');
-      durationLabel.className='bobs-hour-shift-controls';
-      durationLabel.innerHTML='<span>Shift duration (hours)</span><input class="bobs-shift-duration" type="number" min="1" max="24" step="0.5" value="'+DEFAULT_HOURS+'">';
-      grid.insertBefore(durationLabel,grid.children[1]||null);
-
+        const durationLabel=document.createElement('label');
+        durationLabel.className='bobs-hour-shift-controls';
+        durationLabel.innerHTML='<span>Shift duration (hours)</span><input class="bobs-shift-duration" type="number" min="1" max="24" step="0.5" value="'+DEFAULT_HOURS+'">';
+        grid.insertBefore(durationLabel,grid.children[1]||null);
+      }
       bindRow(row);
       const f=rowFields(row);
-      if(f.st.value){
-        f.duration.value=durationBetween(f.st.value,f.en.value||calcEnd(f.st.value,DEFAULT_HOURS));
+      if(f.st.value && !f.en.value){
+        f.duration.value=DEFAULT_HOURS;
+        autoFill(row,!f.sn.value.trim());
+      }else if(f.st.value){
+        f.duration.value=durationBetween(f.st.value,f.en.value);
         syncSelector(row);
       }
     });
@@ -129,10 +119,15 @@
     st.textContent='.bobs-hour-shift-controls span{display:block;margin-bottom:4px;font-size:12px;font-weight:600}.bobs-hour-shift-controls select,.bobs-hour-shift-controls input{min-height:32px;padding:5px 7px;border:1px solid #bbb;border-radius:6px;background:#fff;box-sizing:border-box}';
     document.head.appendChild(st);
   }
-  document.addEventListener('DOMContentLoaded',()=>{
+  function boot(){
     addStyle();
-    setTimeout(enhance,100);
+    enhance();
     const cards=document.getElementById('cards');
-    if(cards)new MutationObserver(()=>setTimeout(enhance,0)).observe(cards,{childList:true,subtree:true});
-  });
+    if(cards && !cards.dataset.bobsHourShiftObserver){
+      cards.dataset.bobsHourShiftObserver='1';
+      new MutationObserver(()=>enhance()).observe(cards,{childList:true,subtree:true});
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
 })();
