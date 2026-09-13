@@ -30,13 +30,20 @@ function ensure(cat,i){
  const todayLabel=todayRow.querySelector('span');if(todayLabel)todayLabel.innerHTML='<b>No. of batches ran today</b>';
  if(batches.value===''||Number(batches.value)<0)batches.value='1';
  const sizeRow=p.querySelector('#batchSizeRow-'+key+'-'+i);if(sizeRow){const s=sizeRow.querySelector('span');if(s)s.innerHTML='<b>Units per batch</b>'}
+ /* Today's production is a visible calculated value, never an input. */
+ let todayProdRow=p.querySelector('.m2-today-production-row'),todayProd=todayProdRow&&todayProdRow.querySelector('.m2-today-production-value');
+ if(!todayProdRow){
+   todayProdRow=document.createElement('div');todayProdRow.className='batchRow m2-today-production-row';
+   todayProdRow.innerHTML='<span><b>Today\'s production</b></span><strong class="m2-today-production-value" style="font-weight:800;">0</strong>';
+   todayRow.parentNode.insertBefore(todayProdRow,todayRow.nextSibling);
+   todayProd=todayProdRow.querySelector('.m2-today-production-value');
+ }
  /* NEW: maximum batches/day is a separate operating-capacity input. */
  let maxRow=p.querySelector('.m2-max-batches-row'),maxB=p.querySelector('.maxBatchesPerDayInput');
  if(!maxRow){
    maxRow=document.createElement('div');maxRow.className='batchRow m2-max-batches-row';
    maxRow.innerHTML='<span><b>Maximum No. of batches / day</b></span><input class="maxBatchesPerDayInput" data-cat="'+esc(cat)+'" data-i="'+i+'" type="number" min="0" step="1" value="12">';
-   /* Place it immediately after today's-batches row. */
-   todayRow.parentNode.insertBefore(maxRow,todayRow.nextSibling);
+   todayProdRow.parentNode.insertBefore(maxRow,todayProdRow.nextSibling);
    maxB=maxRow.querySelector('.maxBatchesPerDayInput');
  }
  const maxLabel=maxRow.querySelector('span');if(maxLabel)maxLabel.innerHTML='<b>Maximum No. of batches / day</b>';
@@ -51,7 +58,7 @@ function ensure(cat,i){
  cap.readOnly=true;cap.setAttribute('readonly','readonly');cap.classList.add('m2-auto-capacity');
  const capLabel=(cap.closest('.batchRow')||p).querySelector('span');if(capLabel)capLabel.innerHTML='<b>Production capacity / day</b> <small>(capacity limit)</small>';
  const calcCapacity=()=>{cap.value=Math.round(n(units.value)*n(maxB.value)*1000)/1000;cap.dataset.m2CapacityAuthority='derived';cap.dataset.m2CapacityValue=cap.value};
- const markToday=()=>{p.dataset.m2TodayProduction=String(Math.round(n(units.value)*n(batches.value)*1000)/1000)};
+ const markToday=()=>{const q=Math.round(n(units.value)*n(batches.value)*1000)/1000;p.dataset.m2TodayProduction=String(q);if(todayProd)todayProd.textContent=q.toLocaleString('en-IN')};
  if(units.dataset.m2DefBound!=='1'){units.dataset.m2DefBound='1';units.addEventListener('input',()=>{markToday();calcCapacity()})}
  if(batches.dataset.m2DefBound!=='1'){batches.dataset.m2DefBound='1';batches.addEventListener('input',markToday)}
  if(maxB.dataset.m2MaxBound!=='1'){maxB.dataset.m2MaxBound='1';maxB.addEventListener('input',calcCapacity)}
@@ -66,14 +73,14 @@ function repair(p){
  const v=Math.round(n(units.value)*n(maxB.value)*1000)/1000;cap.value=v;cap.dataset.m2CapacityAuthority='derived';cap.dataset.m2CapacityValue=v;
  const row=cap.closest('.batchRow');const label=row&&row.querySelector('span');if(label)label.innerHTML='<b>Production capacity / day</b> <small>(capacity limit)</small>';
  const maxLabel=maxB.closest('.batchRow')?.querySelector('span');if(maxLabel)maxLabel.innerHTML='<b>Maximum No. of batches / day</b>';
+ const todayProd=p.querySelector('.m2-today-production-value');if(todayProd)todayProd.textContent=Math.round(n(units.value)*n(p.querySelector('.numBatchesInput')?.value)*1000)/1000 .toLocaleString?.('en-IN')||String(Math.round(n(units.value)*n(p.querySelector('.numBatchesInput')?.value)*1000)/1000);
 }
 function boot(){
  document.querySelectorAll('.batchPanel').forEach(p=>{const f=p.querySelector('.formatSelect');if(f&&f.value==='batch'&&f.dataset.cat!==undefined){ensure(f.dataset.cat,Number(f.dataset.i));repair(p)}});
- document.addEventListener('input',e=>{const t=e.target;if(!t||!t.classList)return;const p=t.closest('.batchPanel');if(!p)return;if(t.classList.contains('capacityInput')||t.classList.contains('productionCapacityInput'))repair(p);else if(t.classList.contains('batchSizeInput')||t.classList.contains('maxBatchesPerDayInput'))setTimeout(()=>repair(p),0)},true);
+ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.classList)return;const p=t.closest('.batchPanel');if(!p)return;if(t.classList.contains('capacityInput')||t.classList.contains('productionCapacityInput'))repair(p);else if(t.classList.contains('batchSizeInput')||t.classList.contains('maxBatchesPerDayInput')||t.classList.contains('numBatchesInput'))setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));repair(p)},0)},true);
  document.addEventListener('change',e=>{const t=e.target;if(!t||!t.classList)return;if(t.classList.contains('modeSelect')&&t.value==='production')setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));repair(panel(t.dataset.cat,Number(t.dataset.i)))},20);if(t.classList.contains('formatSelect'))setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));repair(panel(t.dataset.cat,Number(t.dataset.i)))},20)},true);
- /* Definitive UI and COGS guard load after the production controls. */
- const s=document.createElement('script');s.src='method2-definitive-commercial-ui.js?v=2026-09-13-3';s.defer=true;document.head.appendChild(s);
- const g=document.createElement('script');g.src='method2-production-cogs-guard.js?v=2026-09-13-2';g.defer=true;document.head.appendChild(g);
+ const s=document.createElement('script');s.src='method2-definitive-commercial-ui.js?v=2026-09-13-4';s.defer=true;document.head.appendChild(s);
+ const g=document.createElement('script');g.src='method2-production-cogs-guard.js?v=2026-09-13-3';g.defer=true;document.head.appendChild(g);
  setTimeout(()=>document.dispatchEvent(new Event('bobs-method2-production-ready')),60);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
