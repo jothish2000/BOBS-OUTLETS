@@ -1,6 +1,7 @@
 /* BOBS Method 2 — definitive production batch controls.
    Today's production is driven by batches actually produced today.
    Production capacity/day is a separate capacity field and is NEVER derived from today's runs.
+   This layer also prevents the older commercial renderer from reusing capacity as today's production.
    Safe/additive: does not touch Method 1. */
 (function(){
 'use strict';
@@ -26,24 +27,38 @@ function ensure(cat,i){
  const label=row.querySelector('span');if(label)label.innerHTML='<b>No. of batches produced today</b>';
  if(batches.value===''||Number(batches.value)<0)batches.value='1';
  const sizeRow=p.querySelector('#batchSizeRow-'+key+'-'+i);if(sizeRow){const s=sizeRow.querySelector('span');if(s)s.innerHTML='<b>Units per batch</b>'}
- /* Capacity is a separate operating/master capacity. Never calculate it from today's batch count. */
+ /* Capacity is independent operating/master capacity. Preserve its value; never derive it from today's runs. */
  const cap=p.querySelector('.capacityInput')||(p.querySelector('#capacityRow-'+key+'-'+i)||{}).querySelector?.('input');
  if(cap){
+   if(cap.dataset.m2CapacityAuthority!=='1'){
+     cap.dataset.m2CapacityAuthority='1';
+     cap.dataset.m2CapacityValue=cap.value;
+     cap.addEventListener('input',()=>{cap.dataset.m2CapacityValue=cap.value});
+   }
    cap.readOnly=false;
    cap.removeAttribute('readonly');
    cap.classList.remove('m2-auto');
    const capLabel=(cap.closest('.batchRow')||p).querySelector('span');
    if(capLabel)capLabel.innerHTML='<b>Production capacity / day</b> <small>(capacity limit)</small>';
  }
- /* Keep today's production calculation tied only to units per batch × batches produced today. */
+ /* Today's production is ONLY units per batch × batches produced today. */
  const mark=()=>{p.dataset.m2TodayProduction=String(Math.round(n(units.value)*n(batches.value)*1000)/1000)};
  if(units.dataset.m2DefBound!=='1'){units.dataset.m2DefBound='1';units.addEventListener('input',mark)}
  if(batches.dataset.m2DefBound!=='1'){batches.dataset.m2DefBound='1';batches.addEventListener('input',mark)}
  mark();
 }
+function restoreIndependentCapacity(p){
+ const cap=p.querySelector('.capacityInput');
+ if(!cap||cap.dataset.m2CapacityAuthority!=='1')return;
+ const v=cap.dataset.m2CapacityValue;
+ if(v!=null&&String(cap.value)!==String(v))cap.value=v;
+ cap.readOnly=false;cap.removeAttribute('readonly');cap.classList.remove('m2-auto');
+}
+function scheduleRepair(p){setTimeout(()=>restoreIndependentCapacity(p),0);setTimeout(()=>restoreIndependentCapacity(p),40)}
 function boot(){
- document.querySelectorAll('.batchPanel').forEach(p=>{const f=p.querySelector('.formatSelect');if(f&&f.value==='batch'&&f.dataset.cat!==undefined)ensure(f.dataset.cat,Number(f.dataset.i))});
- document.addEventListener('change',e=>{const t=e.target;if(!t||!t.classList)return;if(t.classList.contains('modeSelect')&&t.value==='production')setTimeout(()=>ensure(t.dataset.cat,Number(t.dataset.i)),20);if(t.classList.contains('formatSelect'))setTimeout(()=>ensure(t.dataset.cat,Number(t.dataset.i)),20)},true);
+ document.querySelectorAll('.batchPanel').forEach(p=>{const f=p.querySelector('.formatSelect');if(f&&f.value==='batch'&&f.dataset.cat!==undefined)ensure(f.dataset.cat,Number(f.dataset.i));scheduleRepair(p)});
+ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.classList)return;const p=t.closest('.batchPanel');if(!p)return;if(t.classList.contains('capacityInput'))t.dataset.m2CapacityValue=t.value;scheduleRepair(p)},true);
+ document.addEventListener('change',e=>{const t=e.target;if(!t||!t.classList)return;if(t.classList.contains('modeSelect')&&t.value==='production')setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));scheduleRepair(panel(t.dataset.cat,Number(t.dataset.i)))},20);if(t.classList.contains('formatSelect'))setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));scheduleRepair(panel(t.dataset.cat,Number(t.dataset.i)))},20)},true);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
