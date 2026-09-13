@@ -15,7 +15,7 @@ function removeLegacyText(panel){
     if(el.dataset.m2LayoutLegacy==='1')return;
     const t=text(el).toLowerCase();
     if(!t||el.children.length>0)return;
-    if(/^(idli|item) cost$/.test(t)||/^condiment\s*\d+\s*cost/.test(t)||/^raw combine cogs$/.test(t)){
+    if(/^(idli|item) cost$/.test(t)||/^condim+n?t\s*\d+\s*cost/.test(t)||/^raw combine cogs$/.test(t)){
       el.dataset.m2LayoutLegacy='1';el.style.display='none';
     }
   });
@@ -61,7 +61,7 @@ function build(panel){
   const current=box.querySelector('.m2-current');
   const industry=box.querySelector('.m2-commercial-ref');
   const uuwpInput=box.querySelector('.m2-uuwp-input');
-  const prefText=box.querySelector('.m2-flow .m2-node:nth-of-type(3) b');
+  const prefText=box.querySelector('.m2-flow .m2-node:nth-of-type(5) b');
   const markupVal=markup?markup.value:'—';
   const currentVal=current?current.value:'—';
   const industryVal=text(industry);
@@ -82,27 +82,12 @@ function build(panel){
     '<div class="m2-right-line"><span>Selling Price Based on Markup</span><b>'+preferredVal+'</b></div>'+
     '<div class="m2-right-line"><span>Industry Standard Selling Price</span><b>'+industryVal+'</b></div>'+
     '<div class="m2-right-line m2-right-price"><span>Current Selling Price — editable</span><b>'+money(currentVal)+'</b></div>';
-  if(panel.querySelector('.formatSelect')?.value==='batch'){
-    const today=panel.querySelector('.m2-today-production-value');
-    let acct=panel.querySelector('.m2-right-production');
-    if(!acct){acct=document.createElement('div');acct.className='m2-right-production';right.appendChild(acct)}
-    const batch=panel.querySelector('.numBatchesInput');
-    const units=panel.querySelector('.batchSizeInput');
-    const max=panel.querySelector('.maxBatchesPerDayInput');
-    const cap=panel.querySelector('.productionCapacityInput');
-    acct.innerHTML='<div class="m2-right-sep"></div><div class="m2-right-title">PRODUCTION ACCOUNTING</div>'+
-      '<div class="m2-right-line"><span>Units per batch</span><b>'+(units?units.value:'—')+'</b></div>'+
-      '<div class="m2-right-line"><span>Batches ran today</span><b>'+(batch?batch.value:'—')+'</b></div>'+
-      '<div class="m2-right-line"><span>Today\'s production</span><b>'+text(today)+'</b></div>'+
-      '<div class="m2-right-line"><span>Maximum batches / day</span><b>'+(max?max.value:'—')+'</b></div>'+
-      '<div class="m2-right-line"><span>Production capacity / day</span><b>'+(cap?cap.value:'—')+'</b></div>';
-  }
   spoilageEdit(panel);
 }
 function css(){
  if(document.getElementById('m2CommercialLayoutStyle'))return;
  const s=document.createElement('style');s.id='m2CommercialLayoutStyle';
- s.textContent='.batchPanel{position:relative!important}.m2-commercial{position:static!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;min-height:0!important}.m2-right-breakdown{position:absolute;top:104px;right:10px;width:50%;box-sizing:border-box;padding:8px 10px;background:rgba(255,255,255,.72);border:1px solid #c9c3b4;border-radius:7px;font-size:10px;z-index:5}.m2-right-title{font-size:10px;font-weight:900;margin-bottom:5px}.m2-right-line{display:flex;justify-content:space-between;gap:10px;line-height:1.25;padding:2px 0}.m2-right-line span{color:#444}.m2-right-line b{color:#111;font-weight:900;text-align:right;white-space:nowrap}.m2-right-final{font-weight:900;border-top:1px solid #ddd;margin-top:2px;padding-top:4px}.m2-right-price{border-top:1px solid #ddd;margin-top:3px;padding-top:4px}.m2-right-sep{border-top:1px dashed #c9c3b4;margin:5px 0}.m2-right-production{margin-top:2px}.m2-spoilage-edit-row input{font-weight:900}.m2-commercial-title{display:none!important}@media(max-width:850px){.m2-right-breakdown{position:static;width:100%;margin-top:8px}.batchPanel{padding-bottom:8px!important}}';
+ s.textContent='.batchPanel{position:relative!important}.m2-commercial{position:static!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;min-height:0!important}.m2-right-breakdown{position:absolute;top:104px;right:10px;width:50%;box-sizing:border-box;padding:8px 10px;background:rgba(255,255,255,.72);border:1px solid #c9c3b4;border-radius:7px;font-size:10px;z-index:5}.m2-right-title{font-size:10px;font-weight:900;margin-bottom:5px}.m2-right-line{display:flex;justify-content:space-between;gap:10px;line-height:1.25;padding:2px 0}.m2-right-line span{color:#444}.m2-right-line b{color:#111;font-weight:900;text-align:right;white-space:nowrap}.m2-right-final{font-weight:900;border-top:1px solid #ddd;margin-top:2px;padding-top:4px}.m2-right-price{border-top:1px solid #ddd;margin-top:3px;padding-top:4px}.m2-right-sep{border-top:1px dashed #c9c3b4;margin:5px 0}.m2-spoilage-edit-row input{font-weight:900}.m2-commercial-title{display:none!important}@media(max-width:850px){.m2-right-breakdown{position:static;width:100%;margin-top:8px}.batchPanel{padding-bottom:8px!important}}';
  document.head.appendChild(s);
 }
 function run(){css();panelRows().forEach(p=>{removeLegacyText(p);build(p)})}
