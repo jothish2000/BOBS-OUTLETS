@@ -1,96 +1,29 @@
-/* BOBS Method 2 — compact commercial breakdown layout.
-   Places the useful COGS/pricing information into the blank right-hand area
-   of each production/purchase panel and makes Food Spoilage explicitly editable.
-   Safe/additive: Method 1 untouched; no polling or recursive observers. */
+/* BOBS Method 2 — definitive two-column production layout.
+   LEFT: production controls. RIGHT: live COGS / pricing / UUWP breakdown.
+   This is intentionally independent of the older commercial renderer so the
+   right-hand panel cannot disappear merely because a legacy selector is absent.
+   Method 1 is untouched. */
 (function(){
 'use strict';
-function money(v){const n=Number(String(v||'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?'₹'+n.toFixed(2):'—'}
+const KEY='method2-item-state';
+const esc=v=>String(v).replace(/"/g,'&quot;');
+const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
+const money=v=>'₹'+n(String(v||'').replace(/[^0-9.-]/g,'')).toFixed(2);
+const key=(c,i)=>String(c)+'::'+String(i);
+function state(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');s.pricing=s.pricing||{};s.commercial=s.commercial||{};s.condiments=s.condiments||{};s.packaging=s.packaging||{};return s}catch(e){return{pricing:{},commercial:{},condiments:{},packaging:{}}}}
+function panel(cat,i){return document.getElementById('batch-'+String(cat).replace(/\s+/g,'_')+'-'+i)}
+function item(cat,i){return window.ITEM_DATA&&window.ITEM_DATA[cat]&&window.ITEM_DATA[cat][i]||{}}
 function text(el){return el?String(el.textContent||'').trim():''}
-function panelRows(){return Array.from(document.querySelectorAll('.batchPanel'))}
-function findBreak(panel){return panel.querySelector('.m2-commercial .m2-break')}
-function valueFromMini(mini){return text(mini&&mini.querySelector('b'))}
-function removeLegacyText(panel){
-  panel.querySelectorAll('.m2-cogs-break,.m2-inline-cogs,.m2-price-grid,.m2-risk-panel').forEach(x=>x.remove());
-  panel.querySelectorAll('*').forEach(el=>{
-    if(el.dataset.m2LayoutLegacy==='1')return;
-    const t=text(el).toLowerCase();
-    if(!t||el.children.length>0)return;
-    if(/^(idli|item) cost$/.test(t)||/^condim+n?t\s*\d+\s*cost/.test(t)||/^raw combine cogs$/.test(t)){
-      el.dataset.m2LayoutLegacy='1';el.style.display='none';
-    }
-  });
-}
-function spoilageEdit(panel){
-  const input=panel.querySelector('.spoilInput');
-  if(!input)return;
-  const row=input.closest('.batchRow,label,.spoilageRow')||input.parentElement;
-  if(row){
-    row.classList.add('m2-spoilage-edit-row');
-    const label=row.querySelector('span,label');
-    if(label)label.innerHTML='<b>Food Spoilage %</b> <small>(editable)</small>';
-  }
-  input.title='Applied Food Spoilage % — editable';
-  input.style.display='inline-block';
-  input.style.width='64px';
-  input.style.boxSizing='border-box';
-}
-function build(panel){
-  const box=panel.querySelector('.m2-commercial');
-  if(!box)return;
-  const br=findBreak(panel);
-  if(!br)return;
-  const minis=Array.from(br.querySelectorAll('.m2-mini'));
-  const item=valueFromMini(minis[0]);
-  const condiment=valueFromMini(minis[1]);
-  const spoilage=valueFromMini(minis[2]);
-  const packing=valueFromMini(minis[3]);
-  const overall=valueFromMini(minis[4]);
-  const uuwp=valueFromMini(minis[5]);
-  const raw=(Number(String(item).replace(/[^0-9.-]/g,''))||0)+(Number(String(condiment).replace(/[^0-9.-]/g,''))||0);
-  const spoilAmt=Number(String(spoilage).replace(/[^0-9.-]/g,''))||0;
-  const food=raw+spoilAmt;
-  const flow=box.querySelector('.m2-flow');
-  const grid=box.querySelector('.m2-commercial-grid');
-  const ubox=box.querySelector('.m2-uuwp-box');
-  const account=box.querySelector('.m2-account');
-  const foot=box.querySelector('.m2-commercial-foot');
-  [flow,grid,ubox,br,account,foot].forEach(x=>{if(x)x.style.display='none'});
-  let right=panel.querySelector('.m2-right-breakdown');
-  if(!right){right=document.createElement('div');right.className='m2-right-breakdown';panel.appendChild(right)}
-  const markup=box.querySelector('.m2-markup');
-  const current=box.querySelector('.m2-current');
-  const industry=box.querySelector('.m2-commercial-ref');
-  const uuwpInput=box.querySelector('.m2-uuwp-input');
-  const prefText=box.querySelector('.m2-flow .m2-node:nth-of-type(5) b');
-  const markupVal=markup?markup.value:'—';
-  const currentVal=current?current.value:'—';
-  const industryVal=text(industry);
-  const preferredVal=prefText?text(prefText):'—';
-  const uuwpPct=uuwpInput?uuwpInput.value:'5';
-  right.innerHTML='<div class="m2-right-title">LIVE COGS BREAKDOWN</div>'+
-    '<div class="m2-right-line"><span>Item / Recipe Master COGS</span><b>'+item+'</b></div>'+
-    '<div class="m2-right-line"><span>Condiment COGS</span><b>'+condiment+'</b></div>'+
-    '<div class="m2-right-line"><span>Raw Combined COGS</span><b>'+money(raw)+'</b></div>'+
-    '<div class="m2-right-line"><span>Food Spoilage</span><b>'+spoilage+'</b></div>'+
-    '<div class="m2-right-line"><span>Food COGS After Spoilage</span><b>'+money(food)+'</b></div>'+
-    '<div class="m2-right-line"><span>Packing &amp; Other COGS</span><b>'+packing+'</b></div>'+
-    '<div class="m2-right-line m2-right-final"><span>OVERALL / FINAL COGS</span><b>'+overall+'</b></div>'+
-    '<div class="m2-right-line"><span>UUWP % — editable</span><b>'+uuwpPct+'%</b></div>'+
-    '<div class="m2-right-line m2-right-final"><span>COGS WITH UUWP</span><b>'+uuwp+'</b></div>'+
-    '<div class="m2-right-sep"></div>'+
-    '<div class="m2-right-line"><span>MARKUP % — editable</span><b>'+markupVal+'%</b></div>'+
-    '<div class="m2-right-line"><span>Selling Price Based on Markup</span><b>'+preferredVal+'</b></div>'+
-    '<div class="m2-right-line"><span>Industry Standard Selling Price</span><b>'+industryVal+'</b></div>'+
-    '<div class="m2-right-line m2-right-price"><span>Current Selling Price — editable</span><b>'+money(currentVal)+'</b></div>';
-  spoilageEdit(panel);
-}
-function css(){
- if(document.getElementById('m2CommercialLayoutStyle'))return;
- const s=document.createElement('style');s.id='m2CommercialLayoutStyle';
- s.textContent='.batchPanel{position:relative!important}.m2-commercial{position:static!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;min-height:0!important}.m2-right-breakdown{position:absolute;top:104px;right:10px;width:50%;box-sizing:border-box;padding:8px 10px;background:rgba(255,255,255,.72);border:1px solid #c9c3b4;border-radius:7px;font-size:10px;z-index:5}.m2-right-title{font-size:10px;font-weight:900;margin-bottom:5px}.m2-right-line{display:flex;justify-content:space-between;gap:10px;line-height:1.25;padding:2px 0}.m2-right-line span{color:#444}.m2-right-line b{color:#111;font-weight:900;text-align:right;white-space:nowrap}.m2-right-final{font-weight:900;border-top:1px solid #ddd;margin-top:2px;padding-top:4px}.m2-right-price{border-top:1px solid #ddd;margin-top:3px;padding-top:4px}.m2-right-sep{border-top:1px dashed #c9c3b4;margin:5px 0}.m2-spoilage-edit-row input{font-weight:900}.m2-commercial-title{display:none!important}@media(max-width:850px){.m2-right-breakdown{position:static;width:100%;margin-top:8px}.batchPanel{padding-bottom:8px!important}}';
- document.head.appendChild(s);
-}
-function run(){css();panelRows().forEach(p=>{removeLegacyText(p);build(p)})}
-function boot(){setTimeout(run,150);setTimeout(run,700);setTimeout(run,1500);document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('.spoilInput,.m2-markup,.m2-current,.m2-uuwp-input,.batchSizeInput,.numBatchesInput,.maxBatchesPerDayInput'))setTimeout(run,40)},true);document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('.modeSelect,.formatSelect,.spoilInput,.m2-markup,.m2-current,.m2-uuwp-input,.batchSizeInput,.numBatchesInput,.maxBatchesPerDayInput,.productionCapacityInput'))setTimeout(run,60)},true);document.addEventListener('bobs-method2-condiment-change',()=>setTimeout(run,60));document.addEventListener('bobs-method2-packaging-change',()=>setTimeout(run,60))}
+function sourceValue(box,label){if(!box)return '';for(const x of box.querySelectorAll('.m2-def-mini')){const s=x.querySelector('span'),b=x.querySelector('b');if(s&&b&&text(s).toLowerCase()===label.toLowerCase())return text(b)}return ''}
+function sourceBox(p){return p&&p.querySelector('.m2-def-commercial')}
+function sourceField(p,cls){const b=sourceBox(p);return b&&b.querySelector('.'+cls)}
+function ensureCss(){if(document.getElementById('m2TwoColumnStyle'))return;const s=document.createElement('style');s.id='m2TwoColumnStyle';s.textContent='.batchPanel.m2-two-column{display:grid!important;grid-template-columns:minmax(280px,46%) minmax(340px,54%)!important;column-gap:14px!important;align-items:start!important;box-sizing:border-box!important;padding:10px 12px!important;min-height:230px!important}.batchPanel.m2-two-column .m2-left-controls{grid-column:1;display:flex!important;flex-direction:column!important;gap:0!important;min-width:0}.batchPanel.m2-two-column .m2-right-breakdown{grid-column:2;grid-row:1 / span 30;position:static!important;width:auto!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:10px!important;background:#fff!important;border:1px solid #bdb6a7!important;border-radius:8px!important;font-size:10px!important;z-index:20!important}.batchPanel.m2-two-column .m2-left-controls>.batchRow{display:grid!important;grid-template-columns:minmax(155px,1fr) 110px!important;align-items:center!important;gap:8px!important;min-height:29px!important;margin:0!important;padding:2px 0!important;box-sizing:border-box!important}.batchPanel.m2-two-column .m2-left-controls>.batchRow>span{display:block!important;white-space:normal!important}.batchPanel.m2-two-column .m2-left-controls>.batchRow>input,.batchPanel.m2-two-column .m2-left-controls>.batchRow>select{width:110px!important;box-sizing:border-box!important;justify-self:start!important}.batchPanel.m2-two-column .m2-left-controls .m2-today-production-row{grid-template-columns:minmax(155px,1fr) 110px!important}.batchPanel.m2-two-column .m2-left-controls .m2-today-production-value{display:block!important;width:110px!important;box-sizing:border-box!important;padding:5px 7px!important;border:1px solid #aaa!important;border-radius:5px!important;background:#fff!important;text-align:left!important}.batchPanel.m2-two-column .m2-left-controls .m2-production-capacity-row input{background:#f0eee8!important;font-weight:800!important}.batchPanel.m2-two-column>.batchInfo,.batchPanel.m2-two-column>.costChain,.batchPanel.m2-two-column>.m2-commercial,.batchPanel.m2-two-column>.m2-def-commercial{display:none!important}.m2-two-title{font-weight:900;font-size:11px;margin-bottom:7px}.m2-two-line{display:grid;grid-template-columns:1fr auto;gap:8px;padding:3px 0;border-bottom:1px dotted #ddd;line-height:1.2}.m2-two-line b{white-space:nowrap;text-align:right}.m2-two-final{font-weight:900;border-top:1px solid #bbb;margin-top:3px;padding-top:5px}.m2-two-section{font-weight:900;font-size:9px;letter-spacing:.03em;margin:7px 0 3px;padding-top:5px;border-top:1px solid #ddd}.m2-two-input{width:80px;box-sizing:border-box;padding:4px 5px;border:1px solid #888;border-radius:5px;text-align:right;font-weight:800}.m2-two-save{display:flex;justify-content:flex-end;margin-top:9px;padding-top:8px;border-top:1px dashed #bbb}.m2-two-save button{padding:7px 14px;border:0;border-radius:7px;font-weight:900;cursor:pointer;background:#173f2b;color:#fff}.m2-two-note{font-size:8.5px;color:#666;margin-top:6px;line-height:1.25}@media(max-width:850px){.batchPanel.m2-two-column{display:block!important}.batchPanel.m2-two-column .m2-right-breakdown{margin-top:9px!important}.batchPanel.m2-two-column .m2-left-controls{width:100%!important}}
+';document.head.appendChild(s)}
+function controls(p){if(!p)return null;let left=p.querySelector('.m2-left-controls');if(!left){left=document.createElement('div');left.className='m2-left-controls';p.insertBefore(left,p.firstChild)}const selectors=['.formatSelect','.spoilInput','.batchSizeInput','.numBatchesInput','.m2-today-production-row','.maxBatchesPerDayInput','.productionCapacityInput','.capacityInput'];const rows=[];for(const sel of selectors){let el;if(sel==='.formatSelect')el=p.querySelector('.formatSelect')?.closest('.batchRow');else if(sel==='.spoilInput')el=p.querySelector('.spoilInput')?.closest('.batchRow');else if(sel==='.batchSizeInput')el=p.querySelector('.batchSizeInput')?.closest('.batchRow');else if(sel==='.numBatchesInput')el=p.querySelector('.numBatchesInput')?.closest('.batchRow');else if(sel==='.m2-today-production-row')el=p.querySelector('.m2-today-production-row');else if(sel==='.maxBatchesPerDayInput')el=p.querySelector('.maxBatchesPerDayInput')?.closest('.batchRow');else el=p.querySelector(sel)?.closest('.batchRow');if(el&&!rows.includes(el))rows.push(el)}rows.forEach(r=>left.appendChild(r));const oldCapacity=left.querySelector('.capacityInput');if(oldCapacity){oldCapacity.readOnly=true;oldCapacity.setAttribute('readonly','readonly');oldCapacity.classList.add('m2-auto-capacity')}const units=p.querySelector('.batchSizeInput'),batches=p.querySelector('.numBatchesInput'),today=p.querySelector('.m2-today-production-value'),max=p.querySelector('.maxBatchesPerDayInput'),cap=p.querySelector('.productionCapacityInput')||p.querySelector('.capacityInput');if(units&&batches&&today)today.textContent=(n(units.value)*n(batches.value)).toLocaleString('en-IN');if(units&&max&&cap)cap.value=Math.round(n(units.value)*n(max.value)*1000)/1000;return left}
+function makeRight(p,cat,i){let right=p.querySelector('.m2-right-breakdown');if(!right){right=document.createElement('div');right.className='m2-right-breakdown';p.appendChild(right)}const it=item(cat,i),s=state(),k=key(cat,i),pr=s.pricing[k]||{},com=s.commercial[k]||{};const src=sourceBox(p);const itemC=sourceValue(src,'ITEM / RECIPE MASTER COGS')||sourceValue(src,'PURCHASE ITEM COGS')||money(it.productionCost||it.purchasedCost||0);const cond=sourceValue(src,'CONDIMENT COGS')||money(0);const spoil=sourceValue(src,'FOOD SPOILAGE')||money(0);const pack=sourceValue(src,'PACKING & OTHER COGS')||money(0);const overall=sourceValue(src,'OVERALL / FINAL COGS')||money((n(String(itemC).replace(/[^0-9.-]/g,''))+n(String(cond).replace(/[^0-9.-]/g,''))+n(String(spoil).replace(/[^0-9.-]/g,''))+n(String(pack).replace(/[^0-9.-]/g,''))));const uuwp=sourceValue(src,'COGS WITH UUWP')||money(n(String(overall).replace(/[^0-9.-]/g,''))*1.05);const markup=sourceField(p,'m2-def-markup')?.value??pr.markupPct??25;const current=sourceField(p,'m2-def-current')?.value??pr.currentPrice??it.price??0;const industry=it.__industryStandardPrice!=null?it.__industryStandardPrice:(pr.industryStandardPrice??it.price??0);const preferred=n(String(overall).replace(/[^0-9.-]/g,''))*(1+n(markup)/100);const units=n(p.querySelector('.batchSizeInput')?.value),batches=n(p.querySelector('.numBatchesInput')?.value),today=units*batches,soldEl=document.querySelector('.qtyInput[data-cat="'+esc(cat)+'"][data-i="'+i+'"]'),sold=soldEl&&String(soldEl.value).trim()!==''?n(soldEl.value):null,unsold=sold===null?null:Math.max(0,today-sold);right.innerHTML='<div class="m2-two-title">LIVE COGS &amp; PRICING BREAKDOWN</div><div class="m2-two-line"><span>Item / Recipe Master COGS</span><b>'+itemC+'</b></div><div class="m2-two-line"><span>Condiment COGS</span><b>'+cond+'</b></div><div class="m2-two-line"><span>Raw Combined COGS</span><b>'+money(n(String(itemC).replace(/[^0-9.-]/g,''))+n(String(cond).replace(/[^0-9.-]/g,'')))+'</b></div><div class="m2-two-line"><span>Food Spoilage</span><b>'+spoil+'</b></div><div class="m2-two-line"><span>Food COGS After Spoilage</span><b>'+money(n(String(itemC).replace(/[^0-9.-]/g,''))+n(String(cond).replace(/[^0-9.-]/g,''))+n(String(spoil).replace(/[^0-9.-]/g,'')))+'</b></div><div class="m2-two-line"><span>Packing &amp; Other COGS</span><b>'+pack+'</b></div><div class="m2-two-line m2-two-final"><span>OVERALL / FINAL COGS</span><b>'+overall+'</b></div><div class="m2-two-section">UUWP / PRICING</div><div class="m2-two-line"><span>UUWP % — editable</span><input class="m2-two-input m2-two-uuwp" type="number" min="0" step="0.1" value="'+(com.safetyPct??5)+'"></div><div class="m2-two-line m2-two-final"><span>COGS WITH UUWP</span><b>'+uuwp+'</b></div><div class="m2-two-line"><span>Markup % — editable</span><input class="m2-two-input m2-two-markup" type="number" min="0" step="0.1" value="'+markup+'"></div><div class="m2-two-line"><span>Selling Price Based on Markup</span><b>'+money(preferred)+'</b></div><div class="m2-two-line"><span>Industry Standard Selling Price</span><b>'+money(industry)+'</b></div><div class="m2-two-line"><span>Current Selling Price — editable</span><input class="m2-two-input m2-two-current" type="number" min="0" step="0.01" value="'+current+'"></div><div class="m2-two-section">PRODUCTION ACCOUNTING</div><div class="m2-two-line"><span>Today's production</span><b>'+today.toLocaleString('en-IN')+'</b></div><div class="m2-two-line"><span>Sold today</span><b>'+(sold===null?'—':sold)+'</b></div><div class="m2-two-line"><span>Unsold / Carry-Forward</span><b>'+ (unsold===null?'—':unsold) +'</b></div><div class="m2-two-line"><span>Total Production Cost</span><b>'+money(today*n(String(overall).replace(/[^0-9.-]/g,'')))+'</b></div><div class="m2-two-note">Capacity is a master operating limit only. It is never used as today’s production or production COGS quantity.</div><div class="m2-two-save"><button type="button" class="m2-item-save-btn" data-cat="'+esc(cat)+'" data-i="'+i+'">💾 SAVE THIS ITEM</button></div>';
+const ui=right.querySelector('.m2-two-uuwp'),mi=right.querySelector('.m2-two-markup'),ci=right.querySelector('.m2-two-current');if(ui)ui.onchange=()=>{const st=state();st.commercial[k]=Object.assign({},st.commercial[k]||{},{safetyPct:n(ui.value)});localStorage.setItem(KEY,JSON.stringify(st));document.dispatchEvent(new Event('bobs-method2-commercial-change'));makeRight(p,cat,i)};if(mi)mi.onchange=()=>{const st=state();st.pricing[k]=Object.assign({},st.pricing[k]||{},{markupPct:n(mi.value),currentPrice:n(ci?.value||current),industryStandardPrice:industry});localStorage.setItem(KEY,JSON.stringify(st));document.dispatchEvent(new Event('bobs-method2-commercial-change'));makeRight(p,cat,i)};if(ci)ci.onchange=()=>{const st=state();st.pricing[k]=Object.assign({},st.pricing[k]||{},{markupPct:n(mi?.value||markup),currentPrice:n(ci.value),industryStandardPrice:industry});localStorage.setItem(KEY,JSON.stringify(st));document.dispatchEvent(new Event('bobs-method2-commercial-change'));makeRight(p,cat,i)}}
+function runPanel(p){const f=p.querySelector('.formatSelect');if(!f||f.value!=='batch')return;const sel=p.parentElement?.querySelector?.('.modeSelect');const cat=f.dataset.cat,i=Number(f.dataset.i);if(!cat||!Number.isFinite(i))return;ensureCss();p.classList.add('m2-two-column');controls(p);makeRight(p,cat,i)}
+function run(){document.querySelectorAll('.batchPanel').forEach(runPanel)}
+function boot(){setTimeout(run,120);setTimeout(run,500);setTimeout(run,1200);document.addEventListener('input',e=>{if(e.target?.matches?.('.batchSizeInput,.numBatchesInput,.maxBatchesPerDayInput,.qtyInput,.spoilInput'))setTimeout(run,30)},true);document.addEventListener('change',e=>{if(e.target?.matches?.('.formatSelect,.modeSelect,.batchSizeInput,.numBatchesInput,.maxBatchesPerDayInput,.spoilInput'))setTimeout(run,60)},true);document.addEventListener('bobs-method2-condiment-change',()=>setTimeout(run,80));document.addEventListener('bobs-method2-packaging-change',()=>setTimeout(run,80));document.addEventListener('bobs-method2-production-ready',()=>setTimeout(run,100))}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
