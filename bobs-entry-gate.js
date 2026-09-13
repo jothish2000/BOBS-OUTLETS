@@ -5,8 +5,8 @@ try{const g=document.createElement('script');g.src='bobs-transition-guard.js?v=2
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 if(path==='method2.html'){
   try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-13-111Q-condiments-9';s.defer=true;document.head.appendChild(s)}catch(e){}
-  /* SINGLE production runtime: old production-control layers are no longer injected here. */
-  try{const s=document.createElement('script');s.src='method2-production-runtime-v2.js?v=2026-09-13-safe-runtime-2';s.defer=true;document.head.appendChild(s)}catch(e){}
+  /* SINGLE authoritative production runtime. No duplicate production-control layer is injected. */
+  try{const s=document.createElement('script');s.src='method2-production-runtime-v3.js?v=2026-09-13-safe-runtime-3';s.defer=true;document.head.appendChild(s)}catch(e){}
   const CFG={VERSION:'2026-09-12-111Q-method2-google-first-v3',VAULT:'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec'};
   const hydratedKey='bobs-method2-google-hydrated';
   const outletId=()=>{const q=new URLSearchParams(location.search);if(q.get('outlet'))return String(q.get('outlet'));try{const o=JSON.parse(localStorage.getItem('outlet-selection')||'{}');return String(o.id||'')}catch(e){return ''}};
