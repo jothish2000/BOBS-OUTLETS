@@ -23,5 +23,6 @@ async function load(){try{const q=await jsonp(VAULT+'?action=moduleGet&outletId=
 window.BOBS_METHOD2_RM_RECALC=all;
 document.addEventListener('bobs-method2-condiment-change',()=>setTimeout(all,20));
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('.qtyInput,.spoilInput'))setTimeout(all,0)});
+const spoilScript=document.createElement('script');spoilScript.src='method2-spoilage-ui.js?v=2026-09-13-1';spoilScript.defer=true;document.head.appendChild(spoilScript);
 load();
 })();
