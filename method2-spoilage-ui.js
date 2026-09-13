@@ -1,0 +1,21 @@
+/* BOBS Method 2 — editable spoilage assumption. Method 1 untouched. */
+(function(){
+'use strict';
+const KEY='method2-item-state';
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const esc=v=>CSS.escape(String(v));
+const key=(c,i)=>String(c)+'::'+String(i);
+function state(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');s.commercial=s.commercial||{};return s}catch(e){return{commercial:{}}}}
+function save(s){localStorage.setItem(KEY,JSON.stringify(s))}
+function industryStandard(item,oldInput){
+  for(const k of ['spoilagePct','foodSpoilagePct','foodWastePct','wastagePct','spoilPct','standardSpoilagePct']){if(item&&Number.isFinite(Number(item[k])))return num(item[k])}
+  if(oldInput&&String(oldInput.value||'').trim()!=='')return num(oldInput.value);
+  return 5;
+}
+function get(cat,i,item,oldInput){const c=state().commercial[key(cat,i)]||{};const industry=Number.isFinite(Number(c.spoilageIndustryPct))?num(c.spoilageIndustryPct):industryStandard(item,oldInput);const applied=c.spoilagePct==null?industry:num(c.spoilagePct);return{industry,applied}}
+function css(){if(document.getElementById('m2SpoilStyle'))return;const s=document.createElement('style');s.id='m2SpoilStyle';s.textContent='.m2-spoilage-box{margin-top:8px;border-top:1px dashed #c9c3b4;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.m2-spoil-cell{min-width:0}.m2-spoil-label{font-size:8.5px;color:#666;font-weight:800;line-height:1.2}.m2-spoil-industry{font-size:12px;font-weight:900;margin-top:3px}.m2-spoil-input{width:100%;box-sizing:border-box;padding:5px 6px;border:1px solid #999;border-radius:5px;font-size:12px;background:#fff}.m2-spoil-note{grid-column:1/-1;font-size:8px;color:#666}.m2-spoil-old{display:none!important}@media(max-width:650px){.m2-spoilage-box{grid-template-columns:1fr 1fr}}';document.head.appendChild(s)}
+function render(cat,i){const item=window.ITEM_DATA&&window.ITEM_DATA[cat]&&window.ITEM_DATA[cat][i],sel=document.querySelector('.modeSelect[data-cat="'+esc(cat)+'"][data-i="'+i+'"]');if(!item||!item.eligible||!sel)return;const panel=document.getElementById('batch-'+String(cat).replace(/\s+/g,'_')+'-'+i);if(!panel)return;const old=panel.querySelector('.spoilInput');const p=get(cat,i,item,old);let input=old;if(!input){const wrap=document.createElement('label');wrap.className='batchRow m2-spoil-old';wrap.innerHTML='<span>Food Spoilage %</span><input class="spoilInput" type="number" min="0" step="0.1">';panel.insertBefore(wrap,panel.firstChild);input=wrap.querySelector('.spoilInput')}input.value=p.applied;input.dataset.industryStandard=p.industry;input.classList.add('m2-spoil-old');let box=panel.querySelector('.m2-spoilage-box');if(!box){box=document.createElement('div');box.className='m2-spoilage-box';const commercial=panel.querySelector('.m2-commercial');(commercial||panel).appendChild(box)}box.innerHTML='<div class="m2-spoil-cell"><div class="m2-spoil-label">INDUSTRY STANDARD FOOD SPOILAGE</div><div class="m2-spoil-industry">'+p.industry.toFixed(1)+'%</div></div><div class="m2-spoil-cell"><div class="m2-spoil-label">APPLIED FOOD SPOILAGE % — EDITABLE</div><input class="m2-spoil-input" type="number" min="0" step="0.1" value="'+p.applied+'"></div><div class="m2-spoil-note">The applied percentage starts from the industry-standard benchmark but can be changed for this item/outlet. The editable value is the value used to calculate Food COGS after spoilage. Packing is not multiplied by spoilage.</div>';const ui=box.querySelector('.m2-spoil-input');ui.onchange=()=>{const s=state(),k=key(cat,i);s.commercial[k]=Object.assign({},s.commercial[k]||{},{spoilageIndustryPct:p.industry,spoilagePct:Math.max(0,num(ui.value))});save(s);input.value=Math.max(0,num(ui.value));input.dispatchEvent(new Event('change',{bubbles:true}))}}
+function all(){css();if(!window.CAT_ORDER||!window.ITEM_DATA)return;window.CAT_ORDER.forEach(cat=>(window.ITEM_DATA[cat]||[]).forEach((item,i)=>{if(item.eligible)render(cat,i)}))}
+function boot(){let tries=0;const t=setInterval(()=>{tries++;all();if(tries>=30)clearInterval(t)},300);setTimeout(all,1200)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
