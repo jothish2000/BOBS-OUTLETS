@@ -19,12 +19,12 @@ function ensure(cat,i){
    if(row)row.classList.add('m2-definitive-batch-count-row');
    else{
      row=document.createElement('div');row.className='batchRow m2-definitive-batch-count-row';
-     row.innerHTML='<span><b>No. of batches produced today</b></span><input class="numBatchesInput" data-cat="'+String(cat).replace(/"/g,'&quot;')+'" data-i="'+i+'" type="number" min="0" step="1" value="1">';
+     row.innerHTML='<span><b>No. of batches ran today</b></span><input class="numBatchesInput" data-cat="'+String(cat).replace(/"/g,'&quot;')+'" data-i="'+i+'" type="number" min="0" step="1" value="1">';
      p.appendChild(row);
    }
  }
  batches=row.querySelector('.numBatchesInput')||p.querySelector('.numBatchesInput');if(!batches)return;
- const label=row.querySelector('span');if(label)label.innerHTML='<b>No. of batches produced today</b>';
+ const label=row.querySelector('span');if(label)label.innerHTML='<b>No. of batches ran today</b>';
  if(batches.value===''||Number(batches.value)<0)batches.value='1';
  const sizeRow=p.querySelector('#batchSizeRow-'+key+'-'+i);if(sizeRow){const s=sizeRow.querySelector('span');if(s)s.innerHTML='<b>Units per batch</b>'}
  /* Capacity is independent operating/master capacity. Preserve its value; never derive it from today's runs. */
@@ -41,7 +41,7 @@ function ensure(cat,i){
    const capLabel=(cap.closest('.batchRow')||p).querySelector('span');
    if(capLabel)capLabel.innerHTML='<b>Production capacity / day</b> <small>(capacity limit)</small>';
  }
- /* Today's production is ONLY units per batch × batches produced today. */
+ /* Today's production is ONLY units per batch × batches ran today. */
  const mark=()=>{p.dataset.m2TodayProduction=String(Math.round(n(units.value)*n(batches.value)*1000)/1000)};
  if(units.dataset.m2DefBound!=='1'){units.dataset.m2DefBound='1';units.addEventListener('input',mark)}
  if(batches.dataset.m2DefBound!=='1'){batches.dataset.m2DefBound='1';batches.addEventListener('input',mark)}
@@ -59,9 +59,8 @@ function boot(){
  document.querySelectorAll('.batchPanel').forEach(p=>{const f=p.querySelector('.formatSelect');if(f&&f.value==='batch'&&f.dataset.cat!==undefined)ensure(f.dataset.cat,Number(f.dataset.i));scheduleRepair(p)});
  document.addEventListener('input',e=>{const t=e.target;if(!t||!t.classList)return;const p=t.closest('.batchPanel');if(!p)return;if(t.classList.contains('capacityInput'))t.dataset.m2CapacityValue=t.value;scheduleRepair(p)},true);
  document.addEventListener('change',e=>{const t=e.target;if(!t||!t.classList)return;if(t.classList.contains('modeSelect')&&t.value==='production')setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));scheduleRepair(panel(t.dataset.cat,Number(t.dataset.i)))},20);if(t.classList.contains('formatSelect'))setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));scheduleRepair(panel(t.dataset.cat,Number(t.dataset.i)))},20)},true);
- /* Give the definitive visible commercial layer a stable load point after the
-    production controls have been corrected. No polling is used here. */
- const s=document.createElement('script');s.src='method2-definitive-commercial-ui.js?v=2026-09-13-1';s.defer=true;document.head.appendChild(s);
+ const s=document.createElement('script');s.src='method2-definitive-commercial-ui.js?v=2026-09-13-2';s.defer=true;document.head.appendChild(s);
+ const g=document.createElement('script');g.src='method2-production-cogs-guard.js?v=2026-09-13-1';g.defer=true;document.head.appendChild(g);
  setTimeout(()=>document.dispatchEvent(new Event('bobs-method2-production-ready')),60);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
