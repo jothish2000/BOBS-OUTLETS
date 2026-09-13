@@ -59,7 +59,6 @@ function build(panel){
   if(!right){right=document.createElement('div');right.className='m2-right-breakdown';panel.appendChild(right)}
   const markup=box.querySelector('.m2-markup');
   const current=box.querySelector('.m2-current');
-  const pref=box.querySelector('.m2-commercial-grid .m2-commercial-value');
   const industry=box.querySelector('.m2-commercial-ref');
   const uuwpInput=box.querySelector('.m2-uuwp-input');
   const prefText=box.querySelector('.m2-flow .m2-node:nth-of-type(3) b');
@@ -85,7 +84,6 @@ function build(panel){
     '<div class="m2-right-line m2-right-price"><span>Current Selling Price — editable</span><b>'+money(currentVal)+'</b></div>';
   if(panel.querySelector('.formatSelect')?.value==='batch'){
     const today=panel.querySelector('.m2-today-production-value');
-    const sold=panel.querySelector('.qtyInput');
     let acct=panel.querySelector('.m2-right-production');
     if(!acct){acct=document.createElement('div');acct.className='m2-right-production';right.appendChild(acct)}
     const batch=panel.querySelector('.numBatchesInput');
@@ -93,11 +91,11 @@ function build(panel){
     const max=panel.querySelector('.maxBatchesPerDayInput');
     const cap=panel.querySelector('.productionCapacityInput');
     acct.innerHTML='<div class="m2-right-sep"></div><div class="m2-right-title">PRODUCTION ACCOUNTING</div>'+
-      '<div class="m2-right-line"><span>Units per batch</span><b>'+text(units&&units.closest('.batchRow')?.querySelector('input'))+'</b></div>'+
-      '<div class="m2-right-line"><span>Batches ran today</span><b>'+text(batch)+'</b></div>'+
+      '<div class="m2-right-line"><span>Units per batch</span><b>'+(units?units.value:'—')+'</b></div>'+
+      '<div class="m2-right-line"><span>Batches ran today</span><b>'+(batch?batch.value:'—')+'</b></div>'+
       '<div class="m2-right-line"><span>Today\'s production</span><b>'+text(today)+'</b></div>'+
-      '<div class="m2-right-line"><span>Maximum batches / day</span><b>'+text(max)+'</b></div>'+
-      '<div class="m2-right-line"><span>Production capacity / day</span><b>'+text(cap)+'</b></div>';
+      '<div class="m2-right-line"><span>Maximum batches / day</span><b>'+(max?max.value:'—')+'</b></div>'+
+      '<div class="m2-right-line"><span>Production capacity / day</span><b>'+(cap?cap.value:'—')+'</b></div>';
   }
   spoilageEdit(panel);
 }
