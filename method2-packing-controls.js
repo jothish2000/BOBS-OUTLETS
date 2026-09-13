@@ -1,0 +1,32 @@
+/* BOBS Method 2 — definitive Packing & Other COGS selector.
+   Safe/additive: preserves existing method2-item-state.packaging entries.
+   Exposes BOBS_METHOD2_OPEN_PACK and BOBS_METHOD2_PACKAGING_COST for the commercial layer. */
+(function(){
+'use strict';
+const KEY='method2-item-state';
+const masters=[
+ ['Tea / coffee paper cup 100 ml',1.20,'pc'],['Tea / coffee paper cup 150 ml',1.40,'pc'],['Tea / coffee paper cup 200 ml',1.70,'pc'],
+ ['Cup lid 100–150 ml',0.60,'pc'],['Cup lid 200 ml',0.70,'pc'],['Cup sleeve',0.45,'pc'],['Wooden stirrer',0.20,'pc'],
+ ['Tiffin / snack container small',2.00,'pc'],['Tiffin / snack container medium',2.50,'pc'],['Paper food box small',2.20,'pc'],['Paper food box medium',2.80,'pc'],
+ ['Aluminium foil coated-top / foil-laminated paper box',3.00,'pc'],['Banana leaf',1.00,'pc'],
+ ['Lemon rice / pudina rice small box',2.40,'pc'],['Takeaway juice container 200 ml + lid',3.00,'pc'],['Takeaway juice container 250 ml + lid',3.20,'pc'],
+ ['Straw',0.35,'pc'],['Paper plate',1.25,'pc'],['Small paper bowl',1.00,'pc'],['Plastic / paper spoon',0.35,'pc'],
+ ['Tissue paper',0.20,'pc'],['Carry bag small',1.00,'pc'],['Carry bag medium',1.50,'pc'],['Parcel sticker / label',0.20,'pc'],
+ ['Rubber band / tie',0.15,'pc'],['Other packing accessory',0,'pc']
+];
+const norm=s=>String(s||'').trim().toLowerCase();
+const key=(cat,i)=>String(cat)+'::'+String(i);
+const read=()=>{try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');s.packaging=s.packaging||{};return s}catch(e){return{packaging:{}}}};
+const write=s=>localStorage.setItem(KEY,JSON.stringify(s));
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function cost(cat,i){const a=read().packaging[key(cat,i)]||[];return Array.isArray(a)?a.reduce((z,x)=>z+(Number(x.qty)||0)*(Number(x.unitCost)||0),0):0}
+window.BOBS_METHOD2_PACKAGING_COST=cost;
+function style(){if(document.getElementById('m2PackStyle'))return;const s=document.createElement('style');s.id='m2PackStyle';s.textContent='.m2-pack-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:18px}.m2-pack-box{background:#fff;color:#111;width:min(680px,96vw);max-height:88vh;overflow:auto;border-radius:12px;padding:18px}.m2-pack-row{display:grid;grid-template-columns:1fr 90px 90px 34px;gap:7px;align-items:end;border:1px solid #ddd;border-radius:8px;padding:8px;margin:6px 0}.m2-pack-row label{font-size:10px}.m2-pack-row input,.m2-pack-row select{width:100%;box-sizing:border-box;padding:5px}.m2-pack-del{border:0;background:#eee;border-radius:6px;padding:6px;cursor:pointer}.m2-pack-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.m2-pack-actions button{border:0;border-radius:7px;padding:9px 13px;font-weight:700;cursor:pointer}.m2-pack-save{background:#1f4d35;color:#fff}.m2-pack-cancel{background:#eee}.m2-pack-add{margin-top:8px}.m2-pack-note{font-size:10px;color:#666;line-height:1.4}@media(max-width:650px){.m2-pack-row{grid-template-columns:1fr 1fr 1fr 34px}}';document.head.appendChild(s)}
+function open(cat,i){style();let m=document.getElementById('m2PackModal');if(!m){m=document.createElement('div');m.id='m2PackModal';m.className='m2-pack-modal';m.innerHTML='<div class="m2-pack-box"><h3 style="margin:0 0 4px">Packing & Other COGS</h3><p class="m2-pack-note">Starter prices are editable assumptions, not supplier quotations. Packing cost is a direct parcel cost and is not multiplied by food spoilage.</p><div id="m2PackList"></div><button type="button" class="m2-pack-add">＋ Add packing item</button><div class="m2-pack-actions"><button type="button" class="m2-pack-cancel">Cancel</button><button type="button" class="m2-pack-save">Save Packing</button></div></div>';document.body.appendChild(m);m.querySelector('.m2-pack-cancel').onclick=()=>m.style.display='none';m.querySelector('.m2-pack-add').onclick=()=>addRow(cat,i,null)}m.dataset.cat=cat;m.dataset.i=i;const list=m.querySelector('#m2PackList');list.innerHTML='';const old=read().packaging[key(cat,i)]||[];if(Array.isArray(old)&&old.length)old.forEach(x=>addRow(cat,i,x));else addRow(cat,i,null);m.style.display='flex'}
+function addRow(cat,i,data){const m=document.getElementById('m2PackModal'),list=m.querySelector('#m2PackList'),row=document.createElement('div');row.className='m2-pack-row';const selected=data&&data.name?data.name:'';const opts=masters.map(x=>'<option value="'+esc(x[0])+'" data-cost="'+x[1]+'" data-unit="'+x[2]+'" '+(norm(x[0])===norm(selected)?'selected':'')+'>'+esc(x[0])+'</option>').join('');row.innerHTML='<label>Item<select class="m2-pack-name"><option value="">Select</option>'+opts+'</select></label><label>Qty<input class="m2-pack-qty" type="number" min="0" step="0.01" value="'+(data&&data.qty!=null?data.qty:1)+'"></label><label>Unit cost<input class="m2-pack-cost" type="number" min="0" step="0.01" value="'+(data&&data.unitCost!=null?data.unitCost:'')+'"></label><button type="button" class="m2-pack-del">×</button>';list.appendChild(row);const sel=row.querySelector('.m2-pack-name'),ci=row.querySelector('.m2-pack-cost');const sync=()=>{const o=sel.options[sel.selectedIndex];if(o&&o.dataset.cost!=null&&ci.value==='')ci.value=o.dataset.cost};sel.onchange=()=>{const o=sel.options[sel.selectedIndex];if(o&&o.dataset.cost!=null)ci.value=o.dataset.cost};row.querySelector('.m2-pack-del').onclick=()=>row.remove();sync()}
+function commit(){const m=document.getElementById('m2PackModal'),cat=m.dataset.cat,i=Number(m.dataset.i),out=[];m.querySelectorAll('.m2-pack-row').forEach(r=>{const name=r.querySelector('.m2-pack-name').value;if(!name)return;out.push({name,qty:Number(r.querySelector('.m2-pack-qty').value||0),unitCost:Number(r.querySelector('.m2-pack-cost').value||0),source:'PACKAGING_MASTER'})});const s=read();s.packaging[key(cat,i)]=out;write(s);m.style.display='none';document.dispatchEvent(new Event('bobs-method2-packaging-change'));try{if(typeof window.recalc==='function')window.recalc()}catch(e){}}
+window.BOBS_METHOD2_OPEN_PACK=open;
+function boot(){const m=document.getElementById('m2PackModal');if(m&&!m.querySelector('.m2-pack-save').dataset.bound){m.querySelector('.m2-pack-save').dataset.bound='1';m.querySelector('.m2-pack-save').onclick=commit}}
+const oldOpen=window.BOBS_METHOD2_OPEN_PACK;window.BOBS_METHOD2_OPEN_PACK=open;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
