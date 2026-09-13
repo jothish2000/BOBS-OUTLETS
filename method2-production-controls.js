@@ -59,6 +59,10 @@ function boot(){
  document.querySelectorAll('.batchPanel').forEach(p=>{const f=p.querySelector('.formatSelect');if(f&&f.value==='batch'&&f.dataset.cat!==undefined)ensure(f.dataset.cat,Number(f.dataset.i));scheduleRepair(p)});
  document.addEventListener('input',e=>{const t=e.target;if(!t||!t.classList)return;const p=t.closest('.batchPanel');if(!p)return;if(t.classList.contains('capacityInput'))t.dataset.m2CapacityValue=t.value;scheduleRepair(p)},true);
  document.addEventListener('change',e=>{const t=e.target;if(!t||!t.classList)return;if(t.classList.contains('modeSelect')&&t.value==='production')setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));scheduleRepair(panel(t.dataset.cat,Number(t.dataset.i)))},20);if(t.classList.contains('formatSelect'))setTimeout(()=>{ensure(t.dataset.cat,Number(t.dataset.i));scheduleRepair(panel(t.dataset.cat,Number(t.dataset.i)))},20)},true);
+ /* Give the definitive visible commercial layer a stable load point after the
+    production controls have been corrected. No polling is used here. */
+ const s=document.createElement('script');s.src='method2-definitive-commercial-ui.js?v=2026-09-13-1';s.defer=true;document.head.appendChild(s);
+ setTimeout(()=>document.dispatchEvent(new Event('bobs-method2-production-ready')),60);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
