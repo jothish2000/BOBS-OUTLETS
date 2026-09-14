@@ -1,4 +1,4 @@
-/* BOBS Method 2 production input focus fix — additive, data-safe. */
+/* BOBS Method 2 production input focus + derived-calculation fix — additive, data-safe. */
 (function(){'use strict';
 function num(v){const x=Number(v);return Number.isFinite(x)?Math.max(0,x):0;}
 function key(cat,i){return String(cat)+'::'+String(i);}
@@ -18,7 +18,20 @@ function sync(el){
   if(uv!==null&&mv!==null)o.productionCapacityPerDay=uv*mv;
   s.prod[k]=o;write(s);
   const panel=el.closest('.batchPanel');
-  if(panel){const today=panel.querySelector('.m2v4-today-v');if(today&&uv!==null&&bv!==null)today.textContent=(uv*bv).toLocaleString('en-IN');const cap=panel.querySelector('.productionCapacityInput');if(cap&&uv!==null&&mv!==null)cap.value=String(uv*mv);}
+  if(panel){
+    const today=panel.querySelector('.m2v-today-v')||panel.querySelector('.m2v4-today-v');
+    if(today&&uv!==null&&bv!==null)today.textContent=(uv*bv).toLocaleString('en-IN');
+    const cap=panel.querySelector('.productionCapacityInput')||panel.querySelector('.capacityInput');
+    if(cap&&uv!==null&&mv!==null)cap.value=String(uv*mv);
+    panel.dataset.m2TodayProduction=uv!==null&&bv!==null?String(uv*bv):'';
+  }
+}
+function refreshAll(){
+  document.querySelectorAll('.batchPanel').forEach(function(panel){
+    const u=panel.querySelector('.batchSizeInput'),b=panel.querySelector('.numBatchesInput'),m=panel.querySelector('.maxBatchesPerDayInput');
+    if(!u||!b||!m)return;
+    sync(u);
+  });
 }
 function recalcAfterEdit(){
   if(typeof window.recalc==='function'){try{window.recalc();}catch(e){}}
@@ -45,7 +58,12 @@ function install(){
     }
   },true);
   function label(){document.querySelectorAll('.batchSizeRow .batchSizeInput').forEach(function(t){t.readOnly=false;t.disabled=false;t.style.pointerEvents='auto';const r=t.closest('.batchRow');if(r){const s=r.querySelector('span');if(s)s.innerHTML='<b>No. of pieces per batch</b>';}})}
-  label();setTimeout(label,300);setTimeout(label,1000);
+  label();
+  setTimeout(label,300);setTimeout(label,1000);
+  /* Runtime v3 may render its controls after this script's DOMContentLoaded hook.
+     Re-apply the derived values after that render without invoking a rerender. */
+  setTimeout(refreshAll,700);
+  setTimeout(refreshAll,1500);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
