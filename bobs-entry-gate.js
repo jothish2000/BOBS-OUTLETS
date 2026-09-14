@@ -4,10 +4,11 @@
 try{const g=document.createElement('script');g.src='bobs-transition-guard.js?v=2026-09-12-111Q-transition-guard-v4';document.head.appendChild(g)}catch(e){}
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 if(path==='method2.html'){
-  try{const s=document.createElement('script');s.src='method2-production-input-fix.js?v=2026-09-14-input-fix-2';document.head.appendChild(s)}catch(e){}
-  try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-13-111Q-condiments-10';s.defer=true;document.head.appendChild(s)}catch(e){}
+  /* IMPORTANT: dynamic scripts must execute in insertion order. The input guard must win before any production-runtime input listener is registered. */
+  try{const s=document.createElement('script');s.src='method2-production-input-fix.js?v=2026-09-14-input-fix-3';s.async=false;document.head.appendChild(s)}catch(e){}
+  try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-13-111Q-condiments-10';s.async=false;document.head.appendChild(s)}catch(e){}
   /* SINGLE authoritative production runtime. No duplicate production-control layer is injected. */
-  try{const s=document.createElement('script');s.src='method2-production-runtime-v4.js?v=2026-09-13-safe-runtime-4';s.defer=true;document.head.appendChild(s)}catch(e){}
+  try{const s=document.createElement('script');s.src='method2-production-runtime-v4.js?v=2026-09-13-safe-runtime-4';s.async=false;document.head.appendChild(s)}catch(e){}
   const CFG={VERSION:'2026-09-12-111Q-method2-google-first-v4',VAULT:'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJQDpQ8Nsk12zThc1Yj4A9Pf4A/exec'};
   const hydratedKey='bobs-method2-google-hydrated';
   const outletId=()=>{const q=new URLSearchParams(location.search);if(q.get('outlet'))return String(q.get('outlet'));try{const o=JSON.parse(localStorage.getItem('outlet-selection')||'{}');return String(o.id||'')}catch(e){return ''}};
