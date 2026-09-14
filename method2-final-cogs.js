@@ -3,9 +3,9 @@
 'use strict';
 const KEY='method2-item-state';
 function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
-function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+function norm(s){return String(s||'').toLowerCase().replace(/idly/g,'idli').replace(/[^a-z0-9]+/g,' ').trim()}
 function state(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
-function unitCost(r){if(!r)return 0;for(const k of ['unitCost','costPerUnit','perUnitCost','productionCost']){const v=num(r[k]);if(v>0)return v}const b=num(r.batchCost||r.totalCost),y=num(r.standardYield||r.yieldQty||r.yield);return b>0&&y>0?b/y:0}
+function unitCost(r){if(!r)return 0;for(const k of ['unitCost','costPerUnit','perUnitCost','productionCost']){const v=num(r[k]);if(v>0)return v}const b=num(r.batchCost||r.totalCost)||((r.ingredients||[]).reduce((total,x)=>total+num(x&&x[1])*num(x&&x[3]),0)),y=num(r.standardYield||r.yieldQty||r.yield);return b>0&&y>0?b/y:0}
 function recipe(name){const a=window.BOBS_METHOD2_RM_RECIPES||[],n=norm(name);return a.find(r=>norm(r.name)===n)||a.find(r=>norm(r.name).includes(n)||n.includes(norm(r.name)))||null}
 function condiment(cat,i){const s=state(),a=s.condiments&&Array.isArray(s.condiments[String(cat)+'::'+i])?s.condiments[String(cat)+'::'+i]:[];return a.reduce((z,x)=>z+unitCost(recipe(x.recipeName||x.name))*num(x.qty),0)}
 function parcel(cat,i){if(typeof window.BOBS_METHOD2_PACKAGING_COST==='function')return num(window.BOBS_METHOD2_PACKAGING_COST(cat,i));const a=state().packaging&&state().packaging[String(cat)+'::'+i]||[];return a.reduce((z,x)=>z+num(x.qty)*num(x.unitCost),0)}

@@ -4,11 +4,11 @@
 const KEY='method2-item-state';
 const esc=v=>CSS.escape(String(v));
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
-const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const norm=s=>String(s||'').toLowerCase().replace(/idly/g,'idli').replace(/[^a-z0-9]+/g,' ').trim();
 function state(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');s.qtys=s.qtys||{};s.prod=s.prod||{};s.condiments=s.condiments||{};s.packaging=s.packaging||{};s.pricing=s.pricing||{};return s}catch(e){return{qtys:{},prod:{},condiments:{},packaging:{},pricing:{}}}}
 function key(cat,i){return String(cat)+'::'+String(i)}
 function recipe(name){const n=norm(name),a=window.BOBS_METHOD2_RM_RECIPES||[];return a.find(r=>norm(r.name)===n)||a.find(r=>norm(r.name).includes(n)||n.includes(norm(r.name)))||null}
-function unitCost(r){if(!r)return 0;for(const k of ['unitCost','costPerUnit','perUnitCost','productionCost']){const v=num(r[k]);if(v>0)return v}const b=num(r.batchCost||r.totalCost),y=num(r.standardYield||r.yieldQty||r.yield);return y>0&&b>0?b/y:0}
+function unitCost(r){if(!r)return 0;for(const k of ['unitCost','costPerUnit','perUnitCost','productionCost']){const v=num(r[k]);if(v>0)return v}const b=num(r.batchCost||r.totalCost)||((r.ingredients||[]).reduce((total,x)=>total+num(x&&x[1])*num(x&&x[3]),0)),y=num(r.standardYield||r.yieldQty||r.yield);return y>0&&b>0?b/y:0}
 function condiments(cat,i){const a=state().condiments[key(cat,i)];return Array.isArray(a)?a:[]}
 function condimentCost(x){return unitCost(recipe(x.recipeName||x.name))*num(x.qty)}
 function packaging(cat,i){const a=state().packaging[key(cat,i)];return Array.isArray(a)?a:[]}

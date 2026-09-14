@@ -1,10 +1,10 @@
 /* BOBS Method 2 — Condiment picker + Recipe Master costing loader. */
 (function(){
 'use strict';
-const VAULT='https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJQDpQ8Nsk12zThcY1j4A9Pf4A/exec';
+const VAULT=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec';
 const RM={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'};
 let recipes=[],ready=false,active={cat:'',i:-1};
-function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+function norm(s){return String(s||'').toLowerCase().replace(/idly/g,'idli').replace(/[^a-z0-9]+/g,' ').trim()}
 function jsonp(url){return new Promise((resolve,reject)=>{const cb='m2Cond_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');let done=false,t=setTimeout(()=>finish(false,new Error('Recipe Master timeout')),9000);function finish(ok,v){if(done)return;done=true;clearTimeout(t);try{delete window[cb]}catch(e){}s.remove();ok?resolve(v):reject(v)}window[cb]=d=>finish(true,d);s.onerror=()=>finish(false,new Error('Recipe Master read failed'));s.src=url+'&callback='+cb+'&_bobs='+Date.now();document.head.appendChild(s)})}
 function parse(q){let d=q&&q.data!=null?q.data:null;if(typeof d==='string'){try{d=JSON.parse(d)}catch(e){}}if(d&&d.data&&typeof d.data==='object')d=d.data;return(d&&Array.isArray(d.recipes)?d.recipes:null)||(q&&Array.isArray(q.recipes)?q.recipes:null)||(q&&q.record&&q.record.data&&Array.isArray(q.record.data.recipes)?q.record.data.recipes:null)||(q&&q.record&&Array.isArray(q.record.recipes)?q.record.recipes:null)}
 function state(){try{const s=JSON.parse(localStorage.getItem('method2-item-state')||'{}');s.qtys=s.qtys||{};s.prod=s.prod||{};s.condiments=s.condiments||{};s.packaging=s.packaging||{};s.pricing=s.pricing||{};s.commercial=s.commercial||{};return s}catch(e){return{qtys:{},prod:{},condiments:{},packaging:{},pricing:{},commercial:{}}}}
