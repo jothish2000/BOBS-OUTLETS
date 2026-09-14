@@ -19,6 +19,8 @@ function sync(el){
   s.prod[k]=o;write(s);
   const panel=el.closest('.batchPanel');
   if(panel){const today=panel.querySelector('.m2v4-today-v');if(today&&uv!==null&&bv!==null)today.textContent=(uv*bv).toLocaleString('en-IN');const cap=panel.querySelector('.productionCapacityInput');if(cap&&uv!==null&&mv!==null)cap.value=String(uv*mv);}
+}
+function recalcAfterEdit(){
   if(typeof window.recalc==='function'){try{window.recalc();}catch(e){}}
   if(typeof window.saveState==='function'){try{window.saveState();}catch(e){}}
 }
@@ -26,7 +28,7 @@ function install(){
   document.addEventListener('input',function(e){
     const t=e.target;if(!t||!t.classList)return;
     if(t.classList.contains('batchSizeInput')||t.classList.contains('numBatchesInput')||t.classList.contains('maxBatchesPerDayInput')){
-      /* This listener is installed before the production runtime. Stop all later document listeners from re-rendering the field while typing. */
+      /* Capture the keystroke, persist it, and deliberately DO NOT rerender during typing. */
       e.stopImmediatePropagation();
       t.readOnly=false;t.disabled=false;t.style.pointerEvents='auto';t.style.opacity='1';
       sync(t);
@@ -34,7 +36,13 @@ function install(){
   },true);
   document.addEventListener('change',function(e){
     const t=e.target;if(!t||!t.classList)return;
-    if(t.classList.contains('batchSizeInput')){const row=t.closest('.batchRow');if(row){const s=row.querySelector('span');if(s)s.innerHTML='<b>No. of pieces per batch</b>';}}
+    if(t.classList.contains('batchSizeInput')||t.classList.contains('numBatchesInput')||t.classList.contains('maxBatchesPerDayInput')){
+      t.readOnly=false;t.disabled=false;t.style.pointerEvents='auto';
+      if(t.classList.contains('batchSizeInput')){const row=t.closest('.batchRow');if(row){const s=row.querySelector('span');if(s)s.innerHTML='<b>No. of pieces per batch</b>';}}
+      sync(t);
+      recalcAfterEdit();
+      e.stopImmediatePropagation();
+    }
   },true);
   function label(){document.querySelectorAll('.batchSizeRow .batchSizeInput').forEach(function(t){t.readOnly=false;t.disabled=false;t.style.pointerEvents='auto';const r=t.closest('.batchRow');if(r){const s=r.querySelector('span');if(s)s.innerHTML='<b>No. of pieces per batch</b>';}})}
   label();setTimeout(label,300);setTimeout(label,1000);
