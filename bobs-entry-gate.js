@@ -4,8 +4,8 @@
 try{const g=document.createElement('script');g.src='bobs-transition-guard.js?v=2026-09-12-111Q-transition-guard-v4';document.head.appendChild(g)}catch(e){}
 const path=(location.pathname.split('/').pop()||'').toLowerCase();
 if(path==='method2.html'){
-  /* Method-2-only input guard. It must load before the production runtime so typing is not interrupted by rerendering. */
-  try{const s=document.createElement('script');s.src='method2-production-input-fix.js?v=2026-09-14-input-fix-3';s.async=false;document.head.appendChild(s)}catch(e){}
+  /* 111Q: Method-2-only production input guard. Load first and cache-bust so the guard is active before any production input listeners. */
+  try{const s=document.createElement('script');s.src='method2-production-input-fix.js?v=2026-09-14-input-fix-4';s.async=false;s.defer=false;document.head.appendChild(s)}catch(e){}
   try{const s=document.createElement('script');s.src='method2-condiments.js?v=2026-09-13-111Q-condiments-9';s.defer=true;document.head.appendChild(s)}catch(e){}
   /* SINGLE authoritative production runtime. No duplicate production-control layer is injected. */
   try{const s=document.createElement('script');s.src='method2-production-runtime-v3.js?v=2026-09-13-safe-runtime-3';s.defer=true;document.head.appendChild(s)}catch(e){}
