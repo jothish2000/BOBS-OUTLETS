@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recipe cost editor — BOBS</title>
 <link rel="stylesheet" href="style.css"><script>window.BOBS_OWNED_EDITOR=true;</script><script src="bobs-config.js"></script><script src="bobs-google-data.js"></script><script src="poriyal-recipes.js"></script>
-<style>main{max-width:1100px;margin:auto;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #ccc;text-align:left}input,select,button{padding:8px;max-width:100%;box-sizing:border-box}td input{width:100%;min-width:80px}td:first-child{min-width:180px}.scroll{overflow:auto}.summary{font-size:20px;padding:18px;background:#fff}.notice{padding:12px;background:#fff3d5}#status{min-height:30px}button{cursor:pointer;margin:8px 6px 8px 0}label{display:inline-block;margin:10px}#save{background:#214b35;color:white}a{color:inherit}</style></head>
-<body><main><a href="recipe-master.html">Recipe Master</a><h1>Recipe cost breakdown</h1>
+<style>main{max-width:1100px;margin:auto;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #ccc;text-align:left}input,select,button{padding:8px;max-width:100%;box-sizing:border-box}td input{width:100%;min-width:80px}td:first-child{min-width:180px}.scroll{overflow:auto}.summary{font-size:20px;padding:18px;background:#fff}.notice{padding:12px;background:#fff3d5}#status{min-height:30px}button{cursor:pointer;margin:8px 6px 8px 0}label{display:inline-block;margin:10px}#save{background:#214b35;color:white}a{color:inherit}.recipe-actions{position:sticky;bottom:0;background:#fff;padding:10px 0;border-top:1px solid #ccc;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.save-state{font-weight:700}.top-close{float:right}</style></head>
+<body><main><button id="closeTop" type="button" class="top-close">✕ Close</button><a href="recipe-master.html">Recipe Master</a><h1>Recipe cost breakdown</h1>
 <p class="notice">Company-wide recipe: saved changes affect every outlet using this recipe. Existing rates are assumptions or previously saved rates; they are not verified live market prices. Enter your current supplier rates.</p>
 <p id="status" role="status">Loading from Google…</p>
 <label>Recipe <select id="recipe"></select></label>
@@ -15,6 +15,5 @@
 <button id="add" type="button">+ Ingredient / cost component</button><button id="gas" type="button">+ Gas / fuel cost</button>
 <p id="summary" class="summary"></p>
 <p>Accompaniments are costed in their own recipes and added separately to the sales item. Do not add the same cost here twice.</p>
-<button id="save" type="submit">Save shared recipe to Google</button>
-<button id="reload" type="button">Reload saved recipe</button>
-</form></main><script src="recipe-cost-editor.js"></script></body></html>
+<div class="recipe-actions"><button id="save" type="submit">Save shared recipe to Google</button><button id="reload" type="button">Reload saved recipe</button><button id="closeBottom" type="button">Close</button><span id="saveState" class="save-state" role="status">Unsaved changes</span></div>
+</form></main><script src="recipe-cost-editor.js"></script><script src="recipe-cost-editor-ux.js?v=2026-09-17-1"></script></body></html>
