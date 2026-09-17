@@ -36,7 +36,8 @@ function calculate(){
  lines('costs',[['Item / Recipe Master COGS per '+d.unit,production&&!M2.recipe(recipes,item.name)?'Recipe missing':money(c.base)],['Condiments per '+d.unit,money(c.cond)],['Food spoilage allowance',money(c.spoil)],['Packing per '+d.unit,money(c.pack)],['Overall COGS per '+d.unit,incomplete?'Incomplete':money(c.final)]]);
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  lines('pricing',[['UUWP applied',c.apply?'Yes':'No — known production leftovers'],['COGS with UUWP',incomplete?'Incomplete':money(c.withUuwp)],['Suggested price with markup',incomplete?'Incomplete':money(c.suggested)]]);
- lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],['Recipe / purchase × sold',incomplete?'Incomplete':money(c.sold===null?null:c.base*c.sold)],['Condiments × sold',incomplete?'Incomplete':money(c.sold===null?null:c.cond*c.sold)],['Packing × sold',money(c.sold===null?null:c.pack*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',incomplete?'Incomplete':money(c.made*c.base)]]);
+ const soldQty=c.sold===null?'—':c.sold;
+ lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],['Base Item COGS / '+item.name+' × Sold Qty '+soldQty,incomplete?'Incomplete':money(c.sold===null?null:c.base*c.sold)],['Condiment COGS / '+item.name+' × Sold Qty '+soldQty,incomplete?'Incomplete':money(c.sold===null?null:c.cond*c.sold)],['Packing COGS / '+item.name+' × Sold Qty '+soldQty,money(c.sold===null?null:c.pack*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',incomplete?'Incomplete':money(c.made*c.base)]]);
 }
 function show(){for(const id of fields)$(id).value=d[id]??'';$('unit').value=d.unit;$('editor').hidden=false;renderComponents();calculate()}
 function back(){
@@ -69,10 +70,9 @@ $('editor').onsubmit=async e=>{
  if(c.sold>0&&!soldTouched&&!confirm('Confirm Sold Today is '+c.sold+' for '+item.name+'? This quantity has not been confirmed today.'))return;
  busy=true;$('controls').disabled=true;$('saveStatus').textContent='Saving & verifying…';
  try{
- // Re-read rates at save time so a recipe edit in another window cannot leave stale costs.
  const master=await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1');recipes=master?.recipes||[];calculate();
  const saved=await M2.saveItem(outlet,cat,i,item,d,baseline,recipes);baseline=M2.state(saved);dirty=false;
- try{M2.cache(outlet,saved)}catch(e){/* A blocked browser cache does not undo a verified Google save. */}
+ try{M2.cache(outlet,saved)}catch(e){}
  $('saveStatus').textContent='Verified in Google';status('Saved and read back from Google.');
  if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'bobs-method2-item-saved',outlet,key:M2.keys(cat,i).k},location.origin);window.opener.focus();window.close()}
  else location.href='method2.html?outlet='+encodeURIComponent(outlet);
