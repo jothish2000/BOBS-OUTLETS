@@ -6,7 +6,23 @@ const norm=s=>String(s||'').toLowerCase().replace(/\bidly\b/g,'idli').trim();
 const keys=(cat,i)=>({k:cat+'::'+i,q:cat+'|'+i,legacy:cat.replace(/\s+/g,'_')+'-'+i});
 const maps=['qtys','prod','condiments','packaging','pricing','commercial','itemEditors'];
 const businessDate=(date=new Date())=>new Date(date).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});return s}
+function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};return s}
+function hasItem(s,cat,i){const {k,q,legacy}=keys(cat,i);return !!(s.itemEditors?.[k]||s.qtys?.[q]!==undefined||s.prod?.[legacy]||Number(s.prod?.[k]?.todaysProduction)>0||s.condiments?.[k]?.length||s.packaging?.[k]?.length)}
+function selected(s,cat,i){const entry=s.selection?.[cat];return Array.isArray(entry?.indices)?entry.indices.includes(Number(i)):hasItem(s,cat,i)}
+async function saveSelectionUnlocked(outlet,cat,indices,baseline){
+ const latest=state(await read(outlet));
+ if(JSON.stringify(latest.selection[cat])!==JSON.stringify(baseline.selection?.[cat]))throw Error('This category selection changed in another window. Reload before saving.');
+ const token=Date.now()+'-'+Math.random().toString(36).slice(2);
+ latest.selection[cat]={indices:[...new Set(indices.filter(i=>Number.isInteger(i)&&i>=0))].sort((a,b)=>a-b),token,savedAt:new Date().toISOString()};
+ return write(outlet,'METHOD2','default',latest,s=>s?.selection?.[cat]?.token===token);
+}
+function saveSelection(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSelectionUnlocked(...args)):saveSelectionUnlocked(...args)}
+function packing(d){
+ const rows=d.packaging||[],per=number(d.packingPer),missing=[];
+ if(rows.length&&!(per>0))missing.push('Items sharing one pack');
+ let total=0;for(const x of rows){const qty=number(x.qty),rate=number(x.unitCost);if(qty===null||rate===null)missing.push((x.name||x.label||'Packing')+' quantity / price');else total+=qty*rate}
+ return {per,perPack:total,perItem:per>0?total/per:0,missing};
+}
 function recipe(recipes,name){return recipes.find(r=>norm(r.name)===norm(name))}
 function unitCost(r){
  if(!r)return null;
@@ -48,12 +64,12 @@ function calculate(d,item,recipes){
   const amount=number(x.portion),qty=amount===null?null:convert(amount,x.portionUnit,x.source==='purchase'?x.rateUnit:r?.yieldUnit);
   if(rate===null||qty===null)missing.push(x.recipeName+' rate / portion unit');else cond+=rate*qty;
  }
- const pack=(d.packaging||[]).reduce((a,x)=>a+(number(x.qty)||0)*(number(x.unitCost)||0),0)/(number(d.packingPer)||1);
+ const packingCost=packing(d),pack=packingCost.perItem;missing.push(...packingCost.missing);
  const spoil=(baseCost+cond)*(number(d.spoilage)||0)/100,final=baseCost+cond+spoil+pack;
  // Preserve the established rule: production with known leftovers does not add a second UUWP allowance.
  const apply=d.mode==='purchased'||sold===null||made===sold;
  const withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
- return {base:baseCost,cond,pack,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+ return {base:baseCost,cond,pack,packingCost,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
  suggested:withUuwp*(1+(number(d.markup)||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
@@ -96,5 +112,5 @@ function cache(outlet,s){
  const all=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
  all[outlet]={...all[outlet],method2:s};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
-root.M2={clone,number,norm,keys,state,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache};
+root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache};
 })(typeof window==='undefined'?globalThis:window);

@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded',function(){const btn=document.getEl
     const s=document.createElement('script');s.src='outlet-shift-presets.js?v=2026-09-12-111Q-hour-based-shifts-2';document.head.appendChild(s);
   }
   if((location.pathname.split('/').pop()||'').toLowerCase()==='outlet-method-flow.html'){
-    const review=document.createElement('script');review.src='method2-flow-review.js?v=20260917';document.head.appendChild(review);
+    const review=document.createElement('script');review.src='method2-flow-review.js?v=selection-v2';document.head.appendChild(review);
     const s=document.createElement('script');s.src='flow-shift-selector.js?v=2026-09-12-111Q-shift-selector';document.head.appendChild(s);
   }
   if(!window.BOBS_OWNED_EDITOR&&(location.pathname.split('/').pop()||'').toLowerCase()==='method2.html'){

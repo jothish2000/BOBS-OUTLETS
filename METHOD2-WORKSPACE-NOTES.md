@@ -33,4 +33,14 @@ These references support recipe styles, not commercial market rates or a univers
 
 ## Regression test
 
+### Category selection and shared packing update
+
+The outlet Method 2 button now opens method2-select.html as a separate window. Each category has its own URL and checkbox table. Category selections are stored in the same Google METHOD2 record under selection[category], verified by read-back, without deleting deselected item data. Existing saved items remain selected until that category is explicitly reviewed.
+
+Method 2 renders and calculates only selected rows. It no longer reloads on window focus. Confirmed-save messages or an explicit Reload trigger refresh; request generations prevent an older slow response from replacing newer data. Recipe Master is not requested by the selection pages or an empty working list.
+
+The Idli packing setup uses one empty sambar pouch and one aluminium container shared by two idlis. Supplier prices remain user-entered. Each component shows quantity × price ÷ sharing count. For example, ₹1 + ₹3 shared by 2 = ₹2 per idli; 600 sold allocates ₹1,200. The food inside the pouch stays under Condiments. Existing saved packing is not automatically converted or overwritten.
+
+Run node tests/method2-selection.cjs for the new selection, slow-response, focus/scroll, shared-packing and data-preservation browser tests.
+
 Run node tests/method2-workspace.cjs with Playwright available (PLAYWRIGHT_PATH can override the bundled module path). The test uses a simulated Google endpoint and makes no live business-data writes.

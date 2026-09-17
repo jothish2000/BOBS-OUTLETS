@@ -9,4 +9,8 @@ document.addEventListener('click',function(e){
   if(typeof review!=='function')alert('Wait for Method 2 Google records to load before continuing.');
  }
 },true);
-
+window.addEventListener('message',function(e){
+ if(e.origin!==location.origin||e.data?.type!=='bobs-method2-selection-saved')return;
+ const frame=document.getElementById('methodFrame');
+ if(frame?.getAttribute('src')?.includes('method2.html'))frame.contentWindow?.postMessage(e.data,location.origin);
+});

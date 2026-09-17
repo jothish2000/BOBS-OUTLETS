@@ -20,23 +20,29 @@ function renderComponents(){
  box.append(grid);
  const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove side';b.onclick=()=>{d.condiments=d.condiments.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);$('condiments').append(box);
  }
- $('packing').replaceChildren();for(const x of d.packaging){const box=document.createElement('div');box.className='component fields';box.append(field('Component',x.name||x.label,v=>x.name=v,'text'),field('Quantity per parcel',x.qty,v=>x.qty=v),field('Price ₹ each',x.unitCost,v=>x.unitCost=v));const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove';b.onclick=()=>{d.packaging=d.packaging.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);$('packing').append(box)}
+ $('packing').replaceChildren();for(const x of d.packaging){const box=document.createElement('div');box.className='component fields';box.append(field('Empty container / packing material',x.name||x.label,v=>x.name=v,'text'),field('Number used for this serving',x.qty,v=>x.qty=v),field('Price ₹ each',x.unitCost,v=>x.unitCost=v));const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove';b.onclick=()=>{d.packaging=d.packaging.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);const perItem=document.createElement('output');perItem.className='packing-row-cost';box.append(perItem);$('packing').append(box)}
 }
 function pull(){for(const id of fields)d[id]=$(id).value}
 function changed(){pull();dirty=true;d.soldConfirmed=false;$('saveStatus').textContent='Unsaved changes';calculate()}
 function lines(id,entries){$(id).replaceChildren();for(const [label,value] of entries){const row=document.createElement('div');row.className='line';const span=document.createElement('span'),b=document.createElement('strong');span.textContent=label;if(id==='costs'&&label.startsWith('Item / Recipe')&&d.mode==='production'){const a=link(item.name);a.textContent=label;span.replaceChildren(a)}b.textContent=value;row.append(span,b);$(id).append(row)}}
 function calculate(){
  const c=M2.calculate(d,item,recipes),production=d.mode==='production';
+ const idli=M2.norm(item.name)==='idli',unitName=idli?'idli':d.unit;
+ $('idliPackingPreset').hidden=!idli;$('packingShareLabel').textContent=idli?'How many idlis share ONE packed serving?':d.unit==='kg'?'How many kg share ONE packed serving?':'How many items share ONE packed serving?';
+ $('packingPer').min=d.unit==='kg'?'0.001':'1';$('packingPer').step=d.unit==='kg'?'any':'1';
+ const pc=c.packingCost;
+ $('packingSummary').textContent=pc.missing.length?'Enter every packing price and a positive sharing quantity to calculate.':!d.packaging.length?'No packing selected. Add your containers or use the 2-idli setup above.':money(pc.perPack)+' for ONE serving ÷ '+pc.per+' '+(idli?'idlis':d.unit)+' = '+money(pc.perItem)+' packing per '+unitName+(c.sold===null?'':'. For '+c.sold+' sold: '+money(pc.perItem*c.sold)+'.');
+ document.querySelectorAll('.packing-row-cost').forEach((output,n)=>{const x=d.packaging[n],valid=M2.number(x.qty)!==null&&M2.number(x.unitCost)!==null&&pc.per>0;output.textContent=valid?x.qty+' × '+money(Number(x.unitCost))+' ÷ '+pc.per+' = '+money(Number(x.qty)*Number(x.unitCost)/pc.per)+' per '+unitName:'Enter the container price.'});
  $('rateLabel').hidden=production;$('capacityLabel').hidden=!production;
  $('purchaseRate').required=!production;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
  $('quantitySummary').textContent=(production?'Produced':'Purchased')+' today: '+c.made+' '+d.unit+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
  $('sold').className=M2.number(d.sold)===null||!soldTouched?'pending':'entered';$('soldError').textContent='';
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
- lines('costs',[['Item / Recipe Master COGS per '+d.unit,production&&!M2.recipe(recipes,item.name)?'Recipe missing':money(c.base)],['Condiments per '+d.unit,money(c.cond)],['Food spoilage allowance',money(c.spoil)],['Packing per '+d.unit,money(c.pack)],['Overall COGS per '+d.unit,incomplete?'Incomplete':money(c.final)]]);
+ lines('costs',[['Item / Recipe Master COGS per '+d.unit,production&&!M2.recipe(recipes,item.name)?'Recipe missing':money(c.base)],['Condiments per '+d.unit,money(c.cond)],['Food spoilage allowance',money(c.spoil)],['Packing per '+d.unit,pc.missing.length?'Incomplete':money(c.pack)],['Overall COGS per '+d.unit,incomplete?'Incomplete':money(c.final)]]);
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  lines('pricing',[['UUWP applied',c.apply?'Yes':'No — known production leftovers'],['COGS with UUWP',incomplete?'Incomplete':money(c.withUuwp)],['Suggested price with markup',incomplete?'Incomplete':money(c.suggested)]]);
- lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],['Recipe / purchase × sold',incomplete?'Incomplete':money(c.sold===null?null:c.base*c.sold)],['Condiments × sold',incomplete?'Incomplete':money(c.sold===null?null:c.cond*c.sold)],['Packing × sold',money(c.sold===null?null:c.pack*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',incomplete?'Incomplete':money(c.made*c.base)]]);
+ lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],['Recipe / purchase × sold',incomplete?'Incomplete':money(c.sold===null?null:c.base*c.sold)],['Condiments × sold',incomplete?'Incomplete':money(c.sold===null?null:c.cond*c.sold)],['Packing × sold',pc.missing.length?'Incomplete':money(c.sold===null?null:c.pack*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',incomplete?'Incomplete':money(c.made*c.base)]]);
 }
 function show(){for(const id of fields)$(id).value=d[id]??'';$('unit').value=d.unit;$('editor').hidden=false;renderComponents();calculate()}
 function back(){
@@ -52,6 +58,7 @@ $('addCondiment').onclick=()=>{
  dirty=true;renderComponents();calculate();
 };
 $('addPacking').onclick=()=>{d.packaging.push({name:'Packing',qty:1,unitCost:''});dirty=true;renderComponents();calculate()};
+$('idliPackingPreset').onclick=()=>{if(d.packaging.length&&!confirm('Replace the current packing setup with 1 empty sambar pouch and 1 aluminium box shared by 2 idlis? Saved Google data is unchanged until Save This Item.'))return;d.packaging=[{name:'Sambar pouch (empty)',qty:1,unitCost:''},{name:'Aluminium box / plate',qty:1,unitCost:''}];d.packingPer=2;$('packingPer').value='2';dirty=true;$('saveStatus').textContent='Unsaved changes';renderComponents();calculate()};
 for(const id of fields)$(id).addEventListener('input',changed);
 $('sold').addEventListener('input',()=>{soldTouched=true;calculate()});
 $('mode').addEventListener('change',changed);
@@ -89,6 +96,7 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
  soldTouched=!!d.soldConfirmed;
  if(['purchased','production'].includes(q.get('mode')))d.mode=q.get('mode');
  if(!d.packingPer)d.packingPer=1;
+ if(M2.norm(item.name)==='idli'&&!d.packaging.length&&!baseline.itemEditors[M2.keys(cat,i).k])d.packingPer=2;
  $('title').textContent=item.name;$('outletLabel').textContent='Outlet '+outlet+' · Google-backed item editor';
  const choices=[...recipes.filter(r=>/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name)),...BOBS_PORIYAL.filter(r=>!M2.recipe(recipes,r.name))];
  choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
