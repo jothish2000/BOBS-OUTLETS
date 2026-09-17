@@ -5,6 +5,8 @@ assert.equal(M2.packing({packingPer:2,packaging:[{qty:1,unitCost:1},{qty:1,unitC
 assert.equal(M2.packing({packingPer:0,packaging:[{qty:1,unitCost:1}]}).missing.length,1);
 assert.equal(M2.packing({packingPer:2,packaging:[{qty:1,unitCost:''}]}).missing.length,1);
 assert.equal(M2.packing({packingPer:2,packaging:[{qty:1,unitCost:0}]}).perItem,0);
+const odd=M2.calculate({mode:'purchased',purchaseRate:7,unit:'piece',sold:3,packingPer:2,packaging:[{qty:1,unitCost:1},{qty:1,unitCost:3}]},{},[]);
+assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pack,8/3);
 (async()=>{
  const browser=await chromium.launch({channel:'msedge',headless:true}),context=await browser.newContext({viewport:{width:1366,height:900}});
  const db={'1/METHOD2/default':{custom:'KEEP',condiments:{unrelated:[{name:'KEEP'}]}},'2/METHOD2/default':{custom:'OTHER OUTLET'},'COMPANY/RECIPE_MASTER/STANDARD_V1':{recipes:[
@@ -52,7 +54,7 @@ assert.equal(M2.packing({packingPer:2,packaging:[{qty:1,unitCost:0}]}).perItem,0
  await editor.locator('#batchSize').fill('120');await editor.locator('#batches').fill('5');await editor.locator('#sold').fill('600');await editor.locator('#spoilage').fill('0');
  await editor.locator('#idliPackingPreset').click();await editor.getByLabel('Price ₹ each',{exact:true}).nth(0).fill('1');await editor.getByLabel('Price ₹ each',{exact:true}).nth(1).fill('3');
  assert.match(await editor.locator('#packingSummary').textContent(),/₹4.00.*2 idlis.*₹2.00.*1,200.00/);
- await editor.locator('#condimentChoice').selectOption('Idli Sambar');await editor.locator('#addCondiment').click();
+ await editor.locator('#m2SideChecks input[value="Idli Sambar"]').check();
  assert.match(await editor.locator('#totals').textContent(),/2,400.00/);
  await editor.screenshot({path:path.join(root,'method2-packing-test.png'),fullPage:true});
  await editor.getByLabel('Price ₹ each',{exact:true}).nth(1).fill('');assert.match(await editor.locator('#packingSummary').textContent(),/Enter every packing price/);

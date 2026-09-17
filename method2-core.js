@@ -64,12 +64,14 @@ function calculate(d,item,recipes){
   const amount=number(x.portion),qty=amount===null?null:convert(amount,x.portionUnit,x.source==='purchase'?x.rateUnit:r?.yieldUnit);
   if(rate===null||qty===null)missing.push(x.recipeName+' rate / portion unit');else cond+=rate*qty;
  }
- const packingCost=packing(d),pack=packingCost.perItem;missing.push(...packingCost.missing);
+ const packingCost=packing(d);missing.push(...packingCost.missing);
+ const parcelSize=packingCost.per||1,parcelPackCost=packingCost.perPack,parcels=sold===null?null:Math.ceil(sold/parcelSize),totalPacking=sold===null?null:parcels*parcelPackCost;
+ const pack=sold>0?totalPacking/sold:packingCost.perItem;
  const spoil=(baseCost+cond)*(number(d.spoilage)||0)/100,final=baseCost+cond+spoil+pack;
  // Preserve the established rule: production with known leftovers does not add a second UUWP allowance.
  const apply=d.mode==='purchased'||sold===null||made===sold;
  const withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
- return {base:baseCost,cond,pack,packingCost,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+ return {base:baseCost,cond,pack,packingCost,parcelSize,parcelPackCost,parcels,totalPacking,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
  suggested:withUuwp*(1+(number(d.markup)||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
@@ -97,7 +99,7 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  latest.condiments[k]=d.condiments.map(x=>({...x,qty:convert(Number(x.portion),x.portionUnit,recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit),unit:recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit}));
  latest.packaging[k]=d.packaging.map(x=>({...x,qty:Number(x.qty)/(Number(d.packingPer)||1)}));
  latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),currentPrice:Number(d.price)};
- latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.final:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost};
+ latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.final:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack};
  latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:Number(d.batchSize),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
  else delete latest.prod[legacy];

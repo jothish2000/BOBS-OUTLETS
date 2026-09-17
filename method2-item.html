@@ -8,7 +8,7 @@
 <label id="batchLabel">Quantity per batch<input id="batchSize" type="number" min="0.001" step="any" required></label>
 <label>Number of batches today<input id="batches" type="number" min="1" step="1" required></label>
 <label id="rateLabel">Supplier price ₹ / sales unit<input id="purchaseRate" type="number" min="0" step="any"></label>
-<label id="capacityLabel">Production capacity / day (optional)<input id="capacity" type="number" min="0" step="any"></label>
+<label id="capacityLabel">Production capacity / day (auto)<input id="capacity" type="number" min="0" step="any"></label>
 </div><p id="quantitySummary" class="notice"></p><p class="muted">Quantity today = batch quantity × batches. Leftovers are shown separately, not silently added to sold quantity. A prefilled supplier rate is an old catalogue estimate; replace it with your invoice rate.</p></section>
 <section class="card"><h2>02 · Condiments & poriyal</h2><p class="muted">Choose only what you serve with this item. Each selection gets its own recipe link. Purchased sides use their own supplier rates.</p>
 <div class="toolbar"><select id="condimentChoice" aria-label="Condiment recipe"></select><button type="button" id="addCondiment">+ Add side</button></div><div id="condiments"></div>
@@ -19,10 +19,10 @@
 <label><span id="packingShareLabel">Items sharing this packing</span><input id="packingPer" type="number" min="0.001" step="any" required></label>
 <div id="packing"></div><button type="button" id="addPacking" class="secondary">+ Another empty container / packing cost</button>
 <div id="packingSummary" class="notice" aria-live="polite"></div>
-<p class="muted">Each row: containers used × price each ÷ items sharing the pack. These are allocated costs per item, not a count of actual whole packets used.</p></section></div>
+<p class="muted">Each row: containers used × price each ÷ items sharing the pack. Sold Today is rounded up to whole packs; a partially filled final pack still incurs its full packing cost.</p></section></div>
 <div><section class="card"><h2>04 · COGS & pricing</h2><div id="recipeLinks"></div><div id="costs"></div>
 <div class="fields"><label>Food spoilage allowance %<input id="spoilage" type="number" min="0" max="100" step="any" required></label><label>UUWP allowance %<input id="uuwp" type="number" min="0" max="100" step="any" required></label><label>Markup on COGS with UUWP %<input id="markup" type="number" min="0" step="any" required></label><label>Actual selling price ₹ / unit<input id="price" type="number" min="0" step="any" required></label></div>
 <p class="muted">UUWP is a pricing allowance, not an additional cash purchase. It applies to resale; for production it applies when there are no known leftovers. Markup is not profit margin.</p>
 <div id="pricing"></div></section><section class="card"><h2>Today's quantities & totals</h2><div id="totals"></div><p class="muted">Sold COGS and full food procurement/production commitment are shown separately. Enter additional overheads in the recipe if you want them included.</p></section></div></div>
 <div class="savebar"><label>SOLD TODAY <span id="soldUnit"></span><input id="sold" type="number" min="0" step="any" placeholder="Enter quantity" class="pending" aria-describedby="soldError"><span id="soldError"></span></label><button id="save" type="submit">💾 SAVE THIS ITEM</button><span id="saveStatus" role="status">Not saved</span></div>
-</fieldset></form></main><script src="method2-item.js?v=selection-v2"></script></body></html>
+</fieldset></form></main><script src="method2-item.js?v=selection-v2"></script><script src="method2-item-ux-v2.js?v=selection-v2"></script></body></html>

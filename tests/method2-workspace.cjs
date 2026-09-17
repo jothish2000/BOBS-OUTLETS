@@ -39,7 +39,7 @@ assert.equal(M2.calculate({...d,mode:'purchased',purchaseRate:7,condiments:[{rec
  await page.goto(itemUrl);await page.waitForSelector('#editor:not([hidden])');
  await page.locator('#batchSize').fill('120');await page.locator('#batches').fill('5');await page.locator('#spoilage').fill('0');
  await page.locator('#save').click();assert.match(await page.locator('#soldError').textContent(),/Please enter/);assert.equal(posts.length,0);
- for(const name of ['Idli Sambar','Coconut Chutney','Cabbage Poriyal']){await page.locator('#condimentChoice').selectOption(name);await page.locator('#addCondiment').click()}
+ for(const name of ['Idli Sambar','Coconut Chutney','Cabbage Poriyal'])await page.locator('#m2SideChecks input').filter({visible:true}).locator('xpath=..').filter({hasText:name}).getByRole('checkbox').check();
  await page.locator('#packingPer').fill('1');await page.locator('#addPacking').click();await page.getByLabel('Price ₹ each',{exact:true}).fill('3');
  await page.locator('#sold').fill('600');
  assert.match(await page.locator('#totals').textContent(),/5,880.00/);
