@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recipe cost editor — BOBS</title>
-<link rel="stylesheet" href="style.css"><script src="bobs-config.js"></script><script src="bobs-google-data.js"></script>
+<link rel="stylesheet" href="style.css"><script>window.BOBS_OWNED_EDITOR=true;</script><script src="bobs-config.js"></script><script src="bobs-google-data.js"></script><script src="poriyal-recipes.js"></script>
 <style>main{max-width:1100px;margin:auto;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #ccc;text-align:left}input,select,button{padding:8px;max-width:100%;box-sizing:border-box}td input{width:100%;min-width:80px}td:first-child{min-width:180px}.scroll{overflow:auto}.summary{font-size:20px;padding:18px;background:#fff}.notice{padding:12px;background:#fff3d5}#status{min-height:30px}button{cursor:pointer;margin:8px 6px 8px 0}label{display:inline-block;margin:10px}#save{background:#214b35;color:white}a{color:inherit}</style></head>
 <body><main><a href="recipe-master.html">Recipe Master</a><h1>Recipe cost breakdown</h1>
 <p class="notice">Company-wide recipe: saved changes affect every outlet using this recipe. Existing rates are assumptions or previously saved rates; they are not verified live market prices. Enter your current supplier rates.</p>
 <p id="status" role="status">Loading from Google…</p>
 <label>Recipe <select id="recipe"></select></label>
 <form id="editor" hidden>
+<p id="planningNote" class="notice" hidden></p>
 <label>Batch yield <input id="yield" type="number" min="0.000001" step="any" required></label>
 <label>Yield unit <input id="yieldUnit" required></label>
 <p>Each line costs quantity × rate per stated unit. For example, rice in kg needs a ₹/kg rate. Fuel, electricity or labour can be entered as additional batch-cost lines. Costs not listed are not included.</p>

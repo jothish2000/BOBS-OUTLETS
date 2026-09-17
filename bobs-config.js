@@ -22,15 +22,16 @@ window.BOBS_CONFIG = Object.freeze({
 })();
 
 document.addEventListener('click',function(e){const btn=e.target&&e.target.closest?e.target.closest('#nextOutletBtn'):null;if(btn){e.preventDefault();e.stopImmediatePropagation();const q=new URLSearchParams(window.location.search);const outletIds=q.get('outlets')||'';const target='cogs-outlet-analysis.html'+(outletIds?'?outlets='+encodeURIComponent(outletIds):'');window.location.href=target;return}const saveBtn=e.target&&e.target.closest?e.target.closest('#saveContinueBtn'):null;if(saveBtn){const frame=document.getElementById('methodFrame');try{if(frame&&frame.contentWindow&&typeof frame.contentWindow.BOBS_SAVE_METHOD1==='function')frame.contentWindow.BOBS_SAVE_METHOD1()}catch(err){}}},true);
-(function installGlobalGuard(){function add(){if(window.__BOBS_TRANSITION_GUARD__)return;const guard=document.createElement('script');guard.src='bobs-transition-guard.js?v=2026-09-12-111Q-transition-guard-v4';document.head.appendChild(guard)}if(document.readyState==='loading')add();else add()})();
+(function installGlobalGuard(){if(window.BOBS_OWNED_EDITOR)return;function add(){if(window.__BOBS_TRANSITION_GUARD__)return;const guard=document.createElement('script');guard.src='bobs-transition-guard.js?v=2026-09-12-111Q-transition-guard-v4';document.head.appendChild(guard)}if(document.readyState==='loading')add();else add()})();
 document.addEventListener('DOMContentLoaded',function(){const btn=document.getElementById('nextOutletBtn');if(btn){btn.textContent='Continue to COGS Outlet Analysis →';btn.setAttribute('aria-label','Continue to COGS Outlet Analysis')}const analysis=document.querySelector('#finishPanel a[href="outlet-analysis.html"]');if(analysis)analysis.style.display='none';
   if((location.pathname.split('/').pop()||'').toLowerCase()==='outlets.html'){
     const s=document.createElement('script');s.src='outlet-shift-presets.js?v=2026-09-12-111Q-hour-based-shifts-2';document.head.appendChild(s);
   }
   if((location.pathname.split('/').pop()||'').toLowerCase()==='outlet-method-flow.html'){
+    const review=document.createElement('script');review.src='method2-flow-review.js?v=20260917';document.head.appendChild(review);
     const s=document.createElement('script');s.src='flow-shift-selector.js?v=2026-09-12-111Q-shift-selector';document.head.appendChild(s);
   }
-  if((location.pathname.split('/').pop()||'').toLowerCase()==='method2.html'){
+  if(!window.BOBS_OWNED_EDITOR&&(location.pathname.split('/').pop()||'').toLowerCase()==='method2.html'){
     const s=document.createElement('script');s.src='method2-condiments-rules.js?v=2026-09-12-111Q-rice-packet-rules-1';document.head.appendChild(s);
   }
 });
