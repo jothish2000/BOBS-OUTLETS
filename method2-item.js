@@ -1,6 +1,6 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));let item;
-const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','markup','price','packingPer','sold'];
+const fields=['mode','batchSize','batches','capacity','purchaseRate','purchaseBasis','purchaseBatchQty','purchaseBatchCost','purchaseBatchUnit','spoilage','uuwp','markup','price','packingPer','sold'];
 let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false;
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
