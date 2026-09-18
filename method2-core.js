@@ -7,9 +7,10 @@ const keys=(cat,i)=>({k:cat+'::'+i,q:cat+'|'+i,legacy:cat.replace(/\s+/g,'_')+'-
 const maps=['qtys','prod','condiments','packaging','pricing','commercial','itemEditors'];
 const businessDate=(date=new Date())=>new Date(date).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];s.purchaseMasters=s.purchaseMasters||{};return s}
-function sideRecipes(recipes){return (recipes||[]).filter(r=>/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name||''))}
+const canonicalRecipeName=n=>({'general idly':'Idly','general idly sambar':'Idli Sambar','general coconut chutney':'Coconut Chutney','general pudina chutney':'Pudina Chutney'}[String(n||'').toLowerCase()]||n);
+function sideRecipes(recipes){const out=[],seen=new Set();for(const r of recipes||[]){if(!(/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name||'')))continue;const name=canonicalRecipeName(r.name),k=norm(name);if(seen.has(k))continue;seen.add(k);out.push(Object.assign({},r,{name}))}return out}
 function installSides(recipes,s){
- const cat='Sides & Extras',known=(s?.sideCatalog||[]).slice(),available=sideRecipes(recipes),by=new Map(available.map(r=>[norm(r.name),r]));
+ const cat='Sides & Extras',known=[...new Set((s?.sideCatalog||[]).map(canonicalRecipeName).map(String))],available=sideRecipes(recipes),by=new Map(available.map(r=>[norm(r.name),r]));
  for(const r of available.sort((a,b)=>String(a.name).localeCompare(String(b.name))))if(!known.some(n=>norm(n)===norm(r.name)))known.push(r.name);
  const items=known.map(name=>{const r=by.get(norm(name)),sambar=/sambar/i.test(name);return {name,price:0,purchasedCost:null,productionCost:null,hasRecipe:true,eligible:true,standaloneSide:true,recipePortion:sambar?200:null,recipePortionUnit:sambar?'ml':null,baseUnit:'pack',recipeAvailable:!!r}});
  if(typeof ITEM_DATA!=='undefined')ITEM_DATA[cat]=items;if(typeof CAT_ORDER!=='undefined'&&!CAT_ORDER.includes(cat))CAT_ORDER.push(cat);return items
@@ -132,5 +133,5 @@ function cache(outlet,s){
  const all=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
  all[outlet]={...all[outlet],method2:s};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
-root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,sideRecipes,installSides};
+root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,sideRecipes,installSides,canonicalRecipeName};
 })(typeof window==='undefined'?globalThis:window);
