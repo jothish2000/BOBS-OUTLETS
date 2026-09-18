@@ -33,8 +33,10 @@ function calculate(){
  const pc=c.packingCost;
  $('packingSummary').textContent=pc.missing.length?'Enter every packing price and a positive sharing quantity to calculate.':!d.packaging.length?'No packing selected. Add your containers or use the 2-idli setup above.':money(pc.perPack)+' for ONE serving ÷ '+pc.per+' '+(idli?'idlis':d.unit)+' = '+money(pc.perItem)+' packing per '+unitName+(c.sold===null?'':'. For '+c.sold+' sold: '+money(c.totalPacking)+' for '+c.parcels+' whole packs; actual packing per '+unitName+': '+money(c.pack)+'.');
  document.querySelectorAll('.packing-row-cost').forEach((output,n)=>{const x=d.packaging[n],valid=M2.number(x.qty)!==null&&M2.number(x.unitCost)!==null&&pc.per>0;output.textContent=valid?x.qty+' × '+money(Number(x.unitCost))+' ÷ '+pc.per+' = '+money(Number(x.qty)*Number(x.unitCost)/pc.per)+' per '+unitName:'Enter the container price.'});
- $('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
- $('purchaseRate').required=!production;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
+ const batchPurchase=!production&&d.purchaseBasis==='batch';
+ $('purchaseBasisLabel').hidden=production;$('rateLabel').hidden=production||batchPurchase;$('purchaseBatchQtyLabel').hidden=!batchPurchase;$('purchaseBatchCostLabel').hidden=!batchPurchase;$('purchaseBatchUnitLabel').hidden=!batchPurchase;
+ $('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
+ $('purchaseRate').required=!production&&!batchPurchase;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
  $('quantitySummary').textContent=(production?'Produced':'Purchased')+' today: '+c.made+' '+d.unit+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
  $('sold').className=M2.number(d.sold)===null||!soldTouched?'pending':'entered';$('soldError').textContent='';
  $('recipeLinks').replaceChildren();
@@ -99,7 +101,7 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
  if(!d.packingPer)d.packingPer=1;if(item.standaloneSide&&item.recipePortion&&!baseline.itemEditors[M2.keys(cat,i).k]){d.batchSize=d.batchSize||1;d.batches=d.batches||1;}
  if(M2.norm(item.name)==='idli'&&!d.packaging.length&&!baseline.itemEditors[M2.keys(cat,i).k])d.packingPer=2;
  $('title').textContent=item.name;$('outletLabel').textContent='Outlet '+outlet+' · Google-backed item editor';
- const choices=[...recipes.filter(r=>/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name)),...BOBS_PORIYAL.filter(r=>!M2.recipe(recipes,r.name))];
+ const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.norm(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.norm(r.name)))];
  choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
  show();status('Loaded from Google. Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
  }catch(e){status(e.message)}})();
