@@ -107,14 +107,17 @@ assert.deepEqual(reordered.slice(0,2).map(x=>x.recipeId),catalogue.map(x=>x.reci
  await page.goto('https://bobs.test/method2-overall.html?outlet=1');await page.waitForFunction(()=>document.querySelectorAll('#usageRows tr').length===1);
  assert.match(await page.locator('#usageRows').textContent(),/80.00 ml.*200.00 ml.*280.00 ml/);
  // Delayed legacy COGS enhancement must not replace component-inclusive saved totals.
+ db['1/METHOD2/default'].orderPacking={enabled:true,rows:[{name:'Mixed-product carry bag',qty:2,unitCost:2}]};
+ await page.reload();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('55.30'));
+ await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('grandTotalCost').textContent.includes('55.30'));
  await page.goto('https://bobs.test/cogs-outlet-analysis.html?outlet=1');
  await page.waitForFunction(()=>document.getElementById('analysisTable').textContent.includes('COGS / Day'));
  await page.waitForTimeout(1800);
- assert.equal(await page.getByRole('row').filter({hasText:'COGS / Day'}).locator('td').nth(2).textContent(),'₹51');
- assert.equal(await page.getByRole('row').filter({hasText:'Gross Profit / Day'}).locator('td').nth(2).textContent(),'₹29');
+ assert.equal(await page.getByRole('row').filter({hasText:'COGS / Day'}).locator('td').nth(2).textContent(),'₹55');
+ assert.equal(await page.getByRole('row').filter({hasText:'Gross Profit / Day'}).locator('td').nth(2).textContent(),'₹25');
  await page.goto('https://bobs.test/outlet-analysis.html');
  await page.waitForFunction(()=>document.getElementById('analysisTable').textContent.includes('Purchase Cost / Day'));
- assert.equal(await page.getByRole('row').filter({hasText:'Purchase Cost / Day'}).locator('td').nth(2).textContent(),'₹51');
+ assert.equal(await page.getByRole('row').filter({hasText:'Purchase Cost / Day'}).locator('td').nth(2).textContent(),'₹55');
  // Master persistence, read-back failure, shared rate reuse, and preservation.
  await page.goto('https://bobs.test/purchase-cost-editor.html?outlet=1&item=Idli&unit=piece');await page.waitForSelector('#editor:not([hidden])');
  assert.equal(await page.locator('#qty').inputValue(),'120');await page.locator('#total').fill('960');

@@ -46,17 +46,17 @@ function purchasedSources(d,item){const entries=[];if(d.mode==='purchased')entri
 function putMaster(latest,name,p,extra){const key=norm(name),previous=masterEntry(latest.purchaseMasters,name)||{};latest.purchaseMasters[key]=masterRecord(p,previous,{name,...extra});return key}
 async function savePurchaseUnlocked(outlet,name,p,baseline){
  if(purchaseRate(p)===null||!['piece','pack','g','kg','ml','L'].includes(p.unit))throw Error('Enter a positive purchase quantity, its unit and total price.');
- const latest=state(await read(outlet));
+ const latest=state(await read(outlet)),original=clone(latest);
  if(masterFingerprint(latest.purchaseMasters,name)!==masterFingerprint(baseline.purchaseMasters,name))throw Error('This purchase master changed elsewhere. Reload before saving.');
  const token=Date.now()+'-'+Math.random().toString(36).slice(2),key=putMaster(latest,name,p,{saveToken:token,savedAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
- return write(outlet,'METHOD2','default',latest,x=>x?.purchaseMasters?.[key]?.saveToken===token);
+ return write(outlet,'METHOD2','default',latest,x=>x?.purchaseMasters?.[key]?.saveToken===token,original);
 }
 function savePurchase(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>savePurchaseUnlocked(...args)):savePurchaseUnlocked(...args)}
 function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];s.purchaseMasters=s.purchaseMasters||{};return s}
 function hasItem(s,cat,i){const {k,q,legacy}=keys(cat,i);return !!(s.itemEditors?.[k]||s.qtys?.[q]!==undefined||s.prod?.[legacy]||Number(s.prod?.[k]?.todaysProduction)>0||s.condiments?.[k]?.length||s.packaging?.[k]?.length)}
 function selected(s,cat,i){const entry=s.selection?.[cat];if(cat===SIDES&&Array.isArray(entry?.names)){const item=root.ITEM_DATA?.[cat]?.[i]||sideCatalogue(s)[i];return !!item&&entry.names.some(n=>purchaseKey(n)===purchaseKey(item.name))}return Array.isArray(entry?.indices)?entry.indices.includes(Number(i)):hasItem(s,cat,i)}
 async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
- const latest=state(await read(outlet));
+ const latest=state(await read(outlet)),original=clone(latest);
  if(JSON.stringify(latest.selection[cat])!==JSON.stringify(baseline.selection?.[cat]))throw Error('This category selection changed in another window. Reload before saving.');
  if(cat===SIDES){
   if(JSON.stringify([latest.sideCatalog,latest.sideCatalogue||[]])!==JSON.stringify([baseline.sideCatalog,baseline.sideCatalogue||[]]))throw Error('The sides catalogue changed elsewhere. Reload before saving.');
@@ -67,7 +67,7 @@ async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
  const clean=[...new Set(indices.filter(i=>Number.isInteger(i)&&i>=0))].sort((a,b)=>a-b);
  if(cat==='Sides & Extras'){latest.sideCatalog=(ITEM_DATA[cat]||[]).map(x=>x.name);latest.selection[cat]={names:clean.map(i=>ITEM_DATA[cat]?.[i]?.name).filter(Boolean),token,savedAt:new Date().toISOString()}}
  else latest.selection[cat]={indices:clean,token,savedAt:new Date().toISOString()};
- return write(outlet,'METHOD2','default',latest,s=>s?.selection?.[cat]?.token===token);
+ return write(outlet,'METHOD2','default',latest,s=>s?.selection?.[cat]?.token===token,original);
 }
 function saveSelection(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSelectionUnlocked(...args)):saveSelectionUnlocked(...args)}
 function packing(d){
@@ -178,13 +178,49 @@ async function read(outlet,module='METHOD2',key='default'){
  throw Error('Google did not confirm whether this record exists.');
 }
 async function write(outlet,module,key,data,check){
+ if(module==='METHOD2'&&key==='default'){
+  const current=await read(outlet),expected=arguments[5];
+  if(expected!==undefined&&JSON.stringify(state(current))!==JSON.stringify(state(expected)))throw Error('Google record changed while saving. Reload before retrying; nothing overwritten.');
+  await backup(outlet,current,'Before Method 2 save');
+  if(JSON.stringify(await read(outlet))!==JSON.stringify(current))throw Error('Google record changed while creating the backup. Reload before retrying.');
+ }
  await BOBS_DATA.saveModule(outlet,module,key,data);
  for(let n=0;n<3;n++){const saved=await read(outlet,module,key);if(check(saved))return saved;await new Promise(r=>setTimeout(r,500))}
  throw Error('Save sent, but Google read-back is not confirmed. Keep this page open and retry verification.');
 }
+function orderPackingCost(s){
+ const p=s?.orderPacking,missing=[];let total=0;
+ if(!p?.enabled)return {total,missing};
+ for(const row of p.rows||[]){const qty=number(row.qty),rate=number(row.unitCost);if(!String(row.name||'').trim()||qty===null||!Number.isInteger(qty)||rate===null)missing.push('Enter a material, whole bag count and price for every shared-packing row');else total+=qty*rate}
+ if(!p.rows?.length)missing.push('Add shared packing materials or turn off shared packing');
+ return {total,missing};
+}
+async function backup(outlet,data,reason){
+ const key='m2-'+Date.now()+'-'+Math.random().toString(36).slice(2),snapshot={schema:1,outlet:String(outlet),createdAt:new Date().toISOString(),reason,backupToken:key,data:clone(data)};
+ await write(outlet,'METHOD2_BACKUPS',key,snapshot,x=>x?.backupToken===key&&JSON.stringify(x.data)===JSON.stringify(data));
+ return key;
+}
+async function backups(outlet){const r=await BOBS_DATA.jsonp({action:'moduleList',outletId:outlet,module:'METHOD2_BACKUPS'});if(r?.ok!==true||!Array.isArray(r.records))throw Error('Google backup list unavailable.');return r.records.filter(x=>x.status!=='DELETED'&&x.data?.schema===1).sort((a,b)=>String(b.data.createdAt).localeCompare(String(a.data.createdAt)))}
+async function restoreUnlocked(outlet,key,expected){
+ const snap=await read(outlet,'METHOD2_BACKUPS',key);
+ if(snap?.schema!==1||String(snap.outlet)!==String(outlet)||!snap.backupToken||!snap.data||typeof snap.data!=='object')throw Error('This is not a restorable backup for this outlet.');
+ const current=await read(outlet);if(JSON.stringify(current)!==JSON.stringify(expected))throw Error('Outlet data changed since preview. Reload recovery before restoring.');
+ const data=clone(snap.data),token=Date.now()+'-'+Math.random().toString(36).slice(2);data._method2Restore={token,backupKey:key,restoredAt:new Date().toISOString()};
+ return write(outlet,'METHOD2','default',data,x=>x?._method2Restore?.token===token&&JSON.stringify({...x,_bobsMeta:null})===JSON.stringify({...data,_bobsMeta:null}),current);
+}
+function restore(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>restoreUnlocked(...args)):restoreUnlocked(...args)}
+async function saveOrderPackingUnlocked(outlet,p,baseline){
+ const cost=orderPackingCost({orderPacking:p});if(cost.missing.length)throw Error(cost.missing.join('. '));
+ const latest=state(await read(outlet)),original=clone(latest);
+ if(JSON.stringify(latest.orderPacking)!==JSON.stringify(baseline.orderPacking))throw Error('Shared packing changed elsewhere. Reload before saving.');
+ const token=Date.now()+'-'+Math.random().toString(36).slice(2);
+ latest.orderPacking={...clone(p),saveToken:token,savedAt:new Date().toISOString(),businessDate:businessDate()};
+ return write(outlet,'METHOD2','default',latest,x=>x?.orderPacking?.saveToken===token,original);
+}
+function saveOrderPacking(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveOrderPackingUnlocked(...args)):saveOrderPackingUnlocked(...args)}
 function project(s,cat,i){const k=keys(cat,i);return Object.fromEntries(maps.map(m=>[m,m==='qtys'?s[m]?.[k.q]:m==='prod'?[s[m]?.[k.k],s[m]?.[k.legacy]]:s[m]?.[k.k]]))}
 async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
- const latest=state(await read(outlet)),{k,q,legacy}=keys(cat,i);
+ const latest=state(await read(outlet)),original=clone(latest),{k,q,legacy}=keys(cat,i);
  if(JSON.stringify(project(latest,cat,i))!==JSON.stringify(project(baseline,cat,i)))throw Error('This item changed in another window. Reload before saving; your draft remains here.');
  const purchases=purchasedSources(d,item);
  for(const [name] of purchases)if(masterFingerprint(latest.purchaseMasters,name)!==masterFingerprint(baseline.purchaseMasters,name))throw Error(name+' purchase master changed elsewhere. Reload before saving.');
@@ -210,7 +246,7 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:Number(d.batchSize),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
  else delete latest.prod[legacy];
- return write(outlet,'METHOD2','default',latest,x=>x?.itemEditors?.[k]?.saveToken===token);
+ return write(outlet,'METHOD2','default',latest,x=>x?.itemEditors?.[k]?.saveToken===token,original);
 }
 function saveItem(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveItemUnlocked(...args)):saveItemUnlocked(...args)}
 function cache(outlet,s){
@@ -219,8 +255,8 @@ function cache(outlet,s){
  localStorage.setItem('method2-verified-'+outlet,JSON.stringify(s));
  localStorage.setItem('method2-item-state',JSON.stringify(s));
  const all=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
- const savedKeys=Object.keys(s.itemEditors||{}),summary=savedKeys.length?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
+ const savedKeys=Object.keys(s.itemEditors||{}),summary=(savedKeys.length||s.orderPacking)?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:orderPackingCost(s).total+savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
  all[outlet]={...all[outlet],method2:s,...summary};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
-root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
+root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
 })(typeof window==='undefined'?globalThis:window);

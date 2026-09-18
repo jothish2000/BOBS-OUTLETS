@@ -41,7 +41,7 @@ function create(data,options){
    const note=document.createElement('p');note.className='muted';note.textContent=(mode==='included'?'No extra charge: the supplier price already covers this packing.':'No extra packing charge for this component.')+(data.packaging?.length?' Saved packing rows are retained and can be re-enabled.':'');root.append(note);
   }
   const total=document.createElement('output');total.className='packing-summary notice';if(options.main)total.id='packingSummary';total.setAttribute('aria-live','polite');root.append(total);
-  if(options.main){const note=document.createElement('p');note.className='muted';note.textContent='Assign a shared outer carry bag to one owner only. Put each side pouch under that side; never enter its food price as packaging.';root.append(note)}
+  if(options.main){const note=document.createElement('p');note.className='muted';note.textContent='Enter mixed-product carry bags once in Overall COGS shared outlet packing. Put each side pouch under that side; never enter its food price as packaging.';root.append(note)}
  }
  build();return root;
 }

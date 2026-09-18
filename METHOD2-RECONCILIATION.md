@@ -1,8 +1,8 @@
 # Method 2 reconciliation — 18 September 2026
 
-Status: local tested implementation, awaiting the user's mixed-product common-bag allocation choice and visual acceptance. Not yet published.
+Status: user approved outlet-level shared bags and publication after passing tests, with rollback safeguards described in METHOD2-ROLLBACK.md.
 
-Both source histories are retained in Git. No Method 1 files or calculations were changed. No live Google data was migrated, reset, or written during this work.
+Both source histories are retained in Git. No Method 1 calculations were changed. No active Google business records were migrated, reset, or replaced. A separate append-only pre-release Method 2 backup was created and verified.
 
 ## Preserved and adapted
 
@@ -25,7 +25,7 @@ Main food + main packing and each side's food + side packing are charged once. C
 
 The first heading is 01 · Product name. The main packing module is inside that product section.
 
-Common packing currently supports assigning a shared bag to one product only. A separate question asks whether mixed-product bags should instead be entered once at outlet/order level. No cross-product allocation percentage or assumed order count has been invented.
+Mixed-product carry bags are entered once in Overall COGS using actual bags used × price each, stored as orderPacking on the outlet record. This total is added once to Method 2 and outlet comparison totals. Existing per-item common packing remains intact and clearly labelled; the same bags must not be entered in both places. No cross-product allocation percentage or assumed order count is invented.
 
 ## Downstream audit
 
@@ -35,7 +35,7 @@ The legacy daily break-even page itself still reads its existing browser snapsho
 
 ## Tests
 
-Run node tests/method2-component-packing.cjs, node tests/method2-reconciliation.cjs, node tests/method2-workspace.cjs, node tests/method2-selection.cjs and node tests/method2-commerce.cjs.
+Run node tests/method2-component-packing.cjs, node tests/method2-reconciliation.cjs, node tests/method2-workspace.cjs, node tests/method2-selection.cjs, node tests/method2-commerce.cjs and node tests/method2-order-recovery.cjs.
 
 They cover arithmetic, odd quantities, main/side/common combinations, disabled packing retention, both saved packing schemas, supplier batches, standalone sides, aliases, selection stability, persistence, unrelated metadata, stale writes, failed save/readback, cache-free reload, popup closing, delayed loading, and downstream COGS.
 

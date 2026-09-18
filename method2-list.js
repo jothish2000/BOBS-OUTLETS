@@ -28,6 +28,8 @@ function render(){
   row.append(name,mode,sold,status,actions);$('catList').append(row);
  }
  $('selectedCount').textContent=rows.length+' selected items';$('emptySelection').hidden=rows.length>0;$('selectedCard').hidden=rows.length===0;
+ const shared=M2.orderPackingCost(s);cost+=shared.total;unknown=unknown||shared.missing.length>0;
+ $('sharedPackingTotal').textContent=shared.missing.length?'Incomplete':money(shared.total);
  $('grandTotalSale').textContent=money(sales);$('grandTotalCost').textContent=unknown?'Incomplete — review selected items':money(cost);$('grandTotalProfit').textContent=unknown?'Incomplete':money(sales-cost);
  filterRows();window.scrollTo({top:y,left:window.scrollX,behavior:'instant'});
 }
@@ -49,6 +51,7 @@ async function reload(){
 }
 window.BOBS_METHOD2_REVIEW=function(){
  if(!ready){alert('Google records must load before continuing.');return false}
+ if(M2.orderPackingCost(s).missing.length){alert('Complete shared packing in Overall COGS before continuing.');return false}
  const problems=[];for(const {cat,i,item} of entries()){
   const d=M2.draft(s,cat,i,item),k=M2.keys(cat,i).k,c=M2.calculate(d,item,recipes);
   if(pending[k]||M2.number(d.sold)===null||!d.soldConfirmed||c.missing.length)problems.push({cat,i,item,d,reason:pending[k]?'Editor not saved':M2.number(d.sold)===null?'Sold Today is blank':!d.soldConfirmed?'Sold Today needs confirmation':'Cost inputs incomplete'});

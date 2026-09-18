@@ -32,8 +32,8 @@ assert.equal(remoteCalc.totalPacking,830);assert(Math.abs(remoteCalc.soldCost-35
 assert.equal(remoteCalc.apply,true);assert.equal(M2.calculate({...remoteDraft,mode:'production'},{name:'Idli'},recipes).apply,false);assert.deepEqual(latestRecord.itemEditors[main],remotePacking);
 const newDraft=M2.draft(M2.state({}),'Breakfast Catalogue',0,{name:'Idli',purchasedCost:7.14});
 assert.equal(newDraft.purchase.total,'');assert(M2.calculate(newDraft,{name:'Idli'},recipes).components[0].foodMissing);
-let db=clone(original),writes=0;
-global.BOBS_DATA={jsonp:async()=>({ok:true,found:true,data:clone(db)}),saveModule:async(_o,_m,_k,data)=>{writes++;db=clone(data)}};
+let db=clone(original),writes=0;const backups={};
+global.BOBS_DATA={jsonp:async p=>({ok:true,found:true,data:clone(p.module==='METHOD2_BACKUPS'?backups[p.recordKey]:db)}),saveModule:async(_o,m,k,data)=>{if(m==='METHOD2_BACKUPS')backups[k]=clone(data);else{writes++;db=clone(data)}}};
 (async()=>{
  d.condiments[0].packingMode='required';d.condiments[0].packingPer=2;d.condiments[0].packaging=[{name:'Pouch',qty:1,unitCost:1}];
  const saved=await M2.saveItem('1','Breakfast Catalogue',0,{name:'Idli'},d,state,recipes);
