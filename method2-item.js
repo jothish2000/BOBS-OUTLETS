@@ -17,9 +17,9 @@ function purchaseFields(x,unit){
  const title=document.createElement('h3');title.textContent='Purchase costing — individual unit or batch';box.append(title);
  const grid=document.createElement('div');grid.className='fields';
  grid.append(pick('How purchased',p.basis||'unit',[['unit','Individual unit / supplier packet'],['batch','Bulk batch']],v=>p.basis=v),
- field('Quantity in this priced unit / batch',p.qty,v=>p.qty=v),
+ field(p.basis==='batch'?'Quantity in ONE supplier batch':'Quantity in ONE priced unit',p.qty,v=>p.qty=v),
  pick('Purchase quantity unit',p.unit,[['piece','pieces'],['pack','ready-to-sell packs'],['ml','ml'],['L','litres'],['g','grams'],['kg','kg']],v=>p.unit=v),
- field('Total supplier price ₹ for this quantity',p.total,v=>p.total=v),
+ field(p.basis==='batch'?'Total supplier price ₹ for ONE batch':'Supplier price ₹ for ONE unit',p.total,v=>p.total=v),
  field('Supplier (optional)',p.supplier,v=>p.supplier=v,'text'),field('Invoice date (optional)',p.date,v=>p.date=v,'date'));
  const summary=document.createElement('output');summary.className='purchase-summary';summary.purchase=p;
  box.append(grid,summary);return box;
@@ -67,9 +67,9 @@ function calculate(){
  $('pricingPercentLabel').textContent=d.pricingBasis==='margin'?'Target gross margin %':'Markup %';$('markup').max=d.pricingBasis==='margin'?'99.999999':'';
  document.querySelectorAll('.purchase-summary').forEach(el=>{const p=el.purchase,rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;el.textContent=rate===null?'Enter quantity and total supplier price.':money(Number(p.total))+' ÷ '+p.qty+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' / '+unit});
  $('supplyRecipeLink').replaceChildren(primaryCostLink(item.name+(production?' – recipe & cost':' – Purchase Master COGS')));
- $('batchCaption').textContent=production?'Quantity per production batch':'Sales units per purchased lot';$('batchesCaption').textContent=production?'Number of production batches today':'Number of purchased lots today';$('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
+ const purchase=M2.purchaseConfig(d,item.side?d.servingUnit:d.unit),bulkPurchase=!production&&purchase.basis==='batch';$('batchLabel').hidden=!production;$('batchCaption').textContent='Quantity per production batch';$('batchesCaption').textContent=production?'Number of production batches today':bulkPurchase?'Number of supplier batches purchased today':'Number of units purchased today';$('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
  $('purchaseRate').required=false;if(!production)$('purchaseRate').value=c.components[0].foodMissing?'':c.base;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
- $('quantitySummary').textContent=(production?'Produced':'Purchased')+' today: '+c.made+' '+d.unit+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
+ $('quantitySummary').textContent=(production?'Produced':'Purchased')+' today: '+c.made+' '+d.unit+(bulkPurchase?' ('+purchase.qty+' '+purchase.unit+' × '+d.batches+' batches)':'')+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
  $('sold').className=M2.number(d.sold)===null||!soldTouched?'pending':'entered';$('soldError').textContent='';
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
@@ -101,7 +101,7 @@ $('editor').onsubmit=async e=>{
  $('sold').removeAttribute('aria-invalid');
  if(!$('editor').reportValidity())return;
  const c=M2.calculate(d,item,recipes);
- if(!(c.made>0))return status('Enter batch quantity and number of batches.');
+ if(!(c.made>0))return status(d.mode==='production'?'Enter production batch quantity and number of batches.':'Enter Purchase Master costing and today’s purchased quantity / batches.');
  if(c.sold>c.made)return status('Sold Today cannot exceed the quantity produced or purchased.');
  if(d.mode==='production'&&Number(d.capacity)>0&&c.made>Number(d.capacity))return status('Production exceeds the stated daily capacity.');
  if(c.missing.length)return status('Complete cost inputs before saving: '+c.missing.join(', '));
