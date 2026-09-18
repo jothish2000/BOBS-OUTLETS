@@ -23,6 +23,15 @@ assert.equal(M2.calculate({...sd,uuwpPolicy:'always'},catalogue[0],recipes).appl
 assert.equal(M2.purchaseRate(M2.purchaseConfig({basis:'unit',unitCost:60,batchUnit:'L'},'ml')),60);
 assert.equal(M2.calculate(oldDraft,{name:'Idli'},recipes).base,7);
 assert.equal(M2.calculate(oldDraft,{name:'Idli'},recipes).cond,1.2);
+const remotePacking={...clone(oldDraft),sold:331,itemPackaging:[{name:'Idli box',qty:1,unitCost:3}],itemPackingPer:2,packaging:[{name:'Carry bag',qty:1,unitCost:2}],packingPer:4};
+remotePacking.condiments[0].packaging=[{name:'Sambar pouch',qty:1,unitCost:1}];remotePacking.condiments[0].packingPer=2;
+const latestRecord=M2.state({...original,itemEditors:{...original.itemEditors,[main]:remotePacking}});
+const remoteDraft=M2.draft(latestRecord,'Breakfast Catalogue',0,{name:'Idli'}),remoteCalc=M2.calculate(remoteDraft,{name:'Idli'},recipes);
+assert.equal(remoteCalc.packingCost.total,498);assert.equal(remoteCalc.components[1].packingCost.total,166);assert.equal(remoteCalc.commonCost.total,166);
+assert.equal(remoteCalc.totalPacking,830);assert(Math.abs(remoteCalc.soldCost-3544.2)<1e-8);
+assert.equal(remoteCalc.apply,true);assert.equal(M2.calculate({...remoteDraft,mode:'production'},{name:'Idli'},recipes).apply,false);assert.deepEqual(latestRecord.itemEditors[main],remotePacking);
+const newDraft=M2.draft(M2.state({}),'Breakfast Catalogue',0,{name:'Idli',purchasedCost:7.14});
+assert.equal(newDraft.purchase.total,'');assert(M2.calculate(newDraft,{name:'Idli'},recipes).components[0].foodMissing);
 let db=clone(original),writes=0;
 global.BOBS_DATA={jsonp:async()=>({ok:true,found:true,data:clone(db)}),saveModule:async(_o,_m,_k,data)=>{writes++;db=clone(data)}};
 (async()=>{
@@ -39,5 +48,12 @@ global.BOBS_DATA={jsonp:async()=>({ok:true,found:true,data:clone(db)}),saveModul
  await assert.rejects(()=>M2.saveItem('1','Breakfast Catalogue',0,{name:'Idli'},reload,baseline,recipes),/changed elsewhere/);assert.equal(writes,1);
  const before=M2.state(db);db.sideCatalog.push('Another side');
  await assert.rejects(()=>M2.saveSelection('1',M2.SIDES,[0],before,catalogue),/catalogue changed/);assert.equal(writes,1);
- console.log('PASS: published schemas, recipe aliases, stable side slots and name selection, legacy UUWP, supplier batches, unchanged source records, metadata preservation, packing round-trip and conflict blocking.');
+ db=clone(latestRecord);
+ const remoteSaved=await M2.saveItem('1','Breakfast Catalogue',0,{name:'Idli'},remoteDraft,latestRecord,recipes);
+ assert.deepEqual(remoteSaved.itemEditors[main].itemPackaging,remotePacking.itemPackaging);
+ assert.deepEqual(remoteSaved.itemEditors[main].packaging,remotePacking.packaging);
+ assert.deepEqual(remoteSaved.itemEditors[main].condiments[0].packaging,remotePacking.condiments[0].packaging);
+ assert.equal(remoteSaved.commercial[main].totalCommonPackingCost,166);
+ assert.equal(M2.calculate(M2.draft(M2.state(remoteSaved),'Breakfast Catalogue',0,{name:'Idli'}),{name:'Idli'},recipes).totalPacking,830);
+ console.log('PASS: both published packing schemas, component/common round-trip, supplier batches, canonical recipes, original records unchanged, stable side identities, unknown fields and stale-write blocking.');
 })().catch(e=>{console.error(e);process.exitCode=1});

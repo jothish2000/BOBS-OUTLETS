@@ -36,6 +36,7 @@ function installSides(s,recipes=[]){
  const items=sideCatalogue(s,recipes);if(root.ITEM_DATA&&root.CAT_ORDER){root.ITEM_DATA[SIDES]=items;if(!root.CAT_ORDER.includes(SIDES))root.CAT_ORDER.push(SIDES)}return items;
 }
 function hydratePurchases(d,item,masters={}){
+ normalizePacking(d);
  const main=masterEntry(masters,item.recipeName||item.name);
  d.purchase=main?purchaseConfig(main,item.side?d.servingUnit:d.unit):purchaseConfig(d,item.side?d.servingUnit:d.unit);
  for(const x of d.condiments||[]){const p=masterEntry(masters,x.recipeName);x.purchase=p?purchaseConfig(p,x.rateUnit||x.portionUnit):purchaseConfig(x,x.rateUnit||x.portionUnit)}
@@ -85,6 +86,17 @@ function packingCharge(d,sold){
  const p=packing(d),parcels=sold===null?null:p.mode==='required'?Math.ceil(sold/(p.per||1)):0,total=sold===null?null:parcels*p.perPack;
  return {...p,parcels,total,allocated:sold>0?total/sold:p.perItem};
 }
+function packingOwners(d){
+ const split=Object.prototype.hasOwnProperty.call(d,'itemPackaging');
+ return {main:d.mainPacking||(split?{packaging:d.itemPackaging||[],packingPer:d.itemPackingPer??1,packingMode:d.itemPackingMode}:d),
+ common:d.commonPacking||(split?{packaging:d.packaging||[],packingPer:d.packingPer??1,packingMode:d.packingMode}:{packaging:[],packingPer:1,packingMode:'none'})};
+}
+function normalizePacking(d){
+ const owners=packingOwners(d);
+ if(!d.mainPacking)d.mainPacking={packaging:clone(owners.main.packaging||[]),packingPer:owners.main.packingPer??1,packingMode:owners.main.packingMode};
+ if(!d.commonPacking)d.commonPacking=clone(owners.common);
+ return d;
+}
 function recipe(recipes,name){const target=purchaseKey(name);return recipes.find(r=>norm(r.name)===target)||recipes.find(r=>purchaseKey(r.name)===target)}
 function unitCost(r){
  if(!r)return null;
@@ -102,12 +114,12 @@ function convert(q,from,to){
  return null;
 }
 function draft(s,cat,i,item){
- const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.condiments=saved.condiments||[];saved.packaging=saved.packaging||[];saved.servingQty=saved.servingQty??item.servingQty??item.recipePortion;saved.servingUnit=saved.servingUnit||item.servingUnit||item.recipePortionUnit;saved.uuwpPolicy=saved.uuwpPolicy||(saved.packingSchemaVersion?'always':'legacy');return hydratePurchases(saved,item,s.purchaseMasters)}
+ const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.condiments=saved.condiments||[];saved.packaging=saved.packaging||[];saved.servingQty=saved.servingQty??item.servingQty??item.recipePortion;saved.servingUnit=saved.servingUnit||item.servingUnit||item.recipePortionUnit;saved.uuwpPolicy=saved.uuwpPolicy||(saved.packingSchemaVersion?'always':'legacy');return hydratePurchases(normalizePacking(saved),item,s.purchaseMasters)}
  const p={...s.prod?.[legacy],...s.prod?.[k]},c=s.commercial?.[k]||{},price=s.pricing?.[k]||{};
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
  return hydratePurchases({mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':item.defaultMode||'purchased',unit:item.side||item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',servingQty:item.servingQty??item.recipePortion,servingUnit:item.servingUnit||item.recipePortionUnit,pricingBasis:'markup',uuwpPolicy:hasItem(s,cat,i)?'legacy':'always',
  batchSize:p.unitsPerBatch??p.batchSize??p.kgBatchSize??'',batches:p.batchesToday??p.numBatches??p.kgNumBatches??'',
- capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:s.purchaseMasters?.[norm(item.name)]?.unitCost??item.purchasedCost??'',purchaseBasis:s.purchaseMasters?.[norm(item.name)]?.basis??'unit',purchaseBatchQty:s.purchaseMasters?.[norm(item.name)]?.batchQty??'',purchaseBatchCost:s.purchaseMasters?.[norm(item.name)]?.batchCost??'',purchaseBatchUnit:s.purchaseMasters?.[norm(item.name)]?.batchUnit??(item.baseUnit==='Kg'?'kg':'piece'),
+ capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:s.purchaseMasters?.[norm(item.name)]?.unitCost??(hasItem(s,cat,i)?item.purchasedCost??'':''),purchaseBasis:s.purchaseMasters?.[norm(item.name)]?.basis??'unit',purchaseBatchQty:s.purchaseMasters?.[norm(item.name)]?.batchQty??'',purchaseBatchCost:s.purchaseMasters?.[norm(item.name)]?.batchCost??'',purchaseBatchUnit:s.purchaseMasters?.[norm(item.name)]?.batchUnit??(item.baseUnit==='Kg'?'kg':'piece'),
  sold:sold??'',soldConfirmed:false,spoilage:c.foodSpoilagePct??c.spoilagePct??p.spoil??5,
  uuwp:c.safetyPct??5,markup:price.markupPct??25,price:price.currentPrice??item.price??'',
  condiments:clone(s.condiments?.[k]||[]).map(x=>({...x,source:x.source||'recipe',portion:x.portion??x.qty,portionUnit:x.portionUnit||x.unit||'kg'})),
@@ -141,17 +153,18 @@ function calculate(d,item,recipes){
   sideComponents.push({name:x.recipeName,source:x.source==='purchase'?'purchased':'production',food:rate===null||qty===null?0:rate*qty,foodMissing:rate===null||qty===null,packingCost:packingCharge(x,sold)});
   used(x.recipeName,x.source==='purchase'?'purchased':'production',amount,x.portionUnit,'included');
  }
- const packingCost=packingCharge(d,sold),components=[{name:item.name,source:d.mode,food:baseCost,foodMissing:mainFoodMissing,packingCost},...sideComponents];
+ const owners=packingOwners(d),commonCost=packingCharge(owners.common,sold),packingCost=packingCharge({...owners.main,mode:d.mode},sold),components=[{name:item.name,source:d.mode,food:baseCost,foodMissing:mainFoodMissing,packingCost},...sideComponents];
  for(const component of components){component.packing=component.packingCost.allocated;component.subtotal=component.food+component.packing;component.incomplete=component.foodMissing||component.packingCost.missing.length>0;missing.push(...component.packingCost.missing.map(m=>component.name+': '+m))}
- const parcelSize=packingCost.per||1,parcelPackCost=packingCost.perPack,parcels=packingCost.parcels,totalPacking=sold===null?null:components.reduce((sum,x)=>sum+x.packingCost.total,0);
- const pack=components.reduce((sum,x)=>sum+x.packing,0);
+ const parcelSize=packingCost.per||1,parcelPackCost=packingCost.perPack,parcels=packingCost.parcels,totalPacking=sold===null?null:commonCost.total+components.reduce((sum,x)=>sum+x.packingCost.total,0);
+ missing.push(...commonCost.missing.map(m=>'Common / order packing: '+m));
+ const pack=commonCost.allocated+components.reduce((sum,x)=>sum+x.packing,0);
  const spoil=(baseCost+cond)*(number(d.spoilage)||0)/100,final=baseCost+cond+spoil+pack;
  // UUWP is a visible pricing allowance for every source, never a second procurement expense.
  const apply=d.uuwpPolicy!=='legacy'||d.mode==='purchased'||sold===null||made===sold;
  const withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
  const percent=number(d.markup),margin=d.pricingBasis==='margin';
  if(margin&&(percent===null||percent>=100))missing.push('Target margin must be at least 0 and below 100%');
- return {base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+ return {commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
  suggested:margin?(percent!==null&&percent<100?withUuwp/(1-percent/100):null):withUuwp*(1+(percent||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
@@ -177,16 +190,23 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  for(const [name] of purchases)if(masterFingerprint(latest.purchaseMasters,name)!==masterFingerprint(baseline.purchaseMasters,name))throw Error(name+' purchase master changed elsewhere. Reload before saving.');
  const c=calculate(d,item,recipes);if(c.missing.length)throw Error('Complete cost inputs: '+c.missing.join(', '));
  if(number(d.sold)===null||c.sold>c.made||!(c.made>0))throw Error('Enter valid availability and Sold Today quantities.');
- const token=Date.now()+'-'+Math.random().toString(36).slice(2),savedDraft={...clone(d),packingSchemaVersion:2,savedAt:new Date().toISOString(),businessDate:businessDate(),saveToken:token,soldConfirmed:true};
+ const token=Date.now()+'-'+Math.random().toString(36).slice(2),savedDraft={...clone(d),packingSchemaVersion:3,savedAt:new Date().toISOString(),businessDate:businessDate(),saveToken:token,soldConfirmed:true};
+ normalizePacking(savedDraft);
+ // Mirror the published split fields; canonical objects retain inactive rows.
+ savedDraft.itemPackaging=c.packingCost.mode==='required'?clone(savedDraft.mainPacking.packaging):[];
+ savedDraft.itemPackingPer=savedDraft.mainPacking.packingPer;savedDraft.itemPackingMode=savedDraft.mainPacking.packingMode;
+ savedDraft.packaging=c.commonCost.mode==='required'?clone(savedDraft.commonPacking.packaging):[];
+ savedDraft.packingPer=savedDraft.commonPacking.packingPer;savedDraft.packingMode=savedDraft.commonPacking.packingMode;
  function mirror(owner,unit){const p=purchaseConfig(owner,unit);owner.purchaseBasis=p.basis;owner.purchaseBatchQty=p.basis==='batch'?p.qty:'';owner.purchaseBatchCost=p.basis==='batch'?p.total:'';owner.purchaseBatchUnit=p.unit;owner.purchaseRate=purchaseRate(p);owner.rateUnit=p.unit}
  if(d.mode==='purchased')mirror(savedDraft,item.side?d.servingUnit:d.unit);
  for(const x of savedDraft.condiments||[])if(x.source==='purchase')mirror(x,x.rateUnit||x.portionUnit);
  latest.itemEditors[k]=savedDraft;latest.qtys[q]=d.unit==='kg'?{qty:Number(d.sold)*1000,unit:'g'}:Number(d.sold);
  for(const [name,p] of purchases)putMaster(latest,name,p,{saveToken:token,savedAt:savedDraft.savedAt,updatedAt:savedDraft.savedAt});
  latest.condiments[k]=d.condiments.map(x=>({...x,qty:convert(Number(x.portion),x.portionUnit,recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit),unit:recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit}));
- latest.packaging[k]=[d,...d.condiments].flatMap((owner,index)=>{const pc=c.components[index].packingCost;if(pc.mode!=='required')return [];return (owner.packaging||[]).map(x=>({...x,qty:Number(x.qty)*(c.sold>0?pc.parcels/c.sold:1/(pc.per||1)),packingOwner:index?'condiment':'main',ownerName:c.components[index].name}))});
+ const owners=packingOwners(d),packingEntries=[{owner:owners.main,pc:c.packingCost,kind:'main',name:item.name},...d.condiments.map((owner,index)=>({owner,pc:c.components[index+1].packingCost,kind:'condiment',name:owner.recipeName})),{owner:owners.common,pc:c.commonCost,kind:'common',name:'Common / order'}];
+ latest.packaging[k]=packingEntries.flatMap(({owner,pc,kind,name})=>pc.mode!=='required'?[]:(owner.packaging||[]).map(x=>({...x,qty:Number(x.qty)*(c.sold>0?pc.parcels/c.sold:1/(pc.per||1)),packingOwner:kind,ownerName:name})));
  latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),pricingBasis:d.pricingBasis||'markup',currentPrice:Number(d.price)};
- latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.final:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
+ latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.final:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
  latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:Number(d.batchSize),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
  else delete latest.prod[legacy];
@@ -199,7 +219,8 @@ function cache(outlet,s){
  localStorage.setItem('method2-verified-'+outlet,JSON.stringify(s));
  localStorage.setItem('method2-item-state',JSON.stringify(s));
  const all=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
- all[outlet]={...all[outlet],method2:s};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
+ const savedKeys=Object.keys(s.itemEditors||{}),summary=savedKeys.length?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
+ all[outlet]={...all[outlet],method2:s,...summary};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
 root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
 })(typeof window==='undefined'?globalThis:window);

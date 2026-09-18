@@ -35,6 +35,7 @@ assert.deepEqual(reordered.slice(0,2).map(x=>x.recipeId),catalogue.map(x=>x.reci
  await context.route('**/*',async route=>{
   const req=route.request(),u=new URL(req.url());
   if(u.hostname==='script.google.com'){
+   if(u.searchParams.get('action')==='outletList')return route.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify({ok:true,outlets:[{outletId:'1',outletName:'Test outlet',data:{id:'1',name:'Test outlet'}}]})+')'});
    if(req.method()==='POST'){const b=JSON.parse(req.postData());if(!failWrites)db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return route.fulfill({body:'ok'})}
    const data=db[u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey')];
    return route.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify({ok:true,found:!!data,data})+')'});
@@ -60,6 +61,15 @@ assert.deepEqual(reordered.slice(0,2).map(x=>x.recipeId),catalogue.map(x=>x.reci
  assert.match(await condiment.locator('.side-cost').textContent(),/No separate revenue/);
  await page.locator('#idliPackingPreset').click();await page.locator('#mainPacking').getByLabel('Price ₹ each',{exact:true}).fill('3');
  await page.locator('#pricingBasis').selectOption('margin');assert.match(await page.locator('#pricing').textContent(),/14.00/);
+ const common=page.locator('#commonPacking');
+ await common.getByLabel('Packing choice',{exact:true}).selectOption('required');
+ await common.getByLabel('Sales units sharing ONE packing set',{exact:true}).fill('4');
+ await common.getByRole('button',{name:'+ Add packing material',exact:true}).click();
+ await common.getByLabel('Price ₹ each',{exact:true}).fill('2');
+ assert.match(await page.locator('#totals').textContent(),/42.00/);
+ assert.match(await page.locator('#packingConsolidation').textContent(),/10.00/);
+ await common.getByLabel('Packing choice',{exact:true}).selectOption('none');
+ assert.match(await page.locator('#totals').textContent(),/40.00/);
  await condiment.getByLabel('Packing choice',{exact:true}).selectOption('none');
  assert.equal(await condiment.getByLabel('Price ₹ each',{exact:true}).count(),0);
  await condiment.getByLabel('Packing choice',{exact:true}).selectOption('required');
@@ -73,6 +83,8 @@ assert.deepEqual(reordered.slice(0,2).map(x=>x.recipeId),catalogue.map(x=>x.reci
  assert.match(await page.locator('#costs a').first().getAttribute('href'),/purchase-cost-editor/);
  await page.locator('#save').click();await page.waitForURL('**/method2.html?outlet=1');
  assert.equal(db['1/METHOD2/default'].purchaseMasters.idli.qty,'120');
+ assert.equal(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].commonPacking.packaging[0].unitCost,'2');
+ assert.equal(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].commonPacking.packingMode,'none');
  assert.equal(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].condiments[0].packaging[0].unitCost,'1');
  assert.deepEqual(db['1/METHOD2/default'].commercial['Breakfast Catalogue::0'].packingBreakdown.map(x=>x.total),[6,2]);
  assert.equal(db['1/METHOD2/default'].commercial['Breakfast Catalogue::0'].totalSoldCogs,40);
@@ -94,6 +106,15 @@ assert.deepEqual(reordered.slice(0,2).map(x=>x.recipeId),catalogue.map(x=>x.reci
  assert.match(await page.locator('#grandTotalSale').textContent(),/80.00/);
  await page.goto('https://bobs.test/method2-overall.html?outlet=1');await page.waitForFunction(()=>document.querySelectorAll('#usageRows tr').length===1);
  assert.match(await page.locator('#usageRows').textContent(),/80.00 ml.*200.00 ml.*280.00 ml/);
+ // Delayed legacy COGS enhancement must not replace component-inclusive saved totals.
+ await page.goto('https://bobs.test/cogs-outlet-analysis.html?outlet=1');
+ await page.waitForFunction(()=>document.getElementById('analysisTable').textContent.includes('COGS / Day'));
+ await page.waitForTimeout(1800);
+ assert.equal(await page.getByRole('row').filter({hasText:'COGS / Day'}).locator('td').nth(2).textContent(),'₹51');
+ assert.equal(await page.getByRole('row').filter({hasText:'Gross Profit / Day'}).locator('td').nth(2).textContent(),'₹29');
+ await page.goto('https://bobs.test/outlet-analysis.html');
+ await page.waitForFunction(()=>document.getElementById('analysisTable').textContent.includes('Purchase Cost / Day'));
+ assert.equal(await page.getByRole('row').filter({hasText:'Purchase Cost / Day'}).locator('td').nth(2).textContent(),'₹51');
  // Master persistence, read-back failure, shared rate reuse, and preservation.
  await page.goto('https://bobs.test/purchase-cost-editor.html?outlet=1&item=Idli&unit=piece');await page.waitForSelector('#editor:not([hidden])');
  assert.equal(await page.locator('#qty').inputValue(),'120');await page.locator('#total').fill('960');

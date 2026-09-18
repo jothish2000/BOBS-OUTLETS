@@ -14,7 +14,7 @@ function create(data,options){
   root.replaceChildren();const mode=M2.packing(data).mode;root.dataset.mode=mode;
   const heading=document.createElement('h4');heading.textContent='Packing for '+options.name;root.append(heading);
   const label=document.createElement('label');label.textContent='Packing choice';const choice=document.createElement('select');choice.required=true;
-  for(const [value,text] of [['','Choose packing treatment…'],['required','Additional packing required'],['none','No extra packing required'],['included','Already included in supplier price']]){const o=document.createElement('option');o.value=value;o.textContent=text;choice.append(o)}
+  for(const [value,text] of [['','Choose packing treatment…'],['required','Additional packing required'],['none','No extra packing required'],...(!options.common?[['included','Already included in supplier price']]:[])]){const o=document.createElement('option');o.value=value;o.textContent=text;choice.append(o)}
   choice.setAttribute('aria-label','Packing choice');choice.value=mode;if(options.main)choice.id='mainPackingChoice';choice.onchange=()=>{data.packingMode=choice.value;build();change()};label.append(choice);root.append(label);
   if(options.legacy){const note=document.createElement('p');note.className='notice';note.textContent='Existing packing has been retained here. It may already include side pouches. Review these rows before adding packing under condiments; assign each material once.';root.append(note)}
   if(options.main&&M2.norm(options.name)==='idli'){
@@ -35,7 +35,7 @@ function create(data,options){
    details.append(rows);
    const toolbar=document.createElement('div');toolbar.className='toolbar';const material=document.createElement('select');material.setAttribute('aria-label','Packing material to add');
    for(const name of materials){const o=document.createElement('option');o.value=name;o.textContent=name;material.append(o)}
-   material.value=/sambar/i.test(options.name)?materials[6]:/chutney/i.test(options.name)?materials[8]:materials[0];
+   material.value=options.common?'Carry bag':/sambar/i.test(options.name)?materials[6]:/chutney/i.test(options.name)?materials[8]:materials[0];
    const add=document.createElement('button');add.type='button';add.textContent='+ Add packing material';if(options.main)add.id='addPacking';add.onclick=()=>{data.packaging=data.packaging||[];data.packaging.push({name:material.value,qty:1,unitCost:''});build();change()};toolbar.append(material,add);details.append(toolbar);root.append(details);
   }else if(mode==='none'||mode==='included'){
    const note=document.createElement('p');note.className='muted';note.textContent=(mode==='included'?'No extra charge: the supplier price already covers this packing.':'No extra packing charge for this component.')+(data.packaging?.length?' Saved packing rows are retained and can be re-enabled.':'');root.append(note);

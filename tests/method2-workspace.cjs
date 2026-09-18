@@ -37,7 +37,7 @@ assert.equal(M2.calculate({...d,mode:'purchased',purchaseRate:7,condiments:[{rec
  const info=await page.evaluate(()=>{const cat=Object.keys(ITEM_DATA).find(c=>ITEM_DATA[c].some(x=>/^idli$/i.test(x.name)));return {cat,i:ITEM_DATA[cat].findIndex(x=>/^idli$/i.test(x.name))}});
  const itemUrl='https://bobs.test/method2-item.html?'+new URLSearchParams({outlet:'1',...info,mode:'production'});
  await page.goto(itemUrl);await page.waitForSelector('#editor:not([hidden])');
- assert.equal(await page.locator('#supplyHeading').textContent(),'Idli – Supply & quantity');
+ assert.equal(await page.locator('#supplyHeading').textContent(),'01 · Idli');
  assert.equal(await page.locator('#supplyRecipeLink a').textContent(),'Idli – recipe & cost');
  assert.equal(await page.locator('#supplyRecipeLink a').getAttribute('href'),'recipe-cost-editor.html?item=Idli');
  assert.equal(await page.locator('#supplyRecipeLink a').getAttribute('target'),'_blank');
