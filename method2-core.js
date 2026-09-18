@@ -33,7 +33,7 @@ function packing(d){
  let total=0;for(const x of rows){const qty=number(x.qty),rate=number(x.unitCost);if(qty===null||rate===null)missing.push((x.name||x.label||'Packing')+' quantity / price');else total+=qty*rate}
  return {per,perPack:total,perItem:per>0?total/per:0,missing};
 }
-function recipe(recipes,name){return recipes.find(r=>norm(r.name)===norm(name))}
+function recipe(recipes,name){const target=norm(canonicalRecipeName(name));return recipes.find(r=>norm(canonicalRecipeName(r.name))===target)}
 function unitCost(r){
  if(!r)return null;
  const y=number(r.yieldQty||r.standardYield||r.yield);
@@ -74,7 +74,7 @@ function calculate(d,item,recipes){
  const baseCost=base===null?0:base*(primary?(primaryQty||0):1);
  let cond=0;
  for(const x of d.condiments||[]){
-  const r=recipe(recipes,x.recipeName),rate=x.source==='purchase'?number(x.purchaseRate):unitCost(r);
+  const r=recipe(recipes,canonicalRecipeName(x.recipeName)),rate=x.source==='purchase'?number(x.purchaseRate):unitCost(r);
   const amount=number(x.portion),qty=amount===null?null:convert(amount,x.portionUnit,x.source==='purchase'?x.rateUnit:r?.yieldUnit);
   if(rate===null||qty===null)missing.push(x.recipeName+' rate / portion unit');else cond+=rate*qty;
  }
