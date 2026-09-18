@@ -6,14 +6,23 @@ const norm=s=>String(s||'').toLowerCase().replace(/\bidly\b/g,'idli').trim();
 const keys=(cat,i)=>({k:cat+'::'+i,q:cat+'|'+i,legacy:cat.replace(/\s+/g,'_')+'-'+i});
 const maps=['qtys','prod','condiments','packaging','pricing','commercial','itemEditors'];
 const businessDate=(date=new Date())=>new Date(date).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};return s}
+function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];return s}
+function sideRecipes(recipes){return (recipes||[]).filter(r=>/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name||''))}
+function installSides(recipes,s){
+ const cat='Sides & Extras',known=(s?.sideCatalog||[]).slice(),available=sideRecipes(recipes),by=new Map(available.map(r=>[norm(r.name),r]));
+ for(const r of available.sort((a,b)=>String(a.name).localeCompare(String(b.name))))if(!known.some(n=>norm(n)===norm(r.name)))known.push(r.name);
+ const items=known.map(name=>{const r=by.get(norm(name)),sambar=/sambar/i.test(name);return {name,price:0,purchasedCost:null,productionCost:null,hasRecipe:true,eligible:true,standaloneSide:true,recipePortion:sambar?200:null,recipePortionUnit:sambar?'ml':null,baseUnit:'pack',recipeAvailable:!!r}});
+ if(typeof ITEM_DATA!=='undefined')ITEM_DATA[cat]=items;if(typeof CAT_ORDER!=='undefined'&&!CAT_ORDER.includes(cat))CAT_ORDER.push(cat);return items
+}
 function hasItem(s,cat,i){const {k,q,legacy}=keys(cat,i);return !!(s.itemEditors?.[k]||s.qtys?.[q]!==undefined||s.prod?.[legacy]||Number(s.prod?.[k]?.todaysProduction)>0||s.condiments?.[k]?.length||s.packaging?.[k]?.length)}
-function selected(s,cat,i){const entry=s.selection?.[cat];return Array.isArray(entry?.indices)?entry.indices.includes(Number(i)):hasItem(s,cat,i)}
+function selected(s,cat,i){const entry=s.selection?.[cat];if(cat==='Sides & Extras'&&Array.isArray(entry?.names))return entry.names.some(n=>norm(n)===norm(ITEM_DATA?.[cat]?.[i]?.name));return Array.isArray(entry?.indices)?entry.indices.includes(Number(i)):hasItem(s,cat,i)}
 async function saveSelectionUnlocked(outlet,cat,indices,baseline){
  const latest=state(await read(outlet));
  if(JSON.stringify(latest.selection[cat])!==JSON.stringify(baseline.selection?.[cat]))throw Error('This category selection changed in another window. Reload before saving.');
  const token=Date.now()+'-'+Math.random().toString(36).slice(2);
- latest.selection[cat]={indices:[...new Set(indices.filter(i=>Number.isInteger(i)&&i>=0))].sort((a,b)=>a-b),token,savedAt:new Date().toISOString()};
+ const clean=[...new Set(indices.filter(i=>Number.isInteger(i)&&i>=0))].sort((a,b)=>a-b);
+ if(cat==='Sides & Extras'){latest.sideCatalog=(ITEM_DATA[cat]||[]).map(x=>x.name);latest.selection[cat]={names:clean.map(i=>ITEM_DATA[cat]?.[i]?.name).filter(Boolean),token,savedAt:new Date().toISOString()}}
+ else latest.selection[cat]={indices:clean,token,savedAt:new Date().toISOString()};
  return write(outlet,'METHOD2','default',latest,s=>s?.selection?.[cat]?.token===token);
 }
 function saveSelection(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSelectionUnlocked(...args)):saveSelectionUnlocked(...args)}
@@ -43,7 +52,7 @@ function draft(s,cat,i,item){
  const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;return saved}
  const p={...s.prod?.[legacy],...s.prod?.[k]},c=s.commercial?.[k]||{},price=s.pricing?.[k]||{};
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
- return {mode:s.prod?.[legacy]||p.todaysProduction?'production':'purchased',unit:item.baseUnit==='Kg'?'kg':'piece',
+ return {mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':'purchased',unit:item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',
  batchSize:p.unitsPerBatch??p.batchSize??p.kgBatchSize??'',batches:p.batchesToday??p.numBatches??p.kgNumBatches??'',
  capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:item.purchasedCost??'',
  sold:sold??'',soldConfirmed:false,spoilage:c.foodSpoilagePct??c.spoilagePct??p.spoil??5,
@@ -57,7 +66,8 @@ function calculate(d,item,recipes){
  const base=d.mode==='production'?unitCost(primary):number(d.purchaseRate);
  if(base===null)missing.push(d.mode==='production'?'Primary recipe / ingredient rates':'Supplier price');
  if(primary&&convert(1,d.unit,primary.yieldUnit)===null)missing.push('Recipe yield unit does not match sales unit');
- const baseCost=base===null?0:base*(primary?(convert(1,d.unit,primary.yieldUnit)||0):1);
+ let primaryQty=1;if(primary&&item.standaloneSide&&item.recipePortion)primaryQty=convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit);else if(primary)primaryQty=convert(1,d.unit,primary.yieldUnit);
+ const baseCost=base===null?0:base*(primary?(primaryQty||0):1);
  let cond=0;
  for(const x of d.condiments||[]){
   const r=recipe(recipes,x.recipeName),rate=x.source==='purchase'?number(x.purchaseRate):unitCost(r);
@@ -114,5 +124,5 @@ function cache(outlet,s){
  const all=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
  all[outlet]={...all[outlet],method2:s};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
-root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache};
+root.M2={clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,sideRecipes,installSides};
 })(typeof window==='undefined'?globalThis:window);
