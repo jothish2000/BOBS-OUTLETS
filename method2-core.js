@@ -65,7 +65,8 @@ function calculate(d,item,recipes){
  const primary=d.mode==='production'?recipe(recipes,item.name):null;
  const base=d.mode==='production'?unitCost(primary):number(d.purchaseRate);
  if(base===null)missing.push(d.mode==='production'?'Primary recipe / ingredient rates':'Supplier price');
- if(primary&&convert(1,d.unit,primary.yieldUnit)===null)missing.push('Recipe yield unit does not match sales unit');
+ if(primary&&!(item.standaloneSide&&item.recipePortion)&&convert(1,d.unit,primary.yieldUnit)===null)missing.push('Recipe yield unit does not match sales unit');
+ if(primary&&item.standaloneSide&&item.recipePortion&&convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit)===null)missing.push('Standalone serving unit does not match Recipe Master yield');
  let primaryQty=1;if(primary&&item.standaloneSide&&item.recipePortion)primaryQty=convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit);else if(primary)primaryQty=convert(1,d.unit,primary.yieldUnit);
  const baseCost=base===null?0:base*(primary?(primaryQty||0):1);
  let cond=0;
