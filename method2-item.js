@@ -13,7 +13,7 @@ function renderComponents(){
  $('condiments').replaceChildren();for(const x of d.condiments){
  const box=document.createElement('div');box.className='component';const title=document.createElement('h3');title.append(link(x.recipeName));box.append(title);
  const grid=document.createElement('div');grid.className='fields';
- grid.append(pick('Cost source',x.source,[['recipe','Recipe Master'],['purchase','Purchased separately']],v=>x.source=v),
+ grid.append(pick('Cost source',x.source,[['recipe','Production Mode — Recipe Master'],['purchase','Purchase Mode — Purchase Master']],v=>x.source=v),
  field('Portion per sales unit',x.portion,v=>x.portion=v),
  pick('Portion unit',x.portionUnit,[['g','grams'],['kg','kg'],['ml','ml'],['L','litres'],['piece','pieces']],v=>x.portionUnit=v));
  if(x.source==='purchase')grid.append(field('Supplier rate ₹',x.purchaseRate,v=>x.purchaseRate=v),pick('Rate per',x.rateUnit||'kg',[['kg','kg'],['L','litre'],['g','gram'],['ml','ml'],['piece','piece']],v=>x.rateUnit=v));
