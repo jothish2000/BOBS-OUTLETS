@@ -106,6 +106,8 @@ function project(s,cat,i){const k=keys(cat,i);return Object.fromEntries(maps.map
 async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  const latest=state(await read(outlet)),{k,q,legacy}=keys(cat,i);
  if(JSON.stringify(project(latest,cat,i))!==JSON.stringify(project(baseline,cat,i)))throw Error('This item changed in another window. Reload before saving; your draft remains here.');
+ const purchaseNames=[item.name,...(d.condiments||[]).filter(x=>x.source==='purchase').map(x=>x.recipeName)].map(norm);
+ for(const n of purchaseNames)if(JSON.stringify(latest.purchaseMasters?.[n]||null)!==JSON.stringify(baseline.purchaseMasters?.[n]||null))throw Error('A supplier cost used by this item changed in another window. Reload before saving; the newer supplier rate is protected.');
  const c=calculate(d,item,recipes);if(c.missing.length)throw Error('Complete cost inputs: '+c.missing.join(', '));
  const token=Date.now()+'-'+Math.random().toString(36).slice(2),savedDraft={...clone(d),savedAt:new Date().toISOString(),businessDate:businessDate(),saveToken:token,soldConfirmed:true};
  latest.itemEditors[k]=savedDraft;
