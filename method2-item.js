@@ -1,11 +1,10 @@
 (function(){'use strict';
-const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));
-let item=ITEM_DATA[cat]?.[i];
-const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','markup','price','sold','servingQty','servingUnit','pricingBasis'];
+const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));let item;
+const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','uuwpPolicy','markup','price','sold','servingQty','servingUnit','pricingBasis'];
 let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false;
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
-function link(name){const a=document.createElement('a');a.href='recipe-cost-editor.html?item='+encodeURIComponent(name);a.target='_blank';a.textContent=name+' · recipe & cost';return a}
+function link(name){const a=document.createElement('a');a.href='recipe-cost-editor.html?item='+encodeURIComponent(M2.canonicalRecipeName(name));a.target='_blank';a.textContent=name+' · recipe & cost';return a}
 function purchaseLink(name,unit){const a=document.createElement('a');a.href='purchase-cost-editor.html?'+new URLSearchParams({outlet,item:name,unit:unit||'piece'});a.target='_blank';a.textContent=name+' · Purchase Master COGS';return a}
 function primaryCostLink(label){const a=d.mode==='production'?link(item.recipeName||item.name):purchaseLink(item.recipeName||item.name,item.side?d.servingUnit:d.unit);a.textContent=label;return a}
 function field(label,value,oninput,type='number'){
@@ -31,7 +30,7 @@ function renderComponents(){
  $('condiments').replaceChildren();for(const x of d.condiments){
  const box=document.createElement('div');box.className='component';const title=document.createElement('h3');title.dataset.recipeName=x.recipeName;title.append(x.source==='purchase'?purchaseLink(x.recipeName,x.portionUnit):link(x.recipeName));box.append(title);
  const grid=document.createElement('div');grid.className='fields';
- grid.append(pick('Cost source',x.source,[['recipe','Production — Recipe Master'],['purchase','Purchase — supplier unit / batch']],v=>x.source=v),
+ grid.append(pick('Cost source',x.source,[['recipe','Production Mode — Recipe Master'],['purchase','Purchase Mode — Purchase Master']],v=>x.source=v),
  field('Portion per sales unit',x.portion,v=>x.portion=v),
  pick('Portion unit',x.portionUnit,[['g','grams'],['kg','kg'],['ml','ml'],['L','litres'],['piece','pieces']],v=>x.portionUnit=v));
  box.append(grid);
@@ -65,16 +64,16 @@ function calculate(){
  $('pricingPercentLabel').textContent=d.pricingBasis==='margin'?'Target gross margin %':'Markup %';$('markup').max=d.pricingBasis==='margin'?'99.999999':'';
  document.querySelectorAll('.purchase-summary').forEach(el=>{const p=el.purchase,rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;el.textContent=rate===null?'Enter quantity and total supplier price.':money(Number(p.total))+' ÷ '+p.qty+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' / '+unit});
  $('supplyRecipeLink').replaceChildren(primaryCostLink(item.name+(production?' – recipe & cost':' – Purchase Master COGS')));
- $('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
- $('purchaseRate').required=false;if(!production)$('purchaseRate').value=c.missing.length?'':c.base;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
+ $('batchCaption').textContent=production?'Quantity per production batch':'Sales units per purchased lot';$('batchesCaption').textContent=production?'Number of production batches today':'Number of purchased lots today';$('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
+ $('purchaseRate').required=false;if(!production)$('purchaseRate').value=c.components[0].foodMissing?'':c.base;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
  $('quantitySummary').textContent=(production?'Produced':'Purchased')+' today: '+c.made+' '+d.unit+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
  $('sold').className=M2.number(d.sold)===null||!soldTouched?'pending':'entered';$('soldError').textContent='';
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
  consolidatedCosts(c);
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
- lines('pricing',[['UUWP pricing allowance',d.uuwp+'% — all sourcing modes'],['COGS with UUWP',incomplete?'Incomplete':money(c.withUuwp)],['Suggested price with '+(d.pricingBasis==='margin'?'target margin':'markup'),incomplete?'Incomplete':money(c.suggested)]]);
- lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],[item.name+' food + its packing × sold',incomplete?'Incomplete':money(c.sold===null?null:c.baseWithPacking*c.sold)],['Included condiments + their packing × sold',incomplete?'Incomplete':money(c.sold===null?null:c.condWithPacking*c.sold)],['Food-only spoilage × sold',incomplete?'Incomplete':money(c.sold===null?null:c.spoil*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',incomplete?'Incomplete':money(c.made*c.base)]]);
+ lines('pricing',[['UUWP pricing allowance',c.apply?d.uuwp+'%':'Not applied — known production leftovers'],['COGS with UUWP',incomplete?'Incomplete':money(c.withUuwp)],['Suggested price with '+(d.pricingBasis==='margin'?'target margin':'markup'),incomplete?'Incomplete':money(c.suggested)]]);
+ lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],[item.name+' food + its packing × sold',c.components[0].incomplete?'Incomplete':money(c.sold===null?null:c.baseWithPacking*c.sold)],['Included condiments + their packing × sold',c.components.slice(1).some(x=>x.incomplete)?'Incomplete':money(c.sold===null?null:c.condWithPacking*c.sold)],['Food-only spoilage × sold',incomplete?'Incomplete':money(c.sold===null?null:c.spoil*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',c.components[0].foodMissing?'Incomplete':money(c.made*c.base)]]);
 }
 function show(){for(const id of fields)$(id).value=d[id]??'';$('unit').value=d.unit;$('editor').hidden=false;renderComponents();calculate()}
 function back(){
@@ -84,10 +83,10 @@ function back(){
 }
 $('back').onclick=e=>{e.preventDefault();back()};
 $('addCondiment').onclick=()=>{
- const name=$('condimentChoice').value;if(!name||d.condiments.some(x=>x.recipeName===name))return;
+ const name=$('condimentChoice').value;if(!name||d.condiments.some(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)))return;
  const r=M2.recipe(recipes,name)||BOBS_PORIYAL.find(x=>x.name===name),poriyal=/poriyal/i.test(name),sambar=/sambar/i.test(name);
- d.condiments.push({recipeName:name,source:d.mode==='purchased'?'purchase':'recipe',portion:poriyal?50:sambar?20:8,portionUnit:poriyal?'g':sambar?'ml':'g',purchaseRate:'',rateUnit:sambar?'L':'kg',packingMode:'',packingPer:1,packaging:[]});
- const savedPurchase=baseline.purchaseMasters?.[M2.purchaseKey(name)];if(savedPurchase)d.condiments[d.condiments.length-1].purchase=M2.clone(savedPurchase);
+ d.condiments.push({recipeName:name,source:d.mode==='purchased'?'purchase':'recipe',portion:poriyal?50:sambar?20:8,portionUnit:poriyal?'g':sambar?'ml':'g',purchaseRate:'',rateUnit:sambar?'L':'kg',purchaseBasis:'unit',purchaseBatchQty:'',purchaseBatchCost:'',purchaseBatchUnit:sambar?'L':'kg',packingMode:'',packingPer:1,packaging:[]});
+ const savedPurchase=M2.masterEntry(baseline.purchaseMasters,name);if(savedPurchase)d.condiments[d.condiments.length-1].purchase=M2.purchaseConfig(savedPurchase,sambar?'L':'kg');
  dirty=true;renderComponents();calculate();
 };
 for(const id of fields)$(id).addEventListener('input',changed);
@@ -129,14 +128,14 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
 (async()=>{try{
  if(!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
  const [data,master]=await Promise.all([M2.read(outlet),M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')]);
- baseline=M2.state(data);recipes=master?.recipes||[];M2.installSides(baseline);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
+ baseline=M2.state(data);recipes=master?.recipes||[];M2.installSides(baseline,recipes);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
  soldTouched=!!d.soldConfirmed;
  if(['purchased','production'].includes(q.get('mode')))d.mode=q.get('mode');
- if(!d.packingPer)d.packingPer=1;
+ if(!d.packingPer)d.packingPer=1;if(item.standaloneSide&&item.recipePortion&&!baseline.itemEditors[M2.keys(cat,i).k]){d.batchSize=d.batchSize||1;d.batches=d.batches||1;}
  if(M2.norm(item.name)==='idli'&&!d.packaging.length&&!baseline.itemEditors[M2.keys(cat,i).k])d.packingPer=2;
  $('title').textContent=item.name;$('outletLabel').textContent='Outlet '+outlet+' · Google-backed item editor';
  $('supplyHeading').textContent=item.name+' – Supply & quantity';
- const choices=[...recipes.filter(M2.isSide),...BOBS_PORIYAL.filter(r=>!M2.recipe(recipes,r.name))].filter(r=>M2.norm(r.name)!==M2.norm(item.recipeName||item.name));
+ const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
  choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
  show();status('Loaded from Google. Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
  }catch(e){status(e.message)}})();

@@ -38,7 +38,7 @@ Whole parcels retain the cost of a partially filled final parcel.
 Food inside a pouch is not also counted as packaging.
 Charge a shared pouch or allowance once, not again through each linked component.
 UUWP is a pricing allowance; show it separately from actual procurement expense and observed waste.
-Per the approved all-product rule, the existing editable UUWP percentage now applies to pricing in both purchase and production, including known leftovers. Saved business records are not bulk-rewritten. The previous leftovers exemption is removed and tested. Direct sold COGS still excludes this allowance.
+The editable UUWP policy supports both all-source pricing and the published known-production-leftovers exemption. Existing saved items retain the exemption; new items default to all-source pricing. Saved business records are not bulk-rewritten. Direct sold COGS excludes this allowance.
 
 Offer a clearly named pricing basis: Markup on cost or Target gross margin.
 Markup price = adjusted unit cost × (1 + markup/100).
@@ -50,6 +50,6 @@ Included sides have no separate revenue; separately sold sides do.
 
 Google remains authoritative; verify read-back before reporting saved.
 Preserve existing rates, item keys and history. No automatic overwrite of live records.
-Sides catalogue entries are persisted as an append-only per-outlet list inside METHOD2/default when category selection is saved. Recipe reordering cannot reassign saved item indices. Purchase Masters share the same Google record and browser write lock; stale purchase edits block saving.
+Sides catalogue entries retain the published Sides & Extras category and sideCatalog order, alongside enriched sideCatalogue metadata. Name-based selections and existing indices are preserved. Recipe reordering cannot reassign saved item indices. Purchase Masters share the same Google record and browser write lock; stale purchase edits block saving. Both published batchQty/batchCost/unitCost and normalized qty/total schemas are supported.
 Overall COGS shows side quantities included with products and quantities separately sold, grouped by recipe name, source and unit. This is a derived usage summary, not a stock ledger. Availability entered for standalone sides is only the stock allocated to separate sales. No duplicated procurement/receipt is recorded.
 Test piece and mass/volume batches, zero/blank inputs, all four hybrid combinations, source switches, mixed standalone/bundled consumption, packing and UUWP double counting, and cache-free reload.

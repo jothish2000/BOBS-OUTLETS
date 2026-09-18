@@ -37,9 +37,13 @@ These references support recipe styles, not commercial market rates or a univers
 
 The outlet Method 2 button now opens method2-select.html as a separate window. Each category has its own URL and checkbox table. Category selections are stored in the same Google METHOD2 record under selection[category], verified by read-back, without deleting deselected item data. Existing saved items remain selected until that category is explicitly reviewed.
 
-Method 2 renders and calculates only selected rows. It no longer reloads on window focus. Confirmed-save messages or an explicit Reload trigger refresh; request generations prevent an older slow response from replacing newer data. Recipe Master is not requested by the selection pages or an empty working list.
+Method 2 renders and calculates only selected rows. It no longer reloads on window focus. Confirmed-save messages or an explicit Reload trigger refresh; request generations prevent an older slow response from replacing newer data. The Sides & Extras selection page reads the original Recipe Master; other category selection pages and an empty working list avoid that read.
 
-The Idli packing setup uses one empty sambar pouch and one aluminium container shared by two idlis. Supplier prices remain user-entered. Each component shows quantity × price ÷ sharing count. For example, ₹1 + ₹3 shared by 2 = ₹2 per idli; 600 sold allocates ₹1,200. The food inside the pouch stays under Condiments. Existing saved packing is not automatically converted or overwritten.
+Packing now belongs to each item and condiment. The Idli preset adds only an aluminium box shared by two idlis. Add the sambar pouch under Sambar, with its own sharing count. A ₹3 box and ₹1 pouch, each shared by two idlis, cost ₹2 per idli and ₹1,200 for 600 sold. Whole partially filled sets are charged. Each owner can choose no extra packing or supplier-included packing; inactive material rows remain saved. Existing legacy packing stays under its original owner with a review notice.
+
+The reconciled version retains the published Sides & Extras category, name-based selections, sideCatalog order, recipe aliases, supplier unit/batch inputs, and supplier conflict checks. It reads both supplier schemas, retains unknown metadata, and mirrors old supplier fields on explicit saves. Existing items retain the known-leftovers UUWP exemption through an editable policy; new items default to all-source UUWP. No automatic data migration or Google write occurs on page load. Outlet-analysis and recipe-master upgrades from the remote history remain unchanged.
+
+Additional tests: node tests/method2-commerce.cjs, node tests/method2-component-packing.cjs, and node tests/method2-reconciliation.cjs. The reconciliation test includes saved records in the published schema, unchanged unrelated records, legacy supplier fields, stable side indices, and stale-save rejection.
 
 Run node tests/method2-selection.cjs for the new selection, slow-response, focus/scroll, shared-packing and data-preservation browser tests.
 

@@ -1,7 +1,7 @@
 (async function(){try{
  const outlet=new URLSearchParams(location.search).get('outlet');if(!outlet)throw Error('Outlet is required.');
- const [raw,master]=await Promise.all([M2.read(outlet),M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')]),s=M2.state(raw),recipes=master?.recipes||[];
- M2.installSides(s);const usage=new Map();
+ const [raw,master]=await Promise.all([M2.read(outlet),M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')]),s=M2.state(raw),recipes=master?.recipes||[];M2.installSides(recipes,s);
+ const usage=new Map();
  let sum=0,complete=true;
  for(const cat of CAT_ORDER)ITEM_DATA[cat].forEach((item,i)=>{if(!M2.selected(s,cat,i))return;
  const d=M2.draft(s,cat,i,item),c=M2.calculate(d,item,recipes),row=document.createElement('tr');

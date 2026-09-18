@@ -38,9 +38,10 @@ async function reload(){
  const next=M2.state(await M2.read(outlet));if(request!==generation||!refresh.isConnected)return;
  M2.installSides(next);
  // No recipe read or per-item calculations when nothing has been selected.
+ const hasSides=Array.isArray(next.selection?.['Sides & Extras']?.names)&&next.selection['Sides & Extras'].names.length>0;
  const any=CAT_ORDER.some(cat=>ITEM_DATA[cat].some((_,i)=>M2.selected(next,cat,i)));
- const master=any?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;if(request!==generation||!refresh.isConnected)return;
- s=next;for(const k of Object.keys(pending))if(s.itemEditors[k]?.saveToken&&s.itemEditors[k].saveToken!==pending[k])delete pending[k];
+ const master=(any||hasSides)?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;if(request!==generation||!refresh.isConnected)return;
+ if(master)M2.installSides(master?.recipes||[],next);s=next;for(const k of Object.keys(pending))if(s.itemEditors[k]?.saveToken&&s.itemEditors[k].saveToken!==pending[k])delete pending[k];
  sessionStorage.setItem(pendingKey,JSON.stringify(pending));recipes=master?.recipes||[];try{M2.cache(outlet,s)}catch(e){}
  ready=true;$('status').textContent='Outlet '+outlet+' · Loaded from Google. Only selected items are shown.';render();
  }catch(e){if(request===generation&&status.isConnected){status.textContent=e.message;ready=false}}
