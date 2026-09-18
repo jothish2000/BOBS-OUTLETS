@@ -50,7 +50,7 @@ function convert(q,from,to){
  return null;
 }
 function draft(s,cat,i,item){
- const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;return saved}
+ const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.itemPackaging=Array.isArray(saved.itemPackaging)?saved.itemPackaging:[];saved.itemPackingPer=saved.itemPackingPer||1;saved.packaging=Array.isArray(saved.packaging)?saved.packaging:[];saved.packingPer=saved.packingPer||1;saved.condiments=(saved.condiments||[]).map(x=>({...x,packaging:Array.isArray(x.packaging)?x.packaging:[],packingPer:x.packingPer||1}));return saved}
  const p={...s.prod?.[legacy],...s.prod?.[k]},c=s.commercial?.[k]||{},price=s.pricing?.[k]||{};
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
  return {mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':'purchased',unit:item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',
