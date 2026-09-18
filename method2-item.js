@@ -9,7 +9,15 @@ function field(label,value,oninput,type='number'){
  const l=document.createElement('label');l.textContent=label;const input=document.createElement('input');input.type=type;input.value=value??'';if(type==='number'){input.min='0';input.step='any';input.required=true}input.oninput=()=>{oninput(input.value);changed()};l.append(input);return l;
 }
 function pick(label,value,options,change){const l=document.createElement('label');l.textContent=label;const e=document.createElement('select');for(const [v,t] of options){const o=document.createElement('option');o.value=v;o.textContent=t;e.append(o)}e.value=value;e.onchange=()=>{change(e.value);dirty=true;renderComponents();calculate()};l.append(e);return l}
+const PACK_OPTIONS=['Aluminium coated food box - small','Aluminium coated food box - large / rice pack','Idli container / tray','Food container - small','Food container - medium','Food container - large','Sambar pouch / cup - small','Sambar pouch / cup - medium','Chutney pouch / cup','Container lid','Butter paper / food sheet','Carry bag','Spoon / fork','Rubber band / sealing item','Other packing'];
+function packingEditor(owner,title){
+ const wrap=document.createElement('div');wrap.className='component';const h=document.createElement('h4');h.textContent='Packing for '+title;wrap.append(h);
+ const toggle=pick('Additional packing required?',(owner.packaging||[]).length?'yes':'no',[['no','No'],['yes','Yes']],v=>{if(v==='yes'&&!owner.packaging?.length)owner.packaging=[{name:PACK_OPTIONS[0],qty:1,unitCost:''}];if(v==='no')owner.packaging=[]});wrap.append(toggle);
+ if(owner.packaging?.length){wrap.append(field('Items / portions sharing ONE pack',owner.packingPer||1,v=>owner.packingPer=v));for(const p of owner.packaging){const row=document.createElement('div');row.className='fields';row.append(pick('Packing material',p.name||PACK_OPTIONS[0],PACK_OPTIONS.map(x=>[x,x]),v=>p.name=v),field('Number used',p.qty??1,v=>p.qty=v),field('Price ₹ each',p.unitCost,v=>p.unitCost=v));const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove packing';b.onclick=()=>{owner.packaging=owner.packaging.filter(x=>x!==p);dirty=true;renderComponents();calculate()};row.append(b);wrap.append(row)}const add=document.createElement('button');add.type='button';add.className='secondary';add.textContent='+ Add packing material';add.onclick=()=>{owner.packaging.push({name:PACK_OPTIONS[0],qty:1,unitCost:''});dirty=true;renderComponents();calculate()};wrap.append(add)}
+ return wrap;
+}
 function renderComponents(){
+ $('itemPacking').replaceChildren(packingEditor(d,item.name));
  $('condiments').replaceChildren();for(const x of d.condiments){
  const box=document.createElement('div');box.className='component';const title=document.createElement('h3');title.append(link(x.recipeName));box.append(title);
  const grid=document.createElement('div');grid.className='fields';
@@ -25,7 +33,7 @@ function renderComponents(){
   );
   else grid.append(field('Supplier price ₹',x.purchaseRate,v=>x.purchaseRate=v),pick('Supplier price per',x.rateUnit||x.portionUnit||'kg',[['piece','piece'],['kg','kg'],['g','g'],['L','litre'],['ml','ml']],v=>x.rateUnit=v));
  }
- box.append(grid);
+ box.append(grid);box.append(packingEditor(x,x.recipeName));
  const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove side';b.onclick=()=>{d.condiments=d.condiments.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);$('condiments').append(box);
  }
  $('packing').replaceChildren();for(const x of d.packaging){const box=document.createElement('div');box.className='component fields';box.append(field('Empty container / packing material',x.name||x.label,v=>x.name=v,'text'),field('Number used for this serving',x.qty,v=>x.qty=v),field('Price ₹ each',x.unitCost,v=>x.unitCost=v));const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove';b.onclick=()=>{d.packaging=d.packaging.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);const perItem=document.createElement('output');perItem.className='packing-row-cost';box.append(perItem);$('packing').append(box)}
@@ -49,10 +57,10 @@ function calculate(){
  $('sold').className=M2.number(d.sold)===null||!soldTouched?'pending':'entered';$('soldError').textContent='';
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
- lines('costs',[['Item / Recipe Master COGS per '+d.unit,production&&!M2.recipe(recipes,item.name)?'Recipe missing':money(c.base)],['Condiments per '+d.unit,money(c.cond)],['Food spoilage allowance',money(c.spoil)],['Packing per '+d.unit,pc.missing.length?'Incomplete':money(c.pack)],['Overall COGS per '+d.unit,incomplete?'Incomplete':money(c.final)]]);
+ const breakdown=[[item.name+' COGS — food + its packing',money(c.itemComponent.total)],...c.condimentComponents.map(x=>[x.name+' COGS — food + its packing',money(x.total)]),['Common / order packing',money(c.commonPacking)],['Food spoilage allowance',money(c.spoil)],['Overall COGS per '+d.unit,incomplete?'Incomplete':money(c.final)]];lines('costs',breakdown);
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  lines('pricing',[['UUWP applied',c.apply?'Yes':'No — known production leftovers'],['COGS with UUWP',incomplete?'Incomplete':money(c.withUuwp)],['Suggested price with markup',incomplete?'Incomplete':money(c.suggested)]]);
- lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],['Base Item COGS / '+item.name+' × Sold Qty '+(c.sold??'—'),c.base===null?'Incomplete':money(c.sold===null?null:c.base*c.sold)],['Condiment COGS / '+item.name+' × Sold Qty '+(c.sold??'—'),c.missing.some(x=>/rate \/ portion unit/.test(x))?'Incomplete':money(c.sold===null?null:c.cond*c.sold)],['Packing COGS / '+item.name+' × Sold Qty '+(c.sold??'—'),pc.missing.length?'Incomplete':money(c.sold===null?null:c.pack*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',c.base===null?'Incomplete':money(c.made*c.base)]]);
+ lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],[item.name+' component COGS × Sold Qty '+(c.sold??'—'),money(c.sold===null?null:c.itemComponent.total*c.sold)],...c.condimentComponents.map(x=>[x.name+' component COGS × Sold Qty '+(c.sold??'—'),money(c.sold===null?null:x.total*c.sold)]),['Common / order packing × Sold Qty '+(c.sold??'—'),money(c.sold===null?null:c.commonPacking*c.sold)],['Overall sold COGS',incomplete?'Incomplete':money(c.soldCost)],['Sales',money(c.revenue)],['Gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.soldCost)],['Base food '+(production?'production':'purchase')+' commitment',money(c.made*c.base)]]);
 }
 function show(){for(const id of fields)$(id).value=d[id]??'';$('unit').value=d.unit;$('editor').hidden=false;renderComponents();calculate()}
 function back(){
@@ -64,7 +72,7 @@ $('back').onclick=e=>{e.preventDefault();back()};
 $('addCondiment').onclick=()=>{
  const name=$('condimentChoice').value;if(!name||d.condiments.some(x=>x.recipeName===name))return;
  const r=M2.recipe(recipes,name)||BOBS_PORIYAL.find(x=>x.name===name),poriyal=/poriyal/i.test(name),sambar=/sambar/i.test(name);
- d.condiments.push({recipeName:name,source:d.mode==='purchased'?'purchase':'recipe',portion:poriyal?50:sambar?20:8,portionUnit:poriyal?'g':sambar?'ml':'g',purchaseRate:'',rateUnit:sambar?'L':'kg',purchaseBasis:'unit',purchaseBatchQty:'',purchaseBatchCost:'',purchaseBatchUnit:sambar?'L':'kg'});
+ d.condiments.push({recipeName:name,source:d.mode==='purchased'?'purchase':'recipe',portion:poriyal?50:sambar?20:8,portionUnit:poriyal?'g':sambar?'ml':'g',purchaseRate:'',rateUnit:sambar?'L':'kg',purchaseBasis:'unit',purchaseBatchQty:'',purchaseBatchCost:'',purchaseBatchUnit:sambar?'L':'kg',packaging:[],packingPer:1});
  dirty=true;renderComponents();calculate();
 };
 $('addPacking').onclick=()=>{d.packaging.push({name:'Packing',qty:1,unitCost:''});dirty=true;renderComponents();calculate()};
