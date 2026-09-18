@@ -126,10 +126,9 @@ function draft(s,cat,i,item){
  packaging:clone(s.packaging?.[k]||[]).filter(x=>x.packingOwner!=='condiment'),packingPer:1,packingMode:hasItem(s,cat,i)?undefined:''},item,s.purchaseMasters);
 }
 function calculate(d,item,recipes){
- const missing=[],sold=number(d.sold),made=(number(d.batchSize)||0)*(number(d.batches)||0);
+ const missing=[],sold=number(d.sold),mainPurchase=purchaseConfig(d,item.side?d.servingUnit:d.unit),purchaseLotQty=d.mode==='purchased'?(mainPurchase.basis==='batch'?number(mainPurchase.qty):1):null,made=d.mode==='purchased'?(purchaseLotQty||0)*(number(d.batches)||0):(number(d.batchSize)||0)*(number(d.batches)||0);
  const name=item.recipeName||item.name,primary=d.mode==='production'?recipe(recipes,name):null;
  // purchaseConfig also reads published purchaseBasis / purchaseBatch* supplier fields.
- const mainPurchase=purchaseConfig(d,item.side?d.servingUnit:d.unit);
  const base=d.mode==='production'?unitCost(primary):purchaseRate(mainPurchase);
  if(base===null)missing.push(d.mode==='production'?'Primary recipe / ingredient rates':'Supplier quantity / total price');
  const serving=item.side?number(d.servingQty):1,servingUnit=item.side?d.servingUnit:d.unit;
@@ -243,7 +242,7 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  latest.packaging[k]=packingEntries.flatMap(({owner,pc,kind,name})=>pc.mode!=='required'?[]:(owner.packaging||[]).map(x=>({...x,qty:Number(x.qty)*(c.sold>0?pc.parcels/c.sold:1/(pc.per||1)),packingOwner:kind,ownerName:name})));
  latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),pricingBasis:d.pricingBasis||'markup',currentPrice:Number(d.price)};
  latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.final:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
- latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:Number(d.batchSize),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
+ latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:d.mode==='production'?Number(d.batchSize):(purchaseConfig(d,item.side?d.servingUnit:d.unit).basis==='batch'?Number(purchaseConfig(d,item.side?d.servingUnit:d.unit).qty):1),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
  else delete latest.prod[legacy];
  return write(outlet,'METHOD2','default',latest,x=>x?.itemEditors?.[k]?.saveToken===token,original);
