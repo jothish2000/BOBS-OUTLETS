@@ -13,7 +13,7 @@ assert.equal(M2.convert(50,'g','kg'),.05);assert.equal(M2.convert(50,'g','L'),nu
 assert.equal(M2.unitCost({...primary,ingredients:[['Rice',1,'kg',null]]}),null);
 assert.equal(M2.calculate({...d,mode:'purchased',purchaseRate:7,condiments:[{recipeName:'Sambar',source:'purchase',portion:20,portionUnit:'ml',purchaseRate:50,rateUnit:'L'}]}, {},[]).final,11);
 (async()=>{
- const browser=await chromium.launch({channel:'msedge',headless:true});
+ const browser=await chromium.launch({channel:'chrome',headless:true});
  const context=await browser.newContext({viewport:{width:1366,height:900}});
  const db={'COMPANY/RECIPE_MASTER/STANDARD_V1':{recipes},'1/METHOD2/default':{qtys:{'Other|0':4},custom:'KEEP',condiments:{untouched:[{name:'keep'}]}}};
  const posts=[],errors=[];let failWrites=false,failReads=false;
@@ -32,20 +32,30 @@ assert.equal(M2.calculate({...d,mode:'purchased',purchaseRate:7,condiments:[{rec
   }
   return route.abort();
  });
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.stack||e.message));
  await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('status').textContent.includes('Loaded from Google'));
  const info=await page.evaluate(()=>{const cat=Object.keys(ITEM_DATA).find(c=>ITEM_DATA[c].some(x=>/^idli$/i.test(x.name)));return {cat,i:ITEM_DATA[cat].findIndex(x=>/^idli$/i.test(x.name))}});
  const itemUrl='https://bobs.test/method2-item.html?'+new URLSearchParams({outlet:'1',...info,mode:'production'});
  await page.goto(itemUrl);await page.waitForSelector('#editor:not([hidden])');
+ assert.equal(await page.locator('#supplyHeading').textContent(),'Idli – Supply & quantity');
+ assert.equal(await page.locator('#supplyRecipeLink a').textContent(),'Idli – recipe & cost');
+ assert.equal(await page.locator('#supplyRecipeLink a').getAttribute('href'),'recipe-cost-editor.html?item=Idli');
+ assert.equal(await page.locator('#supplyRecipeLink a').getAttribute('target'),'_blank');
+ assert.equal(await page.locator('#costs a').first().textContent(),'Idli Recipe Master COGS per piece · food + packing');
+ assert.equal(await page.locator('#costs a').first().getAttribute('href'),'recipe-cost-editor.html?item=Idli');
  await page.locator('#batchSize').fill('120');await page.locator('#batches').fill('5');await page.locator('#spoilage').fill('0');
  await page.locator('#save').click();assert.match(await page.locator('#soldError').textContent(),/Please enter/);assert.equal(posts.length,0);
  for(const name of ['Idli Sambar','Coconut Chutney','Cabbage Poriyal'])await page.locator('#m2SideChecks input').filter({visible:true}).locator('xpath=..').filter({hasText:name}).getByRole('checkbox').check();
- await page.locator('#packingPer').fill('1');await page.locator('#addPacking').click();await page.getByLabel('Price ₹ each',{exact:true}).fill('3');
+ for(const side of await page.locator('#condiments > .component').all())await side.getByLabel('Packing choice',{exact:true}).selectOption('none');
+ await page.locator('#mainPackingChoice').selectOption('required');await page.locator('#packingPer').fill('1');await page.locator('#addPacking').click();await page.getByLabel('Price ₹ each',{exact:true}).fill('3');
  await page.locator('#sold').fill('600');
  assert.match(await page.locator('#totals').textContent(),/5,880.00/);
  assert.equal(await page.locator('#condiments a').count(),3);
  await page.screenshot({path:path.join(dir,'method2-editor-test.png'),fullPage:true});
  await page.locator('#mode').selectOption('purchased');assert.equal(await page.locator('#rateLabel').isVisible(),true);assert.equal(await page.locator('#capacityLabel').isVisible(),false);
+ assert.equal(await page.locator('#costs a').first().textContent(),'Idli Purchase COGS per piece · food + packing');
+ assert.equal(await page.locator('#supplyRecipeLink a').textContent(),'Idli – Purchase Master COGS');
+ assert.match(await page.locator('#costs a').first().getAttribute('href'),/^purchase-cost-editor.html\?outlet=1&item=Idli&unit=piece$/);
  await page.locator('#mode').selectOption('production');assert.match(await page.locator('#totals').textContent(),/5,880.00/);
  await page.locator('#sold').fill('0');page.once('dialog',dialog=>dialog.dismiss());await page.locator('#save').click();assert.equal(posts.length,0);
  await page.locator('#sold').fill('600');
@@ -80,8 +90,11 @@ assert.equal(M2.calculate({...d,mode:'purchased',purchaseRate:7,condiments:[{rec
  await page.locator('#search').fill('Idli');
  const popupPromise=page.waitForEvent('popup');
  await page.locator('.item').filter({has:page.getByText('Idli',{exact:true})}).getByRole('button',{name:'Edit item'}).click();
- const popup=await popupPromise;popup.on('pageerror',e=>errors.push(e.message));
- await popup.waitForSelector('#editor:not([hidden])');popup.once('dialog',dialog=>dialog.accept());await popup.locator('#save').click();await popup.waitForEvent('close');
+ const popup=await popupPromise;popup.on('pageerror',e=>errors.push(e.stack||e.message));
+ await popup.waitForSelector('#editor:not([hidden])');
+ // Reproduce cleanup after the editor's DOM has gone away on close.
+ await popup.evaluate(()=>{const close=window.close.bind(window);window.close=()=>{document.getElementById('controls').remove();close()}});
+ popup.once('dialog',dialog=>dialog.accept());const closed=popup.waitForEvent('close');await popup.locator('#save').click();await closed;
  await page.waitForFunction(()=>document.getElementById('status').textContent.includes('Loaded from Google'));
  assert.equal(db['1/METHOD2/default'].itemEditors[k].soldConfirmed,true);
  // The parent capture guard prevents its existing Save & Continue handler.

@@ -32,17 +32,19 @@ function render(){
  filterRows();window.scrollTo({top:y,left:window.scrollX,behavior:'instant'});
 }
 async function reload(){
- const request=++generation;ready=false;$('status').textContent='Checking Google…';$('refresh').disabled=true;
+ const refresh=$('refresh'),status=$('status');if(!refresh||!status)return;
+ const request=++generation;ready=false;status.textContent='Checking Google…';refresh.disabled=true;
  try{if(!outlet)throw Error('Select an outlet in Outlet Setup first.');
- const next=M2.state(await M2.read(outlet));if(request!==generation)return;
+ const next=M2.state(await M2.read(outlet));if(request!==generation||!refresh.isConnected)return;
+ M2.installSides(next);
  // No recipe read or per-item calculations when nothing has been selected.
  const any=CAT_ORDER.some(cat=>ITEM_DATA[cat].some((_,i)=>M2.selected(next,cat,i)));
- const master=any?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;if(request!==generation)return;
+ const master=any?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;if(request!==generation||!refresh.isConnected)return;
  s=next;for(const k of Object.keys(pending))if(s.itemEditors[k]?.saveToken&&s.itemEditors[k].saveToken!==pending[k])delete pending[k];
  sessionStorage.setItem(pendingKey,JSON.stringify(pending));recipes=master?.recipes||[];try{M2.cache(outlet,s)}catch(e){}
  ready=true;$('status').textContent='Outlet '+outlet+' · Loaded from Google. Only selected items are shown.';render();
- }catch(e){if(request===generation){$('status').textContent=e.message;ready=false}}
- finally{if(request===generation)$('refresh').disabled=false}
+ }catch(e){if(request===generation&&status.isConnected){status.textContent=e.message;ready=false}}
+ finally{if(request===generation)refresh.disabled=false}
 }
 window.BOBS_METHOD2_REVIEW=function(){
  if(!ready){alert('Google records must load before continuing.');return false}
@@ -56,7 +58,7 @@ window.BOBS_METHOD2_REVIEW=function(){
 $('review').onclick=()=>{if(window.BOBS_METHOD2_REVIEW())$('status').textContent='All selected items have confirmed Sold Today quantities.'};
 $('closeReview').onclick=()=>$('reviewDialog').close();$('refresh').onclick=reload;$('search').oninput=filterRows;
 $('overall').href='method2-overall.html?outlet='+encodeURIComponent(outlet);$('chooseItems').href='method2-select.html?outlet='+encodeURIComponent(outlet);$('chooseItems').target='bobs-select-'+outlet;
-function receive(data){if(!['bobs-method2-item-saved','bobs-method2-selection-saved'].includes(data?.type)||String(data.outlet)!==String(outlet))return;if(data.key)delete pending[data.key];sessionStorage.setItem(pendingKey,JSON.stringify(pending));clearTimeout(refreshTimer);refreshTimer=setTimeout(reload,100)}
+function receive(data){if(!['bobs-method2-item-saved','bobs-method2-selection-saved','bobs-purchase-master-saved'].includes(data?.type)||String(data.outlet)!==String(outlet))return;if(data.key)delete pending[data.key];sessionStorage.setItem(pendingKey,JSON.stringify(pending));clearTimeout(refreshTimer);refreshTimer=setTimeout(reload,100)}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receive(e.data)});
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-method2');channel.onmessage=e=>receive(e.data)}
 // Intentionally no focus-triggered reload: returning focus must never rebuild the list.
