@@ -16,7 +16,15 @@ function renderComponents(){
  grid.append(pick('Cost source',x.source,[['recipe','Production Mode — Recipe Master'],['purchase','Purchase Mode — Purchase Master']],v=>x.source=v),
  field('Portion per sales unit',x.portion,v=>x.portion=v),
  pick('Portion unit',x.portionUnit,[['g','grams'],['kg','kg'],['ml','ml'],['L','litres'],['piece','pieces']],v=>x.portionUnit=v));
- if(x.source==='purchase')grid.append(field('Supplier rate ₹',x.purchaseRate,v=>x.purchaseRate=v),pick('Rate per',x.rateUnit||'kg',[['kg','kg'],['L','litre'],['g','gram'],['ml','ml'],['piece','piece']],v=>x.rateUnit=v));
+ if(x.source==='purchase'){
+  grid.append(pick('Purchase cost entry',x.purchaseBasis||'unit',[['unit','Price per serving / supply unit'],['batch','Bulk / supplier batch']],v=>x.purchaseBasis=v));
+  if((x.purchaseBasis||'unit')==='batch')grid.append(
+   field('Units / quantity in supplier batch',x.purchaseBatchQty,v=>x.purchaseBatchQty=v),
+   field('Total supplier batch cost ₹',x.purchaseBatchCost,v=>x.purchaseBatchCost=v),
+   pick('Supplier batch quantity unit',x.purchaseBatchUnit||x.rateUnit||'kg',[['piece','piece'],['kg','kg'],['g','g'],['L','litre'],['ml','ml']],v=>x.purchaseBatchUnit=v)
+  );
+  else grid.append(field('Supplier price ₹',x.purchaseRate,v=>x.purchaseRate=v),pick('Supplier price per',x.rateUnit||x.portionUnit||'kg',[['piece','piece'],['kg','kg'],['g','g'],['L','litre'],['ml','ml']],v=>x.rateUnit=v));
+ }
  box.append(grid);
  const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='Remove side';b.onclick=()=>{d.condiments=d.condiments.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);$('condiments').append(box);
  }
@@ -56,7 +64,7 @@ $('back').onclick=e=>{e.preventDefault();back()};
 $('addCondiment').onclick=()=>{
  const name=$('condimentChoice').value;if(!name||d.condiments.some(x=>x.recipeName===name))return;
  const r=M2.recipe(recipes,name)||BOBS_PORIYAL.find(x=>x.name===name),poriyal=/poriyal/i.test(name),sambar=/sambar/i.test(name);
- d.condiments.push({recipeName:name,source:d.mode==='purchased'?'purchase':'recipe',portion:poriyal?50:sambar?20:8,portionUnit:poriyal?'g':sambar?'ml':'g',purchaseRate:'',rateUnit:sambar?'L':'kg'});
+ d.condiments.push({recipeName:name,source:d.mode==='purchased'?'purchase':'recipe',portion:poriyal?50:sambar?20:8,portionUnit:poriyal?'g':sambar?'ml':'g',purchaseRate:'',rateUnit:sambar?'L':'kg',purchaseBasis:'unit',purchaseBatchQty:'',purchaseBatchCost:'',purchaseBatchUnit:sambar?'L':'kg'});
  dirty=true;renderComponents();calculate();
 };
 $('addPacking').onclick=()=>{d.packaging.push({name:'Packing',qty:1,unitCost:''});dirty=true;renderComponents();calculate()};
