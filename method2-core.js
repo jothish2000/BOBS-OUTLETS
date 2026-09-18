@@ -6,7 +6,7 @@ const norm=s=>String(s||'').toLowerCase().replace(/\bidly\b/g,'idli').trim();
 const keys=(cat,i)=>({k:cat+'::'+i,q:cat+'|'+i,legacy:cat.replace(/\s+/g,'_')+'-'+i});
 const maps=['qtys','prod','condiments','packaging','pricing','commercial','itemEditors'];
 const businessDate=(date=new Date())=>new Date(date).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];return s}
+function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];s.purchaseMasters=s.purchaseMasters||{};return s}
 function sideRecipes(recipes){return (recipes||[]).filter(r=>/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name||''))}
 function installSides(recipes,s){
  const cat='Sides & Extras',known=(s?.sideCatalog||[]).slice(),available=sideRecipes(recipes),by=new Map(available.map(r=>[norm(r.name),r]));
@@ -54,10 +54,10 @@ function draft(s,cat,i,item){
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
  return {mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':'purchased',unit:item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',
  batchSize:p.unitsPerBatch??p.batchSize??p.kgBatchSize??'',batches:p.batchesToday??p.numBatches??p.kgNumBatches??'',
- capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:item.purchasedCost??'',purchaseBasis:'unit',purchaseBatchQty:'',purchaseBatchCost:'',purchaseBatchUnit:item.baseUnit==='Kg'?'kg':'piece',
+ capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:s.purchaseMasters?.[norm(item.name)]?.unitCost??item.purchasedCost??'',purchaseBasis:s.purchaseMasters?.[norm(item.name)]?.basis??'unit',purchaseBatchQty:s.purchaseMasters?.[norm(item.name)]?.batchQty??'',purchaseBatchCost:s.purchaseMasters?.[norm(item.name)]?.batchCost??'',purchaseBatchUnit:s.purchaseMasters?.[norm(item.name)]?.batchUnit??(item.baseUnit==='Kg'?'kg':'piece'),
  sold:sold??'',soldConfirmed:false,spoilage:c.foodSpoilagePct??c.spoilagePct??p.spoil??5,
  uuwp:c.safetyPct??5,markup:price.markupPct??25,price:price.currentPrice??item.price??'',
- condiments:clone(s.condiments?.[k]||[]).map(x=>({...x,source:'recipe',portion:x.qty,portionUnit:x.unit||'kg'})),
+ condiments:clone(s.condiments?.[k]||[]).map(x=>({...x,source:x.source||'recipe',portion:x.qty,portionUnit:x.unit||'kg',purchaseRate:x.purchaseRate??s.purchaseMasters?.[norm(x.recipeName)]?.unitCost??''})),
  packaging:clone(s.packaging?.[k]||[]),packingPer:1};
 }
 function calculate(d,item,recipes){
@@ -108,7 +108,10 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  if(JSON.stringify(project(latest,cat,i))!==JSON.stringify(project(baseline,cat,i)))throw Error('This item changed in another window. Reload before saving; your draft remains here.');
  const c=calculate(d,item,recipes);if(c.missing.length)throw Error('Complete cost inputs: '+c.missing.join(', '));
  const token=Date.now()+'-'+Math.random().toString(36).slice(2),savedDraft={...clone(d),savedAt:new Date().toISOString(),businessDate:businessDate(),saveToken:token,soldConfirmed:true};
- latest.itemEditors[k]=savedDraft;latest.qtys[q]=d.unit==='kg'?{qty:Number(d.sold)*1000,unit:'g'}:Number(d.sold);
+ latest.itemEditors[k]=savedDraft;
+ if(d.mode==='purchased')latest.purchaseMasters[norm(item.name)]={basis:d.purchaseBasis||'unit',unitCost:c.base,batchQty:Number(d.purchaseBatchQty)||null,batchCost:Number(d.purchaseBatchCost)||null,batchUnit:d.purchaseBatchUnit||d.unit,updatedAt:new Date().toISOString()};
+ for(const x of d.condiments||[])if(x.source==='purchase'&&number(x.purchaseRate)!==null)latest.purchaseMasters[norm(x.recipeName)]={basis:'unit',unitCost:Number(x.purchaseRate),batchUnit:x.rateUnit||x.portionUnit,updatedAt:new Date().toISOString()};
+ latest.qtys[q]=d.unit==='kg'?{qty:Number(d.sold)*1000,unit:'g'}:Number(d.sold);
  latest.condiments[k]=d.condiments.map(x=>({...x,qty:convert(Number(x.portion),x.portionUnit,recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit),unit:recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit}));
  latest.packaging[k]=d.packaging.map(x=>({...x,qty:Number(x.qty)/(Number(d.packingPer)||1)}));
  latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),currentPrice:Number(d.price)};
