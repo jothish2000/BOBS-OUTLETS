@@ -1,5 +1,5 @@
 (function(){'use strict';
-const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i')),item=ITEM_DATA[cat]?.[i];
+const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));let item;
 const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','markup','price','packingPer','sold'];
 let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false;
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -90,12 +90,13 @@ async function refreshRecipes(){try{const master=await M2.read('COMPANY','RECIPE
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='bobs-recipe-master-saved')refreshRecipes()});
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-master');channel.onmessage=()=>refreshRecipes()}
 (async()=>{try{
- if(!item||!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
+ if(!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
  const [data,master]=await Promise.all([M2.read(outlet),M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')]);
- baseline=M2.state(data);recipes=master?.recipes||[];d=M2.draft(baseline,cat,i,item);
+ baseline=M2.state(data);recipes=master?.recipes||[];M2.installSides(recipes,baseline);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('This selected item is no longer available in the catalogue.');
+ d=M2.draft(baseline,cat,i,item);
  soldTouched=!!d.soldConfirmed;
  if(['purchased','production'].includes(q.get('mode')))d.mode=q.get('mode');
- if(!d.packingPer)d.packingPer=1;
+ if(!d.packingPer)d.packingPer=1;if(item.standaloneSide&&item.recipePortion&&!baseline.itemEditors[M2.keys(cat,i).k]){d.batchSize=d.batchSize||1;d.batches=d.batches||1;}
  if(M2.norm(item.name)==='idli'&&!d.packaging.length&&!baseline.itemEditors[M2.keys(cat,i).k])d.packingPer=2;
  $('title').textContent=item.name;$('outletLabel').textContent='Outlet '+outlet+' · Google-backed item editor';
  const choices=[...recipes.filter(r=>/CONDIMENT/i.test(r.kind||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name)),...BOBS_PORIYAL.filter(r=>!M2.recipe(recipes,r.name))];
