@@ -59,7 +59,7 @@ function draft(s,cat,i,item){
  sold:sold??'',soldConfirmed:false,spoilage:c.foodSpoilagePct??c.spoilagePct??p.spoil??5,
  uuwp:c.safetyPct??5,markup:price.markupPct??25,price:price.currentPrice??item.price??'',
  condiments:clone(s.condiments?.[k]||[]).map(x=>{const pm=s.purchaseMasters?.[norm(x.recipeName)]||{};return {...x,source:x.source||'recipe',portion:x.qty,portionUnit:x.unit||'kg',purchaseRate:x.purchaseRate??pm.unitCost??'',purchaseBasis:x.purchaseBasis??pm.basis??'unit',purchaseBatchQty:x.purchaseBatchQty??pm.batchQty??'',purchaseBatchCost:x.purchaseBatchCost??pm.batchCost??'',purchaseBatchUnit:x.purchaseBatchUnit??pm.batchUnit??x.rateUnit??x.unit??'kg'}}),
- packaging:clone(s.packaging?.[k]||[]),packingPer:1};
+ packaging:clone(s.packaging?.[k]||[]),packingPer:1,itemPackaging:[],itemPackingPer:1};
 }
 function calculate(d,item,recipes){
  const missing=[],sold=number(d.sold),made=(number(d.batchSize)||0)*(number(d.batches)||0);
@@ -71,24 +71,24 @@ function calculate(d,item,recipes){
  if(primary&&!(item.standaloneSide&&item.recipePortion)&&convert(1,d.unit,primary.yieldUnit)===null)missing.push('Recipe yield unit does not match sales unit');
  if(primary&&item.standaloneSide&&item.recipePortion&&convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit)===null)missing.push('Standalone serving unit does not match Recipe Master yield');
  let primaryQty=1;if(primary&&item.standaloneSide&&item.recipePortion)primaryQty=convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit);else if(primary)primaryQty=convert(1,d.unit,primary.yieldUnit);
- const baseCost=base===null?0:base*(primary?(primaryQty||0):1);
- let cond=0;
+ const baseFood=base===null?0:base*(primary?(primaryQty||0):1);
+ const componentPacking=(rows,per,label)=>{const pc=packing({packaging:rows||[],packingPer:per||1});if(pc.missing.length)missing.push(...pc.missing.map(x=>label+' packing: '+x));const parcels=sold===null?null:Math.ceil(sold/(pc.per||1)),total=sold===null?null:parcels*pc.perPack,perSold=sold>0?total/sold:pc.perItem;return {packingCost:pc,parcels,total,perSold}};
+ const mainPack=componentPacking(d.itemPackaging,d.itemPackingPer,'Item');
+ let condFood=0,condPack=0;const components=[];
  for(const x of d.condiments||[]){
   const r=recipe(recipes,canonicalRecipeName(x.recipeName));let rate=x.source==='purchase'?number(x.purchaseRate):unitCost(r),rateUnit=x.rateUnit;
   if(x.source==='purchase'&&x.purchaseBasis==='batch'){const bq=number(x.purchaseBatchQty),bc=number(x.purchaseBatchCost);rateUnit=x.purchaseBatchUnit||x.rateUnit;if(bq>0&&bc!==null)rate=bc/bq;else rate=null}
   const amount=number(x.portion),qty=amount===null?null:convert(amount,x.portionUnit,x.source==='purchase'?rateUnit:r?.yieldUnit);
-  if(rate===null||qty===null)missing.push(x.recipeName+(x.source==='purchase'&&x.purchaseBasis==='batch'?' supplier batch quantity / cost / unit':' rate / portion unit'));else cond+=rate*qty;
+  let food=0;if(rate===null||qty===null)missing.push(x.recipeName+(x.source==='purchase'&&x.purchaseBasis==='batch'?' supplier batch quantity / cost / unit':' rate / portion unit'));else food=rate*qty;
+  const cp=componentPacking(x.packaging,x.packingPer,x.recipeName);condFood+=food;condPack+=cp.perSold;components.push({name:x.recipeName,food,packing:cp.perSold,total:food+cp.perSold,packingDetail:cp});
  }
- const packingCost=packing(d);missing.push(...packingCost.missing);
- const parcelSize=packingCost.per||1,parcelPackCost=packingCost.perPack,parcels=sold===null?null:Math.ceil(sold/parcelSize),totalPacking=sold===null?null:parcels*parcelPackCost;
- const pack=sold>0?totalPacking/sold:packingCost.perItem;
- const spoil=(baseCost+cond)*(number(d.spoilage)||0)/100,final=baseCost+cond+spoil+pack;
- // Preserve the established rule: production with known leftovers does not add a second UUWP allowance.
- const apply=d.mode==='purchased'||sold===null||made===sold;
- const withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
- return {base:baseCost,cond,pack,packingCost,parcelSize,parcelPackCost,parcels,totalPacking,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
- suggested:withUuwp*(1+(number(d.markup)||0)/100),soldCost:sold===null?null:final*sold,
- revenue:sold===null?null:(number(d.price)||0)*sold,missing};
+ const common=componentPacking(d.packaging,d.packingPer,'Common/order');
+ const foodSubtotal=baseFood+condFood,packingSubtotal=mainPack.perSold+condPack+common.perSold;
+ const spoil=foodSubtotal*(number(d.spoilage)||0)/100,final=foodSubtotal+spoil+packingSubtotal;
+ const apply=d.mode==='purchased'||sold===null||made===sold,withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
+ return {base:baseFood,cond:condFood,pack:packingSubtotal,packingCost:common.packingCost,parcelSize:common.packingCost.per||1,parcelPackCost:common.packingCost.perPack,parcels:common.parcels,totalPacking:sold===null?null:(mainPack.total||0)+components.reduce((a,x)=>a+(x.packingDetail.total||0),0)+(common.total||0),spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+  itemComponent:{name:item.name,food:baseFood,packing:mainPack.perSold,total:baseFood+mainPack.perSold,packingDetail:mainPack},condimentComponents:components,commonPacking:common.perSold,foodSubtotal,packingSubtotal,
+  suggested:withUuwp*(1+(number(d.markup)||0)/100),soldCost:sold===null?null:final*sold,revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
 async function read(outlet,module='METHOD2',key='default'){
  const r=await BOBS_DATA.jsonp({action:'moduleGet',outletId:outlet,module,recordKey:key});
