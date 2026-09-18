@@ -54,7 +54,7 @@ function draft(s,cat,i,item){
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
  return {mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':'purchased',unit:item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',
  batchSize:p.unitsPerBatch??p.batchSize??p.kgBatchSize??'',batches:p.batchesToday??p.numBatches??p.kgNumBatches??'',
- capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:item.purchasedCost??'',
+ capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:item.purchasedCost??'',purchaseBasis:'unit',purchaseBatchQty:'',purchaseBatchCost:'',purchaseBatchUnit:item.baseUnit==='Kg'?'kg':'piece',
  sold:sold??'',soldConfirmed:false,spoilage:c.foodSpoilagePct??c.spoilagePct??p.spoil??5,
  uuwp:c.safetyPct??5,markup:price.markupPct??25,price:price.currentPrice??item.price??'',
  condiments:clone(s.condiments?.[k]||[]).map(x=>({...x,source:'recipe',portion:x.qty,portionUnit:x.unit||'kg'})),
@@ -63,8 +63,10 @@ function draft(s,cat,i,item){
 function calculate(d,item,recipes){
  const missing=[],sold=number(d.sold),made=(number(d.batchSize)||0)*(number(d.batches)||0);
  const primary=d.mode==='production'?recipe(recipes,item.name):null;
- const base=d.mode==='production'?unitCost(primary):number(d.purchaseRate);
- if(base===null)missing.push(d.mode==='production'?'Primary recipe / ingredient rates':'Supplier price');
+ let purchaseBase=null;
+ if(d.mode!=='production'){if(d.purchaseBasis==='batch'){const bq=number(d.purchaseBatchQty),bc=number(d.purchaseBatchCost),conv=bq===null?null:convert(1,d.unit,d.purchaseBatchUnit||d.unit);if(bq>0&&bc!==null&&conv!==null)purchaseBase=(bc/bq)*conv}else purchaseBase=number(d.purchaseRate)}
+ const base=d.mode==='production'?unitCost(primary):purchaseBase;
+ if(base===null)missing.push(d.mode==='production'?'Primary recipe / ingredient rates':d.purchaseBasis==='batch'?'Supplier batch quantity / cost / unit':'Supplier price');
  if(primary&&!(item.standaloneSide&&item.recipePortion)&&convert(1,d.unit,primary.yieldUnit)===null)missing.push('Recipe yield unit does not match sales unit');
  if(primary&&item.standaloneSide&&item.recipePortion&&convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit)===null)missing.push('Standalone serving unit does not match Recipe Master yield');
  let primaryQty=1;if(primary&&item.standaloneSide&&item.recipePortion)primaryQty=convert(item.recipePortion,item.recipePortionUnit,primary.yieldUnit);else if(primary)primaryQty=convert(1,d.unit,primary.yieldUnit);
