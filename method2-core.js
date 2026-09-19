@@ -5,6 +5,8 @@ const clone=x=>JSON.parse(JSON.stringify(x)), number=x=>x!==''&&x!==null&&x!==un
 const norm=s=>String(s||'').toLowerCase().replace(/\bidly\b/g,'idli').trim();
 const keys=(cat,i)=>({k:cat+'::'+i,q:cat+'|'+i,legacy:cat.replace(/\s+/g,'_')+'-'+i});
 const maps=['qtys','prod','condiments','packaging','pricing','commercial','itemEditors'];
+const basePrice=(s,cat,i,item)=>number(s?.catalogueBasePrices?.[keys(cat,i).k])??number(item?.price);
+const currentPrice=(s,cat,i,item)=>number(s?.pricing?.[keys(cat,i).k]?.currentPrice)??basePrice(s,cat,i,item);
 const businessDate=(date=new Date())=>new Date(date).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 const SIDES='Sides & Extras';
 const canonicalRecipeName=n=>({'general idly':'Idly','general idli':'Idly','general idly sambar':'Idli Sambar','general idli sambar':'Idli Sambar','general coconut chutney':'Coconut Chutney','general pudina chutney':'Pudina Chutney'}[String(n||'').toLowerCase().trim()]||n);
@@ -56,7 +58,7 @@ async function savePurchaseUnlocked(outlet,name,p,baseline){
  return write(outlet,'METHOD2','default',latest,x=>x?.purchaseMasters?.[key]?.saveToken===token,original);
 }
 function savePurchase(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>savePurchaseUnlocked(...args)):savePurchaseUnlocked(...args)}
-function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];s.purchaseMasters=s.purchaseMasters||{};return s}
+function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];s.purchaseMasters=s.purchaseMasters||{};s.catalogueBasePrices=s.catalogueBasePrices||{};return s}
 function hasItem(s,cat,i){const {k,q,legacy}=keys(cat,i);return !!(s.itemEditors?.[k]||s.qtys?.[q]!==undefined||s.prod?.[legacy]||Number(s.prod?.[k]?.todaysProduction)>0||s.condiments?.[k]?.length||s.packaging?.[k]?.length)}
 function selected(s,cat,i){const entry=s.selection?.[cat];if(cat===SIDES&&Array.isArray(entry?.names)){const item=root.ITEM_DATA?.[cat]?.[i]||sideCatalogue(s)[i];return !!item&&entry.names.some(n=>purchaseKey(n)===purchaseKey(item.name))}return Array.isArray(entry?.indices)?entry.indices.includes(Number(i)):hasItem(s,cat,i)}
 async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
@@ -74,6 +76,19 @@ async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
  return write(outlet,'METHOD2','default',latest,s=>s?.selection?.[cat]?.token===token,original);
 }
 function saveSelection(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSelectionUnlocked(...args)):saveSelectionUnlocked(...args)}
+async function saveSellingPricesUnlocked(outlet,cat,prices,baseline){
+ const latest=state(await read(outlet)),original=clone(latest),token=Date.now()+'-'+Math.random().toString(36).slice(2),catalogue=root.ITEM_DATA?.[cat]||[];
+ for(const [rawIndex,rawPrice] of Object.entries(prices||{})){
+  const i=Number(rawIndex),item=catalogue[i],price=number(rawPrice);if(!item||price===null)throw Error('Enter a valid current selling price.');
+  const k=keys(cat,i).k,old=baseline.pricing?.[k]?.currentPrice,live=latest.pricing?.[k]?.currentPrice;
+  if(JSON.stringify(live??null)!==JSON.stringify(old??null))throw Error(item.name+' selling price changed in another window. Reload before saving.');
+  if(latest.catalogueBasePrices[k]===undefined){const base=basePrice(baseline,cat,i,item);if(base!==null)latest.catalogueBasePrices[k]=base}
+  latest.pricing[k]={...latest.pricing[k],currentPrice:price,priceToken:token,priceSavedAt:new Date().toISOString()};
+  if(latest.itemEditors[k])latest.itemEditors[k]={...latest.itemEditors[k],price};
+ }
+ return write(outlet,'METHOD2','default',latest,x=>Object.entries(prices||{}).every(([ri,rp])=>number(x?.pricing?.[keys(cat,Number(ri)).k]?.currentPrice)===number(rp)),original);
+}
+function saveSellingPrices(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSellingPricesUnlocked(...args)):saveSellingPricesUnlocked(...args)}
 function packing(d){
  const rows=d.packaging||[],per=number(d.packingPer),missing=[],mode=d.packingMode??(rows.length?'required':'none');
  if(!['required','none','included'].includes(mode))missing.push('Choose whether packing is required');
@@ -253,7 +268,8 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  latest.condiments[k]=d.condiments.map(x=>({...x,qty:convert(Number(x.portion),x.portionUnit,recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit),unit:recipe(recipes,x.recipeName)?.yieldUnit||x.rateUnit}));
  const owners=packingOwners(d),packingEntries=[{owner:owners.main,pc:c.packingCost,kind:'main',name:item.name},...d.condiments.map((owner,index)=>({owner,pc:c.components[index+1].packingCost,kind:'condiment',name:owner.recipeName})),{owner:owners.common,pc:c.commonCost,kind:'common',name:'Common / order'}];
  latest.packaging[k]=packingEntries.flatMap(({owner,pc,kind,name})=>pc.mode!=='required'?[]:(owner.packaging||[]).map(x=>({...x,qty:Number(x.qty)*(c.sold>0?pc.parcels/c.sold:1/(pc.per||1)),packingOwner:kind,ownerName:name})));
- latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),pricingBasis:d.pricingBasis||'markup',currentPrice:Number(d.price)};
+ if(latest.catalogueBasePrices[k]===undefined){const base=basePrice(baseline,cat,i,item);if(base!==null)latest.catalogueBasePrices[k]=base}
+ latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),pricingBasis:d.pricingBasis||'markup',currentPrice:Number(d.price),priceSavedAt:new Date().toISOString()};
  latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.base:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,actualDayCost:c.actualDayCost,actualMainFoodCost:c.actualMainFood,pricingCogs:c.withUuwp,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
  latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:d.mode==='production'?Number(d.batchSize):(purchaseConfig(d,item.side?d.servingUnit:d.unit).basis==='batch'?Number(purchaseConfig(d,item.side?d.servingUnit:d.unit).qty):1),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
@@ -270,5 +286,5 @@ function cache(outlet,s){
  const savedKeys=Object.keys(s.itemEditors||{}),summary=(savedKeys.length||s.orderPacking)?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:orderPackingCost(s).total+savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.actualDayCost??s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
  all[outlet]={...all[outlet],method2:s,...summary};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
-root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
+root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,saveSellingPrices,basePrice,currentPrice,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
 })(typeof window==='undefined'?globalThis:window);
