@@ -125,7 +125,8 @@ $('editor').onsubmit=async e=>{
  try{M2.cache(outlet,saved)}catch(e){/* A blocked browser cache does not undo a verified Google save. */}
  $('saveStatus').textContent='Verified in Google';status('Saved and read back from Google.');
  busy=false;
- if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'bobs-method2-item-saved',outlet,key:M2.keys(cat,i).k},location.origin);window.opener.focus();window.close()}
+ if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'bobs-method2-item-saved',outlet,key:M2.keys(cat,i).k},location.origin);window.opener.postMessage({type:'bobs-method2-price-saved',outlet,key:M2.keys(cat,i).k,price:Number(d.price)},location.origin);window.opener.focus();window.close()}
+ if(window.BroadcastChannel){const pc=new BroadcastChannel('bobs-method2');pc.postMessage({type:'bobs-method2-price-saved',outlet,key:M2.keys(cat,i).k,price:Number(d.price)});pc.close()}
  else location.href='method2.html?outlet='+encodeURIComponent(outlet);
  }catch(err){status(err.message);$('saveStatus').textContent='Not verified — keep this page open'}finally{busy=false;controls.disabled=false}
 };
