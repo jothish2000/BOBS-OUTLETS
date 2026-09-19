@@ -16,7 +16,7 @@ function render(){
 async function load(){try{if(!outlet)throw Error('Select an outlet first.');baseline=M2.state(await M2.read(outlet));const master=cat===M2.SIDES?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;M2.installSides(master?.recipes||[],baseline);render();$('status').textContent='Outlet '+outlet+' · Selections loaded from Google.';$('retry').hidden=true}catch(e){$('status').textContent=e.message;$('retry').hidden=false}}
 async function save(another){
  if(busy||!baseline)return;const controls=$('selectionControls');busy=true;controls.disabled=true;$('status').textContent='Saving selection and verifying Google…';
- try{const indices=Array.from($('items').querySelectorAll('input:checked'),x=>Number(x.value));const saved=await M2.saveSelection(outlet,cat,indices,baseline,ITEM_DATA[M2.SIDES]);baseline=M2.state(saved);dirty=false;busy=false;notify();$('status').textContent='Selection verified in Google.';if(another)location.href=menu;else returnToMethod()}
+ try{const indices=Array.from($('items').querySelectorAll('input[type=checkbox]:checked'),x=>Number(x.value));const prices=Object.fromEntries(Array.from($('items').querySelectorAll('input[data-price-index]'),x=>[x.dataset.priceIndex,x.value]));let saved=await M2.saveSellingPrices(outlet,cat,prices,baseline);baseline=M2.state(saved);saved=await M2.saveSelection(outlet,cat,indices,baseline,ITEM_DATA[M2.SIDES]);baseline=M2.state(saved);dirty=false;busy=false;notify();$('status').textContent='Selection verified in Google.';if(another)location.href=menu;else returnToMethod()}
  catch(e){$('status').textContent=e.message}finally{busy=false;controls.disabled=false}
 }
 $('selectionForm').onsubmit=e=>{e.preventDefault();save(false)};$('saveAnother').onclick=()=>save(true);
