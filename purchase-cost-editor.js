@@ -1,8 +1,16 @@
 (function(){'use strict';
-const $=id=>document.getElementById(id),query=new URLSearchParams(location.search),outlet=query.get('outlet'),name=query.get('item'),ids=['basis','qty','unit','total','supplier','date'];
+const $=id=>document.getElementById(id),query=new URLSearchParams(location.search),outlet=query.get('outlet'),name=query.get('item'),ids=['basis','supplyUnit','qty','unit','total','supplier','date'];
 let baseline,dirty=false,busy=false;
 function values(){return Object.fromEntries(ids.map(id=>[id,$(id).value]))}
-function calculate(){const p=values(),rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;$('calculation').textContent=rate===null?'Enter quantity and its total price.':'₹'+Number(p.total).toFixed(2)+' ÷ '+p.qty+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' per '+unit}
+function applySupply(){
+ const supply=$('supplyUnit').value,grouped=['pack','batch','box','carton'].includes(supply);
+ $('groupFields').hidden=!grouped;$('dozenNote').hidden=supply!=='dozen';
+ if(supply==='dozen'){$('basis').value='batch';$('qty').value='12';$('unit').value='piece'}
+ else if(grouped){$('basis').value='batch';$('contentsLabel').textContent='What does ONE '+supply+' contain?'}
+ else{$('basis').value='unit';$('qty').value='1';$('unit').value=supply}
+ $('priceLabel').textContent='Supplier price ₹ / '+supply;
+}
+function calculate(){applySupply();const p=values(),rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;$('calculation').textContent=rate===null?'Enter the supplier definition and price.':'₹'+Number(p.total).toFixed(2)+' ÷ '+p.qty+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' per '+unit}
 function close(){if(busy)return;if(dirty&&!confirm('Leave without saving these supplier rates?'))return;dirty=false;if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet)}
 $('close').onclick=close;
 $('editor').oninput=()=>{dirty=true;calculate()};
@@ -14,5 +22,5 @@ if(window.BroadcastChannel)for(const channelName of ['bobs-purchase-master','bob
 close();
 }catch(err){$('status').textContent=err.message}finally{busy=false;controls.disabled=false}};
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
-(async()=>{try{if(!outlet||!name)throw Error('Open a Purchase Master from an item.');baseline=M2.state(await M2.read(outlet));const old=M2.masterEntry(baseline.purchaseMasters,name),p=old?M2.purchaseConfig(old,query.get('unit')||'piece'):{basis:'unit',qty:1,unit:query.get('unit')||'piece',total:''};ids.forEach(id=>$(id).value=p[id]??'');$('title').textContent=name+' — Purchase Master COGS';$('editor').hidden=false;calculate();$('status').textContent='Outlet '+outlet+' · Google-backed supplier costing. Save verifies permanent storage.'}catch(e){$('status').textContent=e.message}})();
+(async()=>{try{if(!outlet||!name)throw Error('Open a Purchase Master from an item.');baseline=M2.state(await M2.read(outlet));const old=M2.masterEntry(baseline.purchaseMasters,name),p=old?M2.purchaseConfig(old,query.get('unit')||'piece'):{basis:'unit',supplyUnit:query.get('unit')||'piece',qty:1,unit:query.get('unit')||'piece',total:''};ids.forEach(id=>$(id).value=p[id]??'');$('title').textContent=name+' — Purchase Master COGS';$('editor').hidden=false;calculate();$('status').textContent='Outlet '+outlet+' · Google-backed supplier costing. Save verifies permanent storage.'}catch(e){$('status').textContent=e.message}})();
 })();
