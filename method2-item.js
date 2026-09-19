@@ -14,13 +14,23 @@ function field(label,value,oninput,type='number'){
 function pick(label,value,options,change){const l=document.createElement('label');l.textContent=label;const e=document.createElement('select');for(const [v,t] of options){const o=document.createElement('option');o.value=v;o.textContent=t;e.append(o)}e.value=value;e.onchange=()=>{change(e.value);dirty=true;renderComponents();calculate()};l.append(e);return l}
 function purchaseFields(x,unit){
  x.purchase=M2.purchaseConfig(x,unit);const p=x.purchase,box=document.createElement('div');box.className='component purchase-fields';
- const title=document.createElement('h3');title.textContent='Purchase costing — individual unit or batch';box.append(title);
+ const title=document.createElement('h3');title.textContent='Purchase Master — supplier definition';box.append(title);
  const grid=document.createElement('div');grid.className='fields';
- grid.append(pick('How purchased',p.basis||'unit',[['unit','Individual unit / supplier packet'],['batch','Bulk batch']],v=>p.basis=v),
- field(p.basis==='batch'?'Quantity in ONE supplier batch':'Quantity in ONE priced unit',p.qty,v=>p.qty=v),
- pick('Purchase quantity unit',p.unit,[['piece','pieces'],['pack','ready-to-sell packs'],['ml','ml'],['L','litres'],['g','grams'],['kg','kg']],v=>p.unit=v),
- field(p.basis==='batch'?'Total supplier price ₹ for ONE batch':'Supplier price ₹ for ONE unit',p.total,v=>p.total=v),
- field('Supplier (optional)',p.supplier,v=>p.supplier=v,'text'),field('Invoice date (optional)',p.date,v=>p.date=v,'date'));
+ const supply=p.supplyUnit||(p.basis==='batch'?'batch':p.unit||unit),grouped=['pack','batch','box','carton'].includes(supply);
+ grid.append(pick('How does the supplier supply this item?',supply,[['piece','Piece'],['dozen','Dozen'],['pack','Pack'],['batch','Batch'],['box','Box'],['carton','Carton'],['kg','kg'],['g','g'],['L','Litre'],['ml','ml']],v=>{
+  p.supplyUnit=v;
+  if(v==='dozen'){p.basis='batch';p.qty=12;p.unit='piece'}
+  else if(['pack','batch','box','carton'].includes(v)){p.basis='batch';if(!(M2.number(p.qty)>0))p.qty='';if(!['piece','pack','g','kg','ml','L'].includes(p.unit)||p.unit===v)p.unit=unit||'piece'}
+  else{p.basis='unit';p.qty=1;p.unit=v}
+ }));
+ if(grouped){
+  grid.append(field('What does ONE '+supply+' contain?',p.qty,v=>p.qty=v),
+   pick('Contents unit',p.unit,[['piece','pieces'],['pack','packets / sale packs'],['ml','ml'],['L','litres'],['g','grams'],['kg','kg']],v=>p.unit=v));
+ }else if(supply==='dozen'){
+  const note=document.createElement('p');note.className='notice';note.textContent='1 Dozen = 12 Pieces — BOBS applies this automatically.';box.append(note);
+ }
+ grid.append(field('Supplier price ₹ / '+supply,p.total,v=>p.total=v),
+  field('Supplier (optional)',p.supplier,v=>p.supplier=v,'text'),field('Invoice date (optional)',p.date,v=>p.date=v,'date'));
  const summary=document.createElement('output');summary.className='purchase-summary';summary.purchase=p;
  box.append(grid,summary);return box;
 }
@@ -67,9 +77,9 @@ function calculate(){
  $('pricingPercentLabel').textContent=d.pricingBasis==='margin'?'Target gross margin %':'Markup %';$('markup').max=d.pricingBasis==='margin'?'99.999999':'';
  document.querySelectorAll('.purchase-summary').forEach(el=>{const p=el.purchase,rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;el.textContent=rate===null?'Enter quantity and total supplier price.':money(Number(p.total))+' ÷ '+p.qty+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' / '+unit});
  $('supplyRecipeLink').replaceChildren(primaryCostLink(item.name+(production?' – recipe & cost':' – Purchase Master COGS')));
- const purchase=M2.purchaseConfig(d,item.side?d.servingUnit:d.unit),bulkPurchase=!production&&purchase.basis==='batch';$('batchLabel').hidden=!production;$('batchCaption').textContent='Quantity per production batch';$('batchesCaption').textContent=production?'Number of production batches today':bulkPurchase?'Number of supplier batches purchased today':'Number of units purchased today';$('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
+ const purchase=M2.purchaseConfig(d,item.side?d.servingUnit:d.unit),bulkPurchase=!production&&purchase.basis==='batch',supplyUnit=purchase.supplyUnit||purchase.unit,supplyLabel={piece:'Pieces',dozen:'Dozens',pack:'Packs',batch:'Batches',box:'Boxes',carton:'Cartons',kg:'kg',g:'g',L:'Litres',ml:'ml'}[supplyUnit]||supplyUnit;$('batchLabel').hidden=!production;$('batchCaption').textContent='Quantity per production batch';$('batchesCaption').textContent=production?'Number of production batches today':'Quantity Purchased Today ('+supplyLabel+')';$('rateLabel').hidden=production;$('capacityLabel').hidden=!production;if($('maxBatchesLabel'))$('maxBatchesLabel').hidden=!production;
  $('purchaseRate').required=false;if(!production)$('purchaseRate').value=c.components[0].foodMissing?'':c.base;$('soldUnit').textContent='('+d.unit+')';$('sold').step=d.unit==='kg'?'any':'1';$('batchSize').step=d.unit==='kg'?'any':'1';$('batchSize').min=d.unit==='kg'?'0.001':'1';
- $('quantitySummary').textContent=(production?'Produced':'Purchased')+' today: '+c.made+' '+d.unit+(bulkPurchase?' ('+purchase.qty+' '+purchase.unit+' × '+d.batches+' batches)':'')+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
+ $('quantitySummary').textContent=(production?'Produced today: ':'Purchased Today: ')+c.made+' '+d.unit+(!production&&bulkPurchase?' ('+d.batches+' '+supplyLabel+' × '+purchase.qty+' '+purchase.unit+')':'')+' · Left over: '+(c.unsold===null?'enter sold quantity':c.unsold);
  $('sold').className=M2.number(d.sold)===null||!soldTouched?'pending':'entered';$('soldError').textContent='';
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
