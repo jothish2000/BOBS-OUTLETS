@@ -43,7 +43,7 @@ function renderComponents(){
  const box=document.createElement('div');box.className='component';const title=document.createElement('h3');title.dataset.recipeName=x.recipeName;title.append(x.source==='purchase'?purchaseLink(x.recipeName,x.portionUnit):link(x.recipeName));box.append(title);
  const grid=document.createElement('div');grid.className='fields';
  grid.append(pick('Cost source',x.source,[['recipe','Production Mode — Recipe Master'],['purchase','Purchase Mode — Purchase Master']],v=>x.source=v),
- field('Portion per sales unit',x.portion,v=>x.portion=v),
+ field('QUANTITY SERVED PER UNIT SOLD',x.portion,v=>x.portion=v),
  pick('Portion unit',x.portionUnit,[['g','grams'],['kg','kg'],['ml','ml'],['L','litres'],['piece','pieces']],v=>x.portionUnit=v));
  box.append(grid);
  if(x.source==='purchase')box.append(purchaseFields(x,x.rateUnit||x.portionUnit));
