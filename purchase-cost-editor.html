@@ -1,13 +1,15 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Purchase Master — BOBS</title>
-<link rel="stylesheet" href="method2-workspace.css?v=order-v4"><script>window.BOBS_OWNED_EDITOR=true;</script><script src="bobs-config.js?v=selection-v2"></script><script src="bobs-google-data.js"></script><script src="method2-core.js?v=order-v4"></script></head>
+<link rel="stylesheet" href="method2-workspace.css?v=supplier-flow-v2"><script>window.BOBS_OWNED_EDITOR=true;</script><script src="bobs-config.js?v=selection-v2"></script><script src="bobs-google-data.js"></script><script src="method2-core.js?v=supplier-flow-v2"></script></head>
 <body><header><h1 id="title">Purchase Master COGS</h1><p>Shared supplier costing for this outlet. No recipe ingredients are changed.</p></header>
 <main><p id="status" role="status">Reading Google…</p><form id="editor" hidden><fieldset id="controls"><section class="card"><div class="fields">
-<label>How purchased<select id="basis"><option value="unit">Individual unit / supplier packet</option><option value="batch">Bulk batch</option></select></label>
-<label>Quantity in this priced unit / batch<input id="qty" type="number" min="0.000001" step="any" required></label>
-<label>Purchase quantity unit<select id="unit"><option value="piece">pieces</option><option value="pack">ready-to-sell packs</option><option value="ml">ml</option><option value="L">litres</option><option value="g">grams</option><option value="kg">kg</option></select></label>
-<label>Total supplier price ₹ for this quantity<input id="total" type="number" min="0" step="any" required></label>
+<label>How does the supplier supply this item?<select id="supplyUnit"><option value="piece">Piece</option><option value="dozen">Dozen</option><option value="pack">Pack</option><option value="batch">Batch</option><option value="box">Box</option><option value="carton">Carton</option><option value="kg">kg</option><option value="g">g</option><option value="L">Litre</option><option value="ml">ml</option></select></label>
+<input id="basis" type="hidden">
+<div id="groupFields" class="fields"><label><span id="contentsLabel">What does ONE group contain?</span><input id="qty" type="number" min="0.000001" step="any" required></label>
+<label>Contents unit<select id="unit"><option value="piece">pieces</option><option value="pack">packets / sale packs</option><option value="ml">ml</option><option value="L">litres</option><option value="g">grams</option><option value="kg">kg</option></select></label></div>
+<label><span id="priceLabel">Supplier price ₹</span><input id="total" type="number" min="0" step="any" required></label>
 <label>Supplier (optional)<input id="supplier"></label><label>Invoice date (optional)<input id="date" type="date"></label>
-</div><p id="calculation" class="notice"></p><p>For a pouch containing 200 ml, enter 200 ml and its full supplier price. Use “ready-to-sell packs” only for an intact standalone pack, not a shared condiment portion.</p>
+</div><p id="dozenNote" class="notice" hidden>1 Dozen = 12 Pieces — BOBS applies this automatically.</p><p id="calculation" class="notice"></p>
+<p>Define the supplier supply unit once. Pack, Batch, Box and Carton ask what ONE contains. Today's item entry will inherit this saved unit and ask only the quantity purchased today.</p>
 <p>This is a cost master, not a stock receipt. It is reused by separately sold items and complimentary portions that use Purchase. Existing unsaved item edits are not sent to this page.</p></section>
-<button id="save" type="submit">Save Purchase Master to Google & return</button></fieldset></form><button id="close" type="button" class="secondary">Back without saving</button></main><script src="purchase-cost-editor.js?v=order-v4"></script></body></html>
+<button id="save" type="submit">Save Purchase Master to Google & return</button></fieldset></form><button id="close" type="button" class="secondary">Back without saving</button></main><script src="purchase-cost-editor.js?v=supplier-flow-v2"></script></body></html>
