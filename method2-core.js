@@ -61,7 +61,7 @@ function savePurchase(...args){return root.navigator?.locks?root.navigator.locks
 function state(s){s=clone(s||{});maps.forEach(k=>s[k]=s[k]||{});s.selection=s.selection||{};s.sideCatalog=Array.isArray(s.sideCatalog)?s.sideCatalog:[];s.purchaseMasters=s.purchaseMasters||{};s.catalogueBasePrices=s.catalogueBasePrices||{};return s}
 function hasItem(s,cat,i){const {k,q,legacy}=keys(cat,i);return !!(s.itemEditors?.[k]||s.qtys?.[q]!==undefined||s.prod?.[legacy]||Number(s.prod?.[k]?.todaysProduction)>0||s.condiments?.[k]?.length||s.packaging?.[k]?.length)}
 function selected(s,cat,i){const entry=s.selection?.[cat];if(cat===SIDES&&Array.isArray(entry?.names)){const item=root.ITEM_DATA?.[cat]?.[i]||sideCatalogue(s)[i];return !!item&&entry.names.some(n=>purchaseKey(n)===purchaseKey(item.name))}return Array.isArray(entry?.indices)?entry.indices.includes(Number(i)):hasItem(s,cat,i)}
-async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
+async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue,prices={}){
  const latest=state(await read(outlet)),original=clone(latest);
  if(JSON.stringify(latest.selection[cat])!==JSON.stringify(baseline.selection?.[cat]))throw Error('This category selection changed in another window. Reload before saving.');
  if(cat===SIDES){
@@ -69,6 +69,7 @@ async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
   if(!Array.isArray(catalogue))throw Error('Load the sides catalogue first.');
   latest.sideCatalogue=clone(catalogue);
  }
+ applySellingPrices(latest,cat,prices,baseline);
  const token=Date.now()+'-'+Math.random().toString(36).slice(2);
  const clean=[...new Set(indices.filter(i=>Number.isInteger(i)&&i>=0))].sort((a,b)=>a-b);
  if(cat==='Sides & Extras'){latest.sideCatalog=(ITEM_DATA[cat]||[]).map(x=>x.name);latest.selection[cat]={names:clean.map(i=>ITEM_DATA[cat]?.[i]?.name).filter(Boolean),token,savedAt:new Date().toISOString()}}
@@ -76,16 +77,20 @@ async function saveSelectionUnlocked(outlet,cat,indices,baseline,catalogue){
  return write(outlet,'METHOD2','default',latest,s=>s?.selection?.[cat]?.token===token,original);
 }
 function saveSelection(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSelectionUnlocked(...args)):saveSelectionUnlocked(...args)}
-async function saveSellingPricesUnlocked(outlet,cat,prices,baseline){
- const latest=state(await read(outlet)),original=clone(latest),token=Date.now()+'-'+Math.random().toString(36).slice(2),catalogue=root.ITEM_DATA?.[cat]||[];
+function applySellingPrices(latest,cat,prices,baseline){
+ const token=Date.now()+'-'+Math.random().toString(36).slice(2),catalogue=root.ITEM_DATA?.[cat]||[];
  for(const [rawIndex,rawPrice] of Object.entries(prices||{})){
-  const i=Number(rawIndex),item=catalogue[i],price=number(rawPrice);if(!item||price===null)throw Error('Enter a valid current selling price.');
+  const i=Number(rawIndex),item=catalogue[i],price=number(rawPrice);if(!Number.isInteger(i)||i<0||!item||price===null)throw Error('Enter a valid current selling price.');
   const k=keys(cat,i).k,old=baseline.pricing?.[k]?.currentPrice,live=latest.pricing?.[k]?.currentPrice;
   if(JSON.stringify(live??null)!==JSON.stringify(old??null))throw Error(item.name+' selling price changed in another window. Reload before saving.');
   if(latest.catalogueBasePrices[k]===undefined){const base=basePrice(baseline,cat,i,item);if(base!==null)latest.catalogueBasePrices[k]=base}
   latest.pricing[k]={...latest.pricing[k],currentPrice:price,priceToken:token,priceSavedAt:new Date().toISOString()};
   if(latest.itemEditors[k])latest.itemEditors[k]={...latest.itemEditors[k],price};
  }
+}
+async function saveSellingPricesUnlocked(outlet,cat,prices,baseline){
+ const latest=state(await read(outlet)),original=clone(latest);
+ applySellingPrices(latest,cat,prices,baseline);
  return write(outlet,'METHOD2','default',latest,x=>Object.entries(prices||{}).every(([ri,rp])=>number(x?.pricing?.[keys(cat,Number(ri)).k]?.currentPrice)===number(rp)),original);
 }
 function saveSellingPrices(...args){return root.navigator?.locks?root.navigator.locks.request('bobs-method2-'+args[0],()=>saveSellingPricesUnlocked(...args)):saveSellingPricesUnlocked(...args)}
@@ -133,7 +138,7 @@ function convert(q,from,to){
  return null;
 }
 function draft(s,cat,i,item){
- const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.condiments=saved.condiments||[];saved.packaging=saved.packaging||[];saved.servingQty=saved.servingQty??item.servingQty??item.recipePortion;saved.servingUnit=saved.servingUnit||item.servingUnit||item.recipePortionUnit;saved.uuwpPolicy=saved.uuwpPolicy||(saved.packingSchemaVersion?'always':'legacy');return hydratePurchases(normalizePacking(saved),item,s.purchaseMasters)}
+ const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);saved.price=currentPrice(s,cat,i,item)??saved.price;if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.condiments=saved.condiments||[];saved.packaging=saved.packaging||[];saved.servingQty=saved.servingQty??item.servingQty??item.recipePortion;saved.servingUnit=saved.servingUnit||item.servingUnit||item.recipePortionUnit;saved.uuwpPolicy=saved.uuwpPolicy||(saved.packingSchemaVersion?'always':'legacy');return hydratePurchases(normalizePacking(saved),item,s.purchaseMasters)}
  const p={...s.prod?.[legacy],...s.prod?.[k]},c=s.commercial?.[k]||{},price=s.pricing?.[k]||{};
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
  return hydratePurchases({mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':item.defaultMode||'purchased',unit:item.side||item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',servingQty:item.servingQty??item.recipePortion,servingUnit:item.servingUnit||item.recipePortionUnit,pricingBasis:'markup',uuwpPolicy:hasItem(s,cat,i)?'legacy':'always',
@@ -249,6 +254,7 @@ function project(s,cat,i){const k=keys(cat,i);return Object.fromEntries(maps.map
 async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  const latest=state(await read(outlet)),original=clone(latest),{k,q,legacy}=keys(cat,i);
  if(JSON.stringify(project(latest,cat,i))!==JSON.stringify(project(baseline,cat,i)))throw Error('This item changed in another window. Reload before saving; your draft remains here.');
+ if(number(d.price)===null)throw Error('Enter a valid current selling price.');
  const purchases=purchasedSources(d,item);
  for(const [name] of purchases)if(masterFingerprint(latest.purchaseMasters,name)!==masterFingerprint(baseline.purchaseMasters,name))throw Error(name+' purchase master changed elsewhere. Reload before saving.');
  const c=calculate(d,item,recipes);if(c.missing.length)throw Error('Complete cost inputs: '+c.missing.join(', '));
@@ -288,3 +294,4 @@ function cache(outlet,s){
 }
 root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,saveSellingPrices,basePrice,currentPrice,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
 })(typeof window==='undefined'?globalThis:window);
+
