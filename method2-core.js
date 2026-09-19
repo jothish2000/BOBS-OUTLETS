@@ -181,10 +181,19 @@ function calculate(d,item,recipes){
  const parcelSize=packingCost.per||1,parcelPackCost=packingCost.perPack,parcels=packingCost.parcels,totalPacking=sold===null?null:commonCost.total+components.reduce((sum,x)=>sum+x.packingCost.total,0);
  missing.push(...commonCost.missing.map(m=>'Common / order packing: '+m));
  const pack=commonCost.allocated+components.reduce((sum,x)=>sum+x.packing,0);
- const spoil=(baseCost+cond)*(number(d.spoilage)||0)/100,final=baseCost+cond+spoil+pack;
- // Spoilage and UUWP are pricing provisions only. They must never be added again to actual-day incurred cost.
- const spoilageApplied=(number(d.spoilage)||0)>0,apply=(number(d.uuwp)||0)>0;
- const withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
+ // Actual COGS records the complete factual food and packing cost only. Spoilage and UUWP
+ // are commercial allowances used exclusively by the Ideal Pricing Builder below.
+ const final=baseCost+cond+pack,spoilagePct=number(d.spoilage)||0;
+ const spoil=(baseCost+cond)*spoilagePct/100,spoilageApplied=spoilagePct>0;
+ const pricingAfterSpoilage=final+spoil,unsold=sold===null?null:Math.max(0,made-sold);
+ // With known leftovers, price against the actual leftover share. With confirmed 100% sales,
+ // use the editable benchmark (5% by default). Missing sales data is never silently treated as zero.
+ const actualLeftoverPct=sold===null||!(made>0)?null:unsold/made*100;
+ const fallbackUuwpPct=number(d.uuwp)||0;
+ const uuwpPctApplied=actualLeftoverPct===null?null:(unsold>0?actualLeftoverPct:fallbackUuwpPct);
+ const apply=uuwpPctApplied!==null&&uuwpPctApplied>0;
+ const uuwpAmount=uuwpPctApplied===null?null:pricingAfterSpoilage*uuwpPctApplied/100;
+ const withUuwp=uuwpAmount===null?null:pricingAfterSpoilage+uuwpAmount;
  // Actual-day incurred cost uses the full main-food purchase/production commitment, while sale-triggered
  // packing and included-condiment portions are charged only for units actually sold. Pricing provisions
  // (spoilage/UUWP) are excluded here, preventing both omission of unsold main food and double counting.
@@ -195,9 +204,9 @@ function calculate(d,item,recipes){
  const actualDayCost=sold===null?null:actualMainFood+actualMainPacking+actualCondiments+actualCommonPacking;
  const percent=number(d.markup),margin=d.pricingBasis==='margin';
  if(margin&&(percent===null||percent>=100))missing.push('Target margin must be at least 0 and below 100%');
- return {commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,spoilageApplied,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+ return {commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,spoilagePct,spoilageApplied,pricingAfterSpoilage,actualLeftoverPct,fallbackUuwpPct,uuwpPctApplied,uuwpAmount,final,withUuwp,apply,made,sold,unsold,
  actualMainFood,actualMainPacking,actualCondiments,actualCommonPacking,actualDayCost,
- suggested:margin?(percent!==null&&percent<100?withUuwp/(1-percent/100):null):withUuwp*(1+(percent||0)/100),soldCost:sold===null?null:final*sold,
+ suggested:withUuwp===null?null:margin?(percent!==null&&percent<100?withUuwp/(1-percent/100):null):withUuwp*(1+(percent||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
 async function read(outlet,module='METHOD2',key='default'){
@@ -294,4 +303,3 @@ function cache(outlet,s){
 }
 root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,saveSellingPrices,basePrice,currentPrice,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
 })(typeof window==='undefined'?globalThis:window);
-
