@@ -162,12 +162,21 @@ function calculate(d,item,recipes){
  missing.push(...commonCost.missing.map(m=>'Common / order packing: '+m));
  const pack=commonCost.allocated+components.reduce((sum,x)=>sum+x.packing,0);
  const spoil=(baseCost+cond)*(number(d.spoilage)||0)/100,final=baseCost+cond+spoil+pack;
- // UUWP is a visible pricing allowance for every source, never a second procurement expense.
- const apply=d.uuwpPolicy!=='legacy'||d.mode==='purchased'||sold===null||made===sold;
+ // Spoilage and UUWP are pricing provisions only. They must never be added again to actual-day incurred cost.
+ const spoilageApplied=(number(d.spoilage)||0)>0,apply=(number(d.uuwp)||0)>0;
  const withUuwp=final*(1+(apply?(number(d.uuwp)||0)/100:0));
+ // Actual-day incurred cost uses the full main-food purchase/production commitment, while sale-triggered
+ // packing and included-condiment portions are charged only for units actually sold. Pricing provisions
+ // (spoilage/UUWP) are excluded here, preventing both omission of unsold main food and double counting.
+ const actualMainFood=sold===null?null:made*baseCost;
+ const actualMainPacking=sold===null?null:packingCost.total;
+ const actualCondiments=sold===null?null:sideComponents.reduce((sum,x)=>sum+(x.food+x.packing)*sold,0);
+ const actualCommonPacking=sold===null?null:commonCost.total;
+ const actualDayCost=sold===null?null:actualMainFood+actualMainPacking+actualCondiments+actualCommonPacking;
  const percent=number(d.markup),margin=d.pricingBasis==='margin';
  if(margin&&(percent===null||percent>=100))missing.push('Target margin must be at least 0 and below 100%');
- return {commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+ return {commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,spoilageApplied,final,withUuwp,apply,made,sold,unsold:sold===null?null:made-sold,
+ actualMainFood,actualMainPacking,actualCondiments,actualCommonPacking,actualDayCost,
  suggested:margin?(percent!==null&&percent<100?withUuwp/(1-percent/100):null):withUuwp*(1+(percent||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
@@ -245,7 +254,7 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  const owners=packingOwners(d),packingEntries=[{owner:owners.main,pc:c.packingCost,kind:'main',name:item.name},...d.condiments.map((owner,index)=>({owner,pc:c.components[index+1].packingCost,kind:'condiment',name:owner.recipeName})),{owner:owners.common,pc:c.commonCost,kind:'common',name:'Common / order'}];
  latest.packaging[k]=packingEntries.flatMap(({owner,pc,kind,name})=>pc.mode!=='required'?[]:(owner.packaging||[]).map(x=>({...x,qty:Number(x.qty)*(c.sold>0?pc.parcels/c.sold:1/(pc.per||1)),packingOwner:kind,ownerName:name})));
  latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),pricingBasis:d.pricingBasis||'markup',currentPrice:Number(d.price)};
- latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.final:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
+ latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.base:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,actualDayCost:c.actualDayCost,actualMainFoodCost:c.actualMainFood,pricingCogs:c.withUuwp,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
  latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:d.mode==='production'?Number(d.batchSize):(purchaseConfig(d,item.side?d.servingUnit:d.unit).basis==='batch'?Number(purchaseConfig(d,item.side?d.servingUnit:d.unit).qty):1),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
  else delete latest.prod[legacy];
@@ -258,7 +267,7 @@ function cache(outlet,s){
  localStorage.setItem('method2-verified-'+outlet,JSON.stringify(s));
  localStorage.setItem('method2-item-state',JSON.stringify(s));
  const all=JSON.parse(localStorage.getItem('outlet-analysis-data')||'{}');
- const savedKeys=Object.keys(s.itemEditors||{}),summary=(savedKeys.length||s.orderPacking)?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:orderPackingCost(s).total+savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
+ const savedKeys=Object.keys(s.itemEditors||{}),summary=(savedKeys.length||s.orderPacking)?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:orderPackingCost(s).total+savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.actualDayCost??s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
  all[outlet]={...all[outlet],method2:s,...summary};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
 root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
