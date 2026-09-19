@@ -12,14 +12,18 @@ const purchaseKey=name=>norm(canonicalRecipeName(name));
 // Accept both the published supplier schema and the component editor schema.
 function purchaseConfig(x={},unit){
  if(x.purchase)return purchaseConfig(x.purchase,unit);
- if(Object.prototype.hasOwnProperty.call(x,'total'))return clone(x);
- const basis=x.purchaseBasis||x.basis||'unit',batch=basis==='batch';
- return {basis,qty:batch?(x.purchaseBatchQty??x.batchQty??''):1,unit:batch?(x.purchaseBatchUnit||x.batchUnit||x.rateUnit||unit):(x.rateUnit||x.batchUnit||unit),total:batch?(x.purchaseBatchCost??x.batchCost??''):(x.purchaseRate??x.unitCost??''),supplier:x.supplier||'',date:x.date||''};
+ if(Object.prototype.hasOwnProperty.call(x,'total')){
+  const p=clone(x),basis=p.basis||'unit';
+  p.supplyUnit=p.supplyUnit||p.purchaseSupplyUnit||(basis==='batch'?'batch':p.unit||unit);
+  return p;
+ }
+ const basis=x.purchaseBasis||x.basis||'unit',batch=basis==='batch',underlying=batch?(x.purchaseBatchUnit||x.batchUnit||x.rateUnit||unit):(x.rateUnit||x.batchUnit||unit);
+ return {basis,supplyUnit:x.purchaseSupplyUnit||x.supplyUnit||(batch?'batch':underlying),qty:batch?(x.purchaseBatchQty??x.batchQty??''):1,unit:underlying,total:batch?(x.purchaseBatchCost??x.batchCost??''):(x.purchaseRate??x.unitCost??''),supplier:x.supplier||'',date:x.date||''};
 }
 function purchaseRate(p){const qty=number(p?.qty),total=number(p?.total);return qty>0&&total!==null?total/qty:null}
 function masterEntry(masters={},name){return masters[norm(name)]||masters[purchaseKey(name)]||Object.entries(masters).find(([key])=>purchaseKey(key)===purchaseKey(name))?.[1]}
 function masterFingerprint(masters={},name){return JSON.stringify(Object.entries(masters).filter(([key])=>purchaseKey(key)===purchaseKey(name)).sort(([a],[b])=>a.localeCompare(b)))}
-function masterRecord(p,previous={},extra={}){return {...previous,...clone(p),unitCost:purchaseRate(p),batchQty:p.basis==='batch'?number(p.qty):null,batchCost:p.basis==='batch'?number(p.total):null,batchUnit:p.unit,...extra}}
+function masterRecord(p,previous={},extra={}){return {...previous,...clone(p),purchaseSupplyUnit:p.supplyUnit||p.unit,unitCost:purchaseRate(p),batchQty:p.basis==='batch'?number(p.qty):null,batchCost:p.basis==='batch'?number(p.total):null,batchUnit:p.unit,...extra}}
 function isSide(r){return /CONDIMENT/i.test(r.kind||r.category||'')||/sambar|chutney|poriyal|raita|kurma/i.test(r.name||'')}
 function sideRecipes(recipes){const out=[],seen=new Set();for(const r of recipes||[]){if(!isSide(r))continue;const name=canonicalRecipeName(r.name),key=purchaseKey(name);if(seen.has(key))continue;seen.add(key);out.push({...r,name})}return out}
 function sideItem(name,r={}){name=canonicalRecipeName(name);return {name,recipeName:name,recipeId:String(r.id||r.recipeId||purchaseKey(name)),side:true,standaloneSide:true,baseUnit:'pack',defaultMode:'production',servingQty:/sambar/i.test(name)?200:'',servingUnit:convert(1,r.yieldUnit,'ml')!==null||/sambar/i.test(name)?'ml':'g',recipePortion:/sambar/i.test(name)?200:null,recipePortionUnit:/sambar/i.test(name)?'ml':null,price:'',purchasedCost:''}}
@@ -45,7 +49,7 @@ function hydratePurchases(d,item,masters={}){
 function purchasedSources(d,item){const entries=[];if(d.mode==='purchased')entries.push([item.recipeName||item.name,purchaseConfig(d,item.side?d.servingUnit:d.unit)]);for(const x of d.condiments||[])if(x.source==='purchase')entries.push([x.recipeName,purchaseConfig(x,x.rateUnit||x.portionUnit)]);return entries}
 function putMaster(latest,name,p,extra){const key=norm(name),previous=masterEntry(latest.purchaseMasters,name)||{};latest.purchaseMasters[key]=masterRecord(p,previous,{name,...extra});return key}
 async function savePurchaseUnlocked(outlet,name,p,baseline){
- if(purchaseRate(p)===null||!['piece','pack','g','kg','ml','L'].includes(p.unit))throw Error('Enter a positive purchase quantity, its unit and total price.');
+ if(purchaseRate(p)===null||!['piece','pack','g','kg','ml','L'].includes(p.unit)||!['piece','dozen','pack','batch','box','carton','kg','g','L','ml'].includes(p.supplyUnit||p.unit))throw Error('Enter the supplier supply unit, its contents where required, and supplier price.');
  const latest=state(await read(outlet)),original=clone(latest);
  if(masterFingerprint(latest.purchaseMasters,name)!==masterFingerprint(baseline.purchaseMasters,name))throw Error('This purchase master changed elsewhere. Reload before saving.');
  const token=Date.now()+'-'+Math.random().toString(36).slice(2),key=putMaster(latest,name,p,{saveToken:token,savedAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
@@ -232,7 +236,7 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  savedDraft.itemPackingPer=savedDraft.mainPacking.packingPer;savedDraft.itemPackingMode=savedDraft.mainPacking.packingMode;
  savedDraft.packaging=c.commonCost.mode==='required'?clone(savedDraft.commonPacking.packaging):[];
  savedDraft.packingPer=savedDraft.commonPacking.packingPer;savedDraft.packingMode=savedDraft.commonPacking.packingMode;
- function mirror(owner,unit){const p=purchaseConfig(owner,unit);owner.purchaseBasis=p.basis;owner.purchaseBatchQty=p.basis==='batch'?p.qty:'';owner.purchaseBatchCost=p.basis==='batch'?p.total:'';owner.purchaseBatchUnit=p.unit;owner.purchaseRate=purchaseRate(p);owner.rateUnit=p.unit}
+ function mirror(owner,unit){const p=purchaseConfig(owner,unit);owner.purchaseBasis=p.basis;owner.purchaseSupplyUnit=p.supplyUnit||p.unit;owner.purchaseBatchQty=p.basis==='batch'?p.qty:'';owner.purchaseBatchCost=p.basis==='batch'?p.total:'';owner.purchaseBatchUnit=p.unit;owner.purchaseRate=purchaseRate(p);owner.rateUnit=p.unit}
  if(d.mode==='purchased')mirror(savedDraft,item.side?d.servingUnit:d.unit);
  for(const x of savedDraft.condiments||[])if(x.source==='purchase')mirror(x,x.rateUnit||x.portionUnit);
  latest.itemEditors[k]=savedDraft;latest.qtys[q]=d.unit==='kg'?{qty:Number(d.sold)*1000,unit:'g'}:Number(d.sold);
