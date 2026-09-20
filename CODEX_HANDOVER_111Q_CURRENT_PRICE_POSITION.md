@@ -77,3 +77,23 @@ Pre-change recovery point for this UI adjustment is the parent of `bd1fc6f...`. 
 
 ### Exact next Codex action
 Continue from current HEAD. First browser-check that the Item Editor loads, the UUWP policy dropdown is no longer visible, the UUWP explanatory notice is visible, saved items still load/save, and UUWP calculation remains: actual leftover % when leftovers exist; default allowance when fully sold. Then continue normal 111Q5PV-DR work without redesigning Method 2.
+
+
+---
+
+## GOVERNANCE MASTER UPGRADE — 20 SEP 2026
+
+The canonical working definition is now **111Q = 111Q5PVDRT**.
+
+Repository master: `OVERALL_DESIGN_MASTER_111Q.md`
+
+This consolidates the earlier Universal 111Q Master, BOBS 111Q Constitution/Codex handover principles, and the latest Owner-approved upgrades:
+- 5PV = PRO / CON / COMPARE & CONNECTIONS / OBSERVER / OWNER;
+- DR = every analytical view examines both logic/business and code/software;
+- T = mandatory post-implementation tester role;
+- T explicitly checks affected page/site loading, links/navigation, UI, calculations, persistence/read-back, connected regressions and recovery;
+- test evidence must be fed back through a SECOND 5PV-DR before completion;
+- status must distinguish implementation, code check, testing, browser/live verification and Owner UAT;
+- every material change updates the continuation handover.
+
+Future Codex sessions should read `OVERALL_DESIGN_MASTER_111Q.md` first and treat the project handover as the current BOBS state annex.
