@@ -61,7 +61,7 @@ window.BOBS_METHOD2_REVIEW=function(){
 };
 $('review').onclick=()=>{if(window.BOBS_METHOD2_REVIEW())$('status').textContent='All selected items have confirmed Sold Today quantities.'};
 $('closeReview').onclick=()=>$('reviewDialog').close();$('refresh').onclick=reload;$('search').oninput=filterRows;
-$('overall').href='method2-overall.html?outlet='+encodeURIComponent(outlet);$('chooseItems').href='method2-select.html?outlet='+encodeURIComponent(outlet);$('chooseItems').target='bobs-select-'+outlet;
+$('overall').href='method2-overall.html?outlet='+encodeURIComponent(outlet);$('staffing').href='workload-planner.html?outlet='+encodeURIComponent(outlet);$('chooseItems').href='method2-select.html?outlet='+encodeURIComponent(outlet);$('chooseItems').target='bobs-select-'+outlet;
 function receive(data){if(!['bobs-method2-item-saved','bobs-method2-selection-saved','bobs-purchase-master-saved'].includes(data?.type)||String(data.outlet)!==String(outlet))return;if(data.key)delete pending[data.key];sessionStorage.setItem(pendingKey,JSON.stringify(pending));clearTimeout(refreshTimer);refreshTimer=setTimeout(reload,100)}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receive(e.data)});
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-method2');channel.onmessage=e=>receive(e.data)}
