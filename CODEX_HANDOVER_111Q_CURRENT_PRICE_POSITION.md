@@ -39,3 +39,41 @@ First inspect repository HEAD and this handover. Do not repeat completed work. R
 4. save/read-back still persists the shared Google-backed price;
 5. Selection screen receives the saved price;
 6. no regressions in Actual COGS, spoilage, UUWP, packing, or condiment calculations.
+
+
+---
+
+## 111Q5PV-DR UPDATE — UUWP POLICY UI
+
+### Implementation
+Commit `bd1fc6f5e46870307a4d1234e47bfc8ce23fcbb6` hides the operator-facing **UUWP application rule** selector while preserving the existing `#uuwpPolicy` control as a hidden compatibility field. This avoids breaking the current Item Editor field/show/pull/event wiring or older saved values.
+
+The Ideal Pricing Builder now visibly explains the operational rule:
+
+> **UUWP rule:** When leftovers exist, BOBS automatically uses the actual leftover percentage. When 100% is sold, the UUWP default allowance above is used (default 5%).
+
+It also states that UUWP is a pricing allowance only and does not change Actual COGS.
+
+### 111Q5PV-DR rationale
+- **PRO / logic:** the automatic rule remains visible and understandable.
+- **PRO / software:** legacy policy state remains available internally.
+- **CON addressed / logic:** the operator no longer has to choose a technical compatibility policy.
+- **CON addressed / software:** no deletion/migration of old `uuwpPolicy` data was attempted.
+- **COMPARE:** informational rule label replaces an unnecessary operational selector.
+- **OBSERVE:** current `method2-core.js` calculation already applies actual leftover % when unsold quantity is positive and the default UUWP % when fully sold.
+- **YOU / owner decision:** hide the selector; retain its compatibility plumbing.
+
+### Intentionally untouched
+No changes to Actual COGS, spoilage, UUWP calculation formula, pricing formula, Google save/read architecture, packing, recipes, condiments, or current selling price persistence.
+
+### Recovery
+Pre-change recovery point for this UI adjustment is the parent of `bd1fc6f...`. Earlier known-good Method 2 checkpoint remains `fd2aff997fed2a17233b83a1a845fdd30661f96f`.
+
+### Verification status
+- **Implemented:** YES.
+- **Code-path inspection:** YES — the existing JS still expects `#uuwpPolicy`, therefore the field was hidden rather than physically removed.
+- **Automated/browser tested:** NOT YET.
+- **Live GitHub Pages verified:** NOT YET.
+
+### Exact next Codex action
+Continue from current HEAD. First browser-check that the Item Editor loads, the UUWP policy dropdown is no longer visible, the UUWP explanatory notice is visible, saved items still load/save, and UUWP calculation remains: actual leftover % when leftovers exist; default allowance when fully sold. Then continue normal 111Q5PV-DR work without redesigning Method 2.
