@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id),q=new URLSearchParams(location.search);
 let outlet=q.get('outlet')||JSON.parse(localStorage.getItem('outlet-selection')||'{}').id||'',s=M2.state(),recipes=[],ready=false,generation=0,refreshTimer;
 const pendingKey='method2-pending-'+outlet;let pending=JSON.parse(sessionStorage.getItem(pendingKey)||'{}');
 const money=n=>'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-function entries(){const rows=[];for(const cat of CAT_ORDER)ITEM_DATA[cat].forEach((item,i)=>{if(M2.selected(s,cat,i))rows.push({cat,i,item})});return rows}
+function entries(){const rows=[],seenSides=new Set();for(const cat of CAT_ORDER)ITEM_DATA[cat].forEach((item,i)=>{if(!M2.selected(s,cat,i))return;if(cat===M2.SIDES){const key=String(item.recipeName||item.name||'').trim().toLowerCase();if(seenSides.has(key))return;seenSides.add(key)}rows.push({cat,i,item})});return rows}
 function url(cat,i,mode){return 'method2-item.html?'+new URLSearchParams({outlet,cat,i,mode})}
 function open(cat,i,mode){
  if(!ready)return;const {k}=M2.keys(cat,i);pending[k]=s.itemEditors[k]?.saveToken||'new';sessionStorage.setItem(pendingKey,JSON.stringify(pending));
