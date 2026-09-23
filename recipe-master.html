@@ -1,38 +1,303 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOBS Recipe Master</title><link rel="stylesheet" href="style.css"><script src="bobs-config.js"></script><script src="shared_data.js"></script><script src="recipe-guide-seeds.js?v=vada-v4"></script><script src="poriyal-recipes.js?v=recipe-master-v1"></script></head><body><header><p class="eyebrow">BOBS</p><h1>Recipe Master</h1><p class="sub">One unified production recipe master for tiffin, condiments, bakery and all future BOBS-produced items.</p></header><main><section class="stack"><div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Reading Google…</span></div><p><b>Safety rule:</b> this page never replaces an existing Google Recipe Master with a smaller list. Duplicate legacy aliases are consolidated into one canonical recipe; saved ingredient quantities/rates are preserved.</p>
-<p><b>Ingredient editor:</b> add any missing ingredient or topping, enter quantity, unit and purchase rate. BOBS recalculates recipe batch cost and cost per yield unit immediately. Changes are written only when you press <b>Save recipe</b>.</p><div id="recipeList"></div></section><section class="stack"><div class="section-head"><h2>Standard costing model</h2><span class="tag">pro-rata + yield</span></div><p><b>Recipe batch cost = Σ ingredient cost.</b> <b>Unit cost = batch cost ÷ standard yield.</b> Actual production scales the standard recipe pro-rata. For ingredients with trimming/preparation loss, future yield % can be applied to derive usable-cost rates. Sub-recipes/condiments are costed once and reused in parent products.</p><p>All produced items and their components use this same Recipe Master costing structure. No separate condiment costing model is required.</p></section></main><script>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOBS Recipe Master</title>
+<link rel="stylesheet" href="style.css">
+<script src="bobs-config.js"></script>
+<script src="shared_data.js"></script>
+<script src="recipe-guide-seeds.js?v=small-outlet-v6"></script>
+<script src="poriyal-recipes.js?v=small-outlet-v2"></script>
+<style>
+.recipe-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.recipe-tools input,.recipe-tools select{padding:9px}
+.recipe-card{margin:12px 0}.energy-row{background:#fff7e6}.timing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.timing-grid div{padding:8px;border:1px solid #ddd;border-radius:8px}.moneyline{display:flex;gap:18px;flex-wrap:wrap}
+.muted{opacity:.76}.warning{background:#fff4e5;padding:10px;border-radius:8px}
+</style>
+</head>
+<body>
+<header>
+<p class="eyebrow">BOBS</p>
+<h1>Recipe Master</h1>
+<p class="sub">Small-outlet production standards: ingredients + batch yield + labour timing + equipment time + energy/fuel inside COGS.</p>
+</header>
+<main>
+<section class="stack">
+<div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Reading Google…</span></div>
+<p><b>Current planning basis:</b> small opening batches. Recipes can scale later; the standard batch is deliberately conservative for a first-time outlet.</p>
+<p><b>Costing rule:</b> LPG/electricity used for the batch is stored as a costed recipe input, so energy is included in Recipe Master COGS instead of being shown only as a note.</p>
+<p class="warning"><b>Migration safety:</b> before BOBS upgrades an older Recipe Master to the current standard, it writes a Google recovery snapshot. Existing local ingredient rates are preserved where the same ingredient already exists. Idli ingredient quantities/yield are preserved; only missing timing/energy is added.</p>
+<div class="recipe-tools">
+<input id="search" placeholder="Search recipe">
+<select id="category"><option value="">All categories</option></select>
+</div>
+<div id="recipeList"></div>
+</section>
+<section class="stack">
+<div class="section-head"><h2>Standard costing model</h2><span class="tag">ingredients + fuel + yield</span></div>
+<p><b>Batch COGS = food/raw-material inputs + directly attributable batch energy.</b> <b>Unit COGS = batch COGS ÷ standard yield.</b> Labour remains outside Actual COGS and is handled by Workload/Staffing and outlet economics.</p>
+<p class="muted">Planning rates are editable. The current seed uses commercial LPG ₹2,916.50 / 19 kg = ₹153.50/kg and the outlet EB planning rate ₹11/kWh. Replace ingredient/energy rates with actual invoices when available.</p>
+</section>
+</main>
+<script>
 const URL=(window.BOBS_CONFIG||{}).DATA_VAULT_WEB_APP_URL;
 const RECORD={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'};
-const coreSeedRecipes=[
-{name:'Idly',kind:'PRIMARY',category:'TIFFIN',yieldQty:100,yieldUnit:'pieces',ingredients:[['Idly rice',7,'kg',55],['Urad dal',1.75,'kg',140],['Fenugreek seeds',0.05,'kg',160],['Salt',0.15,'kg',20]],condiments:[['Idli Sambar',0.10,'L','per 5 idlies'],['Coconut Chutney',0.04,'kg','per 5 idlies'],['Pudina Chutney',0.03,'kg','per 5 idlies']]},
-{name:'Lemon Rice',kind:'PRIMARY',category:'RICE',yieldQty:100,yieldUnit:'servings',ingredients:[['Rice',7,'kg',55],['Lemon',1.2,'kg',80],['Peanuts',0.8,'kg',150],['Chana dal',0.35,'kg',100],['Urad dal',0.2,'kg',140],['Cooking oil',0.7,'L',140],['Green chilli',0.2,'kg',100],['Turmeric',0.05,'kg',220],['Mustard',0.08,'kg',120],['Curry leaves',0.15,'kg',80],['Salt',0.18,'kg',20]],condiments:[['Idli Sambar',0.03,'L','per serving']]},
-{name:'Idli Sambar',kind:'CONDIMENT',category:'CONDIMENT',yieldQty:10,yieldUnit:'L',ingredients:[['Toor dal',0.9,'kg',170],['Tomato',0.8,'kg',45],['Small onion/onion',0.6,'kg',55],['Tamarind',0.12,'kg',180],['Sambar powder',0.16,'kg',220],['Turmeric',0.025,'kg',220],['Jaggery',0.08,'kg',60],['Cooking oil',0.25,'L',140],['Mustard',0.025,'kg',120],['Urad dal',0.025,'kg',140],['Fenugreek',0.008,'kg',160],['Curry leaves',0.08,'kg',80],['Coriander leaves',0.10,'kg',100],['Hing',0.008,'kg',700],['Salt',0.16,'kg',20]],productionTiming:{equipment:'Pressure cooker / stock pot',setupMin:20,activeMinPerCycle:25,machineMinPerCycle:35,finishMinPerCycle:10,cleanupMin:10,role:'Cook / Tiffin Master',canParallelize:true},fuel:{type:'LPG',usageKg:0.35,ratePerKg:null,includeInCogsWhenRateEntered:true},vegetableOptions:[['Plain',0,'kg'],['Carrot',0.45,'kg'],['Beans',0.35,'kg'],['Potato',0.45,'kg'],['Drumstick/Moringa',0.50,'kg'],['Bottle gourd',0.60,'kg'],['Brinjal',0.45,'kg']]},
-{name:'Rice Sambar',kind:'CONDIMENT',category:'CONDIMENT',yieldQty:10,yieldUnit:'L',ingredients:[['Toor dal',1.0,'kg',170],['Rice',0.25,'kg',55],['Tomato',0.9,'kg',45],['Onion',0.65,'kg',55],['Tamarind',0.14,'kg',180],['Sambar powder',0.18,'kg',220],['Cooking oil',0.28,'L',140],['Mustard',0.025,'kg',120],['Urad dal',0.025,'kg',140],['Curry leaves',0.08,'kg',80],['Coriander leaves',0.10,'kg',100],['Turmeric',0.025,'kg',220],['Salt',0.18,'kg',20]],productionTiming:{equipment:'Pressure cooker / stock pot',setupMin:20,activeMinPerCycle:25,machineMinPerCycle:40,finishMinPerCycle:10,cleanupMin:10,role:'Cook / Tiffin Master',canParallelize:true},fuel:{type:'LPG',usageKg:0.40,ratePerKg:null,includeInCogsWhenRateEntered:true},vegetableOptions:[['Plain',0,'kg'],['Carrot',0.45,'kg'],['Beans',0.35,'kg'],['Potato',0.45,'kg'],['Drumstick/Moringa',0.50,'kg'],['Bottle gourd',0.60,'kg']]},
-{name:'Coconut Chutney',kind:'CONDIMENT',category:'CONDIMENT',yieldQty:3,yieldUnit:'kg',ingredients:[['Fresh coconut',2.0,'kg',120],['Roasted gram dal',0.55,'kg',120],['Green chilli',0.12,'kg',100],['Garlic',0.08,'kg',180],['Salt',0.06,'kg',20],['Cooking oil',0.08,'L',140],['Mustard',0.01,'kg',120],['Urad dal',0.01,'kg',140],['Curry leaves',0.03,'kg',80]],productionTiming:{equipment:'Mixer grinder',setupMin:10,activeMinPerCycle:15,machineMinPerCycle:12,finishMinPerCycle:5,cleanupMin:8,role:'Cook / Tiffin Master',canParallelize:false},fuel:{type:'Electricity',usageKwh:0.25,ratePerKwh:null,includeInCogsWhenRateEntered:true}},
-{name:'Potato Poriyal',kind:'CONDIMENT',category:'CONDIMENT',yieldQty:6,yieldUnit:'kg',ingredients:[['Potato',7.0,'kg',35],['Onion',0.5,'kg',55],['Cooking oil',0.28,'L',140],['Mustard',0.03,'kg',120],['Urad dal',0.05,'kg',140],['Green chilli',0.09,'kg',100],['Turmeric',0.015,'kg',220],['Curry leaves',0.05,'kg',80],['Salt',0.10,'kg',20]],productionTiming:{equipment:'Kadai / cooking vessel',setupMin:30,activeMinPerCycle:25,machineMinPerCycle:30,finishMinPerCycle:10,cleanupMin:10,role:'Cook / Tiffin Master',helperEligible:['wash','peel','cut','portion'],canParallelize:true},fuel:{type:'LPG',usageKg:0.30,ratePerKg:null,includeInCogsWhenRateEntered:true}},
-{name:'Pudina Chutney',kind:'CONDIMENT',category:'CONDIMENT',yieldQty:2.5,yieldUnit:'kg',ingredients:[['Mint leaves',0.65,'kg',120],['Coriander leaves',0.35,'kg',100],['Coconut',0.30,'kg',120],['Onion/shallot',0.45,'kg',55],['Chana dal',0.12,'kg',100],['Urad dal',0.10,'kg',140],['Green chilli',0.10,'kg',100],['Garlic',0.06,'kg',180],['Ginger',0.06,'kg',160],['Tamarind',0.04,'kg',180],['Cooking oil',0.12,'L',140],['Salt',0.06,'kg',20]]},
-{name:'Tomato Chutney',kind:'CONDIMENT',category:'CONDIMENT',yieldQty:2.5,yieldUnit:'kg',ingredients:[['Tomato',1.5,'kg',45],['Onion',0.55,'kg',55],['Urad dal',0.12,'kg',140],['Roasted gram dal',0.18,'kg',120],['Red chilli',0.08,'kg',180],['Garlic',0.06,'kg',180],['Cumin',0.02,'kg',350],['Cooking oil',0.10,'L',140],['Mustard',0.01,'kg',120],['Curry leaves',0.03,'kg',80],['Salt',0.06,'kg',20]]},
-{name:'Aloo Chapathi Kurma',kind:'PRIMARY',category:'TIFFIN',yieldQty:10,yieldUnit:'kg',ingredients:[['Potato',5.0,'kg',35],['Onion',1.5,'kg',55],['Tomato',0.8,'kg',45],['Coconut',0.35,'kg',120],['Ginger-garlic',0.15,'kg',180],['Green chilli',0.08,'kg',100],['Cooking oil',0.35,'L',140],['Kurma spice mix',0.12,'kg',260],['Coriander leaves',0.08,'kg',100],['Salt',0.16,'kg',20]]}
-];
-const seedRecipes=(()=>{const by=new Map();for(const r of [...coreSeedRecipes,...(window.BOBS_GUIDE_RECIPES||[]),...(window.BOBS_PORIYAL||[])]){const k=String(r.name||"").trim().toLowerCase();if(!by.has(k)||!r.guideAssumption)by.set(k,r)}return [...by.values()]})();
+const STD_VERSION=window.BOBS_SMALL_OUTLET_STANDARD_VERSION||'2026-09-SMALL-OUTLET-V1';
+const STANDARD_SCHEMA='3.0-SMALL-OUTLET-STANDARD';
+const UNITS=['kg','g','L','ml','piece','pieces','pack','batch','bunch','tsp','tbsp','kWh'];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const norm=s=>String(s||'').toLowerCase().replace(/\bidly\b/g,'idli').replace(/\s+/g,' ').trim();
+const canonicalName=n=>{
+ const k=norm(n);
+ const map={'general idli':'Idli','idli':'Idli','general idli sambar':'Idli Sambar',
+ 'general coconut chutney':'Coconut Chutney','general pudina chutney':'Pudina Chutney'};
+ return map[k]||String(n||'').trim();
+};
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function idFor(r){return r.recipeId||('RM-'+String(r.name||'').toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,''))}
-function enrich(r){const x=Object.assign({},r);x.recipeId=idFor(x);x.category=x.category||((x.kind||'PRIMARY')==='CONDIMENT'?'CONDIMENT':'PRODUCTION');x.recipeType=x.recipeType||'STANDARD';x.costBasis=x.costBasis||'RAW_MATERIAL';return x}
-const canonicalName=n=>({'general idly':'Idly','general idly sambar':'Idli Sambar','general coconut chutney':'Coconut Chutney','general pudina chutney':'Pudina Chutney'}[String(n||'').toLowerCase()]||n);
-function mergeLossSafe(existing){const base=Array.isArray(existing)?existing:[],by={};base.forEach(r=>{if(!r||!r.name)return;const name=canonicalName(r.name),k=String(name).toLowerCase(),x=enrich(Object.assign({},r,{name}));if(!by[k]||String(r.name).toLowerCase()===k)by[k]=x});seedRecipes.forEach(r=>{const k=r.name.toLowerCase();if(!by[k])by[k]=enrich(r);else{const old=by[k];if(!old.recipeId)old.recipeId=idFor(old);if(!old.category)old.category=r.category||((old.kind||'')==='CONDIMENT'?'CONDIMENT':'PRODUCTION');if(!old.recipeType)old.recipeType='STANDARD';if(!old.costBasis)old.costBasis='RAW_MATERIAL';if(old.guideDailyQty==null&&r.guideDailyQty!=null)old.guideDailyQty=r.guideDailyQty;if(old.guideAssumption==null&&r.guideAssumption!=null)old.guideAssumption=r.guideAssumption;if(!old.guideNote&&r.guideNote)old.guideNote=r.guideNote;if(!old.sharedBase&&r.sharedBase)old.sharedBase=r.sharedBase;if(!old.productionTiming&&r.productionTiming)old.productionTiming=r.productionTiming;if(!old.fuel&&r.fuel)old.fuel=r.fuel;if(!old.planningNote&&r.planningNote)old.planningNote=r.planningNote}});return Object.values(by)}
-let workingRecipes=[];
-const UNITS=['kg','g','L','ml','piece','pack','bunch','tsp','tbsp'];
-function ingredientCost(x){return Number(x?.[1]||0)*Number(x?.[3]||0)}
+function idFor(r){return r.recipeId||('RM-'+canonicalName(r.name).toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,''))}
+function enrich(r){
+ const x=clone(r||{});x.name=canonicalName(x.name);x.recipeId=idFor(x);
+ x.category=x.category||((x.kind||'PRIMARY')==='CONDIMENT'?'CONDIMENT':'PRODUCTION');
+ x.recipeType=x.recipeType||'STANDARD';x.costBasis='RAW_MATERIAL_PLUS_DIRECT_ENERGY';return x;
+}
+const seeds=(()=>{
+ const m=new Map();
+ for(const src of [...(window.BOBS_GUIDE_RECIPES||[]),...(window.BOBS_PORIYAL||[])]){
+  if(!src||!src.name)continue;
+  const x=enrich(src),k=norm(x.name);
+  if(!m.has(k)||String(x.category).toLowerCase()==='poriyal')m.set(k,x);
+ }
+ return [...m.values()];
+})();
+const standardKeys=new Set(seeds.map(x=>norm(x.name)));
+const obsoleteGeneric=/^(gas \/ fuel|fuel|primary base \/ flour|primary grain \/ flour|rice \/ flour base|salt & spices|toor dal & vegetables|milk \/ base|flavour \/ fruit \/ mix|vegetables \/ side)$/i;
+function mergeIngredientRates(std,old){
+ const oldBy=new Map((old.ingredients||[]).map(x=>[norm(x?.[0]),x]));
+ const out=(std.ingredients||[]).map(x=>{
+   const z=[...x],o=oldBy.get(norm(x?.[0]));
+   if(o&&Number.isFinite(Number(o[3]))&&Number(o[3])>=0)z[3]=Number(o[3]);
+   return z;
+ });
+ const stdNames=new Set(out.map(x=>norm(x[0])));
+ for(const x of old.ingredients||[]){
+   if(!x?.[0]||stdNames.has(norm(x[0]))||obsoleteGeneric.test(String(x[0]).trim()))continue;
+   out.push(clone(x));
+ }
+ return out;
+}
+function mergeIdliKeepRecipe(old,std){
+ const x={...clone(old),...clone(std)};
+ x.name='Idli';x.recipeId=old.recipeId||std.recipeId;
+ x.ingredients=clone(old.ingredients||std.ingredients||[]);
+ const stdEnergy=(std.ingredients||[]).filter(a=>/lpg fuel|electricity/i.test(a?.[0]||''));
+ const names=new Set(x.ingredients.map(a=>norm(a?.[0])));
+ for(const e of stdEnergy)if(!names.has(norm(e[0])))x.ingredients.push(clone(e));
+ x.yieldQty=old.yieldQty||std.yieldQty;x.yieldUnit=old.yieldUnit||std.yieldUnit;
+ x.productionTiming=clone(std.productionTiming||old.productionTiming);
+ x.fuel=clone(std.fuel||old.fuel);x.standardVersion=STD_VERSION;x.standardSource='BOBS_SMALL_OUTLET';
+ x.guideDailyQty=std.guideDailyQty||old.guideDailyQty;return enrich(x);
+}
+function upgradeStandard(old,std){
+ if(norm(std.name)==='idli')return mergeIdliKeepRecipe(old,std);
+ const x={...clone(old),...clone(std)};
+ x.recipeId=old.recipeId||std.recipeId;
+ x.ingredients=mergeIngredientRates(std,old);
+ if(old.condiments&&!std.condiments)x.condiments=clone(old.condiments);
+ if(old.vegetableOptions&&!std.vegetableOptions)x.vegetableOptions=clone(old.vegetableOptions);
+ x.standardVersion=STD_VERSION;x.standardSource='BOBS_SMALL_OUTLET';
+ return enrich(x);
+}
+function mergeMaster(existing){
+ const old=Array.isArray(existing)?existing.map(enrich):[],by=new Map(old.map(x=>[norm(x.name),x]));
+ const merged=[];
+ for(const std of seeds){
+   const k=norm(std.name),prev=by.get(k);
+   merged.push(prev?upgradeStandard(prev,std):enrich(std));by.delete(k);
+ }
+ for(const x of by.values())merged.push(x);
+ return merged;
+}
+function ingredientCost(x){return (Number(x?.[1])||0)*(Number(x?.[3])||0)}
 function recipeCost(r){return (r.ingredients||[]).reduce((a,x)=>a+ingredientCost(x),0)}
+function energyCost(r){return (r.ingredients||[]).filter(x=>/lpg fuel|electricity/i.test(x?.[0]||'')).reduce((a,x)=>a+ingredientCost(x),0)}
+function foodCost(r){return recipeCost(r)-energyCost(r)}
+function timingElapsed(r){
+ const z=r.productionTiming||{};
+ return ['setupMin','activeMinPerCycle','machineMinPerCycle','finishMinPerCycle','cleanupMin'].reduce((a,k)=>a+(Number(z[k])||0),0);
+}
 function unitOptions(selected){return UNITS.map(u=>'<option '+(u===selected?'selected':'')+'>'+u+'</option>').join('')}
-function ingredientRow(x,i){return `<tr data-ing="${i}"><td><input class="ing-name" value="${esc(x?.[0]||'')}" placeholder="Ingredient name"></td><td><input class="ing-qty" type="number" min="0" step="any" value="${Number(x?.[1]||0)}"></td><td><select class="ing-unit">${unitOptions(x?.[2]||'kg')}</select></td><td><input class="ing-rate" type="number" min="0" step="any" value="${Number(x?.[3]||0)}" aria-label="Purchase rate"></td><td class="ing-cost" align="right">₹${ingredientCost(x).toFixed(2)}</td><td><button type="button" class="remove-ing secondary">Remove</button></td></tr>`}
-function recipeArticle(r,ri){const cost=recipeCost(r),unit=Number(r.yieldQty)>0?cost/Number(r.yieldQty):0;return `<article class="stack recipe-card" data-ri="${ri}" style="margin:12px 0"><div class="section-head"><h3>${esc(r.name)}</h3><span class="tag">${esc(r.category||r.kind||'PRODUCTION')}</span></div><p><b>Recipe ID:</b> ${esc(r.recipeId||idFor(r))} &nbsp; <b>Yield:</b> <input class="yield-qty" type="number" min="0" step="any" value="${Number(r.yieldQty||0)}" style="width:85px"> <input class="yield-unit" value="${esc(r.yieldUnit||'unit')}" style="width:90px"> ${r.guideDailyQty?' &nbsp; <b>Guide daily production:</b> '+r.guideDailyQty:''}</p>${r.guideAssumption?'<p><b>Guide assumption:</b> '+esc(r.guideNote||'Verify before operational use.')+'</p>':''}<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th align="left">Ingredient</th><th>Qty</th><th>Unit</th><th>Rate ₹ / unit</th><th>Cost</th><th></th></tr></thead><tbody class="ingredient-body">${(r.ingredients||[]).map(ingredientRow).join('')}</tbody></table><p><button type="button" class="add-ing secondary">+ Add ingredient</button></p><p><b>Recipe batch cost:</b> <span class="batch-cost">₹${cost.toFixed(2)}</span> &nbsp; <b>Cost per ${esc(r.yieldUnit||'unit')}:</b> <span class="unit-cost">₹${unit.toFixed(2)}</span></p>${r.condiments?`<p><b>Default component associations:</b> ${r.condiments.map(x=>esc(x[0])+' — '+x[1]+' '+esc(x[2])+' '+esc(x[3])).join(' | ')}</p>`:''}${r.productionTiming?`<p><b>Production timing:</b> Setup ${esc(r.productionTiming.setupMin??0)} min · Active/cycle ${esc(r.productionTiming.activeMinPerCycle??0)} min · Passive/equipment ${esc(r.productionTiming.machineMinPerCycle??0)} min · Finish/cycle ${esc(r.productionTiming.finishMinPerCycle??0)} min · Cleanup ${esc(r.productionTiming.cleanupMin??0)} min · Role ${esc(r.productionTiming.role||'')}</p>`:''}${r.fuel?`<p><b>Energy guide:</b> ${esc(r.fuel.type||'')} · ${esc(r.fuel.usageKg??r.fuel.usageKwh??'')} ${r.fuel.usageKg!=null?'kg':'kWh'} per standard recipe batch. Rate is intentionally not assumed; enter actual outlet energy rate before treating it as COGS.</p>`:''}${r.vegetableOptions?`<p><b>Controlled vegetable options:</b> ${r.vegetableOptions.map(x=>esc(x[0])+(x[1]?' — '+x[1]+' '+x[2]:'')).join(' | ')}</p>`:''}<p><button type="button" class="save-recipe">Save recipe</button> <span class="recipe-status tag">Not changed</span></p></article>`}
-function readCard(card){const ri=Number(card.dataset.ri),r=Object.assign({},workingRecipes[ri]);r.yieldQty=Number(card.querySelector('.yield-qty').value)||0;r.yieldUnit=card.querySelector('.yield-unit').value.trim()||'unit';r.ingredients=[...card.querySelectorAll('tr[data-ing]')].map(tr=>[tr.querySelector('.ing-name').value.trim(),Number(tr.querySelector('.ing-qty').value)||0,tr.querySelector('.ing-unit').value,Number(tr.querySelector('.ing-rate').value)||0]).filter(x=>x[0]);return r}
-function recalcCard(card){const r=readCard(card),cost=recipeCost(r),y=Number(r.yieldQty)||0;card.querySelector('.batch-cost').textContent='₹'+cost.toFixed(2);card.querySelector('.unit-cost').textContent='₹'+(y?cost/y:0).toFixed(2);card.querySelectorAll('tr[data-ing]').forEach(tr=>{const q=Number(tr.querySelector('.ing-qty').value)||0,rate=Number(tr.querySelector('.ing-rate').value)||0;tr.querySelector('.ing-cost').textContent='₹'+(q*rate).toFixed(2)});card.querySelector('.recipe-status').textContent='Unsaved changes'}
-function render(recipes){workingRecipes=recipes.map(r=>JSON.parse(JSON.stringify(r)));document.getElementById('recipeList').innerHTML=workingRecipes.map(recipeArticle).join('');document.querySelectorAll('.recipe-card').forEach(card=>{card.addEventListener('input',()=>recalcCard(card));card.addEventListener('change',()=>recalcCard(card));card.querySelector('.add-ing').onclick=()=>{const body=card.querySelector('.ingredient-body'),i=body.children.length;body.insertAdjacentHTML('beforeend',ingredientRow(['',0,'kg',0],i));recalcCard(card);body.lastElementChild.querySelector('.ing-name').focus()};card.addEventListener('click',e=>{if(e.target.classList.contains('remove-ing')){e.target.closest('tr').remove();recalcCard(card)}});card.querySelector('.save-recipe').onclick=()=>saveRecipe(card)})}
-async function postMaster(data){const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:RECORD.module,recordKey:RECORD.recordKey,data})});if(!r.ok)throw Error('Google save failed: HTTP '+r.status)}
-async function readMaster(){const q=await jsonp(URL+'?action=moduleGet&outletId='+encodeURIComponent(RECORD.outletId)+'&module='+encodeURIComponent(RECORD.module)+'&recordKey='+encodeURIComponent(RECORD.recordKey));return q&&q.found?q.data:null}
-async function saveRecipe(card){const ri=Number(card.dataset.ri),status=card.querySelector('.recipe-status'),button=card.querySelector('.save-recipe');button.disabled=true;status.textContent='Saving…';try{const latest=await readMaster();if(!latest)throw Error('Permanent Google Recipe Master could not be read. Nothing changed.');const edited=readCard(card);if(!edited.ingredients.length)throw Error('Keep at least one ingredient.');if(!(edited.yieldQty>0))throw Error('Yield must be greater than zero.');const bad=edited.ingredients.find(x=>!x[0]||x[1]<0||x[3]<0);if(bad)throw Error('Check ingredient name, quantity and rate.');const recipes=mergeLossSafe(latest.recipes||[]);const idx=recipes.findIndex(x=>String(x.name).toLowerCase()===String(edited.name).toLowerCase());if(idx<0)throw Error('Recipe no longer exists in Google master. Reload first.');const backupKey='STANDARD_V1_BACKUP_'+Date.now();await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:'RECIPE_MASTER_BACKUPS',recordKey:backupKey,data:latest})});recipes[idx]=edited;const next=Object.assign({},latest,{schemaVersion:'2.1-INGREDIENT-EDITOR',recipes,updatedAt:new Date().toISOString()});await postMaster(next);const verify=await readMaster();const vr=(verify?.recipes||[]).find(x=>String(x.name).toLowerCase()===String(edited.name).toLowerCase());if(!vr||JSON.stringify(vr.ingredients)!==JSON.stringify(edited.ingredients))throw Error('Save sent, but ingredient read-back verification failed.');workingRecipes[ri]=vr;status.textContent='Saved + Google verified';document.getElementById('status').textContent='Recipe saved safely — recovery copy '+backupKey}catch(e){status.textContent='NOT SAVED — '+e.message}finally{button.disabled=false}}
-function jsonp(url){return new Promise((resolve,reject)=>{const cb='recipeMasterRead_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');const timer=setTimeout(()=>{cleanup();reject(new Error('Google read timeout'))},7000);function cleanup(){clearTimeout(timer);try{delete window[cb]}catch(e){}s.remove()}window[cb]=d=>{cleanup();resolve(d)};s.onerror=()=>{cleanup();reject(new Error('Google read failed'))};s.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&_bobs='+Date.now();document.head.appendChild(s)})}
-async function load(){try{const q=await jsonp(URL+'?action=moduleGet&outletId='+encodeURIComponent(RECORD.outletId)+'&module='+encodeURIComponent(RECORD.module)+'&recordKey='+encodeURIComponent(RECORD.recordKey));if(q&&q.found&&q.data){const existing=q.data.recipes||[];const merged=mergeLossSafe(existing);render(merged);document.getElementById('status').textContent='Google master loaded — existing data preserved';if(merged.length>existing.length){await postMaster(Object.assign({},q.data,{schemaVersion:'2.1-INGREDIENT-EDITOR',masterScope:'ALL_PRODUCED_ITEMS',recipes:merged,notes:'Unified BOBS Recipe Master. Existing recipes retained; guide recipes added loss-safely.'}));document.getElementById('status').textContent='Google master expanded safely — ingredient editor ready'}return}const merged=mergeLossSafe([]);render(merged);document.getElementById('status').textContent='No Google master found — initial master prepared';await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:RECORD.module,recordKey:RECORD.recordKey,data:{schemaVersion:'2.0-UNIFIED',masterScope:'ALL_PRODUCED_ITEMS',version:'2026-09-12-111Q-universal-cogs-recipe-master',recipes:merged,notes:'Unified BOBS Recipe Master; all produced items and reusable components use the same schema.'}})});document.getElementById('status').textContent='Google master created';}catch(e){document.getElementById('status').textContent='SAFE MODE — Google read failed; nothing overwritten';document.getElementById('recipeList').innerHTML='<p><b>No Google write was performed.</b> The master is protected until the permanent Google record can be read successfully.</p>'}}
+function ingredientRow(x,i){
+ const energy=/lpg fuel|electricity/i.test(x?.[0]||'');
+ return `<tr data-ing="${i}" class="${energy?'energy-row':''}">
+ <td><input class="ing-name" value="${esc(x?.[0]||'')}" placeholder="Ingredient name"></td>
+ <td><input class="ing-qty" type="number" min="0" step="any" value="${Number(x?.[1]||0)}"></td>
+ <td><select class="ing-unit">${unitOptions(x?.[2]||'kg')}</select></td>
+ <td><input class="ing-rate" type="number" min="0" step="any" value="${Number(x?.[3]||0)}"></td>
+ <td class="ing-cost" align="right">₹${ingredientCost(x).toFixed(2)}</td>
+ <td><button type="button" class="remove-ing secondary">Remove</button></td></tr>`;
+}
+function timingBlock(r){
+ const z=r.productionTiming||{};if(!Object.keys(z).length)return '<p class="muted">Production timing not yet defined.</p>';
+ const pre=Number(z.prePreparationMin)||0,elapsed=timingElapsed(r);
+ return `<div class="timing-grid">
+ <div><b>Pre-preparation</b><br>${pre} min${z.prePreparationNote?'<br><small>'+esc(z.prePreparationNote)+'</small>':''}</div>
+ <div><b>Setup / prep</b><br>${Number(z.setupMin)||0} min</div>
+ <div><b>Active labour</b><br>${Number(z.activeMinPerCycle)||0} min / cycle</div>
+ <div><b>Passive / equipment</b><br>${Number(z.machineMinPerCycle)||0} min / cycle</div>
+ <div><b>Finish</b><br>${Number(z.finishMinPerCycle)||0} min / cycle</div>
+ <div><b>Cleanup</b><br>${Number(z.cleanupMin)||0} min</div>
+ <div><b>Production elapsed</b><br>${elapsed} min / standard cycle</div>
+ <div><b>Role / equipment</b><br>${esc(z.role||'—')}<br><small>${esc(z.equipment||'—')}</small></div>
+ </div>`;
+}
+let workingRecipes=[];
+function recipeArticle(r,ri){
+ const total=recipeCost(r),energy=energyCost(r),food=foodCost(r),unit=Number(r.yieldQty)>0?total/Number(r.yieldQty):0;
+ return `<article class="stack recipe-card" data-ri="${ri}" data-category="${esc(r.category||'')}" data-name="${esc(r.name.toLowerCase())}">
+ <div class="section-head"><h3>${esc(r.name)}</h3><span class="tag">${esc(r.category||r.kind||'PRODUCTION')}</span></div>
+ <p><b>Recipe ID:</b> ${esc(r.recipeId||idFor(r))} &nbsp; <b>Standard:</b> ${esc(r.standardVersion||'legacy')}</p>
+ <p><b>Opening batch / yield:</b> <input class="yield-qty" type="number" min="0" step="any" value="${Number(r.yieldQty||0)}" style="width:90px">
+ <input class="yield-unit" value="${esc(r.yieldUnit||'unit')}" style="width:95px">
+ ${r.guideDailyQty?' &nbsp; <b>Initial planning batch:</b> '+esc(r.guideDailyQty):''}</p>
+ ${timingBlock(r)}
+ <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
+ <th align="left">Ingredient / direct energy</th><th>Qty</th><th>Unit</th><th>Rate ₹ / unit</th><th>Cost</th><th></th>
+ </tr></thead><tbody class="ingredient-body">${(r.ingredients||[]).map(ingredientRow).join('')}</tbody></table>
+ <p><button type="button" class="add-ing secondary">+ Add ingredient</button></p>
+ <p class="moneyline"><span><b>Food/RM:</b> <span class="food-cost">₹${food.toFixed(2)}</span></span>
+ <span><b>Fuel/energy:</b> <span class="energy-cost">₹${energy.toFixed(2)}</span></span>
+ <span><b>Batch COGS:</b> <span class="batch-cost">₹${total.toFixed(2)}</span></span>
+ <span><b>COGS / ${esc(r.yieldUnit||'unit')}:</b> <span class="unit-cost">₹${unit.toFixed(2)}</span></span></p>
+ ${r.condiments?`<p><b>Default component associations:</b> ${r.condiments.map(x=>esc(x[0])+' — '+esc(x.slice(1).join(' '))).join(' | ')}</p>`:''}
+ ${r.helperEligible?`<p><b>Helper-eligible work:</b> ${esc(r.helperEligible.join(', '))}</p>`:''}
+ <p><button type="button" class="save-recipe">Save recipe</button> <span class="recipe-status tag">Not changed</span></p>
+ </article>`;
+}
+function readCard(card){
+ const ri=Number(card.dataset.ri),r=clone(workingRecipes[ri]);
+ r.yieldQty=Number(card.querySelector('.yield-qty').value)||0;
+ r.yieldUnit=card.querySelector('.yield-unit').value.trim()||'unit';
+ r.ingredients=[...card.querySelectorAll('tr[data-ing]')].map(tr=>[
+  tr.querySelector('.ing-name').value.trim(),Number(tr.querySelector('.ing-qty').value)||0,
+  tr.querySelector('.ing-unit').value,Number(tr.querySelector('.ing-rate').value)||0
+ ]).filter(x=>x[0]);
+ return r;
+}
+function recalcCard(card){
+ const r=readCard(card),total=recipeCost(r),energy=energyCost(r),food=total-energy,y=Number(r.yieldQty)||0;
+ card.querySelector('.batch-cost').textContent='₹'+total.toFixed(2);
+ card.querySelector('.food-cost').textContent='₹'+food.toFixed(2);
+ card.querySelector('.energy-cost').textContent='₹'+energy.toFixed(2);
+ card.querySelector('.unit-cost').textContent='₹'+(y?total/y:0).toFixed(2);
+ card.querySelectorAll('tr[data-ing]').forEach(tr=>{
+   const q=Number(tr.querySelector('.ing-qty').value)||0,rate=Number(tr.querySelector('.ing-rate').value)||0;
+   tr.querySelector('.ing-cost').textContent='₹'+(q*rate).toFixed(2);
+ });
+ card.querySelector('.recipe-status').textContent='Unsaved changes';
+}
+function applyFilter(){
+ const q=document.getElementById('search').value.toLowerCase().trim(),cat=document.getElementById('category').value;
+ document.querySelectorAll('.recipe-card').forEach(x=>x.hidden=!!((q&&!x.dataset.name.includes(q))||(cat&&x.dataset.category!==cat)));
+}
+function render(recipes){
+ workingRecipes=recipes.map(clone);
+ document.getElementById('recipeList').innerHTML=workingRecipes.map(recipeArticle).join('');
+ const cats=[...new Set(workingRecipes.map(x=>x.category||x.kind||'PRODUCTION'))].sort();
+ document.getElementById('category').innerHTML='<option value="">All categories</option>'+cats.map(x=>'<option>'+esc(x)+'</option>').join('');
+ document.querySelectorAll('.recipe-card').forEach(card=>{
+   card.addEventListener('input',()=>recalcCard(card));card.addEventListener('change',()=>recalcCard(card));
+   card.querySelector('.add-ing').onclick=()=>{
+     const body=card.querySelector('.ingredient-body'),i=body.children.length;
+     body.insertAdjacentHTML('beforeend',ingredientRow(['',0,'kg',0],i));recalcCard(card);
+     body.lastElementChild.querySelector('.ing-name').focus();
+   };
+   card.addEventListener('click',e=>{if(e.target.classList.contains('remove-ing')){e.target.closest('tr').remove();recalcCard(card)}});
+   card.querySelector('.save-recipe').onclick=()=>saveRecipe(card);
+ });
+ document.getElementById('search').oninput=applyFilter;document.getElementById('category').onchange=applyFilter;
+}
+function jsonp(url){
+ return new Promise((resolve,reject)=>{
+  const cb='recipeMasterRead_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');
+  const timer=setTimeout(()=>{cleanup();reject(new Error('Google read timeout'))},9000);
+  function cleanup(){clearTimeout(timer);try{delete window[cb]}catch(e){}s.remove()}
+  window[cb]=d=>{cleanup();resolve(d)};s.onerror=()=>{cleanup();reject(new Error('Google read failed'))};
+  s.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&_bobs='+Date.now();document.head.appendChild(s);
+ });
+}
+async function readMaster(){
+ const q=await jsonp(URL+'?action=moduleGet&outletId='+encodeURIComponent(RECORD.outletId)+'&module='+encodeURIComponent(RECORD.module)+'&recordKey='+encodeURIComponent(RECORD.recordKey));
+ return q&&q.found?q.data:null;
+}
+async function postMaster(data){
+ const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:RECORD.module,recordKey:RECORD.recordKey,data})});
+ if(!r.ok)throw Error('Google save failed: HTTP '+r.status);
+}
+async function backupMaster(data,reason){
+ const key='STANDARD_V1_BACKUP_'+Date.now();
+ const snap={...clone(data),_backup:{key,reason,createdAt:new Date().toISOString()}};
+ const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:'RECIPE_MASTER_BACKUPS',recordKey:key,data:snap})});
+ if(!r.ok)throw Error('Backup failed; master was not changed.');
+ return key;
+}
+async function saveRecipe(card){
+ const ri=Number(card.dataset.ri),status=card.querySelector('.recipe-status'),button=card.querySelector('.save-recipe');
+ button.disabled=true;status.textContent='Saving…';
+ try{
+   const latest=await readMaster();if(!latest)throw Error('Permanent Google Recipe Master could not be read. Nothing changed.');
+   const edited=readCard(card);if(!edited.ingredients.length)throw Error('Keep at least one ingredient/direct-energy line.');
+   if(!(edited.yieldQty>0))throw Error('Yield must be greater than zero.');
+   const recipes=(latest.recipes||[]).map(enrich),idx=recipes.findIndex(x=>norm(x.name)===norm(edited.name));
+   if(idx<0)throw Error('Recipe no longer exists in Google master. Reload first.');
+   const backupKey=await backupMaster(latest,'Before manual recipe edit: '+edited.name);
+   recipes[idx]=edited;
+   const next={...latest,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,recipes,updatedAt:new Date().toISOString()};
+   await postMaster(next);
+   const verify=await readMaster(),vr=(verify?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
+   if(!vr||JSON.stringify(vr.ingredients)!==JSON.stringify(edited.ingredients)||Number(vr.yieldQty)!==Number(edited.yieldQty))
+     throw Error('Save sent, but Google read-back verification failed.');
+   workingRecipes[ri]=enrich(vr);status.textContent='Saved + Google verified';
+   document.getElementById('status').textContent='Recipe saved safely — recovery '+backupKey;
+ }catch(e){status.textContent='NOT SAVED — '+e.message}finally{button.disabled=false}
+}
+async function load(){
+ try{
+  if(!URL)throw Error('Data Vault URL is not configured.');
+  const current=await readMaster();
+  if(current){
+    const merged=mergeMaster(current.recipes||[]);
+    const next={...current,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
+      recipes:merged,rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},updatedAt:new Date().toISOString(),
+      notes:'BOBS small-outlet standard recipes. Direct batch energy is costed as recipe input. Labour stays outside Actual COGS.'};
+    const changed=JSON.stringify(current.recipes||[])!==JSON.stringify(merged)||current.standardVersion!==STD_VERSION||current.schemaVersion!==STANDARD_SCHEMA;
+    if(changed){
+      const backupKey=await backupMaster(current,'Before automatic small-outlet recipe-standard migration');
+      await postMaster(next);
+      const verify=await readMaster();
+      if(!verify||verify.standardVersion!==STD_VERSION||JSON.stringify(verify.recipes||[])!==JSON.stringify(merged))
+        throw Error('Migration save was sent but read-back did not match. Recovery '+backupKey+' remains available.');
+      render(verify.recipes||[]);
+      document.getElementById('status').textContent='Google master upgraded + verified — recovery '+backupKey;
+    }else{
+      render(current.recipes||[]);document.getElementById('status').textContent='Google master loaded — current standard verified';
+    }
+    return;
+  }
+  const initial={schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
+    version:'2026-09-23-small-outlet',recipes:mergeMaster([]),rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},
+    updatedAt:new Date().toISOString(),notes:'BOBS small-outlet opening recipe standard.'};
+  await postMaster(initial);const verify=await readMaster();
+  if(!verify||verify.standardVersion!==STD_VERSION)throw Error('Initial master save could not be verified.');
+  render(verify.recipes||[]);document.getElementById('status').textContent='Google master created + verified';
+ }catch(e){
+  document.getElementById('status').textContent='SAFE MODE — '+e.message;
+  document.getElementById('recipeList').innerHTML='<p><b>No unsafe overwrite was performed.</b></p>';
+ }
+}
 load();
-</script></body></html>
+</script>
+</body>
+</html>
