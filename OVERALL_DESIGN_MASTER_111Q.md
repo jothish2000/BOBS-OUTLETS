@@ -1,18 +1,19 @@
 # OVERALL DESIGN MASTER 111Q
 ## Universal Software / System Building Blueprint
-### Canonical definition: **111Q = 111Q5PVDRT**
+### Canonical definition: **111Q = 111Q5PVDDRT**
 
 **Owner / final decision-maker:** Jothish Babu Sadasivam  
-**Version:** 2.0 — 20 September 2026  
+**Version:** 3.0 — 23 September 2026  
 **Purpose:** Portable blueprint for designing, changing, testing, recovering and handing over software, spreadsheets, automation, operational systems and AI-assisted projects across capable platforms.
 
 ## 1. Activation instruction
-> Apply OVERALL DESIGN MASTER 111Q. Treat every reference to “111Q” as “111Q5PVDRT”. Inspect the existing system before changing it. Use the five-person view: PRO, CON, COMPARE & CONNECTIONS, OBSERVER, and OWNER. The first four views have DUAL ROLE: each examines both business/logic and code/software architecture. The OWNER is the fifth and final decision-maker. After approval, protect the current state, implement only the approved scope, then perform the mandatory TESTER stage. Feed actual test findings back through the five-person dual-role review before declaring completion. Distinguish implemented, code-checked, tested, deployed/live-verified and Owner-accepted. Preserve rollback. Finish every material change with a current handover so another AI can continue without restarting the architecture.
+> Apply OVERALL DESIGN MASTER 111Q. Treat every reference to “111Q” as “111Q5PVDDRT”. Inspect the existing system before changing it. Use the five-person view: PRO, CON, COMPARE & CONNECTIONS, OBSERVER, and OWNER. The first four views have DUAL ROLE: each examines both business/logic and code/software architecture. The OWNER is the fifth and final decision-maker. Before implementation, create/maintain a developer-ready continuation handover so another AI/developer can inspect the current state instead of restarting or overwriting it. After approval, protect the current state, implement only the approved scope, then perform the mandatory TESTER stage. Feed actual test findings back through the five-person dual-role review before declaring completion. Distinguish implemented, code-checked, tested, deployed/live-verified and Owner-accepted. Preserve rollback. Finish every material change by updating the current handover so another AI can continue without rebuilding understanding from zero.
 
 This master defines HOW to work. A project annex/handover defines WHAT the current project contains.
 
-## 2. 111Q = 111Q5PVDRT
+## 2. 111Q = 111Q5PVDDRT
 - **5PV:** PRO → CON → COMPARE & CONNECTIONS → OBSERVER → YOU/OWNER.
+- **First D — Developer/Codex handover:** preserve the current state, decisions, files, data ownership, recovery point, test evidence and exact next action so the next AI/developer continues from reality instead of starting over.
 - **DR:** each of the first four views performs both Logic/Business analysis and Code/Software analysis.
 - **T:** mandatory Tester stage after implementation, followed by a second evidence-based 5PV-DR.
 
@@ -26,7 +27,7 @@ This master defines HOW to work. A project annex/handover defines WHAT the curre
 | YOU / OWNER | Decide priorities/trade-offs | Authorize scope, implementation, release or rollback | Approve / condition / revise / defer / reject |
 
 ## 4. Complete 111Q loop
-**Proposal / observation → inspect current evidence → 5PV-DR → Owner decision → protect/checkpoint/backup → implement bounded scope → T tester stage → 5PV-DR AGAIN using actual test evidence → fix/retest if needed → Owner acceptance/release → update handover.**
+**Proposal / observation → inspect current evidence → 5PV-DR → Owner decision → First-D handover/checkpoint → protect/backup → implement bounded scope → T tester stage → 5PV-DR AGAIN using actual test evidence → fix/retest if needed → Owner acceptance/release → update handover.**
 
 Testing is not an appendix. Test evidence must feed back into PRO, CON, COMPARE, OBSERVER and OWNER before completion.
 
@@ -41,6 +42,8 @@ Distinguish INPUT, SOURCE and CALCULATED values. Missing/unknown/stale/not-appli
 
 ## 7. Protection and recovery
 Preserve existing work and unrelated data. Establish a known-good code checkpoint before meaningful edits and verified data protection before destructive durable-data changes. If required backup verification fails, stop the destructive action. Keep code rollback and data rollback separate. Prefer surgical changes.
+
+A newer AI/developer must **inspect current HEAD, current handover, current durable data path and intervening commits before editing**. Never restart from an older snapshot or replace working architecture merely because a rewrite is easier. Current code/data wins over stale memory; unresolved conflicts are surfaced for Owner decision before destructive change.
 
 ## 8. T — mandatory tester role
 After implementation actively test the changed flow and reasonably connected areas.
@@ -84,11 +87,13 @@ Always distinguish: **DESIGNED, OWNER APPROVED, IMPLEMENTED, CODE CHECKED, AUTOM
 
 A commit is not proof of deployment. Deployment is not proof of live correctness. Live correctness is not Owner acceptance.
 
-## 11. Handover
+## 11. First-D handover and completion gate
 Every material implementation records: project/module; approved scope; before/after rule; architecture/connections; authoritative data; files changed; untouched areas; recovery point; implementation commit/version; deployment status; passed/failed/blocked/not-run tests; live verification; known issues; rollback; exact next action; next genuine Owner decision.
 
+**A material implementation is not complete until its current handover is updated in the same work cycle.** The next AI/developer must read that handover before modifying the affected system.
+
 ## 12. Portable continuation command
-> Continue from current HEAD using OVERALL DESIGN MASTER 111Q and the latest project/Codex handover. Treat 111Q as 111Q5PVDRT. Inspect current source first; do not restart completed architecture. Perform the required tester stage and feed test findings back through 5PV-DR before declaring completion.
+> Continue from current HEAD using OVERALL DESIGN MASTER 111Q, repository `AGENTS.md` where present, and the latest project/Codex handover. Treat 111Q as 111Q5PVDDRT. Inspect current source and intervening commits first; do not restart completed architecture or overwrite durable data. Perform the required tester stage and feed test findings back through 5PV-DR before declaring completion. Update the handover after each material change.
 
 ## 13. New-project charter
 Define: project/version/Owner; problem/outcome; users; first end-to-end workflow; in/out scope; baseline assets; business invariants; data entities/IDs; authoritative store; backup store; screens; APIs/integrations; reports; permissions/security; devices; scale/performance; acceptance tests; release criteria; migration; rollback; approved and pending decisions.
@@ -115,11 +120,12 @@ Legacy compatibility state may remain internally while required by older records
 A prior UI edit caused the Item Editor to remain at “Loading from Google…” because invalid JavaScript was introduced. This is why T is mandatory. Similar changes must verify page load, Google data load, changed controls, calculations, save/read-back where safely testable, shared-value propagation, affected links/navigation and nearby regressions.
 
 ## 15. Canonical-master rule
-Future project annexes may add context but must not silently weaken this master. Conflicts must be identified, reviewed under 111Q5PVDRT and decided by the Owner.
+Future project annexes may add context but must not silently weaken this master. Conflicts must be identified, reviewed under 111Q5PVDDRT and decided by the Owner.
 
 ## 16. Definition of success
-111Q succeeds when the Owner can see the choice, benefits, risks and connected effects; existing work is protected; implementation stays bounded; real testing observes the changed system; findings return through 5PV-DR; failures trigger repair/retest; status is truthful; rollback exists; and another AI/developer can continue without rebuilding understanding from zero.
+111Q succeeds when the Owner can see the choice, benefits, risks and connected effects; existing work is protected; implementation stays bounded; real testing observes the changed system; findings return through 5PV-DR; failures trigger repair/retest; status is truthful; rollback exists; current handover is updated; and another AI/developer can continue without rebuilding understanding from zero or overwriting existing work.
 
 ## Revision history
 - **v1.0 — 19 Sep 2026:** universal PRO/CON/COMPARE & CONNECTIONS/OBSERVER + OWNER framework, dual business/software review, protection/testing/handover.
 - **v2.0 — 20 Sep 2026:** canonicalized **111Q = 111Q5PVDRT**; mandatory Tester; link/load/navigation/persistence/regression testing; mandatory post-test second 5PV-DR; consolidated universal master + BOBS constitution + Codex handover principles.
+- **v3.0 — 23 Sep 2026:** canonicalized **111Q = 111Q5PVDDRT**; made developer/Codex handover the first D; added mandatory inspect-current-HEAD/intervening-commits continuity rule; prohibited restart/overwrite behavior; made handover update a completion gate.
