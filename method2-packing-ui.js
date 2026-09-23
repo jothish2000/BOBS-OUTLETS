@@ -22,6 +22,10 @@ function create(data,options){
    preset.onclick=()=>{if(data.packaging?.length&&!confirm('Replace ALL packing currently listed under Idli with one aluminium box shared by two idlis? Put sambar/chutney pouches under their own condiment. Google data is unchanged until Save.'))return;data.packingMode='required';data.packingPer=2;data.packaging=[{name:'Aluminium coated food box - small',qty:1,unitCost:''}];build();change()};root.append(preset);
   }
   if(mode==='required'){
+   // Keep the model in sync with the default shown in the sharing input.
+   // Older saved sides can omit packingPer; displaying 1 without storing it
+   // leaves M2.packing() reporting an incomplete packing set.
+   if(data.packingPer===undefined||data.packingPer===null)data.packingPer=1;
    const details=document.createElement('details');details.className='packing-settings';details.open=true;
    const summary=document.createElement('summary');summary.textContent='Materials, prices & sharing';details.append(summary);
    const per=input('Sales units sharing ONE packing set',data.packingPer??1,v=>data.packingPer=v);const perInput=per.querySelector('input');perInput.min='0.001';if(options.main)perInput.id='packingPer';details.append(per);
