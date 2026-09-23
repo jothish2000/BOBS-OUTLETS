@@ -2,8 +2,30 @@
 window.BOBS_CONFIG = Object.freeze({
   SHEETS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxhGWezXpQy5VBuQ7FDRuTntHFiZjHm5BkEIXUwFppW1w82mw955vV2zGPwkF3wXUb2ww/exec',
   DATA_VAULT_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec',
-  VERSION: '2026-09-12-111Q-universal-latest-state-v4'
+  VERSION: '2026-09-23-small-outlet-recipes-v1'
 });
+/* Add new catalogue items without shifting any historical Method-2 indices.
+   shared_data.js publishes its lexical ITEM_DATA object to window.ITEM_DATA in a microtask;
+   this configurable setter intercepts that publication, mutates the same object, then stores it. */
+(function installCatalogueExtensions(){
+  function apply(data){
+    const snacks=data&&data['Snacks Catalogue'];if(!Array.isArray(snacks))return data;
+    // Onion Bajji was introduced earlier near the front of the array. Move it to the end so
+    // all pre-existing snack indices retain their original meaning.
+    const oi=snacks.findIndex(x=>String(x&&x.name||'').toLowerCase()==='onion bajji');
+    if(oi>=0&&oi<snacks.length-1){const row=snacks.splice(oi,1)[0];snacks.push(row)}
+    if(!snacks.some(x=>String(x&&x.name||'').toLowerCase()==='onion bajji'))snacks.push({name:'Onion Bajji',price:20,purchasedCost:14.29,productionCost:null,brand:'In-house',hasRecipe:true,eligible:true});
+    if(!snacks.some(x=>String(x&&x.name||'').toLowerCase()==='vazhakkai bajji'))snacks.push({name:'Vazhakkai Bajji',price:20,purchasedCost:14.81,productionCost:null,brand:'In-house',hasRecipe:true,eligible:true});
+    return data;
+  }
+  window.BOBS_APPLY_CATALOGUE_EXTENSIONS=apply;
+  const current=Object.getOwnPropertyDescriptor(window,'ITEM_DATA');
+  if(current&&current.value){apply(current.value);return}
+  if(!current){
+    let value;
+    Object.defineProperty(window,'ITEM_DATA',{configurable:true,enumerable:true,get(){return value},set(v){value=apply(v)}});
+  }
+})();
 (function(){
   const nativeFetch=window.fetch.bind(window);
   const targets=[window.BOBS_CONFIG.SHEETS_WEB_APP_URL,window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL];
