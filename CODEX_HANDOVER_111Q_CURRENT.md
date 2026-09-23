@@ -2,24 +2,38 @@
 
 **Date:** 23 Sep 2026  
 **Repository:** `jothish2000/BOBS-OUTLETS`  
-**Current main HEAD at handover creation:** `c289cea2336226b9589b50c08ae5a190582fd71a`
+**Latest material HEAD before this handover update:** `3476850b800c55fed40683a9dc80214705f8c794`
 
 ## 0. READ THIS FIRST
 
-Continue from the current repository HEAD. **Do not restart architecture or rebuild already-completed Method 2 / Recipe Master work.** Inspect current source before editing.
+Continue from the **current repository HEAD**. **Do not restart architecture, do not rebuild already-completed Method 2 / Recipe Master work, and do not overwrite existing durable data merely because a rewrite is easier.** Inspect current source before editing.
 
-Canonical working rule for this project is now:
+Repository-root `AGENTS.md` is now the mandatory Codex startup/continuity instruction. Codex must read:
+
+1. `AGENTS.md`
+2. `CODEX_HANDOVER_111Q_CURRENT.md`
+3. `OVERALL_DESIGN_MASTER_111Q.md`
+4. the actual current source files involved in the requested task
+5. any intervening commits when the handover's recorded HEAD is older than current `main`
+
+Canonical working rule:
 
 **111Q = 111Q5PVDDRT**
 
 - **5PV:** PRO / CON / COMPARE & CONNECTIONS / OBSERVER / YOU-OWNER.
-- **First D:** universal Developer/Codex handover.
+- **First D:** universal Developer/Codex handover continuity.
 - **DR:** first four views inspect both business/logic and code/software.
 - **T:** mandatory Tester stage after implementation.
 - Test evidence must feed back through 5PV-DR before completion.
 - Owner is the final decision-maker.
 
-`OVERALL_DESIGN_MASTER_111Q.md` currently still says `111Q5PVDRT`; treat the above `111Q5PVDDRT` as the newer Owner-approved governance until that master is updated.
+`OVERALL_DESIGN_MASTER_111Q.md` has now been upgraded to v3.0 and also uses `111Q5PVDDRT`.
+
+### Mandatory continuity/completion rule
+
+A material BOBS change is **not complete** until `CODEX_HANDOVER_111Q_CURRENT.md` is updated in the same work cycle. This applies whether the change was made from ChatGPT, Codex or another capable development agent.
+
+The next agent must inspect the present state first and extend it. It must not start from memory, an old branch, an older handover or a generic replacement implementation.
 
 ## 1. CURRENT OWNER-APPROVED BUSINESS ARCHITECTURE
 
@@ -121,7 +135,10 @@ Material files:
 - `poriyal-recipes.js` — Cabbage, Carrot, Beans, Beetroot, Carrot-Beans and Potato Poriyal standards; ~6 kg yield with labour/timing and LPG.
 - `recipe-master.html` — Google-first master, migration/backup/read-back architecture, ingredient editor, costing display and timing display.
 - `shared_data.js` — legacy catalogue/source data. Historical array index stability matters to Method 2.
-- `bobs-config.js` — now contains safe snack-catalogue extension logic to avoid shifting historical Method-2 snack indices when adding Onion/Vazhakkai Bajji.
+- `bobs-config.js` — contains safe snack-catalogue extension logic to avoid shifting historical Method-2 snack indices when adding Onion/Vazhakkai Bajji.
+- `AGENTS.md` — repository-level Codex continuity/non-destructive startup rule.
+- `OVERALL_DESIGN_MASTER_111Q.md` — universal 111Q v3.0 governance.
+- `CODEX_HANDOVER_111Q_CURRENT.md` — living latest-state project handover and completion gate.
 
 ## 6. CONDIMENT / SIDE ARCHITECTURE
 
@@ -161,6 +178,9 @@ Recent recipe/staffing-related implementation chain:
 - `d22ae884c0d0271ca26bbe101910788e95762578` — Recipe Master upgraded to small-outlet standards, fuel-inclusive COGS and safer migration.
 - `81627ebc1002cf5bb260b46495a9fd3293db03f3` — migration hardened and total lead-time display added.
 - `c289cea2336226b9589b50c08ae5a190582fd71a` — Onion/Vazhakkai catalogue extension made index-safe.
+- `bef88c07b5619c523fe9c5cb4d204261fe9d9209` — living current Codex handover created.
+- `a613271ead4e31669ddb415af186c7be41b2ecce` — repository-root `AGENTS.md` continuity/non-destructive guard added.
+- `3476850b800c55fed40683a9dc80214705f8c794` — universal 111Q master upgraded to `111Q5PVDDRT` and handover-completion gate.
 
 ## 8. RECOVERY POINTS
 
@@ -170,6 +190,7 @@ Important recovery refs:
 - `recovery/pre-small-outlet-recipe-standard-v1` -> `28d2849a15ce7aa7eb41db8395b9192d948c275f`
 - `recovery/pre-full-small-outlet-recipe-upgrade-v2` -> `c5417212119d785bee680b5ee8a8f3c3b404a632`
 - `recovery/pre-workload-timeline-fix-v2` -> `a2fab90f3b084a5230883b0bdb2f5d043fa78fca`
+- `recovery/pre-codex-continuity-guard-v1` -> `bef88c07b5619c523fe9c5cb4d204261fe9d9209`
 
 Use surgical rollback. Do not overwrite operational Google data while reverting code.
 
@@ -239,24 +260,26 @@ A lunch **ready-by time** is still required before final Cook1 capacity can be d
 
 At this handover:
 
-- **DESIGNED:** YES — current small-outlet recipe + staffing architecture.
-- **OWNER APPROVED:** YES for small-batch strategy, unified Recipe Master, energy in recipe COGS, separate Vada specialist logic and Cook1+Helper1-first staffing test.
-- **IMPLEMENTED:** YES for current recipe/cost/timing/catalogue code described above.
-- **CODE CHECKED:** source inspected.
-- **AUTOMATED TESTED:** NOT VERIFIED for the complete latest full-upgrade chain. Do not rely on prose claims without reproducible test evidence.
+- **DESIGNED:** YES — current small-outlet recipe + staffing architecture and Codex continuity architecture.
+- **OWNER APPROVED:** YES for small-batch strategy, unified Recipe Master, energy in recipe COGS, separate Vada specialist logic, Cook1+Helper1-first staffing test, and inspect-before-edit continuity/data-loss prevention.
+- **IMPLEMENTED:** YES for current recipe/cost/timing/catalogue code and repository-level Codex continuity guard.
+- **CODE CHECKED:** YES for the continuity documents/configuration; recipe source previously inspected.
+- **AUTOMATED TESTED:** NOT VERIFIED for the complete latest full recipe-upgrade chain.
 - **BROWSER TESTED:** NOT RUN for the latest full Recipe Master migration.
-- **DEPLOYED / PUBLISHED:** repository main contains the implementation; GitHub Pages live state must still be checked.
+- **DEPLOYED / PUBLISHED:** repository main contains the continuity implementation; GitHub Pages runtime is not relevant to `AGENTS.md` behavior itself.
 - **LIVE VERIFIED:** NOT YET for the latest full Recipe Master migration.
-- **OWNER UAT ACCEPTED:** NOT YET.
-- **RECOVERY POINT AVAILABLE:** YES.
+- **OWNER UAT ACCEPTED:** NOT YET for the latest full Recipe Master migration.
+- **REGRESSION STATUS:** continuity change is documentation/instruction-layer only; no production calculation code was changed by this continuity implementation.
+- **RECOVERY POINT AVAILABLE:** YES — `recovery/pre-codex-continuity-guard-v1` plus earlier module recovery refs.
 
 Never convert code inspection into browser/live verification.
 
 ## 13. EXACT NEXT CODEX ACTION
 
-1. Fetch current `main` HEAD; if it differs from the HEAD above, inspect all intervening commits before changing anything.
-2. Read this handover + `OVERALL_DESIGN_MASTER_111Q.md`; use the newer `111Q5PVDDRT` rule stated here.
-3. Browser/UAT test `recipe-master.html` on GitHub Pages:
+1. Fetch current `main` HEAD and read `AGENTS.md` first.
+2. Read this handover and `OVERALL_DESIGN_MASTER_111Q.md` v3.0.
+3. If current `main` is newer than the material HEAD recorded above, inspect intervening commits before changing anything.
+4. Browser/UAT test `recipe-master.html` on GitHub Pages:
    - page loads;
    - Google Recipe Master loads;
    - migration backup is created before standards upgrade;
@@ -267,12 +290,12 @@ Never convert code inspection into browser/live verification.
    - energy contributes to batch COGS exactly once;
    - no duplicate recipes appear;
    - save/reopen/read-back works.
-4. Verify Method 2 item selection still maps historical snack selections correctly after Onion/Vazhakkai additions.
-5. Upgrade Workload & Staffing so selected parent products expand to linked condiment workloads and detailed active/passive stages can be scheduled without simply summing elapsed time.
-6. Build the Owner-requested **Cook1 + Helper1 whole-day timeline** using Recipe Master timings.
-7. Feed actual tester findings through post-test 5PV-DR.
-8. If any latest full-upgrade test fails, repair/retest before calling the work complete.
-9. Update this handover after each material implementation.
+5. Verify Method 2 item selection still maps historical snack selections correctly after Onion/Vazhakkai additions.
+6. Upgrade Workload & Staffing so selected parent products expand to linked condiment workloads and detailed active/passive stages can be scheduled without simply summing elapsed time.
+7. Build the Owner-requested **Cook1 + Helper1 whole-day timeline** using Recipe Master timings.
+8. Feed actual tester findings through post-test 5PV-DR.
+9. If any latest full-upgrade test fails, repair/retest before calling the work complete.
+10. **Update this handover after every material implementation before declaring completion.**
 
 ## 14. DO NOT CHANGE WITHOUT OWNER DECISION
 
@@ -283,7 +306,9 @@ Never convert code inspection into browser/live verification.
 - Do not shift historical Method 2 catalogue indices.
 - Do not infer Cook2 automatically from total labour minutes; run capacity/timeline first.
 - Do not silently treat guide rates/batch assumptions as measured outlet truth.
+- Do not reset/shrink/replace Google-backed operational data to make a new implementation easier.
+- Do not start from an old handover/branch when current HEAD contains newer work.
 
 ## 15. PORTABLE CONTINUATION COMMAND
 
-> Continue BOBS from current HEAD using `CODEX_HANDOVER_111Q_CURRENT.md` and `OVERALL_DESIGN_MASTER_111Q.md`. Apply canonical 111Q as **111Q5PVDDRT**. Inspect existing source and Google-backed data flow before edits. Preserve recovery. Do not restart completed architecture. Test the latest Recipe Master migration and connected Method 2 flow first, then continue linked-condiment workload scheduling and the Cook1 + Helper1 whole-day staffing plan. Report exact implementation/test/live/UAT status; never call untested work complete.
+> Continue BOBS from current HEAD. Read `AGENTS.md`, `CODEX_HANDOVER_111Q_CURRENT.md` and `OVERALL_DESIGN_MASTER_111Q.md` first. Apply canonical 111Q as **111Q5PVDDRT**. Inspect the current source, durable Google-backed data flow and intervening commits before edits. Preserve recovery and existing data. Extend the existing architecture instead of restarting it. Test the actual result and update `CODEX_HANDOVER_111Q_CURRENT.md` before declaring any material change complete.
