@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="style.css">
 <script src="bobs-config.js"></script>
 <script src="shared_data.js"></script>
-<script src="recipe-guide-seeds.js?v=small-outlet-v6"></script>
-<script src="poriyal-recipes.js?v=small-outlet-v2"></script>
+<script src="recipe-guide-seeds.js?v=small-outlet-v7"></script>
+<script src="poriyal-recipes.js?v=small-outlet-v3"></script>
 <style>
 .recipe-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.recipe-tools input,.recipe-tools select{padding:9px}
 .recipe-card{margin:12px 0}.energy-row{background:#fff7e6}.timing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
@@ -43,7 +43,7 @@
 <script>
 const URL=(window.BOBS_CONFIG||{}).DATA_VAULT_WEB_APP_URL;
 const RECORD={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'};
-const STD_VERSION=window.BOBS_SMALL_OUTLET_STANDARD_VERSION||'2026-09-SMALL-OUTLET-V1';
+const STD_VERSION=window.BOBS_SMALL_OUTLET_STANDARD_VERSION||'2026-09-SMALL-OUTLET-V2';
 const STANDARD_SCHEMA='3.0-SMALL-OUTLET-STANDARD';
 const UNITS=['kg','g','L','ml','piece','pieces','pack','batch','bunch','tsp','tbsp','kWh'];
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -70,21 +70,13 @@ const seeds=(()=>{
  }
  return [...m.values()];
 })();
-const standardKeys=new Set(seeds.map(x=>norm(x.name)));
-const obsoleteGeneric=/^(gas \/ fuel|fuel|primary base \/ flour|primary grain \/ flour|rice \/ flour base|salt & spices|toor dal & vegetables|milk \/ base|flavour \/ fruit \/ mix|vegetables \/ side)$/i;
 function mergeIngredientRates(std,old){
  const oldBy=new Map((old.ingredients||[]).map(x=>[norm(x?.[0]),x]));
- const out=(std.ingredients||[]).map(x=>{
+ return (std.ingredients||[]).map(x=>{
    const z=[...x],o=oldBy.get(norm(x?.[0]));
    if(o&&Number.isFinite(Number(o[3]))&&Number(o[3])>=0)z[3]=Number(o[3]);
    return z;
  });
- const stdNames=new Set(out.map(x=>norm(x[0])));
- for(const x of old.ingredients||[]){
-   if(!x?.[0]||stdNames.has(norm(x[0]))||obsoleteGeneric.test(String(x[0]).trim()))continue;
-   out.push(clone(x));
- }
- return out;
 }
 function mergeIdliKeepRecipe(old,std){
  const x={...clone(old),...clone(std)};
@@ -148,6 +140,7 @@ function timingBlock(r){
  <div><b>Finish</b><br>${Number(z.finishMinPerCycle)||0} min / cycle</div>
  <div><b>Cleanup</b><br>${Number(z.cleanupMin)||0} min</div>
  <div><b>Production elapsed</b><br>${elapsed} min / standard cycle</div>
+ <div><b>Total lead time</b><br>${pre+elapsed} min incl. passive pre-prep</div>
  <div><b>Role / equipment</b><br>${esc(z.role||'—')}<br><small>${esc(z.equipment||'—')}</small></div>
  </div>`;
 }
