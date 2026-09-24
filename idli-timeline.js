@@ -27,8 +27,9 @@ IdliTimeline.schedule=(raw,qty,capacity)=>{
  add('setup','Prepare steamer and trays',setupStart,firstSteam,x.setup);
  for(let i=0;i<cycles;i++){const start=firstSteam+i*cycle;add('steam','Steam batch '+(i+1),start,start+x.steam,x.steamWork,x.steam);add('unload','Remove batch '+(i+1)+' — ready',start+x.steam,start+cycle,x.unload)}
  const lastReady=ready+(cycles-1)*cycle;add('cleanup','Clean after final batch',lastReady,lastReady+x.cleanup,x.cleanup);
- const people=new Map(),unassigned=new Map();for(const s of stages){if(!s.work)continue;const bucket=s.assignee?people:unassigned,key=s.assignee||s.role;bucket.set(key,(bucket.get(key)||0)+s.work)}
- return {errors:[],stages,cycles,firstReady:ready,lastReady,activeMinutes:stages.reduce((v,s)=>v+s.work,0),staff:[...people].map(([name,minutes])=>({name,minutes})),unassigned:[...unassigned].map(([role,minutes])=>({role,minutes})),assigneesComplete:unassigned.size===0};
+ const people=new Map(),unassigned=new Map(),events=[];for(const s of stages){if(!s.work)continue;const bucket=s.assignee?people:unassigned,key=s.assignee||s.role;bucket.set(key,(bucket.get(key)||0)+s.work);events.push([s.start,1],[s.start+s.work,-1])}
+ events.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);let concurrent=0,maxConcurrent=0;for(const [,delta] of events){concurrent+=delta;maxConcurrent=Math.max(maxConcurrent,concurrent)}
+ return {errors:[],stages,cycles,firstReady:ready,lastReady,maxConcurrent,activeMinutes:stages.reduce((v,s)=>v+s.work,0),staff:[...people].map(([name,minutes])=>({name,minutes})),unassigned:[...unassigned].map(([role,minutes])=>({role,minutes})),assigneesComplete:unassigned.size===0};
 };
 root.IdliTimeline=IdliTimeline;
 })(window);
