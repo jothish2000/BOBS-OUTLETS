@@ -1,3 +1,55 @@
+# ACTIVE HANDOVER ADDENDUM — 25 September 2026: Workload → Idli staffing bridge
+
+This addendum is newer than the Idli pilot section below and must be read first.
+
+## Owner direction
+- Owner is continuing BOBS development from a phone in ChatGPT rather than waiting for Codex credits/workstation access.
+- Continue the existing 111Q5PVDDRT implementation from current `main`; do not restart the design or duplicate existing Google-backed staffing/cost records.
+
+## Material bridge change
+- Pre-change recovery branch: `recovery/pre-idli-bridge-20260925` at `8d7c3b7832fb4a0ff6310473f4c75b4211d4cf80`.
+- `workload-idli-bridge.js` added as a READ-ONLY bridge on `workload-planner.html`.
+- `bobs-config.js` now loads that bridge only when the current page is `workload-planner.html`.
+- The bridge reads the existing authoritative `IDLI_SUPPORT / default` record; it does not create another staffing/support ledger and does not write Google data.
+- It displays one of: no plan, DRAFT, ACCEPTED, COVERAGE STILL OPEN, or QUANTITY CHANGED.
+- It exposes phone-friendly navigation to Idli staffing/emergency support, current Idli item full-cost page (when selected), and outlet fixed expenses.
+- It compares saved staffing quantity with the current selected Method 2 Production Idli quantity and warns rather than silently treating stale labour allocation as current.
+- Pending/uncovered support remains visually incomplete; existing `idli-support-core.js` remains the authority for whether acceptance is allowed.
+
+## Commits / release evidence
+- `6ecfd09a1baa190c680e380b459848d25a5a98dc` — create `workload-idli-bridge.js`.
+- `a0946336482113a36d967b0df82fc4d59958facb` — load bridge from `bobs-config.js` on Workload Planner only.
+- GitHub Actions build for `a0946336482113a36d967b0df82fc4d59958facb`: SUCCESS.
+- GitHub Pages deploy for `a0946336482113a36d967b0df82fc4d59958facb`: SUCCESS.
+
+## 111Q status for this bridge
+- DESIGNED: YES.
+- OWNER APPROVED: YES — Owner instructed continued bridge/site development.
+- IMPLEMENTED: YES.
+- CODE CHECKED: source inspected; GitHub Pages build passed. Local Node syntax execution was BLOCKED by this session's container network isolation, so do not describe that as a passed local runtime test.
+- AUTOMATED TESTED: no new bridge-specific browser automation; existing Idli support core automated tests remain from prior implementation.
+- BROWSER TESTED: NOT RUN in this session because the available web fetcher could not access the GitHub Pages URL.
+- DEPLOYED / PUBLISHED: YES — GitHub Pages deployment successful.
+- LIVE VERIFIED: NOT VERIFIED.
+- OWNER UAT ACCEPTED: NOT YET.
+- REGRESSION STATUS: build/deploy green; runtime navigation/data rendering still requires phone/browser observation.
+- RECOVERY POINT AVAILABLE: YES — `recovery/pre-idli-bridge-20260925`.
+
+## Post-change 5PV-DR
+- PRO: gives the Owner a visible, phone-friendly continuity bridge from workload planning to staffing, item cost and expenses without introducing a duplicate source of truth.
+- CON: status rendering depends on runtime Google reads and therefore cannot be called live verified from build success alone.
+- COMPARE & CONNECTIONS: before, Workload Planner had only a one-way link to the Idli pilot; after, it reads the authoritative saved status and provides connected links to staffing, labour-inclusive item cost and outlet expenses.
+- OBSERVER: stale quantity is surfaced as a warning; draft or uncovered records are never presented as complete.
+- OWNER: continue building; browser/UAT observations can be supplied from the phone while development proceeds.
+
+## Exact next action
+1. On the live Workload Planner, visually confirm the new bridge card/status and the three navigation paths.
+2. If runtime behavior is correct, proceed to the next architecture gap: expand selected parent products to linked condiment workloads and then move toward the Cook1 + Helper1 whole-day timeline using Recipe Master timings.
+3. Do not expand the Idli pilot into other dishes by copying assumptions; reuse Recipe Master timing/role/equipment data and preserve specialist Vada logic.
+4. Update this handover again after the next material implementation.
+
+---
+
 # ACTIVE HANDOVER — 25 September 2026: Idli staffing / extra support pilot
 
 Read this section first. It supersedes conflicting older business directions in the historical handover below.
