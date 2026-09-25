@@ -56,4 +56,7 @@ document.addEventListener('DOMContentLoaded',function(){const btn=document.getEl
   if(!window.BOBS_OWNED_EDITOR&&(location.pathname.split('/').pop()||'').toLowerCase()==='method2.html'){
     const s=document.createElement('script');s.src='method2-condiments-rules.js?v=2026-09-12-111Q-rice-packet-rules-1';document.head.appendChild(s);
   }
+  if((location.pathname.split('/').pop()||'').toLowerCase()==='workload-planner.html'){
+    const s=document.createElement('script');s.src='workload-idli-bridge.js?v=2026-09-25-111q-bridge-v1';document.head.appendChild(s);
+  }
 });
