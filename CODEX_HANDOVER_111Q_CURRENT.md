@@ -1,3 +1,51 @@
+# ACTIVE HANDOVER — 25 September 2026: Idli staffing / extra support pilot
+
+Read this section first. It supersedes conflicting older business directions in the historical handover below.
+
+## Owner-approved scope and decisions
+- Latest request: take the reviewed interactive Idli staffing/emergency/payment design into the BOBS GitHub Pages site; provide automatic Codex continuity. Idli first; remaining Method 2 production items later.
+- Roles → positions → people. Recommend positions before employee names. Cook 1 + Helper 1 is the initial Idli planning team, NOT a proven industry headcount or whole-outlet staffing result.
+- The Owner does not want trial-and-error staffing or opportunistic gap filling. Use sourced/reference workflows, quantities, equipment, attention, realistic allowances, attendance and deadlines. Unknown timing must be explicit, never zero.
+- Regular team has checked Cook/Helper selections and YES/NO acceptance. Removing a position exposes uncovered duties. Emergency plan can transfer compatible prep/cleanup to Cook 1, reserve cooking windows, and request bounded support for portioning/packing.
+- Temporary = additional substitute; rotational = existing employee moved from another position. Payment is a separate choice. Rotational source must be identified. Availability pending means UNCOVERED in red, and acceptance is blocked.
+- Hourly extra, fixed extra, or existing salary/no extra. Hourly payment supports actual duration, ceil whole hours, minimum hours. 80 min × ₹100 with 2-hour minimum = ₹200. Rates are owner inputs, not statutory payroll calculations.
+- One-off date vs recurring end date/occurrences/trading days; include/exclude extra from Idli allocation. Existing salary is not removed automatically during absence. Full extra payment belongs once in outlet expenses; product allocation is not a second expense.
+- NEW Owner rule supersedes old labour-exclusion rule for presentation/pricing: retain legacy direct food/energy/packing Actual COGS, and additionally show full labour-inclusive item cost and ideal price. Do not mutate legacy direct-cost expense aggregates to double-count salary.
+
+## Current implementation (release validation in progress)
+- Recovery baseline: `2d6b1425391562fe52460872f13f18d2592106b7` (main before this work). Revert changed code surgically; never restore Google state by reverting source.
+- `idli-staffing.html`, `idli-staffing.js`: linked live-page pilot importing saved selected Production Idli quantity/capacity, sides and Recipe Master timing; previous saved Idli stage model is reused. Builds chronological assignments, regular/emergency selection, red uncovered status, paid-hours quote, direct + regular + additional cost preview, accepted/draft save.
+- `idli-support-core.js`: pure build/assess/payment/effectivity logic; reserved supervision windows, deadline/overlap checks; additional support interval; Google save backup + optimistic reread + token readback.
+- `idli-support-readers.js`: projections into item full cost and outlet expense line. One authoritative record; no duplicate expense ledger.
+- `workload-planner.html`: link to Idli pilot, preserving existing popup and workload profiles.
+- `method2-item.html/js`: load accepted support record; show full labour-inclusive cost/price alongside existing direct calculation. No change to direct `M2.calculate.final`, `actualDayCost`, or the existing saved direct-cost economics.
+- `fixed-expenses.html`: derive a protected `source: IDLI_SUPPORT` line; remove/replace it on refresh so repeated save/load cannot accumulate duplicates. Recurring = monthly support amount / trading days; one-off = exact current business date. Persist through existing Save Expenses action for downstream readers. No automatic employee/payroll mutation.
+- `test-idli-support.cjs`: run with `node test-idli-support.cjs` from repository root.
+
+## Authoritative storage
+`IDLI_SUPPORT / default` per outlet is the active accepted or draft plan. `IDLI_SUPPORT_BACKUPS / <token>` contains prior records. Accepted records carry business date, optional end date, input plan, role allocation, quote, task calculation and token. Draft status deactivates cost. Source quantity and selected-side fingerprint protect the item reader against a stale plan. A single active plan is supported; dated historical reporting/parallel scenarios still need expansion.
+
+No operational Google records were intentionally edited as part of implementation tests. Live save/read-back status must be recorded after testing; do not imply passing if only fake adapter tests ran.
+
+## Important remaining limits / next work
+1. This is an Idli planning pilot, not a certified industry workforce optimizer. Proposed two positions are checked against entered task windows; automatic minimal headcount search is NOT implemented. Do not call this complete for all dishes.
+2. Side cooking duration is imported from complete Recipe Master timing and scaled by quantity/yield; absent timing blocks generation until supplied. Prep/portion/wash/packing inputs and existing detailed Idli defaults are explicit scenario assumptions. Do not market them as measured industry standards.
+3. Regular allocated labour is an explicit batch input. Role/position CTC → automatic allocation and reverse take-home payroll integration remain pending. No staff/payroll records are created here.
+4. Rotational availability is owner-confirmed, not yet automatically checked against a full outlet roster. Previous-day rest/skills/equipment review remains explicit.
+5. Same-day reserved windows detect overlap; they deliberately do not pack work into passive gaps. Whole-day lunch integration and other production dishes are next phases after Idli UAT.
+6. Full labour-inclusive price is shown separately; existing direct pricing remains for compatibility. Downstream break-even uses the saved expenses line, not the item labour allocation. Final cross-report reconciliation still needs verification.
+7. Google backend has no proven atomic compare-and-swap. Client reread/token protections reduce stale writes, but do not guarantee cross-device race exclusion.
+
+## Tests / 111Q evidence before publishing
+DESIGNED / OWNER APPROVED: YES for reviewed flow. IMPLEMENTED: local files ready. CODE CHECKED: changed JS/HTML parse. AUTOMATED TESTED: PASS payment modes, missing/zero, reserved duties, pending→confirmed coverage, short window, deadlines, date/quantity, recurring expense, backup/readback and stale-save fake adapter. BROWSER TESTED / DEPLOYED / LIVE VERIFIED: pending this release. OWNER UAT ACCEPTED: NOT YET. Existing Recipe Master migration UAT remains NOT RUN.
+Post-test 5PV: PRO—explicit roles, coverage and cost; CON—reference timing/roster/payroll limits; CONNECTIONS—one support record feeds item pricing and expense projection; OBSERVER—unknowns block or remain labelled, no fixed 80-minute assumption; OWNER—requested deployment, later UAT required.
+
+## Exact continuation
+Fetch main; read AGENTS + this latest section + universal design master. Inspect current live changes, run support tests. First finish any release validation listed above. Then let Owner exercise Idli accept/save/reload and support payment before expanding. Do not restart the mockups or replace Method 2 / Recipe Master. Keep the handover current after every material change.
+
+---
+# Historical handover (23 Sep; superseded where explicitly stated above)
+
 # BOBS / UDANE — CURRENT 111Q CODEX HANDOVER
 
 **Date:** 23 Sep 2026  
@@ -312,3 +360,4 @@ Never convert code inspection into browser/live verification.
 ## 15. PORTABLE CONTINUATION COMMAND
 
 > Continue BOBS from current HEAD. Read `AGENTS.md`, `CODEX_HANDOVER_111Q_CURRENT.md` and `OVERALL_DESIGN_MASTER_111Q.md` first. Apply canonical 111Q as **111Q5PVDDRT**. Inspect the current source, durable Google-backed data flow and intervening commits before edits. Preserve recovery and existing data. Extend the existing architecture instead of restarting it. Test the actual result and update `CODEX_HANDOVER_111Q_CURRENT.md` before declaring any material change complete.
+

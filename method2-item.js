@@ -69,6 +69,7 @@ function consolidatedCosts(c){
 function pull(){for(const id of fields)d[id]=$(id).value}
 function changed(){pull();dirty=true;d.soldConfirmed=false;$('saveStatus').textContent='Unsaved changes';calculate()}
 function lines(id,entries){$(id).replaceChildren();for(const [index,[label,value]] of entries.entries()){const row=document.createElement('div');row.className='line';const span=document.createElement('span'),b=document.createElement('strong');span.textContent=label;if(id==='costs'&&index===0)span.replaceChildren(primaryCostLink(label));b.textContent=value;row.append(span,b);$(id).append(row)}}
+let supportRecord=null,supportError='';
 function calculate(){
  const c=M2.calculate(d,item,recipes),production=d.mode==='production';
  document.querySelectorAll('.side-cost').forEach(el=>{const x=el.side,component=c.components[d.condiments.indexOf(x)+1];el.textContent=component.incomplete?'Complete this side’s cost inputs and packing choice.':x.portion+' '+x.portionUnit+' complimentary: food '+money(component.food)+' + packing '+money(component.packing)+' = '+money(component.subtotal)+' per '+d.unit+(c.sold===null?'':'; '+money(component.subtotal*c.sold)+' for '+c.sold+' sold')+'. No separate revenue.'});
@@ -84,6 +85,7 @@ function calculate(){
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
  consolidatedCosts(c);
+ if(/^idl[yi]$/i.test(item.name)&&production){let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='component';$('costs').parentElement.append(box);}IdliSupportReaders.renderItem(box,supportRecord,supportError,c,d);}else if($('idliLabourCost'))$('idliLabourCost').remove();
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  const pricingIncomplete=incomplete||c.uuwpPctApplied===null;
  const uuwpSource=c.uuwpPctApplied===null?'Enter Sold Today':c.unsold>0?'Actual leftover-based':'Default allowance — 100% sold';
@@ -154,6 +156,8 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
  $('supplyHeading').textContent='01 · '+item.name;
  const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
  choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
+ if(/^idl[yi]$/i.test(item.name)){try{supportRecord=await M2.read(outlet,'IDLI_SUPPORT','default');}catch(e){supportError=e.message;}}
  show();status('Loaded from Google. Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
  }catch(e){status(e.message)}})();
 })();
+

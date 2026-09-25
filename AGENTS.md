@@ -89,7 +89,7 @@ If something was not actually performed, say `NOT RUN`, `NOT VERIFIED` or `BLOCK
 
 - Recipe Master is the single source for recipe ingredients/yield/raw-material cost/direct production energy/timing/equipment/required role.
 - Workload & Staffing reads timing from Recipe Master; do not create a second staffing recipe source.
-- Actual COGS remains separate from labour and fixed expenses.
+- Owner update 25 Sep 2026: preserve the legacy direct Actual COGS subtotal, and expose a separate full item cost/pricing total with allocated regular labour and selected additional support. Never add these allocations again to the outlet expense ledger. Read the current handover for implementation boundaries.
 - MENU -> ROLE -> POSITION -> PERSON.
 - Vada/Snack Master is a separate specialist by default unless Owner explicitly approves multi-skilling.
 - Reuse a position across dayparts only when timeline/capacity proves it.
@@ -103,3 +103,4 @@ If something was not actually performed, say `NOT RUN`, `NOT VERIFIED` or `BLOCK
 When the Owner says something like `continue`, `go ahead`, `222`, `333`, `999` or asks Codex to continue BOBS, interpret it as:
 
 > Continue from current HEAD. First read `AGENTS.md`, `CODEX_HANDOVER_111Q_CURRENT.md` and `OVERALL_DESIGN_MASTER_111Q.md`; inspect the current implementation and intervening commits; preserve data/recovery; extend the existing architecture rather than restarting it; test the actual result; then update `CODEX_HANDOVER_111Q_CURRENT.md` before declaring the material change complete.
+
