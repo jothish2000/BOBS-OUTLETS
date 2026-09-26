@@ -14,75 +14,58 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect live Google Recipe Master record
+      - name: Migrate deployed Recipe Master in headless Chrome
+        shell: bash
+        run: |
+          set -o pipefail
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926-shards1'
+          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=90000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
+          echo '--- BROWSER STATUS ---'
+          grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/recipe-master-dom.html || true
+          echo '--- RECIPE CARDS ---'
+          grep -o 'class="stack recipe-card"' /tmp/recipe-master-dom.html | wc -l
+          echo '--- JS ERRORS ---'
+          grep -E 'Uncaught|ReferenceError|SyntaxError|TypeError' /tmp/recipe-master-chrome.log | tail -40 || true
+      - name: Independently verify Google manifest and chunks
         shell: bash
         run: |
           set -o pipefail
           VAULT='https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec'
-          curl -fsSL --max-time 30 "$VAULT?action=moduleGet&outletId=COMPANY&module=RECIPE_MASTER&recordKey=STANDARD_V1&callback=diagcb&_bobs=$(date +%s%N)" > /tmp/master.js || true
-          python - <<'PY'
+          curl -fsSL --max-time 30 "$VAULT?action=moduleGet&outletId=COMPANY&module=RECIPE_MASTER&recordKey=STANDARD_V1&callback=diagcb&_bobs=$(date +%s%N)" > /tmp/master.js
+          VAULT="$VAULT" python - <<'PY'
           from pathlib import Path
-          import json,re
-          t=Path('/tmp/master.js').read_text(errors='replace') if Path('/tmp/master.js').exists() else ''
-          print('response bytes',len(t))
+          import json,re,os,subprocess,time
+          t=Path('/tmp/master.js').read_text(errors='replace')
           m=re.search(r'diagcb\((.*)\)\s*;?\s*$',t,re.S)
-          if not m:
-            print('Could not parse JSONP; prefix:',t[:500]);raise SystemExit(0)
-          x=json.loads(m.group(1))
-          print('top keys',sorted(x.keys()))
-          print('found',x.get('found'),'ok',x.get('ok'))
-          d=x.get('data') or (x.get('record') or {}).get('data') or {}
-          print('standardVersion',d.get('standardVersion'))
-          print('schemaVersion',d.get('schemaVersion'))
-          print('recipeCount',len(d.get('recipes') or []))
-          print('data JSON chars',len(json.dumps(d,separators=(',',':'),ensure_ascii=False)))
-          print('data _bobsMeta',d.get('_bobsMeta'))
-          print('record stateVersion',(x.get('record') or {}).get('stateVersion'))
-          print('top stateVersion',x.get('stateVersion'))
+          if not m: raise SystemExit('Manifest JSONP parse failed')
+          x=json.loads(m.group(1)); d=x.get('data') or {}
+          print('manifest standardVersion',d.get('standardVersion'))
+          print('manifest schemaVersion',d.get('schemaVersion'))
+          print('manifest storageMode',d.get('storageMode'))
+          print('manifest recipeCount',d.get('recipeCount'))
+          print('manifest chunks',len(d.get('chunkKeys') or []))
+          print('manifest JSON chars',len(json.dumps(d,separators=(',',':'),ensure_ascii=False)))
+          assert d.get('standardVersion')=='2026-09-SMALL-OUTLET-V2'
+          assert d.get('storageMode')=='SHARDED_RECIPE_MASTER_V2'
+          keys=d.get('chunkKeys') or []; assert keys
+          recipes=[]
+          for i,key in enumerate(keys):
+            cb='chunkcb'
+            url=os.environ['VAULT']+'?action=moduleGet&outletId=COMPANY&module=RECIPE_MASTER_CHUNKS&recordKey='+key+'&callback='+cb+'&_bobs='+str(time.time_ns())
+            raw=subprocess.check_output(['curl','-fsSL','--max-time','30',url],text=True)
+            mm=re.search(r'chunkcb\((.*)\)\s*;?\s*$',raw,re.S); assert mm, key
+            cd=(json.loads(mm.group(1)).get('data') or {})
+            size=len(json.dumps(cd,separators=(',',':'),ensure_ascii=False))
+            print('chunk',i+1,'recipes',len(cd.get('recipes') or []),'chars',size)
+            assert cd.get('schema')=='RECIPE_MASTER_CHUNK_V2'
+            assert cd.get('token')==d.get('migrationToken')
+            assert int(cd.get('index'))==i and int(cd.get('total'))==len(keys)
+            assert size<50000
+            recipes.extend(cd.get('recipes') or [])
+          print('assembled recipe count',len(recipes))
+          assert len(recipes)==104 and len(recipes)==int(d.get('recipeCount'))
+          names={str(r.get('name','')).lower() for r in recipes}
+          for required in ['idli','idli sambar','coconut chutney','rice sambar','potato poriyal']:
+            assert required in names, required
+          print('PASS live Google Recipe Master V2 sharded migration')
           PY
-      - name: Measure V2 Recipe Master payload and compact candidate
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs=require('fs'),vm=require('vm');
-          const ctx={window:{},console,queueMicrotask:()=>{},setTimeout,clearTimeout};
-          vm.createContext(ctx);
-          vm.runInContext(fs.readFileSync('shared_data.js','utf8'),ctx,{filename:'shared_data.js'});
-          vm.runInContext('window.ITEM_DATA=ITEM_DATA',ctx);
-          vm.runInContext(fs.readFileSync('recipe-guide-seeds.js','utf8'),ctx,{filename:'recipe-guide-seeds.js'});
-          vm.runInContext(fs.readFileSync('poriyal-recipes.js','utf8'),ctx,{filename:'poriyal-recipes.js'});
-          const recipes=[...(ctx.window.BOBS_GUIDE_RECIPES||[]),...(ctx.window.BOBS_PORIYAL||[])];
-          const master={schemaVersion:'3.0-SMALL-OUTLET-STANDARD',standardVersion:ctx.window.BOBS_SMALL_OUTLET_STANDARD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',recipes,rateBasis:ctx.window.BOBS_RECIPE_RATE_BASIS||{},updatedAt:new Date().toISOString(),notes:'BOBS small-outlet standard recipes. Direct batch energy is costed as recipe input. Labour stays outside Actual COGS.'};
-          const chars=o=>JSON.stringify(o).length;
-          function compactRecipe(r){
-            const x=JSON.parse(JSON.stringify(r));
-            delete x.productionStages;          // derived from productionTiming
-            delete x.standardCompleteness;      // derived validation result
-            delete x.planningStandard;          // common V2 reference metadata
-            delete x.foodSafetyNote;            // common master-level guidance
-            delete x.planningNote;              // descriptive/repeatable guidance
-            delete x.guideNote;                 // descriptive guidance
-            delete x.timingBasis;               // implied by standardVersion
-            return x;
-          }
-          const compact={...master,recipes:recipes.map(compactRecipe),planningBasis:{type:'REFERENCE_SMALL_OUTLET',version:ctx.window.BOBS_SMALL_OUTLET_STANDARD_VERSION,measuredAtOutlet:false,calibrationRequired:true,foodSafetyNote:'Planning minutes are for workload/costing, not proof of food safety. Follow applicable FSSAI controls.'}};
-          console.log('V2 generated recipes',recipes.length);
-          console.log('V2 full master JSON chars',chars(master));
-          console.log('V2 compact candidate JSON chars',chars(compact));
-          console.log('V2 recipes only full chars',chars(recipes));
-          console.log('V2 recipes only compact chars',chars(compact.recipes));
-          const biggest=recipes.map(r=>[r.name,chars(r),chars(compactRecipe(r))]).sort((a,b)=>b[1]-a[1]).slice(0,10);
-          console.log('largest recipes [name,full,compact]',JSON.stringify(biggest));
-          NODE
-      - name: Load deployed Recipe Master in headless Chrome
-        shell: bash
-        run: |
-          set -o pipefail
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926d'
-          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=26000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
-          echo '--- STATUS TEXT ---'
-          grep -oE 'SAFE MODE[^<]*|Google master[^<]*|Reference standards loaded[^<]*|Migration sent[^<]*|Loading reference standards[^<]*' /tmp/recipe-master-dom.html || true
-          echo '--- RECIPE CARDS ---'
-          grep -o 'class="stack recipe-card"' /tmp/recipe-master-dom.html | wc -l
-          echo '--- DOM STATUS NODE ---'
-          grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/recipe-master-dom.html || true
