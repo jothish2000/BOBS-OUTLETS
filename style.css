@@ -10,7 +10,7 @@ body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMac
 header{background:var(--ledger);color:var(--paper);padding:18px 18px 14px;position:sticky;top:0;z-index:6;}
 header .eyebrow{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.7;margin:0 0 4px;}
 header h1{font-family:Georgia,"Times New Roman",serif;font-size:20px;margin:0;font-weight:600;}
-header .sub{font-size:11.5px;opacity:0.8;margin-top:5px;line-height:1.4;}
+header .sub{display:block;font-size:15px;font-weight:650;opacity:1;margin:11px 0 0;line-height:1.5;color:#FFF4D6;background:linear-gradient(135deg,rgba(181,130,42,.34),rgba(237,228,211,.12));border:1px solid rgba(237,228,211,.34);border-left:4px solid #D4A84A;border-radius:9px;padding:10px 12px;box-shadow:0 5px 16px rgba(0,0,0,.12);max-width:980px;}
 
 nav.pagenav{display:flex;gap:0;margin-top:12px;border-top:1px solid rgba(237,228,211,0.25);padding-top:10px;}
 nav.pagenav a{flex:1;text-align:center;color:var(--paper);text-decoration:none;font-size:12px;font-weight:600;padding:6px 4px;border-radius:3px;opacity:0.65;}
@@ -104,3 +104,19 @@ footer{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:26px;pa
 .dash-links{display:flex;flex-direction:column;gap:6px;}
 .dash-link{display:block;background:var(--paper);border:1px solid var(--rule);border-radius:3px;padding:9px 12px;font-size:12.5px;color:var(--ledger);text-decoration:none;font-weight:600;}
 .dash-link:hover{border-color:var(--gold);}
+
+/* BOBS reusable Page Guide pattern. Use on operational pages that have guided steps. */
+.page-guide{margin:14px 14px 0;border:1px solid #C79A3B;border-left:5px solid var(--gold);border-radius:10px;background:linear-gradient(135deg,#FFF8E8,#F2E4C5);box-shadow:0 7px 20px rgba(43,35,24,.10);overflow:hidden;color:var(--ink);}
+.page-guide summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:15px;font-weight:800;color:var(--ledger);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.page-guide summary::-webkit-details-marker{display:none;}
+.page-guide summary::after{content:'▾';font-size:16px;color:var(--gold);transition:transform .18s ease;}
+.page-guide:not([open]) summary::after{transform:rotate(-90deg);}
+.page-guide .guide-title{display:flex;align-items:center;gap:9px;}
+.page-guide .guide-kicker{display:inline-flex;align-items:center;border-radius:999px;background:var(--ledger);color:#FFF7E5;padding:4px 8px;font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:800;white-space:nowrap;}
+.page-guide .guide-body{border-top:1px solid rgba(181,130,42,.35);padding:12px 14px 14px;display:grid;gap:10px;}
+.page-guide .guide-step{font-size:14px;line-height:1.55;}
+.page-guide .guide-step strong{color:var(--ledger);font-size:14.5px;}
+.page-guide .guide-result{background:#FFFDF7;border:1px solid rgba(47,107,62,.32);border-left:4px solid var(--profit);border-radius:7px;padding:9px 11px;font-size:13.5px;line-height:1.5;}
+.page-guide .guide-result strong{color:var(--profit);}
+.page-guide .guide-warning{background:#FFF0ED;border:1px solid rgba(139,58,46,.32);border-left:4px solid var(--loss);border-radius:7px;padding:9px 11px;font-size:13.5px;line-height:1.5;}
+@media(max-width:600px){header .sub{font-size:14px;padding:9px 10px;margin-top:9px;border-radius:8px}.page-guide{margin:12px 10px 0}.page-guide summary{padding:11px 12px;font-size:14px}.page-guide .guide-body{padding:11px 12px 13px}.page-guide .guide-step,.page-guide .guide-result,.page-guide .guide-warning{font-size:13.5px}}
