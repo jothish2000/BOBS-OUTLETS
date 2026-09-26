@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const S=require('../recipe-master-shards.js');
+const recipes=Array.from({length:104},(_,i)=>({name:'Recipe '+i,ingredients:Array.from({length:10},(_,j)=>['Ingredient '+j,1,'kg',100]),productionTiming:{setupMin:20,activeMinPerCycle:30,machineMinPerCycle:30,finishMinPerCycle:10,cleanupMin:10,role:'Cook',equipment:'Kadai'}}));
+const chunks=S.splitRecipes(recipes,32000);assert.ok(chunks.length>1);
+const token='tok';const keys=chunks.map((_,i)=>'STANDARD_V2_'+token+'_'+String(i+1).padStart(2,'0'));
+const master={schemaVersion:'3.0',standardVersion:'V2',recipes,notes:'x'};
+const manifest=S.manifest(master,keys,token);
+assert.ok(S.size(manifest)<10000,'manifest must remain small');
+const data=chunks.map((r,i)=>S.chunkData(r,token,i,chunks.length,'V2'));
+for(const c of data)assert.ok(S.size(c)<33000,'chunk too large');
+const assembled=S.assemble(manifest,data);assert.deepEqual(assembled.recipes,recipes);assert.equal(assembled.recipeCount,104);
+assert.throws(()=>S.assemble(manifest,data.slice(1)),/incomplete/);
+const bad=JSON.parse(JSON.stringify(data));bad[0].token='wrong';assert.throws(()=>S.assemble(manifest,bad),/integrity/);
+console.log(`PASS Recipe Master shards: ${chunks.length} chunks, max ${Math.max(...data.map(S.size))} chars, manifest ${S.size(manifest)} chars.`);
