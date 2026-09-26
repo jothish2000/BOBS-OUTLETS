@@ -14,11 +14,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Inspect live Google Recipe Master record
+        shell: bash
+        run: |
+          set -o pipefail
+          VAULT='https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec'
+          curl -fsSL --max-time 30 "$VAULT?action=moduleGet&outletId=COMPANY&module=RECIPE_MASTER&recordKey=STANDARD_V1&callback=diagcb&_bobs=$(date +%s%N)" > /tmp/master.js || true
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          t=Path('/tmp/master.js').read_text(errors='replace') if Path('/tmp/master.js').exists() else ''
+          print('response bytes',len(t))
+          m=re.search(r'diagcb\((.*)\)\s*;?\s*$',t,re.S)
+          if not m:
+            print('Could not parse JSONP; prefix:',t[:500]);raise SystemExit(0)
+          x=json.loads(m.group(1))
+          print('top keys',sorted(x.keys()))
+          print('found',x.get('found'),'ok',x.get('ok'))
+          d=x.get('data') or (x.get('record') or {}).get('data') or {}
+          print('standardVersion',d.get('standardVersion'))
+          print('schemaVersion',d.get('schemaVersion'))
+          print('recipeCount',len(d.get('recipes') or []))
+          print('data _bobsMeta',d.get('_bobsMeta'))
+          print('record stateVersion',(x.get('record') or {}).get('stateVersion'))
+          print('top stateVersion',x.get('stateVersion'))
+          PY
       - name: Load deployed Recipe Master in headless Chrome
         shell: bash
         run: |
           set -o pipefail
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926b'
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926c'
           google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=26000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
           echo '--- STATUS TEXT ---'
           grep -oE 'SAFE MODE[^<]*|Google master[^<]*|Reference standards loaded[^<]*|Migration sent[^<]*|Loading reference standards[^<]*' /tmp/recipe-master-dom.html || true
