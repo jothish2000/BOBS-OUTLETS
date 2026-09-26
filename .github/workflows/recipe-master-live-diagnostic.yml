@@ -14,58 +14,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Migrate deployed Recipe Master in headless Chrome
+      - name: Verify normal Recipe Master reload
         shell: bash
         run: |
-          set -o pipefail
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926-shards1'
-          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=90000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
-          echo '--- BROWSER STATUS ---'
-          grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/recipe-master-dom.html || true
-          echo '--- RECIPE CARDS ---'
-          grep -o 'class="stack recipe-card"' /tmp/recipe-master-dom.html | wc -l
-          echo '--- JS ERRORS ---'
-          grep -E 'Uncaught|ReferenceError|SyntaxError|TypeError' /tmp/recipe-master-chrome.log | tail -40 || true
-      - name: Independently verify Google manifest and chunks
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926-reload1'
+          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=40000 --dump-dom "$URL" > /tmp/master.html 2> /tmp/master.err || true
+          STATUS=$(grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/master.html || true)
+          echo "$STATUS"
+          echo "cards $(grep -o 'class=\"stack recipe-card\"' /tmp/master.html | wc -l)"
+          ! echo "$STATUS" | grep -q 'SAFE MODE'
+          echo "$STATUS" | grep -q 'Google master loaded — current standard verified'
+          ! grep -E 'Uncaught|ReferenceError|SyntaxError|TypeError' /tmp/master.err
+      - name: Verify Item COGS reads sharded Recipe Master
         shell: bash
         run: |
-          set -o pipefail
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-item-cogs.html?outlet=1&item=Idli&qty=120&model=production&diag=20260926'
+          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=40000 --dump-dom "$URL" > /tmp/cogs.html 2> /tmp/cogs.err || true
+          grep -oE '<div id="status" class="note">[^<]*</div>' /tmp/cogs.html || true
+          grep -q 'Permanent Google Recipe Master read successfully' /tmp/cogs.html
+          grep -q 'Recipe<b>FOUND</b>' /tmp/cogs.html
+          ! grep -E 'Uncaught|ReferenceError|SyntaxError|TypeError' /tmp/cogs.err
+      - name: Verify active Google manifest remains V2
+        shell: bash
+        run: |
           VAULT='https://script.google.com/macros/s/AKfycbwmvTLGxFQ2KQvzP9tr1Ry5LOi8EWRcfP6YxtOKiLUCLJqDpQ8Nsk12zThc1Yj4A9Pf4A/exec'
           curl -fsSL --max-time 30 "$VAULT?action=moduleGet&outletId=COMPANY&module=RECIPE_MASTER&recordKey=STANDARD_V1&callback=diagcb&_bobs=$(date +%s%N)" > /tmp/master.js
-          VAULT="$VAULT" python - <<'PY'
+          python - <<'PY'
           from pathlib import Path
-          import json,re,os,subprocess,time
-          t=Path('/tmp/master.js').read_text(errors='replace')
-          m=re.search(r'diagcb\((.*)\)\s*;?\s*$',t,re.S)
-          if not m: raise SystemExit('Manifest JSONP parse failed')
-          x=json.loads(m.group(1)); d=x.get('data') or {}
-          print('manifest standardVersion',d.get('standardVersion'))
-          print('manifest schemaVersion',d.get('schemaVersion'))
-          print('manifest storageMode',d.get('storageMode'))
-          print('manifest recipeCount',d.get('recipeCount'))
-          print('manifest chunks',len(d.get('chunkKeys') or []))
-          print('manifest JSON chars',len(json.dumps(d,separators=(',',':'),ensure_ascii=False)))
+          import json,re
+          t=Path('/tmp/master.js').read_text();m=re.search(r'diagcb\((.*)\)\s*;?\s*$',t,re.S);assert m
+          d=(json.loads(m.group(1)).get('data') or {})
+          print('standardVersion',d.get('standardVersion'),'storageMode',d.get('storageMode'),'recipeCount',d.get('recipeCount'),'chunks',len(d.get('chunkKeys') or []))
           assert d.get('standardVersion')=='2026-09-SMALL-OUTLET-V2'
           assert d.get('storageMode')=='SHARDED_RECIPE_MASTER_V2'
-          keys=d.get('chunkKeys') or []; assert keys
-          recipes=[]
-          for i,key in enumerate(keys):
-            cb='chunkcb'
-            url=os.environ['VAULT']+'?action=moduleGet&outletId=COMPANY&module=RECIPE_MASTER_CHUNKS&recordKey='+key+'&callback='+cb+'&_bobs='+str(time.time_ns())
-            raw=subprocess.check_output(['curl','-fsSL','--max-time','30',url],text=True)
-            mm=re.search(r'chunkcb\((.*)\)\s*;?\s*$',raw,re.S); assert mm, key
-            cd=(json.loads(mm.group(1)).get('data') or {})
-            size=len(json.dumps(cd,separators=(',',':'),ensure_ascii=False))
-            print('chunk',i+1,'recipes',len(cd.get('recipes') or []),'chars',size)
-            assert cd.get('schema')=='RECIPE_MASTER_CHUNK_V2'
-            assert cd.get('token')==d.get('migrationToken')
-            assert int(cd.get('index'))==i and int(cd.get('total'))==len(keys)
-            assert size<50000
-            recipes.extend(cd.get('recipes') or [])
-          print('assembled recipe count',len(recipes))
-          assert len(recipes)==104 and len(recipes)==int(d.get('recipeCount'))
-          names={str(r.get('name','')).lower() for r in recipes}
-          for required in ['idli','idli sambar','coconut chutney','rice sambar','potato poriyal']:
-            assert required in names, required
-          print('PASS live Google Recipe Master V2 sharded migration')
+          assert int(d.get('recipeCount'))==104
           PY
