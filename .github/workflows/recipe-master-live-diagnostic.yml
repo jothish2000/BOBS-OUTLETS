@@ -35,21 +35,54 @@ jobs:
           print('standardVersion',d.get('standardVersion'))
           print('schemaVersion',d.get('schemaVersion'))
           print('recipeCount',len(d.get('recipes') or []))
+          print('data JSON chars',len(json.dumps(d,separators=(',',':'),ensure_ascii=False)))
           print('data _bobsMeta',d.get('_bobsMeta'))
           print('record stateVersion',(x.get('record') or {}).get('stateVersion'))
           print('top stateVersion',x.get('stateVersion'))
           PY
+      - name: Measure V2 Recipe Master payload and compact candidate
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const ctx={window:{},console,queueMicrotask:()=>{},setTimeout,clearTimeout};
+          vm.createContext(ctx);
+          vm.runInContext(fs.readFileSync('shared_data.js','utf8'),ctx,{filename:'shared_data.js'});
+          vm.runInContext('window.ITEM_DATA=ITEM_DATA',ctx);
+          vm.runInContext(fs.readFileSync('recipe-guide-seeds.js','utf8'),ctx,{filename:'recipe-guide-seeds.js'});
+          vm.runInContext(fs.readFileSync('poriyal-recipes.js','utf8'),ctx,{filename:'poriyal-recipes.js'});
+          const recipes=[...(ctx.window.BOBS_GUIDE_RECIPES||[]),...(ctx.window.BOBS_PORIYAL||[])];
+          const master={schemaVersion:'3.0-SMALL-OUTLET-STANDARD',standardVersion:ctx.window.BOBS_SMALL_OUTLET_STANDARD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',recipes,rateBasis:ctx.window.BOBS_RECIPE_RATE_BASIS||{},updatedAt:new Date().toISOString(),notes:'BOBS small-outlet standard recipes. Direct batch energy is costed as recipe input. Labour stays outside Actual COGS.'};
+          const chars=o=>JSON.stringify(o).length;
+          function compactRecipe(r){
+            const x=JSON.parse(JSON.stringify(r));
+            delete x.productionStages;          // derived from productionTiming
+            delete x.standardCompleteness;      // derived validation result
+            delete x.planningStandard;          // common V2 reference metadata
+            delete x.foodSafetyNote;            // common master-level guidance
+            delete x.planningNote;              // descriptive/repeatable guidance
+            delete x.guideNote;                 // descriptive guidance
+            delete x.timingBasis;               // implied by standardVersion
+            return x;
+          }
+          const compact={...master,recipes:recipes.map(compactRecipe),planningBasis:{type:'REFERENCE_SMALL_OUTLET',version:ctx.window.BOBS_SMALL_OUTLET_STANDARD_VERSION,measuredAtOutlet:false,calibrationRequired:true,foodSafetyNote:'Planning minutes are for workload/costing, not proof of food safety. Follow applicable FSSAI controls.'}};
+          console.log('V2 generated recipes',recipes.length);
+          console.log('V2 full master JSON chars',chars(master));
+          console.log('V2 compact candidate JSON chars',chars(compact));
+          console.log('V2 recipes only full chars',chars(recipes));
+          console.log('V2 recipes only compact chars',chars(compact.recipes));
+          const biggest=recipes.map(r=>[r.name,chars(r),chars(compactRecipe(r))]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+          console.log('largest recipes [name,full,compact]',JSON.stringify(biggest));
+          NODE
       - name: Load deployed Recipe Master in headless Chrome
         shell: bash
         run: |
           set -o pipefail
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926c'
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926d'
           google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=26000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
           echo '--- STATUS TEXT ---'
           grep -oE 'SAFE MODE[^<]*|Google master[^<]*|Reference standards loaded[^<]*|Migration sent[^<]*|Loading reference standards[^<]*' /tmp/recipe-master-dom.html || true
           echo '--- RECIPE CARDS ---'
           grep -o 'class="stack recipe-card"' /tmp/recipe-master-dom.html | wc -l
-          echo '--- ERROR MARKERS ---'
-          grep -E 'ERROR|Error|Uncaught|ReferenceError|SyntaxError|TypeError' /tmp/recipe-master-chrome.log | tail -80 || true
           echo '--- DOM STATUS NODE ---'
           grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/recipe-master-dom.html || true
