@@ -293,7 +293,9 @@ async function load(){
     const next={...current,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
       recipes:merged,rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},updatedAt:new Date().toISOString(),
       notes:'BOBS small-outlet standard recipes. Direct batch energy is costed as recipe input. Labour stays outside Actual COGS.'};
-    const changed=JSON.stringify(current.recipes||[])!==JSON.stringify(merged)||current.standardVersion!==STD_VERSION||current.schemaVersion!==STANDARD_SCHEMA;
+    // A published standard version is immutable. Once the verified V2 sharded master is active,
+    // normal reloads must read it rather than regenerate it. Future seed changes must bump STD_VERSION.
+    const changed=!(current.standardVersion===STD_VERSION&&current.schemaVersion===STANDARD_SCHEMA&&current.storageMode==='SHARDED_RECIPE_MASTER_V2');
     if(changed){
       const backupKey=await backupMaster(current,'Before automatic small-outlet recipe-standard migration');
       document.getElementById('status').textContent='Recovery saved — writing Recipe Master '+STD_VERSION+'…';
