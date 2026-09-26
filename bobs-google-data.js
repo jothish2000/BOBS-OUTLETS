@@ -34,9 +34,27 @@
     await fetch(VAULT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
     return {ok:true,saved:true,source:'GOOGLE_SHEETS',module:module,outletId:String(outletId),stateVersion:stateVersion};
   }
-  async function getModule(outletId,module,recordKey){
+  async function getRawModule(outletId,module,recordKey){
     const r=await jsonp({action:'moduleGet',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default')});
     return r&&r.data!=null?r.data:(r&&r.record&&r.record.data!=null?r.record.data:null);
+  }
+  async function getModule(outletId,module,recordKey){
+    let d=await getRawModule(outletId,module,recordKey);
+    if(d&&String(module).toUpperCase()==='RECIPE_MASTER'&&d.storageMode==='SHARDED_RECIPE_MASTER_V2'){
+      const keys=Array.isArray(d.chunkKeys)?d.chunkKeys:[],chunkModule=d.chunkModule||'RECIPE_MASTER_CHUNKS';
+      if(!keys.length)throw new Error('Recipe Master manifest has no chunks.');
+      const chunks=await Promise.all(keys.map(k=>getRawModule(outletId,chunkModule,k)));
+      if(chunks.some(x=>!x))throw new Error('Recipe Master chunk read is incomplete.');
+      const ordered=[...chunks].sort((a,b)=>Number(a.index)-Number(b.index));
+      for(let i=0;i<ordered.length;i++){
+        const c=ordered[i];
+        if(c.schema!=='RECIPE_MASTER_CHUNK_V2'||String(c.token)!==String(d.migrationToken)||Number(c.index)!==i||Number(c.total)!==ordered.length||!Array.isArray(c.recipes))throw new Error('Recipe Master chunk '+(i+1)+' failed integrity validation.');
+      }
+      const recipes=ordered.flatMap(c=>c.recipes);
+      if(recipes.length!==Number(d.recipeCount))throw new Error('Recipe Master recipe count does not match its manifest.');
+      d=Object.assign({},d,{recipes});
+    }
+    return d;
   }
   async function listModule(outletId,module){
     const r=await jsonp({action:'moduleList',outletId:String(outletId),module:String(module)});
@@ -50,5 +68,5 @@
       return Object.assign({},o,d,{id:String(o.outletId||o.id||i+1),name:String(o.outletName||d.name||o.name||''),shortCode:String(o.outletCode||d.shortCode||d.code||o.shortCode||'').toUpperCase(),numShifts:Number(d.numShifts||o.numShifts||2),shiftTimes:Array.isArray(d.shiftTimes)?d.shiftTimes:[]});
     });
   }
-  window.BOBS_DATA={jsonp:jsonp,saveModule:saveModule,getModule:getModule,listModule:listModule,listOutlets:listOutlets,VAULT_URL:VAULT_URL};
+  window.BOBS_DATA={jsonp:jsonp,saveModule:saveModule,getRawModule:getRawModule,getModule:getModule,listModule:listModule,listOutlets:listOutlets,VAULT_URL:VAULT_URL};
 })();
