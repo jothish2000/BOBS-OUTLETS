@@ -1,0 +1,67 @@
+name: Patch Recipe Master live read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-recipe-master-live-read.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch Recipe Master safely
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('recipe-master.html')
+          s=p.read_text()
+          def rep(old,new,label):
+              global s
+              n=s.count(old)
+              if n!=1:
+                  raise SystemExit(f'{label}: expected 1 match, found {n}')
+              s=s.replace(old,new,1)
+
+          rep('<script src="recipe-guide-seeds.js?v=small-outlet-v7"></script>\n<script src="poriyal-recipes.js?v=small-outlet-v3"></script>',
+              '<script src="recipe-guide-seeds.js?v=small-outlet-v8"></script>\n<script src="poriyal-recipes.js?v=small-outlet-v4"></script>\n<script src="recipe-master-sync.js?v=20260926-readback-v1"></script>',
+              'script cache versions')
+          rep('<div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Reading Google…</span></div>',
+              '<div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Loading reference standards…</span></div>',
+              'initial status')
+          rep('function render(recipes){\n workingRecipes=recipes.map(clone);',
+              'function render(recipes,readOnly=false){\n workingRecipes=recipes.map(clone);',
+              'render signature')
+          rep(" document.getElementById('search').oninput=applyFilter;document.getElementById('category').onchange=applyFilter;\n}\nfunction jsonp(url){",
+              " document.getElementById('search').oninput=applyFilter;document.getElementById('category').onchange=applyFilter;\n if(readOnly){\n  document.querySelectorAll('.recipe-card').forEach(card=>{\n   card.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);\n   const st=card.querySelector('.recipe-status');if(st)st.textContent='Reference preview — waiting for Google verification';\n  });\n }\n}\nasync function verifiedRead(check,label){\n const sync=window.BOBS_RECIPE_SYNC;\n if(!sync||typeof sync.waitForVerifiedRead!=='function')throw Error('Recipe Master read-back helper did not load. Refresh the page.');\n return sync.waitForVerifiedRead(readMaster,check,{attempts:7,onAttempt:({attempt,attempts})=>{\n  document.getElementById('status').textContent=label+' — waiting for Google read-back ('+attempt+'/'+attempts+')';\n }});\n}\nfunction jsonp(url){",
+              'read-only preview + retry helper')
+          rep("   await postMaster(next);\n   const verify=await readMaster(),vr=(verify?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));\n   if(!vr||JSON.stringify(vr.ingredients)!==JSON.stringify(edited.ingredients)||Number(vr.yieldQty)!==Number(edited.yieldQty))\n     throw Error('Save sent, but Google read-back verification failed.');",
+              "   await postMaster(next);\n   const synced=await verifiedRead(v=>{\n     const vr=(v?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));\n     return !!vr&&JSON.stringify(vr.ingredients)===JSON.stringify(edited.ingredients)&&Number(vr.yieldQty)===Number(edited.yieldQty);\n   },'Recipe save sent');\n   if(!synced.ok)throw Error('Save sent, but Google did not return the saved recipe after repeated read-back checks. Recovery '+backupKey+' remains available.');\n   const verify=synced.value,vr=(verify?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));",
+              'manual save verification')
+          rep("async function load(){\n try{\n  if(!URL)throw Error('Data Vault URL is not configured.');\n  const current=await readMaster();",
+              "async function load(){\n render(seeds,true);\n document.getElementById('status').textContent='Reference standards loaded ('+seeds.length+') — verifying Google…';\n try{\n  if(!URL)throw Error('Data Vault URL is not configured.');\n  const current=await readMaster();",
+              'initial preview')
+          rep("      await postMaster(next);\n      const verify=await readMaster();\n      if(!verify||verify.standardVersion!==STD_VERSION||JSON.stringify(verify.recipes||[])!==JSON.stringify(merged))\n        throw Error('Migration save was sent but read-back did not match. Recovery '+backupKey+' remains available.');\n      render(verify.recipes||[]);",
+              "      document.getElementById('status').textContent='Recovery saved — writing Recipe Master '+STD_VERSION+'…';\n      await postMaster(next);\n      const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION&&JSON.stringify(v.recipes||[])===JSON.stringify(merged),'Migration sent');\n      if(!synced.ok)throw Error('Migration was sent, but Google did not return the new master after repeated read-back checks. Recovery '+backupKey+' remains available.');\n      const verify=synced.value;\n      render(verify.recipes||[]);",
+              'migration retry')
+          rep("  await postMaster(initial);const verify=await readMaster();\n  if(!verify||verify.standardVersion!==STD_VERSION)throw Error('Initial master save could not be verified.');\n  render(verify.recipes||[]);document.getElementById('status').textContent='Google master created + verified';",
+              "  await postMaster(initial);\n  const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION,'Initial Recipe Master sent');\n  if(!synced.ok)throw Error('Initial master save was sent but Google read-back could not verify it.');\n  const verify=synced.value;\n  render(verify.recipes||[]);document.getElementById('status').textContent='Google master created + verified';",
+              'initial master retry')
+          rep(" }catch(e){\n  document.getElementById('status').textContent='SAFE MODE — '+e.message;\n  document.getElementById('recipeList').innerHTML='<p><b>No unsafe overwrite was performed.</b></p>';\n }",
+              " }catch(e){\n  render(seeds,true);\n  document.getElementById('status').textContent='SAFE MODE — '+e.message+' Reference standards remain visible read-only.';\n }",
+              'safe mode preview')
+          p.write_text(s)
+          PY
+          git diff --check
+          git config user.name 'BOBS 111Q Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add recipe-master.html
+          git commit -m 'Fix Recipe Master live Google read-back and cache refresh'
+          git push origin HEAD:main
