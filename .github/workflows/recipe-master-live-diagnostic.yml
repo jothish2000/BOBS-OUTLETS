@@ -17,7 +17,7 @@ jobs:
       - name: Verify normal Recipe Master reload
         shell: bash
         run: |
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926-reload1'
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926-reload2'
           google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=40000 --dump-dom "$URL" > /tmp/master.html 2> /tmp/master.err || true
           STATUS=$(grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/master.html || true)
           echo "$STATUS"
@@ -28,7 +28,7 @@ jobs:
       - name: Verify Item COGS reads sharded Recipe Master
         shell: bash
         run: |
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-item-cogs.html?outlet=1&item=Idli&qty=120&model=production&diag=20260926'
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-item-cogs.html?outlet=1&item=Idli&qty=120&model=production&diag=20260926b'
           google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=40000 --dump-dom "$URL" > /tmp/cogs.html 2> /tmp/cogs.err || true
           grep -oE '<div id="status" class="note">[^<]*</div>' /tmp/cogs.html || true
           grep -q 'Permanent Google Recipe Master read successfully' /tmp/cogs.html
