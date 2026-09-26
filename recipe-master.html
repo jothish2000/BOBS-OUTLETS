@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="style.css">
 <script src="bobs-config.js"></script>
 <script src="shared_data.js"></script>
-<script src="recipe-guide-seeds.js?v=small-outlet-v7"></script>
-<script src="poriyal-recipes.js?v=small-outlet-v3"></script>
+<script src="recipe-guide-seeds.js?v=small-outlet-v8"></script>
+<script src="poriyal-recipes.js?v=small-outlet-v4"></script>
+<script src="recipe-master-sync.js?v=20260926-readback-v1"></script>
 <style>
 .recipe-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.recipe-tools input,.recipe-tools select{padding:9px}
 .recipe-card{margin:12px 0}.energy-row{background:#fff7e6}.timing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
@@ -24,7 +25,7 @@
 </header>
 <main>
 <section class="stack">
-<div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Reading Google…</span></div>
+<div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Loading reference standards…</span></div>
 <p><b>Current planning basis:</b> small opening batches. Recipes can scale later; the standard batch is deliberately conservative for a first-time outlet.</p>
 <p><b>Costing rule:</b> LPG/electricity used for the batch is stored as a costed recipe input, so energy is included in Recipe Master COGS instead of being shown only as a note.</p>
 <p class="warning"><b>Migration safety:</b> before BOBS upgrades an older Recipe Master to the current standard, it writes a Google recovery snapshot. Existing local ingredient rates are preserved where the same ingredient already exists. Idli ingredient quantities/yield are preserved; only missing timing/energy is added.</p>
@@ -193,7 +194,7 @@ function applyFilter(){
  const q=document.getElementById('search').value.toLowerCase().trim(),cat=document.getElementById('category').value;
  document.querySelectorAll('.recipe-card').forEach(x=>x.hidden=!!((q&&!x.dataset.name.includes(q))||(cat&&x.dataset.category!==cat)));
 }
-function render(recipes){
+function render(recipes,readOnly=false){
  workingRecipes=recipes.map(clone);
  document.getElementById('recipeList').innerHTML=workingRecipes.map(recipeArticle).join('');
  const cats=[...new Set(workingRecipes.map(x=>x.category||x.kind||'PRODUCTION'))].sort();
@@ -209,6 +210,19 @@ function render(recipes){
    card.querySelector('.save-recipe').onclick=()=>saveRecipe(card);
  });
  document.getElementById('search').oninput=applyFilter;document.getElementById('category').onchange=applyFilter;
+ if(readOnly){
+  document.querySelectorAll('.recipe-card').forEach(card=>{
+   card.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
+   const st=card.querySelector('.recipe-status');if(st)st.textContent='Reference preview — waiting for Google verification';
+  });
+ }
+}
+async function verifiedRead(check,label){
+ const sync=window.BOBS_RECIPE_SYNC;
+ if(!sync||typeof sync.waitForVerifiedRead!=='function')throw Error('Recipe Master read-back helper did not load. Refresh the page.');
+ return sync.waitForVerifiedRead(readMaster,check,{attempts:7,onAttempt:({attempt,attempts})=>{
+  document.getElementById('status').textContent=label+' — waiting for Google read-back ('+attempt+'/'+attempts+')';
+ }});
 }
 function jsonp(url){
  return new Promise((resolve,reject)=>{
@@ -249,14 +263,19 @@ async function saveRecipe(card){
    recipes[idx]=edited;
    const next={...latest,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,recipes,updatedAt:new Date().toISOString()};
    await postMaster(next);
-   const verify=await readMaster(),vr=(verify?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
-   if(!vr||JSON.stringify(vr.ingredients)!==JSON.stringify(edited.ingredients)||Number(vr.yieldQty)!==Number(edited.yieldQty))
-     throw Error('Save sent, but Google read-back verification failed.');
+   const synced=await verifiedRead(v=>{
+     const vr=(v?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
+     return !!vr&&JSON.stringify(vr.ingredients)===JSON.stringify(edited.ingredients)&&Number(vr.yieldQty)===Number(edited.yieldQty);
+   },'Recipe save sent');
+   if(!synced.ok)throw Error('Save sent, but Google did not return the saved recipe after repeated read-back checks. Recovery '+backupKey+' remains available.');
+   const verify=synced.value,vr=(verify?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
    workingRecipes[ri]=enrich(vr);status.textContent='Saved + Google verified';
    document.getElementById('status').textContent='Recipe saved safely — recovery '+backupKey;
  }catch(e){status.textContent='NOT SAVED — '+e.message}finally{button.disabled=false}
 }
 async function load(){
+ render(seeds,true);
+ document.getElementById('status').textContent='Reference standards loaded ('+seeds.length+') — verifying Google…';
  try{
   if(!URL)throw Error('Data Vault URL is not configured.');
   const current=await readMaster();
@@ -268,10 +287,11 @@ async function load(){
     const changed=JSON.stringify(current.recipes||[])!==JSON.stringify(merged)||current.standardVersion!==STD_VERSION||current.schemaVersion!==STANDARD_SCHEMA;
     if(changed){
       const backupKey=await backupMaster(current,'Before automatic small-outlet recipe-standard migration');
+      document.getElementById('status').textContent='Recovery saved — writing Recipe Master '+STD_VERSION+'…';
       await postMaster(next);
-      const verify=await readMaster();
-      if(!verify||verify.standardVersion!==STD_VERSION||JSON.stringify(verify.recipes||[])!==JSON.stringify(merged))
-        throw Error('Migration save was sent but read-back did not match. Recovery '+backupKey+' remains available.');
+      const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION&&JSON.stringify(v.recipes||[])===JSON.stringify(merged),'Migration sent');
+      if(!synced.ok)throw Error('Migration was sent, but Google did not return the new master after repeated read-back checks. Recovery '+backupKey+' remains available.');
+      const verify=synced.value;
       render(verify.recipes||[]);
       document.getElementById('status').textContent='Google master upgraded + verified — recovery '+backupKey;
     }else{
@@ -282,12 +302,14 @@ async function load(){
   const initial={schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
     version:'2026-09-23-small-outlet',recipes:mergeMaster([]),rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},
     updatedAt:new Date().toISOString(),notes:'BOBS small-outlet opening recipe standard.'};
-  await postMaster(initial);const verify=await readMaster();
-  if(!verify||verify.standardVersion!==STD_VERSION)throw Error('Initial master save could not be verified.');
+  await postMaster(initial);
+  const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION,'Initial Recipe Master sent');
+  if(!synced.ok)throw Error('Initial master save was sent but Google read-back could not verify it.');
+  const verify=synced.value;
   render(verify.recipes||[]);document.getElementById('status').textContent='Google master created + verified';
  }catch(e){
-  document.getElementById('status').textContent='SAFE MODE — '+e.message;
-  document.getElementById('recipeList').innerHTML='<p><b>No unsafe overwrite was performed.</b></p>';
+  render(seeds,true);
+  document.getElementById('status').textContent='SAFE MODE — '+e.message+' Reference standards remain visible read-only.';
  }
 }
 load();
