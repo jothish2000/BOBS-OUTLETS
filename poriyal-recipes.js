@@ -59,8 +59,24 @@ function energyType(r){
  const hasLpg=names.some(x=>x.includes('lpg fuel')),hasPower=names.some(x=>x.includes('electricity'));
  return hasLpg&&hasPower?'LPG + Electricity':hasLpg?'LPG':hasPower?'Electricity':String(r.fuel?.type||'').trim();
 }
+function replaceCompositePlaceholder(r){
+ if(String(r.name||'').toLowerCase()!=='variety rice combo')return;
+ if(!(r.ingredients||[]).some(x=>/mixed variety-rice seasonings/i.test(String(x?.[0]||''))))return;
+ r.ingredients=[
+  ing('Raw rice',1.80,'kg',55),ing('Lemon',.20,'kg',80),ing('Tomato',.50,'kg',45),ing('Curd',.60,'kg',70),
+  ing('Mint leaves',.15,'kg',120),ing('Peanuts',.10,'kg',150),ing('Chana dal',.05,'kg',100),ing('Urad dal',.04,'kg',140),
+  ing('Mustard + chilli + turmeric + curry leaves',.10,'kg',220),ing('Cooking oil',.18,'L',140),ing('Salt',.04,'kg',20),
+  ing('LPG fuel',.22,'kg',LPG)
+ ];
+ r.productionTiming={prePreparationMin:20,setupMin:20,activeMinPerCycle:35,machineMinPerCycle:30,finishMinPerCycle:10,cleanupMin:12,
+  role:'Cook / Tiffin Master',equipment:'Rice pot + kadai + mixing vessels',canParallelize:true,
+  prePreparationNote:'Reference composite batch representing small portions of lemon, tomato, curd and mint rice; wash/soak rice and stage each seasoning before production.'};
+ r.sharedBase='COOKED_RICE_BASE';
+ r.componentReference=['Lemon Rice','Tomato Rice','Curd Rice','Mint Rice'];
+ r.planningNote='Reference 25-serving mixed variety-rice batch. Use the individual selected rice recipes when the actual menu quantities are known; this composite prevents a generic seasoning placeholder from entering costing.';
+}
 function completeRecipe(input){
- const r=clone(input),fallback=defaultTiming(r),old=r.productionTiming||{},tim={...fallback,...old};
+ const r=clone(input);replaceCompositePlaceholder(r);const fallback=defaultTiming(r),old=r.productionTiming||{},tim={...fallback,...old};
  for(const k of ['prePreparationMin','setupMin','activeMinPerCycle','machineMinPerCycle','finishMinPerCycle','cleanupMin']){
   if(!finite(tim[k]))tim[k]=fallback[k];else tim[k]=Number(tim[k]);
  }
