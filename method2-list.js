@@ -3,6 +3,11 @@ const $=id=>document.getElementById(id),q=new URLSearchParams(location.search);
 let outlet=q.get('outlet')||JSON.parse(localStorage.getItem('outlet-selection')||'{}').id||'',s=M2.state(),recipes=[],ready=false,generation=0,refreshTimer;
 const pendingKey='method2-pending-'+outlet;let pending=JSON.parse(sessionStorage.getItem(pendingKey)||'{}');
 const money=n=>'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function setGuide(stage,text,expected,actionText,href){
+ const stageEl=$('guideStage'),textEl=$('guideText'),expectedEl=$('guideExpected'),action=$('guideAction');if(!stageEl||!textEl||!expectedEl||!action)return;
+ stageEl.textContent=stage;textEl.textContent=text;expectedEl.innerHTML='<strong>Expected result:</strong> '+expected;
+ if(actionText&&href){action.textContent=actionText;action.href=href;action.hidden=false;action.target=href.startsWith('#')?'':'_blank'}else{action.hidden=true;action.removeAttribute('href');action.removeAttribute('target')}
+}
 function entries(){const rows=[],seenSides=new Set();for(const cat of CAT_ORDER)ITEM_DATA[cat].forEach((item,i)=>{if(!M2.selected(s,cat,i))return;if(cat===M2.SIDES){const key=String(item.recipeName||item.name||'').trim().toLowerCase();if(seenSides.has(key))return;seenSides.add(key)}rows.push({cat,i,item})});return rows}
 function url(cat,i,mode){return 'method2-item.html?'+new URLSearchParams({outlet,cat,i,mode})}
 function open(cat,i,mode){
@@ -13,10 +18,11 @@ function open(cat,i,mode){
 }
 function filterRows(){const filter=$('search').value.trim().toLowerCase();for(const row of $('catList').children)row.hidden=!row.dataset.search.includes(filter)}
 function render(){
- const y=window.scrollY,rows=entries();$('catList').replaceChildren();let sales=0,cost=0,unknown=false;
+ const y=window.scrollY,rows=entries();$('catList').replaceChildren();let sales=0,cost=0,unknown=false,incomplete=0;
  for(const {cat,i,item} of rows){
   const d=M2.draft(s,cat,i,item),k=M2.keys(cat,i).k,c=M2.calculate(d,item,recipes);
   sales+=c.revenue||0;if(c.missing.length)unknown=true;else cost+=c.soldCost||0;
+  if(pending[k]||M2.number(d.sold)===null||!d.soldConfirmed||c.missing.length)incomplete++;
   const row=document.createElement('tr');row.className='item selected-row';row.dataset.search=(cat+' '+item.name).toLowerCase();row.dataset.key=k;
   const name=document.createElement('td'),strong=document.createElement('strong');strong.textContent=item.name;name.append(strong);const category=document.createElement('p');category.className='muted';category.textContent=cat.replace(' Catalogue','');name.append(category);
   const mode=document.createElement('td'),select=document.createElement('select');select.setAttribute('aria-label',item.name+' mode');['purchased','production'].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m==='purchased'?'Purchase':'Production';select.append(o)});select.value=d.mode;
@@ -31,6 +37,14 @@ function render(){
  const shared=M2.orderPackingCost(s);cost+=shared.total;unknown=unknown||shared.missing.length>0;
  $('sharedPackingTotal').textContent=shared.missing.length?'Incomplete':money(shared.total);
  $('grandTotalSale').textContent=money(sales);$('grandTotalCost').textContent=unknown?'Incomplete — review selected items':money(cost);$('grandTotalProfit').textContent=unknown?'Incomplete':money(sales-cost);
+ if(!rows.length){
+  setGuide('STEP 1','Choose the categories and items this outlet will sell. Use “Choose categories & items”, tick only the items you need, and save the selection.','Your selected items appear on this page and BOBS can start item-level costing.','Choose categories & items →',$('chooseItems').href);
+ }else if(incomplete||shared.missing.length){
+  const left=incomplete+(shared.missing.length?1:0);
+  setGuide('STEP 2','Complete the selected item setup. Open each item, confirm Purchase or Production, enter Sold Today and finish the required recipe/purchase/packing inputs. '+left+' setup item'+(left===1?' remains':'s remain')+'.','Every selected item shows “Saved to Google” and Overall COGS is complete. Then BOBS can move to staffing.','Review selected items ↓','#selectedCard');
+ }else{
+  setGuide('STEP 3','Your selected items are complete. Now open “Workload & staffing plan” to calculate the roles, positions, timing and labour requirement needed to produce this menu.','A staffing plan is saved with required position coverage and labour allocation. That labour can then feed the labour-inclusive product cost and ideal-price calculation, while the existing direct RM/fuel/packing COGS remains preserved.','Open Workload & Staffing Plan →',$('staffing').href);
+ }
  filterRows();window.scrollTo({top:y,left:window.scrollX,behavior:'instant'});
 }
 async function reload(){
