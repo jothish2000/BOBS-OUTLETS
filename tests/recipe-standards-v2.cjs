@@ -3,7 +3,9 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const ctx={window:{},console,queueMicrotask,setTimeout,clearTimeout};
+// shared_data.js publishes browser helpers in a queueMicrotask. The audit only needs
+// its catalogue constants, so suppress that browser-only microtask in this Node VM.
+const ctx={window:{},console,queueMicrotask:()=>{},setTimeout,clearTimeout};
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'shared_data.js'),'utf8'),ctx,{filename:'shared_data.js'});
 vm.runInContext('window.ITEM_DATA=ITEM_DATA',ctx);
