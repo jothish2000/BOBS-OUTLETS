@@ -1,3 +1,61 @@
+# ACTIVE HANDOVER ADDENDUM — 26 September 2026: Page Guide + Method 2 staffing next-step
+
+This addendum is newer than all sections below and must be read first.
+
+## Owner direction
+- BOBS must guide a first-time user page-by-page with a visible `Step → Expected result → Next action` pattern instead of relying on small explanatory subtitles.
+- The guide must advance according to saved state. It must not keep telling the user to select items after the selection is already saved.
+- On Method 2, once selected items are fully completed, the next guided action is **Workload & Staffing Plan** because menu staffing/role/position/labour allocation is needed before labour-inclusive product costing and ideal pricing.
+- Pricing architecture direction: preserve existing direct RM + directly attributable fuel/energy + packing/condiment COGS as factual/legacy direct COGS. Add allocated staffing/labour as a separate labour-inclusive product-cost layer used for ideal-price calculations. Do not double-count the same salary/support payment in both item allocation and outlet expense totals.
+
+## Page Guide implementation
+- Recovery before guide visibility work: `recovery/pre-page-guide-visibility-20260926`.
+- Recovery before Method 2 state-aware guide: `recovery/pre-method2-guide-flow-20260926`.
+- `style.css` now makes existing shared-header guidance visually prominent and contains reusable Page Guide styles for Step / Expected Result / warning patterns.
+- `method2.html` now has a prominent mobile-safe Page Guide card rather than a static small header sentence.
+- `method2-list.js` advances the guide from current Google-backed state:
+  1. no selected items → **STEP 1: choose categories & items**;
+  2. selected but incomplete items / shared packing → **STEP 2: complete selected item setup**;
+  3. all selected item inputs complete → **STEP 3: open Workload & Staffing Plan**.
+- STEP 3 explicitly explains that staffing produces role/position/labour allocation that can feed labour-inclusive product cost and ideal price while preserving direct RM/fuel/packing COGS.
+- The guide includes a visible action link to the correct next page and an Expected Result block.
+
+## Commits / release evidence
+- `8e985db878120961c2e50e7261b80fab4bf39582` — shared guide visibility / reusable guide styling.
+- `9e75e70ef92268dd6555eb362e0c540a86b6c5cb` — Method 2 Page Guide visual component.
+- `1cd758a1959457576e1d8b2d19183bea5c32463a` — state-aware Method 2 guide progression through staffing.
+- GitHub Actions build for `1cd758a1959457576e1d8b2d19183bea5c32463a`: SUCCESS.
+- GitHub Pages deploy for `1cd758a1959457576e1d8b2d19183bea5c32463a`: SUCCESS.
+
+## 111Q status for this guide change
+- DESIGNED: YES.
+- OWNER APPROVED: YES — Owner explicitly requested visible guides and the staffing-next costing flow.
+- IMPLEMENTED: YES.
+- CODE CHECKED: current `method2-list.js` and `method2.html` inspected after commit; Pages build passed.
+- AUTOMATED TESTED: NOT RUN for the new state-aware UI guide.
+- BROWSER TESTED: Owner supplied the pre-change browser screenshot; post-change browser observation still pending.
+- DEPLOYED / PUBLISHED: YES.
+- LIVE VERIFIED: NOT YET for the new state-aware guide behavior.
+- OWNER UAT ACCEPTED: NOT YET.
+- REGRESSION STATUS: no Method 2 costing formula/storage was changed by this guide implementation; navigation guidance only.
+- RECOVERY POINT AVAILABLE: YES — `recovery/pre-method2-guide-flow-20260926` plus earlier recovery refs.
+
+## Post-change 5PV-DR
+- PRO: the next action is visible and changes with saved progress, reducing user confusion.
+- CON: Method 2 currently guides into staffing, but general multi-item labour allocation beyond the Idli support path still requires further implementation.
+- COMPARE & CONNECTIONS: Method 2 selection/setup now explicitly connects to Recipe/COGS → Workload & Staffing → labour-inclusive product cost → ideal price instead of leaving Workload & Staffing as an unexplained toolbar link.
+- OBSERVER: guide state is derived from selected items, saved confirmation, missing cost inputs and shared packing; incomplete data is not treated as complete.
+- OWNER: after visual UAT, continue toward staffing-cost allocation in item costing/ideal pricing without mutating legacy direct COGS.
+
+## Exact next action
+1. Owner refreshes the live Method 2 page after Idli is selected/saved and confirms the guide now advances to STEP 3 when item setup is complete.
+2. If the page still shows STEP 2, inspect the exact remaining incomplete input rather than bypassing validation.
+3. Continue Workload & Staffing architecture so selected production items/linked condiments generate role/position/labour requirements from Recipe Master timing.
+4. Then expose the saved allocated labour below direct RM/fuel/packing cost in the item pricing view as **Labour-inclusive product cost** and use that for ideal-price guidance. Preserve direct Actual COGS separately and prevent salary/support double counting in outlet expenses.
+5. Update this handover after each material implementation.
+
+---
+
 # ACTIVE HANDOVER ADDENDUM — 25 September 2026: Workload → Idli staffing bridge
 
 This addendum is newer than the Idli pilot section below and must be read first.
@@ -124,7 +182,7 @@ Canonical working rule:
 - **First D:** universal Developer/Codex handover continuity.
 - **DR:** first four views inspect both business/logic and code/software.
 - **T:** mandatory Tester stage after implementation.
-- Test evidence must feed back through 5PV-DR before completion.
+- Test evidence must feed back through post-test 5PV-DR before completion.
 - Owner is the final decision-maker.
 
 `OVERALL_DESIGN_MASTER_111Q.md` has now been upgraded to v3.0 and also uses `111Q5PVDDRT`.
