@@ -8,8 +8,13 @@ on:
       - 'recipe-guide-seeds.js'
       - 'poriyal-recipes.js'
       - 'recipe-master-sync.js'
+      - 'recipe-master-shards.js'
+      - 'bobs-google-data.js'
+      - 'recipe-master.html'
+      - 'method2-core.js'
       - 'tests/recipe-standards-v2.cjs'
       - 'tests/recipe-master-sync.cjs'
+      - 'tests/recipe-master-shards.cjs'
       - '.github/workflows/recipe-standards-v2.yml'
   workflow_dispatch:
 
@@ -25,3 +30,5 @@ jobs:
         run: node tests/recipe-standards-v2.cjs
       - name: Test Recipe Master Google read-back retry
         run: node tests/recipe-master-sync.cjs
+      - name: Test Recipe Master sharded storage integrity
+        run: node tests/recipe-master-shards.cjs
