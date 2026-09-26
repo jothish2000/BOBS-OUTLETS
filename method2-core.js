@@ -210,6 +210,7 @@ function calculate(d,item,recipes){
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
 async function read(outlet,module='METHOD2',key='default'){
+ if(String(module).toUpperCase()==='RECIPE_MASTER'&&BOBS_DATA.getModule){return BOBS_DATA.getModule(outlet,module,key)}
  const r=await BOBS_DATA.jsonp({action:'moduleGet',outletId:outlet,module,recordKey:key});
  if(!r||r.ok!==true)throw Error('Google read failed; nothing has been overwritten.');
  let d=r.data??r.record?.data;

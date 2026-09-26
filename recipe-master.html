@@ -6,10 +6,12 @@
 <title>BOBS Recipe Master</title>
 <link rel="stylesheet" href="style.css">
 <script src="bobs-config.js"></script>
+<script src="bobs-google-data.js?v=recipe-shards-v2"></script>
 <script src="shared_data.js"></script>
 <script src="recipe-guide-seeds.js?v=small-outlet-v8"></script>
 <script src="poriyal-recipes.js?v=small-outlet-v4"></script>
 <script src="recipe-master-sync.js?v=20260926-readback-v1"></script>
+<script src="recipe-master-shards.js?v=20260926-shards-v1"></script>
 <style>
 .recipe-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.recipe-tools input,.recipe-tools select{padding:9px}
 .recipe-card{margin:12px 0}.energy-row{background:#fff7e6}.timing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
@@ -224,30 +226,37 @@ async function verifiedRead(check,label){
   document.getElementById('status').textContent=label+' — waiting for Google read-back ('+attempt+'/'+attempts+')';
  }});
 }
-function jsonp(url){
- return new Promise((resolve,reject)=>{
-  const cb='recipeMasterRead_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');
-  const timer=setTimeout(()=>{cleanup();reject(new Error('Google read timeout'))},9000);
-  function cleanup(){clearTimeout(timer);try{delete window[cb]}catch(e){}s.remove()}
-  window[cb]=d=>{cleanup();resolve(d)};s.onerror=()=>{cleanup();reject(new Error('Google read failed'))};
-  s.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&_bobs='+Date.now();document.head.appendChild(s);
- });
+const CHUNK_MODULE='RECIPE_MASTER_CHUNKS';
+async function readMaster(){return BOBS_DATA.getModule(RECORD.outletId,RECORD.module,RECORD.recordKey)}
+async function rawRead(module,key){return BOBS_DATA.getRawModule(RECORD.outletId,module,key)}
+async function waitRaw(module,key,check,label){
+ const sync=window.BOBS_RECIPE_SYNC;
+ return sync.waitForVerifiedRead(()=>rawRead(module,key),check,{attempts:7,onAttempt:({attempt,attempts})=>{document.getElementById('status').textContent=label+' ('+attempt+'/'+attempts+')'}});
 }
-async function readMaster(){
- const q=await jsonp(URL+'?action=moduleGet&outletId='+encodeURIComponent(RECORD.outletId)+'&module='+encodeURIComponent(RECORD.module)+'&recordKey='+encodeURIComponent(RECORD.recordKey));
- return q&&q.found?q.data:null;
-}
-async function postMaster(data){
- const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-  body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:RECORD.module,recordKey:RECORD.recordKey,data})});
- if(!r.ok)throw Error('Google save failed: HTTP '+r.status);
+async function saveMaster(data){
+ const S=window.BOBS_RECIPE_SHARDS;if(!S)throw Error('Recipe Master sharding helper did not load.');
+ const chunks=S.splitRecipes(data.recipes||[],32000),token=Date.now()+'-'+Math.random().toString(36).slice(2);
+ const keys=chunks.map((_,i)=>'STANDARD_V2_'+token+'_'+String(i+1).padStart(2,'0'));
+ for(let i=0;i<chunks.length;i++){
+  const chunk=S.chunkData(chunks[i],token,i,chunks.length,data.standardVersion);
+  document.getElementById('status').textContent='Saving Recipe Master chunk '+(i+1)+' of '+chunks.length+'…';
+  await BOBS_DATA.saveModule(RECORD.outletId,CHUNK_MODULE,keys[i],chunk);
+  const ok=await waitRaw(CHUNK_MODULE,keys[i],v=>!!v&&v.schema==='RECIPE_MASTER_CHUNK_V2'&&v.token===token&&Number(v.index)===i&&Array.isArray(v.recipes)&&v.recipes.length===chunks[i].length,'Verifying chunk '+(i+1));
+  if(!ok.ok)throw Error('Google did not verify Recipe Master chunk '+(i+1)+'. The active master was not switched.');
+ }
+ const manifest=S.manifest(data,keys,token);
+ document.getElementById('status').textContent='All '+chunks.length+' chunks verified — activating Recipe Master…';
+ await BOBS_DATA.saveModule(RECORD.outletId,RECORD.module,RECORD.recordKey,manifest);
+ return {token,keys,chunks:chunks.length};
 }
 async function backupMaster(data,reason){
- const key='STANDARD_V1_BACKUP_'+Date.now();
- const snap={...clone(data),_backup:{key,reason,createdAt:new Date().toISOString()}};
- const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-  body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:'RECIPE_MASTER_BACKUPS',recordKey:key,data:snap})});
- if(!r.ok)throw Error('Backup failed; master was not changed.');
+ const key='STANDARD_V1_BACKUP_'+Date.now(),base=clone(data);let snap;
+ if(base.storageMode==='SHARDED_RECIPE_MASTER_V2'){
+  delete base.recipes;snap={schema:'RECIPE_MASTER_BACKUP_POINTER_V2',master:base,_backup:{key,reason,createdAt:new Date().toISOString()}};
+ }else snap={...base,_backup:{key,reason,createdAt:new Date().toISOString()}};
+ await BOBS_DATA.saveModule(RECORD.outletId,'RECIPE_MASTER_BACKUPS',key,snap);
+ const ok=await waitRaw('RECIPE_MASTER_BACKUPS',key,v=>!!v&&v._backup?.key===key,'Verifying recovery snapshot');
+ if(!ok.ok)throw Error('Backup failed; master was not changed.');
  return key;
 }
 async function saveRecipe(card){
@@ -262,7 +271,7 @@ async function saveRecipe(card){
    const backupKey=await backupMaster(latest,'Before manual recipe edit: '+edited.name);
    recipes[idx]=edited;
    const next={...latest,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,recipes,updatedAt:new Date().toISOString()};
-   await postMaster(next);
+   await saveMaster(next);
    const synced=await verifiedRead(v=>{
      const vr=(v?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
      return !!vr&&JSON.stringify(vr.ingredients)===JSON.stringify(edited.ingredients)&&Number(vr.yieldQty)===Number(edited.yieldQty);
@@ -288,7 +297,7 @@ async function load(){
     if(changed){
       const backupKey=await backupMaster(current,'Before automatic small-outlet recipe-standard migration');
       document.getElementById('status').textContent='Recovery saved — writing Recipe Master '+STD_VERSION+'…';
-      await postMaster(next);
+      await saveMaster(next);
       const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION&&JSON.stringify(v.recipes||[])===JSON.stringify(merged),'Migration sent');
       if(!synced.ok)throw Error('Migration was sent, but Google did not return the new master after repeated read-back checks. Recovery '+backupKey+' remains available.');
       const verify=synced.value;
@@ -302,7 +311,7 @@ async function load(){
   const initial={schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
     version:'2026-09-23-small-outlet',recipes:mergeMaster([]),rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},
     updatedAt:new Date().toISOString(),notes:'BOBS small-outlet opening recipe standard.'};
-  await postMaster(initial);
+  await saveMaster(initial);
   const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION,'Initial Recipe Master sent');
   if(!synced.ok)throw Error('Initial master save was sent but Google read-back could not verify it.');
   const verify=synced.value;
