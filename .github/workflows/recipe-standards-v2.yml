@@ -7,7 +7,9 @@ on:
       - 'shared_data.js'
       - 'recipe-guide-seeds.js'
       - 'poriyal-recipes.js'
+      - 'recipe-master-sync.js'
       - 'tests/recipe-standards-v2.cjs'
+      - 'tests/recipe-master-sync.cjs'
       - '.github/workflows/recipe-standards-v2.yml'
   workflow_dispatch:
 
@@ -21,3 +23,5 @@ jobs:
           node-version: '22'
       - name: Audit all BOBS production recipes
         run: node tests/recipe-standards-v2.cjs
+      - name: Test Recipe Master Google read-back retry
+        run: node tests/recipe-master-sync.cjs
