@@ -1,0 +1,30 @@
+name: Recipe Master live diagnostic
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recipe-master-live-diagnostic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  live-diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load deployed Recipe Master in headless Chrome
+        shell: bash
+        run: |
+          set -o pipefail
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926'
+          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=18000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
+          echo '--- STATUS TEXT ---'
+          grep -oE 'SAFE MODE[^<]*|Google master[^<]*|READING GOOGLE[^<]*|Reading Google[^<]*' /tmp/recipe-master-dom.html || true
+          echo '--- RECIPE CARDS ---'
+          grep -o 'class="stack recipe-card"' /tmp/recipe-master-dom.html | wc -l
+          echo '--- ERROR MARKERS ---'
+          grep -E 'ERROR|Error|Uncaught|ReferenceError|SyntaxError|TypeError' /tmp/recipe-master-chrome.log | tail -80 || true
+          echo '--- DOM STATUS NODE ---'
+          grep -oE '<span class="tag" id="status">[^<]*</span>' /tmp/recipe-master-dom.html || true
