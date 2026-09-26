@@ -1,3 +1,67 @@
+# ACTIVE HANDOVER ADDENDUM — 26 September 2026: Guided Idli staffing flow / timing clarity
+
+This addendum is newer than all sections below and must be read first.
+
+## Owner direction
+- The Idli staffing page must guide the user through the actual operating sequence instead of exposing technical field names or expecting the user to infer the flow.
+- The highlighted timing area was confusing because it mixed Recipe Master timing, manual planning allowances and final acceptance checks without explaining what to do.
+- User-facing language must not expose internal names such as `sideMinutes`.
+- Missing production timing must remain **unknown / incomplete**, never silently become zero.
+- The normal path is: production target -> timing review -> Cook 1 + Helper 1 coverage -> emergency support only if required -> labour cost -> save.
+
+## Implementation
+- Recovery branch before this change: `recovery/pre-idli-guide-wording-20260926`.
+- `idli-staffing.html` now contains a prominent, mobile-safe, open-by-default 5-step Page Guide:
+  1. confirm production target and deadline;
+  2. review recipe/production timings without guessing missing values;
+  3. review Cook 1 + Helper 1 coverage;
+  4. add emergency/rotational support only when normal coverage is insufficient;
+  5. review labour cost and save.
+- Every guide step contains an **Expected result** block.
+- STEP 2 links directly to Recipe Master when a production-side timing is missing.
+- The former `Review preparation assumptions` area is now `STEP 2 — Review production timings`; labels explain ingredient prep, side portioning and washing in normal language.
+- `idli-staffing.js` now tells the user whether production-side timing was loaded from Recipe Master, whether no production-side cooking is required, or exactly which selected side is missing timing.
+- `idli-support-core.js` no longer emits `Enter sideMinutes; missing timing is not zero.` It now explains that selected side-dish cooking time is missing, where to complete it, and that 0 must only be used when the work genuinely does not apply.
+- The acceptance confirmation now reads as a plain-language check that timings and assignments are practical for the outlet, including equipment, other duties and rest.
+- User-facing `pilot` wording was removed from the active Idli page where it could be mistaken for a module name.
+- Existing staffing calculations, Google storage, backup/readback logic, coverage rules, direct COGS and labour-allocation semantics were not intentionally changed.
+
+## Commits / release evidence
+- `b021fb1bbfb2fb099802302c82fd6ce1f2566ea5` — visible 5-step Idli Page Guide and clearer timing labels/help.
+- `b1b6a71abdad8ddff959e0a48e4197edf4f73e88` — plain-language timing/acceptance validation.
+- `7217bc626e1a7adcec3ecaaeaa94d9c8f0b307e2` — Recipe Master timing-source guidance and removal of active `pilot` wording.
+- GitHub Actions build for `7217bc626e1a7adcec3ecaaeaa94d9c8f0b307e2`: SUCCESS.
+- GitHub Pages deploy for `7217bc626e1a7adcec3ecaaeaa94d9c8f0b307e2`: SUCCESS.
+
+## 111Q status
+- DESIGNED: YES.
+- OWNER APPROVED: YES — Owner explicitly instructed implementation after reviewing the confusing live screen.
+- IMPLEMENTED: YES.
+- CODE CHECKED: YES — current HTML/core/JS inspected after edits; Pages build succeeded.
+- AUTOMATED TESTED: NOT RUN specifically for this wording/guide change. Existing Idli-support automated tests predate this UI wording change; do not relabel them as a new test run.
+- BROWSER TESTED: PRE-CHANGE owner screenshot reviewed; POST-CHANGE owner/browser observation still pending.
+- DEPLOYED / PUBLISHED: YES.
+- LIVE VERIFIED: NOT YET by Owner after refresh.
+- OWNER UAT ACCEPTED: NOT YET.
+- REGRESSION STATUS: build/deploy green; no intentional formula/storage changes.
+- RECOVERY POINT AVAILABLE: YES — `recovery/pre-idli-guide-wording-20260926`.
+
+## Post-change 5PV-DR
+- PRO: the page now explains what the user must do, where timing comes from, what completion looks like and when emergency support is actually needed.
+- CON: prep/portion/wash remain explicit planning allowances until observed outlet timings or richer Recipe Master stage data replace them.
+- COMPARE & CONNECTIONS: Recipe Master timing -> staffing timeline -> position coverage -> labour allocation -> labour-inclusive Idli cost is now visible as one guided flow.
+- OBSERVER: missing production-side timing remains blocking/incomplete and is not converted to 0.
+- OWNER: refresh the live Idli staffing page and confirm the new guide/labels are understandable before broadening the same guided pattern to other staffing pages.
+
+## Exact next action
+1. Owner refreshes `idli-staffing.html?outlet=1` and visually checks the Page Guide plus STEP 2 timing area.
+2. If any production-side timing is blank, follow the new Recipe Master link and complete the missing timing rather than entering an artificial zero.
+3. Review the resulting Cook 1 + Helper 1 chronological coverage table; use emergency support only when a duty remains uncovered.
+4. After UAT, continue the broader staffing-cost architecture: general Method 2 production items -> Recipe Master timing -> role/position requirement -> allocated labour -> labour-inclusive product cost -> ideal price, while preserving direct RM/fuel/packing COGS and preventing salary/support double counting.
+5. Keep this handover current after each material implementation.
+
+---
+
 # ACTIVE HANDOVER ADDENDUM — 26 September 2026: Page Guide + Method 2 staffing next-step
 
 This addendum is newer than all sections below and must be read first.
