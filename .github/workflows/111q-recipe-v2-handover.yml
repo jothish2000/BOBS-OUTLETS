@@ -1,0 +1,93 @@
+name: Prepend Recipe Master V2 111Q handover
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/111q-recipe-v2-handover.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  handover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepend current Recipe Master V2 handover
+        shell: bash
+        run: |
+          if grep -q 'Recipe Master V2 full production standardisation' CODEX_HANDOVER_111Q_CURRENT.md; then
+            echo 'Handover already contains Recipe Master V2 addendum.'
+            exit 0
+          fi
+          cat > /tmp/bobs_recipe_v2_addendum.md <<'BOBS_EOF'
+          # ACTIVE HANDOVER ADDENDUM — 26 September 2026: Recipe Master V2 full production standardisation
+
+          This addendum is newer than all sections below and must be read first.
+
+          ## Owner direction
+          - Owner instructed BOBS to load **all production recipes and all condiments/sides**, not only Idli, with a complete small-outlet reference planning standard: ingredients, yield, preparation/setup/active/passive/finish/cleanup timing, role, equipment, helper work and directly attributable LPG/electricity.
+          - Do not describe the minute values as a universal or certified industry time. They are conservative **reference small-outlet planning standards** for workload/costing, to be calibrated with actual outlet trials.
+          - Missing/unknown timing is never zero. Recipe Master remains the single source used by Workload & Staffing.
+          - Existing owner-entered ingredient rates are preserved where ingredient identity matches; Idli's existing formulation/yield remains specially protected by the existing migration logic.
+
+          ## Implementation
+          - Pre-change recovery branch: `recovery/pre-recipe-standard-v2-20260926` at `bb508341a88d7d7f5f2e7089d0cc4ef4fc588b0b`.
+          - `poriyal-recipes.js` now provides the V2 completeness layer over every BOBS guide recipe and poriyal and bumps the standard to `2026-09-SMALL-OUTLET-V2`.
+          - Every seed now carries/validates: positive yield/unit; explicit ingredient/direct-energy rows; pre-preparation, setup, active, equipment/passive, finish and cleanup minutes; required role; equipment; parallelisation flag; helper-eligible work; staged production metadata; direct-energy type; calibration metadata and completeness flags.
+          - User-facing planning metadata explicitly says values are reference planning standards and must be calibrated; planning minutes are not proof of food-safety compliance.
+          - Existing explicit standards include Idli Sambar, Rice Sambar, Coconut Chutney, Pudina Chutney, Tomato Chutney and all current Poriyals. The audit found one remaining generic seed, `Variety Rice Combo`; it was replaced with an explicit reference ingredient/timing formulation rather than allowing `Mixed variety-rice seasonings` to enter costing.
+          - `tests/recipe-standards-v2.cjs` audits the real catalogue and fails when an eligible produced item has no recipe or any standard lacks yield, ingredient rows, direct energy, timing, role/equipment, production stages, helper work, V2 version/completeness, or contains known generic placeholder ingredient labels.
+          - `.github/workflows/recipe-standards-v2.yml` runs that audit automatically when recipe/catalogue standards change.
+
+          ## Migration / data safety
+          - The existing `recipe-master.html` Google-first migration remains the writer. Because V2 changes `BOBS_SMALL_OUTLET_STANDARD_VERSION`, opening/refeshing Recipe Master causes the normal migration comparison to see the older Google master as stale.
+          - Before a material migration, the page creates a Google recovery snapshot; it then writes the merged master and performs read-back verification.
+          - Existing unrelated Google recipes are retained. Matching old ingredient rates are retained. Idli's old ingredient formulation/yield is retained while missing timing/energy metadata is upgraded.
+          - Source deployment does **not** itself prove that the user's Google Recipe Master has migrated. Owner/browser must open Recipe Master and observe the Google upgraded + verified status before calling the live master V2.
+
+          ## Tester evidence
+          - First new audit run correctly FAILED on `Variety Rice Combo: generic placeholder ingredient`; this was repaired rather than bypassed.
+          - A later run reached the recipe PASS but the Node harness then failed on a browser-only `document.createElement` microtask. The harness was corrected without weakening recipe assertions.
+          - Final automated audit at commit `45ee9a8f63493526711005aa63b3e31aa5902acc`: **PASS — 91 eligible catalogue recipes; 104 total standard recipes/condiments; all required production parameters complete.**
+          - GitHub Pages build for `45ee9a8f63493526711005aa63b3e31aa5902acc`: SUCCESS.
+          - GitHub Pages deploy for `45ee9a8f63493526711005aa63b3e31aa5902acc`: SUCCESS.
+
+          ## 111Q status
+          - DESIGNED: YES.
+          - OWNER APPROVED: YES — explicit request to standardise all recipes/condiments.
+          - IMPLEMENTED: YES for source Recipe Master V2 standards/audit.
+          - CODE CHECKED: YES — source and migration connections inspected.
+          - AUTOMATED TESTED: PASS — 91 eligible catalogue recipes / 104 total standards and condiments.
+          - BROWSER TESTED: NOT YET for the V2 Google migration.
+          - DEPLOYED / PUBLISHED: YES — Pages build/deploy green.
+          - LIVE VERIFIED: NOT YET — Google Recipe Master must still migrate/read back in the owner's browser.
+          - OWNER UAT ACCEPTED: NOT YET.
+          - REGRESSION STATUS: V2 audit green; existing non-destructive Recipe Master merge and Idli-protection rules retained.
+          - RECOVERY POINT AVAILABLE: YES — `recovery/pre-recipe-standard-v2-20260926` plus Recipe Master's own pre-migration Google recovery snapshot.
+
+          ## Post-test 5PV-DR
+          - PRO: BOBS now has a complete schedulable/costable reference record for every current eligible production recipe rather than allowing blank timings to leak into staffing.
+          - CON: reference ingredient quantities, yield, timing and energy remain planning values until calibrated from the actual outlet; they must not be presented as measured truth.
+          - COMPARE & CONNECTIONS: catalogue -> Recipe Master V2 -> Google migration/readback -> Workload & Staffing -> role/position/labour allocation -> labour-inclusive product cost / ideal price. Direct RM/fuel/packing COGS remains separate from allocated labour.
+          - OBSERVER: automated audit blocks missing recipes/parameters and known generic placeholders; missing data is not converted to zero.
+          - OWNER: next action is one live Recipe Master migration/readback check, then return to Idli staffing and confirm Idli Sambar timing loads automatically before saving the staffing plan.
+
+          ## Exact next action
+          1. Owner hard-refreshes/opens `recipe-master.html` and waits for the status to report Google master **upgraded + verified** (or current V2 verified). Do not proceed through a SAFE MODE/error.
+          2. Check representative records: Idli formulation preserved; Idli Sambar/Coconut Chutney have timing; snack opening batches and Poriyals remain present; no duplicate recipes.
+          3. Reload `idli-staffing.html?outlet=1`. The selected-side timing should now calculate from Recipe Master; do not keep an arbitrary manual 4/0 minute value.
+          4. Complete Cook 1 + Helper 1 coverage and labour allocation, save only after the timeline is valid, then verify labour-inclusive Idli cost / ideal price.
+          5. Continue the general Workload & Staffing engine using the new staged Recipe Master data; preserve specialist Vada logic and shared-side deduplication.
+
+          BOBS_EOF
+          { cat /tmp/bobs_recipe_v2_addendum.md; printf '\n---\n\n'; cat CODEX_HANDOVER_111Q_CURRENT.md; } > /tmp/CODEX_HANDOVER_111Q_CURRENT.md
+          mv /tmp/CODEX_HANDOVER_111Q_CURRENT.md CODEX_HANDOVER_111Q_CURRENT.md
+          git config user.name 'BOBS 111Q Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add CODEX_HANDOVER_111Q_CURRENT.md
+          git commit -m 'Update 111Q handover for Recipe Master V2'
+          git push origin HEAD:main
