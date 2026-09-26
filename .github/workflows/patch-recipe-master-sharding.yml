@@ -1,0 +1,107 @@
+name: Patch Recipe Master sharded storage
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/patch-recipe-master-sharding.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Apply sharded Recipe Master storage
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('recipe-master.html'); s=p.read_text()
+          def rep(old,new,label):
+            global s
+            n=s.count(old)
+            if n!=1: raise SystemExit(f'{label}: expected 1, found {n}')
+            s=s.replace(old,new,1)
+          rep('<script src="bobs-config.js"></script>\n<script src="shared_data.js"></script>', '<script src="bobs-config.js"></script>\n<script src="bobs-google-data.js?v=recipe-shards-v2"></script>\n<script src="shared_data.js"></script>', 'google data script')
+          rep('<script src="recipe-master-sync.js?v=20260926-readback-v1"></script>', '<script src="recipe-master-sync.js?v=20260926-readback-v1"></script>\n<script src="recipe-master-shards.js?v=20260926-shards-v1"></script>', 'shard script')
+          old='''function jsonp(url){
+ return new Promise((resolve,reject)=>{
+  const cb='recipeMasterRead_'+Date.now()+'_'+Math.random().toString(36).slice(2),s=document.createElement('script');
+  const timer=setTimeout(()=>{cleanup();reject(new Error('Google read timeout'))},9000);
+  function cleanup(){clearTimeout(timer);try{delete window[cb]}catch(e){}s.remove()}
+  window[cb]=d=>{cleanup();resolve(d)};s.onerror=()=>{cleanup();reject(new Error('Google read failed'))};
+  s.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&_bobs='+Date.now();document.head.appendChild(s);
+ });
+}
+async function readMaster(){
+ const q=await jsonp(URL+'?action=moduleGet&outletId='+encodeURIComponent(RECORD.outletId)+'&module='+encodeURIComponent(RECORD.module)+'&recordKey='+encodeURIComponent(RECORD.recordKey));
+ return q&&q.found?q.data:null;
+}
+async function postMaster(data){
+ const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:RECORD.module,recordKey:RECORD.recordKey,data})});
+ if(!r.ok)throw Error('Google save failed: HTTP '+r.status);
+}
+async function backupMaster(data,reason){
+ const key='STANDARD_V1_BACKUP_'+Date.now();
+ const snap={...clone(data),_backup:{key,reason,createdAt:new Date().toISOString()}};
+ const r=await fetch(URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify({action:'moduleSave',outletId:RECORD.outletId,module:'RECIPE_MASTER_BACKUPS',recordKey:key,data:snap})});
+ if(!r.ok)throw Error('Backup failed; master was not changed.');
+ return key;
+}'''
+          new='''const CHUNK_MODULE='RECIPE_MASTER_CHUNKS';
+async function readMaster(){return BOBS_DATA.getModule(RECORD.outletId,RECORD.module,RECORD.recordKey)}
+async function rawRead(module,key){return BOBS_DATA.getRawModule(RECORD.outletId,module,key)}
+async function waitRaw(module,key,check,label){
+ const sync=window.BOBS_RECIPE_SYNC;
+ return sync.waitForVerifiedRead(()=>rawRead(module,key),check,{attempts:7,onAttempt:({attempt,attempts})=>{document.getElementById('status').textContent=label+' ('+attempt+'/'+attempts+')'}});
+}
+async function saveMaster(data){
+ const S=window.BOBS_RECIPE_SHARDS;if(!S)throw Error('Recipe Master sharding helper did not load.');
+ const chunks=S.splitRecipes(data.recipes||[],32000),token=Date.now()+'-'+Math.random().toString(36).slice(2);
+ const keys=chunks.map((_,i)=>'STANDARD_V2_'+token+'_'+String(i+1).padStart(2,'0'));
+ for(let i=0;i<chunks.length;i++){
+  const chunk=S.chunkData(chunks[i],token,i,chunks.length,data.standardVersion);
+  document.getElementById('status').textContent='Saving Recipe Master chunk '+(i+1)+' of '+chunks.length+'…';
+  await BOBS_DATA.saveModule(RECORD.outletId,CHUNK_MODULE,keys[i],chunk);
+  const ok=await waitRaw(CHUNK_MODULE,keys[i],v=>!!v&&v.schema==='RECIPE_MASTER_CHUNK_V2'&&v.token===token&&Number(v.index)===i&&Array.isArray(v.recipes)&&v.recipes.length===chunks[i].length,'Verifying chunk '+(i+1));
+  if(!ok.ok)throw Error('Google did not verify Recipe Master chunk '+(i+1)+'. The active master was not switched.');
+ }
+ const manifest=S.manifest(data,keys,token);
+ document.getElementById('status').textContent='All '+chunks.length+' chunks verified — activating Recipe Master…';
+ await BOBS_DATA.saveModule(RECORD.outletId,RECORD.module,RECORD.recordKey,manifest);
+ return {token,keys,chunks:chunks.length};
+}
+async function backupMaster(data,reason){
+ const key='STANDARD_V1_BACKUP_'+Date.now(),base=clone(data);let snap;
+ if(base.storageMode==='SHARDED_RECIPE_MASTER_V2'){
+  delete base.recipes;snap={schema:'RECIPE_MASTER_BACKUP_POINTER_V2',master:base,_backup:{key,reason,createdAt:new Date().toISOString()}};
+ }else snap={...base,_backup:{key,reason,createdAt:new Date().toISOString()}};
+ await BOBS_DATA.saveModule(RECORD.outletId,'RECIPE_MASTER_BACKUPS',key,snap);
+ const ok=await waitRaw('RECIPE_MASTER_BACKUPS',key,v=>!!v&&v._backup?.key===key,'Verifying recovery snapshot');
+ if(!ok.ok)throw Error('Backup failed; master was not changed.');
+ return key;
+}'''
+          rep(old,new,'storage functions')
+          s=s.replace('await postMaster(next);','await saveMaster(next);')
+          s=s.replace('await postMaster(initial);','await saveMaster(initial);')
+          p.write_text(s)
+
+          p=Path('method2-core.js'); s=p.read_text()
+          old="""async function read(outlet,module='METHOD2',key='default'){
+ const r=await BOBS_DATA.jsonp({action:'moduleGet',outletId:outlet,module,recordKey:key});"""
+          new="""async function read(outlet,module='METHOD2',key='default'){
+ if(String(module).toUpperCase()==='RECIPE_MASTER'&&BOBS_DATA.getModule){return BOBS_DATA.getModule(outlet,module,key)}
+ const r=await BOBS_DATA.jsonp({action:'moduleGet',outletId:outlet,module,recordKey:key});"""
+          if s.count(old)!=1: raise SystemExit('method2 read patch match failed')
+          p.write_text(s.replace(old,new,1))
+          PY
+          git diff --check
+          node tests/recipe-master-shards.cjs
+          node tests/recipe-master-sync.cjs
+          git config user.name 'BOBS 111Q Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add recipe-master.html method2-core.js
+          git commit -m 'Store Recipe Master V2 in verified Google chunks'
+          git push origin HEAD:main
