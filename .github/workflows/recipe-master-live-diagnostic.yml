@@ -18,10 +18,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926'
-          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=18000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
+          URL='https://jothish2000.github.io/BOBS-OUTLETS/recipe-master.html?diag=20260926b'
+          google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=26000 --dump-dom "$URL" > /tmp/recipe-master-dom.html 2> /tmp/recipe-master-chrome.log || true
           echo '--- STATUS TEXT ---'
-          grep -oE 'SAFE MODE[^<]*|Google master[^<]*|READING GOOGLE[^<]*|Reading Google[^<]*' /tmp/recipe-master-dom.html || true
+          grep -oE 'SAFE MODE[^<]*|Google master[^<]*|Reference standards loaded[^<]*|Migration sent[^<]*|Loading reference standards[^<]*' /tmp/recipe-master-dom.html || true
           echo '--- RECIPE CARDS ---'
           grep -o 'class="stack recipe-card"' /tmp/recipe-master-dom.html | wc -l
           echo '--- ERROR MARKERS ---'
