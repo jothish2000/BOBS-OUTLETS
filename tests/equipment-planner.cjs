@@ -1,0 +1,8 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const code=fs.readFileSync('equipment-planner-core.js','utf8');const ctx={globalThis:{}};vm.createContext(ctx);vm.runInContext(code,ctx);const E=ctx.globalThis.BOBS_EQUIPMENT;
+const recipes=[{name:'Vada',productionTiming:{equipment:'Wet grinder + frying kadai'}},{name:'Bonda',productionTiming:{equipment:'Frying kadai'}},{name:'Puff',productionTiming:{equipment:'Oven'}}];
+const selected=[{item:{name:'Vada'}},{item:{name:'Bonda'}},{item:{name:'Puff'}}];const req=E.requirements(selected,recipes);
+const fry=req.find(x=>x.shareGroup==='FRYING_STATION');assert(fry);assert.equal(fry.sourceItems.length,2);assert.equal(fry.individualCount,2);assert.equal(fry.suggestedSharedCount,1);
+const shared=E.applyDecisions(req,{ebRate:11,decisions:{[fry.id]:{mode:'SHARED',ownedQty:0,unitCost:12000}}});assert.equal(shared.find(x=>x.id===fry.id).finalCount,1);
+const individual=E.applyDecisions(req,{ebRate:11,decisions:{[fry.id]:{mode:'INDIVIDUAL',ownedQty:0,unitCost:12000}}});assert.equal(individual.find(x=>x.id===fry.id).finalCount,2);assert.equal(individual.find(x=>x.id===fry.id).capex,24000);
+const hold=req.find(x=>x.name==='3-rack puff warmer');assert(hold);const powered=E.applyDecisions([hold],{ebRate:11,decisions:{}})[0];assert(powered.dailyKwh>0);assert(powered.dailyPowerCost>0);
+assert(!req.some(x=>/move|relocat/i.test(x.name)));console.log('PASS equipment planner: production + holding + owner sharing override + CAPEX/power');
