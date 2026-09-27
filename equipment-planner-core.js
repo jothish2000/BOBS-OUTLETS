@@ -20,7 +20,7 @@ E.selectedItems=(state,itemData,catOrder)=>{
 E.recipeFor=(recipes,name)=>{const k=norm(name).replace(/idly/g,'idli');return (recipes||[]).find(r=>norm(r.name).replace(/idly/g,'idli')===k)};
 E.requirements=(selected,recipes)=>{
  const rows=[];
- const add=x=>rows.push({...x,id:x.id||slug([x.category,x.name,x.shareGroup,x.itemName].join('-')),sourceItems:x.sourceItems||[x.itemName].filter(Boolean)});
+ const add=x=>rows.push({...x,id:x.id||slug([x.category,x.name,x.shareGroup].join('-')),sourceItems:x.sourceItems||[x.itemName].filter(Boolean)});
  for(const s of selected||[]){
   const item=s.item||s, name=item.recipeName||item.name, r=E.recipeFor(recipes,name);
   if(r?.productionTiming?.equipment)for(const raw of E.splitEquipment(r.productionTiming.equipment)){const a=alias(raw);add({name:a.name,category:a.category,shareGroup:a.group,itemName:name,source:'Recipe Master',estimatedCost:a.cost,powerW:0,hours:0,sharePossible:true,note:'Production equipment from Recipe Master. Sharing is only a suggestion and must not require moving equipment or disruptive cleaning/changeover.'})}
