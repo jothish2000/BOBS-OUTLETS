@@ -1,3 +1,89 @@
+# ACTIVE HANDOVER ADDENDUM — 27 September 2026: Method 2 Equipment / Asset Planner + continuous 111Q ledger
+
+This addendum is newer than all sections below and must be read first.
+
+## Owner decisions captured
+- The minute Method 2 items are selected, BOBS should derive the equipment needed from the selected menu and Recipe Master/process requirements.
+- Equipment planning covers the full lifecycle, not cooking alone: PREP, PRODUCTION, HOLDING, DISPLAY, COLD STORAGE, SERVICE, CLEANING and COMMON UTILITY.
+- Post-cooking holding is part of the process and cost. Examples: Idli hot box; powered snack/puff warmer; refrigerated display/cold holding where applicable.
+- Sharing is an **economy suggestion only**, never a gap filler.
+- Sharing must not depend on physically shifting a burner/stove/equipment between workstations, disruptive cleaning/changeover, or avoidable manpower movement.
+- Owner controls each shareable equipment group with AUTO / SHARED / INDIVIDUAL. INDIVIDUAL is authoritative when selected and must drive quantity/CAPEX/space/utilities downstream.
+- Existing owned assets must reduce the purchase gap; equipment required and equipment to purchase are separate concepts.
+- 111Q = 111Q5PVDDRT now additionally requires a **continuous repository implementation ledger** updated during material work so Codex and normal ChatGPT can resume each other after credit/session exhaustion.
+
+## Continuous implementation ledger — execution order
+1. Recovered latest BOBS context and verified repository `jothish2000/BOBS-OUTLETS`.
+2. Inspected current `main` before edits. Starting HEAD for this change: `b8796a87c54fd47323193387716165da244d4398`.
+3. Read current `AGENTS.md`, this handover, Method 2 source, workload source and `OVERALL_DESIGN_MASTER_111Q.md`.
+4. Confirmed latest Recipe Master architecture is V2 sharded Google storage (104 recipes / 11 chunks in the prior verified handover); this change does not replace or shrink it.
+5. Created recovery branch `recovery/pre-equipment-planner-111q-20260927` at starting HEAD `b8796a87...`.
+6. Added `equipment-planner-core.js`: derives production equipment from Recipe Master, adds post-cooking holding/display/cold-storage rules, consolidates compatible fixed equipment groups, applies owner AUTO/SHARED/INDIVIDUAL decisions, existing-owned quantity, CAPEX gap and electricity estimates.
+7. Added `equipment-planner.html`: mobile-usable Equipment & Asset Planner UI with EB rate, source items, owner sharing decision, final quantity, owned quantity, buy gap, CAPEX, watts, hours/day and daily electricity.
+8. Added `equipment-planner.js`: reads Method 2 + logical Recipe Master, persists owner decisions separately under outlet `EQUIPMENT_PLAN/default`, backs up the prior equipment plan before save, and verifies Google read-back.
+9. Updated `method2.html` to expose **Equipment & assets** directly from the Method 2 workspace.
+10. Updated `AGENTS.md` so Codex/ChatGPT must document material implementation actions/results during work, not only at the end.
+11. Updated `OVERALL_DESIGN_MASTER_111Q.md` to v3.1 with the same bidirectional cross-AI continuity ledger rule.
+12. Stabilized equipment decision IDs so saved owner choices survive menu changes when the same equipment group remains.
+13. Added `tests/equipment-planner.cjs` covering Vada+Bonda fixed frying-station consolidation, SHARED vs INDIVIDUAL quantity/CAPEX behavior, and powered Puff warmer energy.
+14. Added `.github/workflows/equipment-planner.yml` to run the regression automatically.
+15. At the time this ledger entry was written, Equipment planner regression for commit `5a11063545259352b5a02b3ec87604c59a0d2835` was **IN PROGRESS** and Pages deployment for that commit was **PENDING**. Do not convert these states to PASS until GitHub reports completion.
+
+## Architecture / data ownership
+`Method 2 selection -> logical Recipe Master V2 -> equipment-planner-core -> owner equipment decisions -> EQUIPMENT_PLAN Google module -> CAPEX / utility summary`.
+
+Recipe Master remains authoritative for production recipe/process equipment. `EQUIPMENT_PLAN` owns outlet-specific asset/sharing decisions and planning assumptions. It does not rewrite Recipe Master or Method 2 item costing yet.
+
+## Current scope boundaries
+Implemented now:
+- menu-driven production equipment derivation;
+- holding/display/cold-storage additions for currently encoded rules;
+- owner AUTO/SHARED/INDIVIDUAL override;
+- existing-owned quantity and purchase gap;
+- CAPEX estimate;
+- powered equipment daily kWh/cost estimate;
+- separate Google persistence + backup/read-back;
+- Method 2 navigation;
+- continuous 111Q/Codex continuity rule.
+
+Not yet implemented:
+- rigorous ready-time/cycle scheduler proving simultaneous burner demand;
+- full Asset Master with serial/model/location/useful life/maintenance/space dimensions;
+- LPG capacity/running-cost aggregation from equipment plan (recipe direct LPG remains in Recipe Master);
+- kitchen blueprint/zone placement;
+- automatic feed of equipment depreciation/holding electricity into item cost;
+- compatibility matrix for temperature/humidity/odour/tray capacity beyond current conservative group rules;
+- live owner UAT.
+
+## 111Q status at this checkpoint
+- DESIGNED: YES.
+- OWNER APPROVED: YES — explicit owner direction in chat.
+- IMPLEMENTED: YES for the first Equipment/Asset Planner slice above.
+- CODE CHECKED: YES for inspected/changed source paths.
+- AUTOMATED TESTED: IN PROGRESS at ledger write time.
+- BROWSER TESTED: NOT YET.
+- DEPLOYED / PUBLISHED: PENDING Pages workflow at ledger write time.
+- LIVE VERIFIED: NOT YET.
+- OWNER UAT ACCEPTED: NOT YET.
+- REGRESSION STATUS: PENDING automated + browser checks.
+- RECOVERY POINT AVAILABLE: YES — `recovery/pre-equipment-planner-111q-20260927`.
+
+## 5PV-DR checkpoint
+- PRO: equipment appears immediately from the selected menu and includes holding assets, so CAPEX/power planning starts from the actual operating menu.
+- CON: first slice uses conservative equipment aliases/holding rules and does not yet prove peak simultaneous demand; AUTO must therefore remain a suggestion.
+- COMPARE & CONNECTIONS: previously Recipe Master equipment was descriptive; now it feeds an outlet equipment plan without changing Recipe Master or current COGS.
+- OBSERVER: owner override is visible and persisted; sharing warning explicitly prohibits moving equipment/changeover-driven economy.
+- OWNER: approved direction is implemented as the first slice; further scheduler/Asset Master integration remains continuation work.
+
+## Exact next executable action
+1. Re-check GitHub Actions for `Equipment planner regression` at commit `5a110635...`; if FAIL, inspect logs, repair and retest before proceeding.
+2. Confirm Pages deploy for the latest functional commit is green.
+3. Browser-test live `method2.html?outlet=1` -> **Equipment & assets** -> `equipment-planner.html?outlet=1`.
+4. Verify actual selected menu imports; confirm Vada+Bonda offers sharing but INDIVIDUAL changes final quantity/CAPEX; confirm Puff produces powered 3-rack warmer; save and reload Google read-back.
+5. Then extend from static equipment grouping to ready-time/cycle capacity scheduling and full Asset Master/space/LPG/maintenance fields. Do not make sharing mandatory.
+
+---
+
 # ACTIVE HANDOVER ADDENDUM — 26 September 2026: Recipe Master V2 live Google storage / sharded master
 
 This addendum is newer than all sections below and must be read first.
