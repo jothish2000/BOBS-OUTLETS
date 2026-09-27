@@ -3,7 +3,7 @@
 ### Canonical definition: **111Q = 111Q5PVDDRT**
 
 **Owner / final decision-maker:** Jothish Babu Sadasivam  
-**Version:** 3.0 — 23 September 2026  
+**Version:** 3.1 — 27 September 2026  
 **Purpose:** Portable blueprint for designing, changing, testing, recovering and handing over software, spreadsheets, automation, operational systems and AI-assisted projects across capable platforms.
 
 ## 1. Activation instruction
@@ -92,13 +92,16 @@ Every material implementation records: project/module; approved scope; before/af
 
 **A material implementation is not complete until its current handover is updated in the same work cycle.** The next AI/developer must read that handover before modifying the affected system.
 
-## 12. Portable continuation command
+## 12. Continuous cross-AI implementation ledger
+111Q documentation is simultaneous with implementation, not only an end-of-session summary. After each material checkpoint, the repository handover records the request/decision, inspected HEAD/recovery point, files/data paths inspected, rule implemented, files changed, persistence effect, test/result, repair/retest if any, truthful release status, pending work and exact next executable action. This is mandatory in both directions: Codex documents so normal ChatGPT can resume after credit/session exhaustion, and normal ChatGPT documents so Codex can resume without reconstructing work from chat history. Record material actions/results in execution order; do not pad the ledger with meaningless keystroke narration.
+
+## 13. Portable continuation command
 > Continue from current HEAD using OVERALL DESIGN MASTER 111Q, repository `AGENTS.md` where present, and the latest project/Codex handover. Treat 111Q as 111Q5PVDDRT. Inspect current source and intervening commits first; do not restart completed architecture or overwrite durable data. Perform the required tester stage and feed test findings back through 5PV-DR before declaring completion. Update the handover after each material change.
 
-## 13. New-project charter
+## 14. New-project charter
 Define: project/version/Owner; problem/outcome; users; first end-to-end workflow; in/out scope; baseline assets; business invariants; data entities/IDs; authoritative store; backup store; screens; APIs/integrations; reports; permissions/security; devices; scale/performance; acceptance tests; release criteria; migration; rollback; approved and pending decisions.
 
-## 14. BOBS / UDANE reference annex
+## 15. BOBS / UDANE reference annex
 This is an example, not a universal business rule.
 
 BOBS Method 2 preserves Google-backed operational data, Google-first loading where designed, backup/read-back verification, stale-write protection, surgical rollback, one authoritative Current Selling Price, factual Actual COGS separate from pricing provisions, and explicit packing/recipe/purchase ownership.
@@ -119,13 +122,13 @@ Legacy compatibility state may remain internally while required by older records
 ### Testing lesson
 A prior UI edit caused the Item Editor to remain at “Loading from Google…” because invalid JavaScript was introduced. This is why T is mandatory. Similar changes must verify page load, Google data load, changed controls, calculations, save/read-back where safely testable, shared-value propagation, affected links/navigation and nearby regressions.
 
-## 15. Canonical-master rule
+## 16. Canonical-master rule
 Future project annexes may add context but must not silently weaken this master. Conflicts must be identified, reviewed under 111Q5PVDDRT and decided by the Owner.
 
-## 16. Definition of success
+## 17. Definition of success
 111Q succeeds when the Owner can see the choice, benefits, risks and connected effects; existing work is protected; implementation stays bounded; real testing observes the changed system; findings return through 5PV-DR; failures trigger repair/retest; status is truthful; rollback exists; current handover is updated; and another AI/developer can continue without rebuilding understanding from zero or overwriting existing work.
 
 ## Revision history
 - **v1.0 — 19 Sep 2026:** universal PRO/CON/COMPARE & CONNECTIONS/OBSERVER + OWNER framework, dual business/software review, protection/testing/handover.
 - **v2.0 — 20 Sep 2026:** canonicalized **111Q = 111Q5PVDRT**; mandatory Tester; link/load/navigation/persistence/regression testing; mandatory post-test second 5PV-DR; consolidated universal master + BOBS constitution + Codex handover principles.
-- **v3.0 — 23 Sep 2026:** canonicalized **111Q = 111Q5PVDDRT**; made developer/Codex handover the first D; added mandatory inspect-current-HEAD/intervening-commits continuity rule; prohibited restart/overwrite behavior; made handover update a completion gate.
+- **v3.0 — 23 Sep 2026:** canonicalized **111Q = 111Q5PVDDRT**; made developer/Codex handover the first D; added mandatory inspect-current-HEAD/intervening-commits continuity rule; prohibited restart/overwrite behavior; made handover update a completion gate.\n- **v3.1 — 27 Sep 2026:** made the repository handover a continuous cross-AI implementation ledger updated during material work, so Codex and normal ChatGPT can resume each other after abrupt credit/session stops.
