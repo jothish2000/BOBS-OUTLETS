@@ -24,6 +24,28 @@ Apply **111Q = 111Q5PVDDRT**.
 - Feed real test evidence back through post-test 5PV-DR before declaring completion.
 - The Owner is the final decision-maker for genuine business/architecture choices.
 
+
+## 111Q continuous continuity ledger — mandatory
+
+111Q now requires **simultaneous documentation while implementation is happening**, not a handover written only at the end.
+
+For every material work session, Codex/ChatGPT/developer must keep the repository continuity record current enough that another agent can resume after an abrupt credit/session stop. At each meaningful checkpoint record, in chronological order:
+
+1. request/decision being implemented;
+2. current HEAD / recovery point inspected;
+3. files and authoritative data paths inspected;
+4. exact business/architecture rule chosen;
+5. files changed and what each change does;
+6. persistence/migration implications;
+7. test actually run and observed result;
+8. failure/repair/retest when applicable;
+9. deployment/live/UAT status without upgrading unverified states;
+10. pending work and the **exact next executable step**.
+
+Update `CODEX_HANDOVER_111Q_CURRENT.md` during the work cycle after material checkpoints, and always before stopping when possible. If work is interrupted before a final clean-up, the latest ledger entry is authoritative evidence of where to resume. Codex must follow this rule so normal ChatGPT can resume Codex work; normal ChatGPT must follow the same rule so Codex can resume chat work.
+
+Do not write a fictional line-by-line narrative of keystrokes. Record every **material implementation/action/result** in execution order so continuity is technically useful and auditable.
+
 ## Non-destructive change rule
 
 For every material change:
