@@ -1,3 +1,10 @@
+# RELEASE IN PROGRESS — Owner approved publication
+
+Owner explicitly approved publishing the tested Equipment Planner repair. INTENT: publish local implementation 1f794fb and handover checkpoint 5d9255b through a normal fast-forward push to main, check equipment CI and Pages deployment, compare served source, and browser-test deployed load read-only. Remote main was verified at 6eda291 immediately before release; tracked worktree clean. Recovery baseline remains 6eda291. Preserve all four untracked owner documents. No operational Google writes are part of publication; live save/readback and Owner UAT stay pending until performed with intended owner values.
+
+Next executable action: push approved source and this write-ahead release record, then inspect Actions and live source. Earlier LOCAL / approval-pending statements below are historical.
+
+---
 # ACTIVE CONTINUATION — 27 September 2026: Equipment Planner verification and save repair
 
 This section supersedes earlier verification statuses below. Work is LOCAL on `codex/equipment-verification-20260927`, based on `6eda291db88c20a459ded1b3ba44e244f6991125`. The configured C: workspace was missing; actual checkout is `D:/BOBS-OUTLETS`. Old local main `b43fc2e` and four untracked owner documents were preserved. Owner confirmed Codex is used on the laptop only.
@@ -831,4 +838,5 @@ FINAL CHECKPOINT INTENT: preserve verified local implementation in a Git commit 
 
 
 CHECKPOINT RESULT: implementation and verification committed locally as 1f794fb (Protect equipment planner load and verified saves), seven intended files only. No push or deployment performed. Next action remains Owner release decision on this tested repair. This documentation-only follow-up records the immutable implementation checkpoint.
+
 
