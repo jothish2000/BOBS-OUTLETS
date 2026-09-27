@@ -1,0 +1,6 @@
+# 111Q recovery / verification intent — 27 September 2026
+Owner request: continue current BOBS under complete 111Q5PVDDRT, with write-ahead continuity.
+Observed: configured C: workspace missing. Existing D:/BOBS-OUTLETS main b43fc2e has no tracked edits and four untracked owner documents. Fetched origin/main 6eda291; remote history diverges from stale local main. Preserve local main and all untracked documents.
+INTENT: switch to a new continuation branch at verified origin/main, preserving main and untracked files; append recovery/verification intent to current handover. Run existing equipment and connected regression tests; inspect live deployment and browser options. Repair only demonstrated first-slice defects, logging intent before each change. No operational Google writes, migration, deployment, or history rewrite in this recovery step.
+Review: one assistant separated PRO/CON/COMPARE/OBSERVER passes. PRO: verify existing planner; CON: sharing capacity and save protection unproven; CONNECTIONS: Method2 -> logical Recipe Master -> equipment plan -> Google -> CAPEX/power; OBSERVER: distinguish actual evidence from historical claims.
+Next executable action: switch continuation branch, record state, run tests.

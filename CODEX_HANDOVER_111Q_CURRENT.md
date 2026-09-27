@@ -1,3 +1,44 @@
+# ACTIVE CONTINUATION — 27 September 2026: Equipment Planner verification and save repair
+
+This section supersedes earlier verification statuses below. Work is LOCAL on `codex/equipment-verification-20260927`, based on `6eda291db88c20a459ded1b3ba44e244f6991125`. The configured C: workspace was missing; actual checkout is `D:/BOBS-OUTLETS`. Old local main `b43fc2e` and four untracked owner documents were preserved. Owner confirmed Codex is used on the laptop only.
+
+## Recovered checkpoint and current scope
+- Current GitHub source genuinely contains the initial Equipment Planner. Existing engine regression passed locally and GitHub run 36292898858 is SUCCESS.
+- Pages deployment run 36292932895 is SUCCESS at 6eda291.
+- Read-only live Chrome load of equipment-planner.html?outlet=1 PASSED: one selected Method 2 item, two equipment rows, correct outlet-preserving Back link, no Runtime.exceptionThrown events. No live Save was clicked.
+- Ready-time/cycle scheduling remains NOT IMPLEMENTED. Existing-owned quantity is manually entered; full Asset Master matching is NOT IMPLEMENTED. Holding rules are partial name-based rules, not a complete compatibility/capacity assessment. LPG aggregation, automatic equipment-cost allocation, and blueprint remain pending.
+- AUTO currently assumes one shared unit; no capacity proof. Do not describe it as a verified practical setup. INDIVIDUAL is still preserved and engine behavior was not changed in this repair.
+
+## Repair intent / implementation
+The Owner requested autonomous continuation from the actual unfinished checkpoint. Verification reproduced seven first-slice defects before repair. Bounded correction to existing behavior, not a new architecture: prevent save after failed/incomplete loading, prevent overlapping load/save, detect stale equipment plans before/after backup, verify backup before operational write, verify full saved payload (including electricity rate), retain zero rate, reject invalid numeric inputs. Preserve outlet EQUIPMENT_PLAN/default and EQUIPMENT_PLAN_BACKUPS storage, unknown/unrendered owner decisions, and existing formulas.
+
+Files: equipment-planner.js, equipment-planner.html, tests/equipment-planner-persistence.cjs, .github/workflows/equipment-planner.yml, scripts/verify-equipment-browser.cjs, this handover, CODEX_RECOVERY_20260927.md.
+
+## Actual Tester evidence
+- Baseline new persistence tests: 7 FAIL / 1 PASS; failures recorded in the chronological ledger below.
+- Final persistence tests: 8 PASS / 0 FAIL, including zero-rate visible total after reload.
+- Existing equipment engine regression: PASS.
+- Connected tests: 9 PASS / 0 FAIL (seven shared-price protections, recipe sharding, recipe read-back).
+- equipment-planner.js JavaScript syntax: PASS. git diff --check: PASS after extra EOF blank lines were removed.
+- Actual local Chrome page with mocked Google adapter: PASS loading 3 selected items / 4 equipment rows, input/change/save/reload, zero rate; 390px viewport document width 390px with internally scrollable table. This is browser testing with mock persistence, NOT live Google save verification.
+- Deployed prior code read-only live load: PASS as described above. New repair DEPLOYED: NO. Live save/readback: NOT RUN. Owner UAT acceptance: PENDING.
+
+## Post-test four-view review — one assistant's separated passes
+| View | Business / logic | Software / data |
+|---|---|---|
+| PRO | Zero-rate costing and explicit save outcomes now work | Eight targeted safety cases and connected regressions pass |
+| CON | Capacity/sharing and Asset Master gaps remain | Optimistic rereads are not atomic compare-and-swap; live repair save unverified |
+| COMPARE & CONNECTIONS | Same equipment decisions, quantities and estimates | Same Google modules and Recipe Master; stronger load/backup/readback guards |
+| OBSERVER | No live/UAT claim inferred from fake-adapter tests | Desktop browser and narrow viewport checked; deployed source remains the old version |
+
+## Protection / exact next action
+Recovery source: 6eda291. Code rollback is a surgical restoration of affected planner files from that commit; preserve all continuity records and owner documents. No operational Google records were written, so no data rollback is required for this work. Do not restore business data as part of code rollback.
+
+Next executable action: Owner reviews/accepts the tested bounded repair for publication under the master's release gate. After authorized publication, verify new deployed source and perform controlled outlet-plan save/readback only with the intended real owner values; record actual backup/readback and UAT outcome. Then present the next compact scheduling/Asset Master proposal, including process expansion, compatible fixed stations, ready times/cycles, units/capacity, theoretical vs practical equipment quantities, and persistent INDIVIDUAL authority. Do not restart Recipe Master or replace Google data.
+
+Detailed write-ahead intent, results and repair notes are in the Live continuation ledger at the end of this file and CODEX_RECOVERY_20260927.md.
+
+---
 # ACTIVE HANDOVER ADDENDUM — 27 September 2026: Method 2 Equipment / Asset Planner + continuous 111Q ledger
 
 This addendum is newer than all sections below and must be read first.
@@ -763,4 +804,28 @@ Never convert code inspection into browser/live verification.
 ## 15. PORTABLE CONTINUATION COMMAND
 
 > Continue BOBS from current HEAD. Read `AGENTS.md`, `CODEX_HANDOVER_111Q_CURRENT.md` and `OVERALL_DESIGN_MASTER_111Q.md` first. Apply canonical 111Q as **111Q5PVDDRT**. Inspect the current source, durable Google-backed data flow and intervening commits before edits. Preserve recovery and existing data. Extend the existing architecture instead of restarting it. Test the actual result and update `CODEX_HANDOVER_111Q_CURRENT.md` before declaring any material change complete.
+
+
+---
+## Live continuation ledger — 27 Sep 2026 laptop Codex
+INTENT recorded before branch preparation in CODEX_RECOVERY_20260927.md. RESULT: recovered current source at 6eda291 on codex/equipment-verification-20260927; stale local main and untracked owner documents retained. No operational data writes. Next: run equipment/connected tests and verify deployment; log findings before repairs.
+
+
+Verification checkpoint: existing equipment regression PASS locally (node tests/equipment-planner.cjs). GitHub API confirms regression run 36292898858 SUCCESS and Pages run 36292932895 SUCCESS at 6eda291. Browser/live save NOT RUN. Source review found Save active before load, unverified backup writes, no baseline stale-save guard, readback checks decisions only, and zero EB rate replaced with 11 by UI. INTENT: reproduce persistence/UI defects with isolated fake-adapter tests; no Google writes. If reproduced, repair bounded first-slice lifecycle using existing backup/readback/optimistic reread pattern; preserve schema/owner decisions. Scheduler and Asset Master expansion deferred until this verification checkpoint is reliable.
+
+
+TEST RESULT: new isolated persistence suite reproduced 7 failures / 8 tests: failed-load save, stale overwrite, unverified backup, backup-window race, EB-rate readback mismatch, zero rate, invalid rate. Baseline normal-save test passed. INTENT BEFORE REPAIR: gate save until complete load; snapshot baseline separately; verify backup before write; reread baseline after backup; verify full submitted payload; preserve zero and reject invalid numeric inputs; block overlapping load/save. Use optimistic protection only, not an atomic concurrency claim. Add tests to existing CI. No Google data mutation.
+
+
+IMPLEMENTATION RESULT: equipment-planner.js now gates load/save, preserves independent baseline, verifies backup and full plan payload, and validates form numbers; equipment-planner.html disables Save initially; CI includes persistence tests. Existing equipment derivation and owner modes unchanged. Next: syntax check and run persistence plus existing engine regressions; repair actual failures.
+
+
+Inspection during retest: render retained its old zero-rate fallback because the scripted replacement did not match. INTENT: correct render to use the validated saved rate and strengthen zero-rate test with a powered Puff fixture and visible total assertion. This is a repair of the same recorded defect.
+
+
+RETEST RESULT: all 8 persistence tests PASS, including powered Puff zero-rate display. JavaScript syntax PASS. git diff --check reported only extra blank lines at EOF; INTENT: normalize those endings. Next: headless Chrome fixture checks (mock Google only), then read-only deployed planner load; preserve distinction from live save/readback. Computer Use skill read but its required node_repl tool is unavailable; native Chrome headless CDP used for web testing instead, not Windows UI automation.
+
+
+
+FINAL CHECKPOINT INTENT: preserve verified local implementation in a Git commit containing only the seven task files listed above. Do not stage the four owner-supplied untracked documents. Publication remains pending Owner release decision. Browser result: local fixture PASS; deployed prior code read-only PASS; live Google writes NOT RUN. Exact next action: review/publish bounded repair, then live verification and scheduler scope review.
 

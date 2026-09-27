@@ -7,6 +7,7 @@ on:
       - 'equipment-planner.js'
       - 'equipment-planner.html'
       - 'tests/equipment-planner.cjs'
+      - 'tests/equipment-planner-persistence.cjs'
       - '.github/workflows/equipment-planner.yml'
   workflow_dispatch:
 jobs:
@@ -18,3 +19,5 @@ jobs:
         with:
           node-version: '20'
       - run: node tests/equipment-planner.cjs
+
+      - run: node --test tests/equipment-planner-persistence.cjs
