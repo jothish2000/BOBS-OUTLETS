@@ -27,7 +27,7 @@ This addendum is newer than all sections below and must be read first.
 12. Stabilized equipment decision IDs so saved owner choices survive menu changes when the same equipment group remains.
 13. Added `tests/equipment-planner.cjs` covering Vada+Bonda fixed frying-station consolidation, SHARED vs INDIVIDUAL quantity/CAPEX behavior, and powered Puff warmer energy.
 14. Added `.github/workflows/equipment-planner.yml` to run the regression automatically.
-15. At the time this ledger entry was written, Equipment planner regression for commit `5a11063545259352b5a02b3ec87604c59a0d2835` was **IN PROGRESS** and Pages deployment for that commit was **PENDING**. Do not convert these states to PASS until GitHub reports completion.
+15. Equipment planner regression for commit `5a11063545259352b5a02b3ec87604c59a0d2835` completed **SUCCESS**. It verified Vada+Bonda fixed frying-station consolidation, SHARED vs INDIVIDUAL final quantity/CAPEX behavior, and powered Puff warmer electricity. Pages deployment for that functional commit was still **IN PROGRESS** at the latest check; browser/live verification remains NOT YET.
 
 ## Architecture / data ownership
 `Method 2 selection -> logical Recipe Master V2 -> equipment-planner-core -> owner equipment decisions -> EQUIPMENT_PLAN Google module -> CAPEX / utility summary`.
@@ -60,12 +60,12 @@ Not yet implemented:
 - OWNER APPROVED: YES — explicit owner direction in chat.
 - IMPLEMENTED: YES for the first Equipment/Asset Planner slice above.
 - CODE CHECKED: YES for inspected/changed source paths.
-- AUTOMATED TESTED: IN PROGRESS at ledger write time.
+- AUTOMATED TESTED: PASS — `tests/equipment-planner.cjs` / GitHub Actions success on `5a110635...`.
 - BROWSER TESTED: NOT YET.
 - DEPLOYED / PUBLISHED: PENDING Pages workflow at ledger write time.
 - LIVE VERIFIED: NOT YET.
 - OWNER UAT ACCEPTED: NOT YET.
-- REGRESSION STATUS: PENDING automated + browser checks.
+- REGRESSION STATUS: automated equipment-engine regression PASS; browser/live checks pending.
 - RECOVERY POINT AVAILABLE: YES — `recovery/pre-equipment-planner-111q-20260927`.
 
 ## 5PV-DR checkpoint
