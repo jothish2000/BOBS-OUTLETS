@@ -829,3 +829,6 @@ RETEST RESULT: all 8 persistence tests PASS, including powered Puff zero-rate di
 
 FINAL CHECKPOINT INTENT: preserve verified local implementation in a Git commit containing only the seven task files listed above. Do not stage the four owner-supplied untracked documents. Publication remains pending Owner release decision. Browser result: local fixture PASS; deployed prior code read-only PASS; live Google writes NOT RUN. Exact next action: review/publish bounded repair, then live verification and scheduler scope review.
 
+
+CHECKPOINT RESULT: implementation and verification committed locally as 1f794fb (Protect equipment planner load and verified saves), seven intended files only. No push or deployment performed. Next action remains Owner release decision on this tested repair. This documentation-only follow-up records the immutable implementation checkpoint.
+
