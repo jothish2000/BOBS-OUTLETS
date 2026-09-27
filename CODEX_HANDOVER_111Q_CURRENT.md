@@ -1,3 +1,26 @@
+# RELEASE VERIFIED — 27 September 2026
+
+Owner approved publication in Codex. Approved repair implementation: 1f794fb; published release: f7fa794 (normal fast-forward to main).
+
+- OWNER RELEASE APPROVED: YES.
+- IMPLEMENTED / CODE CHECKED / AUTOMATED TESTED: YES; prior local evidence below preserved.
+- GitHub Equipment planner regression: PASS, run 36334316243, https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/36334316243.
+- Pages deployment: SUCCESS, run 36334315853, https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/36334315853.
+- LIVE SOURCE VERIFIED: served equipment-planner.js matches the approved local source after newline normalization.
+- BROWSER TESTED: local Chrome fixture load, edit, save and reload PASS; zero-rate total PASS; 390px viewport fits with internal table scrolling.
+- LIVE READ-ONLY VERIFIED: deployed equipment planner outlet=1 loads 1 selected item / 2 equipment rows, correct Method 2 Back link, no captured runtime exceptions.
+- LIVE GOOGLE SAVE/READBACK: NOT RUN; no operational records changed during release verification.
+- OWNER UAT ACCEPTED: PENDING; publication approval is not a completed UAT.
+
+Post-release four-view review (one assistant's separated passes): PRO—approved save safeguards are deployed and planner loads; CON—live persistence and full capacity/Asset Master remain unverified/unimplemented; COMPARE & CONNECTIONS—same Recipe Master and outlet data modules, no data migration, served code matches approval; OBSERVER—mock save testing and live read-only testing remain explicitly distinct. Owner's release decision was approval.
+
+Protection: source recovery remains 6eda291; code rollback is surgical and must not restore/delete Google records. Four untracked owner documents remain untouched. Local stale main was preserved; active branch is codex/equipment-verification-20260927 in D:/BOBS-OUTLETS.
+
+Next action: Owner tests intended real equipment values via Save and Reload and reports outcome. Then continue the compact 111Q review for ready-time/cycle scheduling and Asset Master matching. Do not regard AUTO's static one-unit suggestion as proven capacity, or manual owned quantity as Asset Master integration. Historical release-pending/local statements below are superseded by this section.
+
+Ledger intent before this update: record actual successful CI, deployment, source comparison and live browser results, then publish this documentation-only continuation record. No additional application change or Google data write.
+
+---
 # RELEASE IN PROGRESS — Owner approved publication
 
 Owner explicitly approved publishing the tested Equipment Planner repair. INTENT: publish local implementation 1f794fb and handover checkpoint 5d9255b through a normal fast-forward push to main, check equipment CI and Pages deployment, compare served source, and browser-test deployed load read-only. Remote main was verified at 6eda291 immediately before release; tracked worktree clean. Recovery baseline remains 6eda291. Preserve all four untracked owner documents. No operational Google writes are part of publication; live save/readback and Owner UAT stay pending until performed with intended owner values.
@@ -838,5 +861,9 @@ FINAL CHECKPOINT INTENT: preserve verified local implementation in a Git commit 
 
 
 CHECKPOINT RESULT: implementation and verification committed locally as 1f794fb (Protect equipment planner load and verified saves), seven intended files only. No push or deployment performed. Next action remains Owner release decision on this tested repair. This documentation-only follow-up records the immutable implementation checkpoint.
+
+
+
+RELEASE RESULT: normal push to origin/main succeeded at f7fa794, preserving remote history. Deployment/CI verification in progress. Exact next action: confirm Actions completion, compare served planner source, run read-only live browser check.
 
 
