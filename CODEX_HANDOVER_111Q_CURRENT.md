@@ -1,3 +1,14 @@
+# BROWSER WORK HANDOVER READY — 28 September 2026
+
+Owner has decided to continue future development in browser Work. Query1 implementation commit 515148bb24c46ad58ef7950ad9f268dc44e0522b on codex/query1-guided-cost-flow is finished and locally tested. Read BROWSER_WORK_HANDOVER.md and START_HERE_BROWSER_WORK.md for portable startup, complete file/data map, test evidence, numbered retest and remaining release boundary.
+
+IMPLEMENTED / CODE CHECKED / NEW AUTOMATED TESTS / DESKTOP BROWSER TEST: PASS. Eleven new tests; complete Idli+sambar+chutney browser workflow, salary reload, verified expense save, stale quantity/expense blocks, zero runtime errors. Connected passes and three baseline-reproduced historical failures are recorded in the portable handover. Existing main/live release e83d940 was not changed. QUERY1 DEPLOYMENT / LIVE GOOGLE WRITE / OWNER UAT: NOT RUN / PENDING. No operational Google writes, no global localStorage migration. Recovery e83d940 remains intact.
+
+Post-test review (single-assistant passes): PRO—observed source-to-full-price flow works; CON—live persistence, reference calibration and old regression failures remain; COMPARE—new WORKFORCE_PLAN requirements and salaries extend existing METHOD2 without inventing employees or duplicating expense owners; OBSERVER—exact labels and truthful test/release boundaries preserved. Owner release/UAT are next decisions. Do not continue new features on older main without importing this branch.
+
+Next executable step: open continuation branch or attached source, compare main, reproduce checks, complete release decision and deployment/source verification, then numbered Owner normal-flow retest. Keep code rollback separate from Google backups. Future storage removal requires its own inventory, migration review, verified backups and connected tests.
+
+---
 # ACTIVE IMPLEMENTATION — 28 September 2026: Owner query1 approved
 Owner approved necessary changes after seven-point query review. Baseline e83d940; preserve existing untracked owner documents and Google records. Single-assistant PRO/CON/COMPARE/OBSERVER review presented in chat; scope approved by Owner.
 INTENT BEFORE IMPLEMENTATION: (1) explicit UUWP numerator/denominator and rupee base; (2) dual-column shared reference versus outlet production recipe, portion size and proportional ingredients without rewriting shared reference; (3) verified sharded shared-recipe save, outlet overrides through protected METHOD2 records; (4) source-quantity refresh and plain-language workload help; (5) save covered workforce before salaries, expose required positions in Staff Master; (6) reverse take-home planning with explicit employee deductions/employer additions (no invented statutory rates), calendar-day daily cost; (7) explicit labour and non-duplicate operating-expense allocations into full-cost price, separate from legacy direct COGS. Normal case before emergency testing.
