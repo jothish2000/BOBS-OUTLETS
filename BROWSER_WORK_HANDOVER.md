@@ -4,9 +4,11 @@ Prepared for Jothish Babu Sadasivam on 28 September 2026. This document is suffi
 
 ## Current result and release boundary
 
+The final source commit is recorded in SOURCE_MANIFEST.json inside the package. The continuation branch includes the final correction that converts separately sold pack quantities into native recipe units.
+
 The approved query1 implementation is finished and tested locally. The normal path now connects Idli production, required workforce, Reverse THP salary planning, daily labour, other operating-expense allocation and full-cost ideal pricing. No real Google operational records were edited during testing.
 
-Implementation commit: `515148bb24c46ad58ef7950ad9f268dc44e0522b`.
+Initial implementation commit: `515148bb24c46ad58ef7950ad9f268dc44e0522b`.
 
 Repository: https://github.com/jothish2000/BOBS-OUTLETS
 
@@ -24,7 +26,7 @@ Local checkout used for this work: `D:/BOBS-OUTLETS`. The browser session does n
 
 ## Start the next session with this prompt
 
-Continue BOBS from the attached source snapshot and BROWSER_WORK_HANDOVER.md, using 111Q = 111Q5PVDDRT. First read AGENTS.md, OVERALL_DESIGN_MASTER_111Q.md and CODEX_HANDOVER_111Q_CURRENT.md fully. Inspect the current source and compare the continuation branch codex/query1-guided-cost-flow with main before editing. The query1 implementation is commit 515148bb24c46ad58ef7950ad9f268dc44e0522b; do not replace it with older main. Preserve Google-backed records, the shared Recipe Master, historic catalogue indices and code/data rollback separately. The approved implementation has passed its new local tests but is not deployed or Owner accepted. Summarize the actual release boundary, then help complete the release and numbered Owner retest before new development. If you cannot access GitHub, tools or Google data, use the attached source and state the specific limitation rather than inventing a successful read/write. Keep the handover updated during work and return an updated source checkpoint and handover before the session ends. Future development should not rely on a previous conversation or a laptop-local cache as the source of truth. Do not remove legacy localStorage or migrate data without an inspected and approved migration plan.
+Continue BOBS from the attached source snapshot and BROWSER_WORK_HANDOVER.md, using 111Q = 111Q5PVDDRT. First read AGENTS.md, OVERALL_DESIGN_MASTER_111Q.md and CODEX_HANDOVER_111Q_CURRENT.md fully. Inspect the current source and compare the continuation branch codex/query1-guided-cost-flow with main before editing. The initial query1 implementation is commit 515148bb24c46ad58ef7950ad9f268dc44e0522b, followed by a native-unit link correction. Use the latest continuation branch or the final sourceCommit in SOURCE_MANIFEST.json, not the initial commit alone or older main. Preserve Google-backed records, the shared Recipe Master, historic catalogue indices and code/data rollback separately. The approved implementation has passed its new local tests but is not deployed or Owner accepted. Summarize the actual release boundary, then help complete the release and numbered Owner retest before new development. If you cannot access GitHub, tools or Google data, use the attached source and state the specific limitation rather than inventing a successful read/write. Keep the handover updated during work and return an updated source checkpoint and handover before the session ends. Future development should not rely on a previous conversation or a laptop-local cache as the source of truth. Do not remove legacy localStorage or migrate data without an inspected and approved migration plan.
 
 ## Owner requirements and governance
 
@@ -87,7 +89,7 @@ Full pricing base = existing direct pricing COGS after spoilage and UUWP + (allo
 
 ## Actual test evidence
 
-PASS: 11 new rule/persistence tests covering scaling, calendar months/leap year, explicit salary amounts, linked employee versus unfilled budget, duplicate employee rejection, expense decisions, stale sources, full-price arithmetic, duplicate shared-batch protection, backup failure, stale save and sharded recipe integrity.
+PASS: 12 new rule/persistence tests covering scaling, calendar months/leap year, explicit salary amounts, linked employee versus unfilled budget, duplicate employee rejection, expense decisions, stale sources, full-price arithmetic, duplicate shared-batch protection, backup failure, stale save and sharded recipe integrity, and native recipe output for separately sold side packs.
 
 PASS: full desktop Chrome flow with Idli plus production sambar and coconut chutney; preserve shared yield 50, explicitly use guide yield 120, calculate output 360; workload old 15 becomes 360; save covered workforce; Staff Master displays two required positions and zero fake employees; salaries 26000 and 13000 with explicit zero deductions/additions; September daily labour 1300; rent allocation 100; recipe LPG excluded; final price rendered; salary reload; expense save; stale expense and stale quantity blocks; zero browser runtime exceptions. Screenshots of recipe, salary and item screens were visually inspected.
 
