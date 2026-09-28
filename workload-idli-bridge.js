@@ -1,5 +1,5 @@
 /* 111Q read-only bridge: Workload Planner -> Idli staffing -> item cost / outlet expenses.
-   IDLI_SUPPORT remains the single authoritative staffing/support record. This file never writes it. */
+   Reads WORKFORCE_PLAN for the guided flow and IDLI_SUPPORT for legacy plans. Never writes records. */
 (function(){'use strict';
 function start(){
   const page=(location.pathname.split('/').pop()||'').toLowerCase();
@@ -14,15 +14,16 @@ function start(){
   const host=document.createElement('div');host.id='idliBridgeStatus';host.innerHTML='<p class="muted">Checking saved Idli staffing bridge…</p>';card.appendChild(host);
   function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function today(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
-  function findIdli(state){for(const cat of CAT_ORDER||[]){const rows=ITEM_DATA[cat]||[];for(let i=0;i<rows.length;i++){const item=rows[i];if(/^idl[yi]$/i.test(String(item.name||''))&&M2.selected(state,cat,i))return {cat,index:i,item,draft:M2.draft(state,cat,i,item)}}return null}
+  function findIdli(state){for(const cat of CAT_ORDER||[]){const rows=ITEM_DATA[cat]||[];for(let i=0;i<rows.length;i++){const item=rows[i];if(/^idl[yi]$/i.test(String(item.name||''))&&M2.selected(state,cat,i))return {cat,index:i,item,draft:M2.draft(state,cat,i,item)}}}return null}
   async function render(){
     try{
-      const [raw,record]=await Promise.all([M2.read(outlet),M2.read(outlet,'IDLI_SUPPORT','default')]);
+      const [raw,record,workforce]=await Promise.all([M2.read(outlet),M2.read(outlet,'IDLI_SUPPORT','default'),M2.read(outlet,'WORKFORCE_PLAN','default')]);
       const found=findIdli(M2.state(raw));
       const actions=['<a href="idli-staffing.html?outlet='+encodeURIComponent(outlet)+'">Open staffing & emergency support →</a>'];
       if(found)actions.push('<a href="method2-item.html?outlet='+encodeURIComponent(outlet)+'&cat='+encodeURIComponent(found.cat)+'&i='+found.index+'&mode=production">Open Idli full cost →</a>');
       actions.push('<a href="fixed-expenses.html?outlet='+encodeURIComponent(outlet)+'">Open outlet expenses →</a>');
       let box='warn',title='Idli staffing bridge not completed',details='No saved Idli staffing/support plan was found. Open the staffing page to build or save one.';
+      if(workforce?.positions?.length){const currentQty=found?Number(found.draft.batchSize)*Number(found.draft.batches):0;const stale=workforce.date!==today()||Number(workforce.qty)!==currentQty;actions.push('<a href="staff.html?outlet='+encodeURIComponent(outlet)+'">Required positions in Staff Master →</a>');title=stale?'Workforce needs review':workforce.costReviewed?'Workforce and salary allocations saved':'Workforce saved — salary allocation next';details=stale?'The date or saved production quantity changed. Reopen Idli staffing.':workforce.positions.map(p=>p.id+' ('+p.role+')').join(' + ');host.innerHTML='<div class="'+(stale?'warn':'ok')+'"><strong>'+esc(title)+'</strong><p>'+esc(details)+'</p><p>Open the item full-cost page to verify current recipe, salary and expense sources.</p></div><div class="bridge-actions">'+actions.join('')+'</div>';return;}
       if(record?.plan){
         const p=record.plan,calc=record.calculation||{},status=String(record.status||'draft').toLowerCase();
         const currentQty=found&&found.draft?.mode==='production'?(Number(found.draft.batchSize)||0)*(Number(found.draft.batches)||0):null;

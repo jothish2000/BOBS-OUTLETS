@@ -5,7 +5,7 @@ const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage',
 let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false;
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
-function link(name){const a=document.createElement('a');a.href='recipe-cost-editor.html?item='+encodeURIComponent(M2.canonicalRecipeName(name));a.target='_blank';a.textContent=name+' · recipe & cost';return a}
+function link(name){const a=document.createElement('a');const isMain=M2.purchaseKey(name)===M2.purchaseKey(item.recipeName||item.name),side=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)),r=M2.recipe(recipes,name);let qty=Number(d.batchSize)*Number(d.batches);if(!isMain){const per=side&&M2.convert(Number(side.portion),side.portionUnit,r?.yieldUnit);qty=per==null?0:qty*per;}a.href='recipe-cost-editor.html?'+new URLSearchParams({item:M2.canonicalRecipeName(name),outlet,qty:String(qty),cat,i:String(i)});a.target='_blank';a.textContent=name+' · recipe & cost';return a}
 function purchaseLink(name,unit){const a=document.createElement('a');a.href='purchase-cost-editor.html?'+new URLSearchParams({outlet,item:name,unit:unit||'piece'});a.target='_blank';a.textContent=name+' · Purchase Master COGS';return a}
 function primaryCostLink(label){const a=d.mode==='production'?link(item.recipeName||item.name):purchaseLink(item.recipeName||item.name,item.side?d.servingUnit:d.unit);a.textContent=label;return a}
 function field(label,value,oninput,type='number'){
@@ -57,7 +57,7 @@ function consolidatedCosts(c){
  c.components.forEach((component,index)=>{
   const details=document.createElement('details');details.className='cost-component';
   const summary=document.createElement('summary');summary.className='line';
-  const label=component.name+(index===0?(d.mode==='production'?' Recipe Master COGS':' Purchase COGS'):' COGS')+' per '+d.unit+' · food + packing';
+  const outletRecipe=recipes.find(r=>M2.purchaseKey(r.name)===M2.purchaseKey(component.name)),hasOverride=!!d.recipeOverrides?.[String(outletRecipe?.name||'').trim().toLowerCase().replace(/idly/g,'idli')];const label=component.name+(index===0?(d.mode==='production'?(hasOverride?' Outlet production COGS':' Recipe Master COGS'):' Purchase COGS'):' COGS')+' per '+d.unit+' · food + packing';
   const a=index===0?primaryCostLink(label):component.source==='purchased'?purchaseLink(component.name,d.condiments[index-1].portionUnit):link(component.name);a.textContent=label;
   const amount=document.createElement('strong');amount.textContent=component.incomplete?'Incomplete':money(component.subtotal);summary.append(a,amount);
   const breakdown=document.createElement('p');breakdown.className='muted';breakdown.textContent='Food: '+(component.foodMissing?'Incomplete':money(component.food))+' + packing: '+(component.packingCost.missing.length?'Incomplete':money(component.packing))+'. '+(component.packingCost.mode==='included'?'Packing is already in the supplier price; no second charge.':component.packingCost.mode==='none'?'No extra packing for this component.':'Packing is allocated from this component’s whole packing sets.');
@@ -69,7 +69,7 @@ function consolidatedCosts(c){
 function pull(){for(const id of fields)d[id]=$(id).value}
 function changed(){pull();dirty=true;d.soldConfirmed=false;$('saveStatus').textContent='Unsaved changes';calculate()}
 function lines(id,entries){$(id).replaceChildren();for(const [index,[label,value]] of entries.entries()){const row=document.createElement('div');row.className='line';const span=document.createElement('span'),b=document.createElement('strong');span.textContent=label;if(id==='costs'&&index===0)span.replaceChildren(primaryCostLink(label));b.textContent=value;row.append(span,b);$(id).append(row)}}
-let supportRecord=null,supportError='';
+let supportRecord=null,supportError='',fullCostData=null;
 function calculate(){
  const c=M2.calculate(d,item,recipes),production=d.mode==='production';
  document.querySelectorAll('.side-cost').forEach(el=>{const x=el.side,component=c.components[d.condiments.indexOf(x)+1];el.textContent=component.incomplete?'Complete this side’s cost inputs and packing choice.':x.portion+' '+x.portionUnit+' complimentary: food '+money(component.food)+' + packing '+money(component.packing)+' = '+money(component.subtotal)+' per '+d.unit+(c.sold===null?'':'; '+money(component.subtotal*c.sold)+' for '+c.sold+' sold')+'. No separate revenue.'});
@@ -85,12 +85,12 @@ function calculate(){
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
  consolidatedCosts(c);
- if(/^idl[yi]$/i.test(item.name)&&production){let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='component';$('costs').parentElement.append(box);}IdliSupportReaders.renderItem(box,supportRecord,supportError,c,d);}else if($('idliLabourCost'))$('idliLabourCost').remove();
+ if(/^idl[yi]$/i.test(item.name)&&production){let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='card';$('pricing').closest('section').after(box);}if(fullCostData?.plan||fullCostData?.error)BOBS_FULL_COST.render(box,fullCostData,c,d,recipes,item,outlet);else IdliSupportReaders.renderItem(box,supportRecord,supportError,c,d);}else if($('idliLabourCost'))$('idliLabourCost').remove();
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  const pricingIncomplete=incomplete||c.uuwpPctApplied===null;
- const uuwpSource=c.uuwpPctApplied===null?'Enter Sold Today':c.unsold>0?'Actual leftover-based':'Default allowance — 100% sold';
- lines('pricing',[['Actual COGS — reference starting point',incomplete?'Incomplete':money(c.final)],['Food spoilage allowance % — editable',d.spoilage+'%'],['Calculated spoilage allowance',incomplete?'Incomplete':money(c.spoil)],['Pricing COGS after spoilage',incomplete?'Incomplete':money(c.pricingAfterSpoilage)],['UUWP source',uuwpSource],['UUWP applied %',c.uuwpPctApplied===null?'Incomplete':c.uuwpPctApplied.toFixed(2)+'%'],['Calculated UUWP allowance',pricingIncomplete?'Incomplete':money(c.uuwpAmount)],['FINAL PRICING COGS',pricingIncomplete?'Incomplete':money(c.withUuwp)],['Suggested / ideal selling price with '+(d.pricingBasis==='margin'?'target margin':'markup'),pricingIncomplete?'Incomplete':money(c.suggested)],['Original catalogue price',money(M2.basePrice(baseline,cat,i,item))]]);
- lines('currentVsIdeal',[['Current vs ideal',pricingIncomplete||M2.number(d.price)===null?'Incomplete':((M2.number(d.price)-c.suggested)>=0?'+':'')+money(M2.number(d.price)-c.suggested)]]);
+ const uuwpSource=c.uuwpPctApplied===null?'Enter Sold Today':c.unsold>0?'Actual leftovers: '+c.unsold+' unsold ÷ '+c.made+' produced × 100':'Default allowance — 100% sold';
+ lines('pricing',[['Actual COGS — reference starting point',incomplete?'Incomplete':money(c.final)],['Food spoilage allowance % — editable',d.spoilage+'%'],['Calculated spoilage allowance',incomplete?'Incomplete':money(c.spoil)],['Pricing COGS after spoilage',incomplete?'Incomplete':money(c.pricingAfterSpoilage)],['UUWP source',uuwpSource],['UUWP applied % of Pricing COGS after spoilage',c.uuwpPctApplied===null?'Incomplete':c.uuwpPctApplied.toFixed(2)+'%'],['Calculated UUWP allowance',pricingIncomplete?'Incomplete':money(c.pricingAfterSpoilage)+' × '+c.uuwpPctApplied.toFixed(2)+'% = '+money(c.uuwpAmount)],['FINAL PRICING COGS',pricingIncomplete?'Incomplete':money(c.withUuwp)],['Direct-cost reference price with '+(d.pricingBasis==='margin'?'target margin':'markup'),pricingIncomplete?'Incomplete':money(c.suggested)],['Original catalogue price',money(M2.basePrice(baseline,cat,i,item))]]);
+ lines('currentVsIdeal',[['Current vs direct-cost reference',pricingIncomplete||M2.number(d.price)===null?'Incomplete':((M2.number(d.price)-c.suggested)>=0?'+':'')+money(M2.number(d.price)-c.suggested)]]);
  lines('totals',[['Sold today',c.sold===null?'Not entered':c.sold+' '+d.unit],['Main food — full '+(production?'production':'purchase')+' commitment',c.components[0].foodMissing?'Incomplete':money(c.actualMainFood)],['Main-item packing actually used',c.components[0].packingCost.missing.length?'Incomplete':money(c.actualMainPacking)],['Included condiments + their packing actually served',c.components.slice(1).some(x=>x.incomplete)?'Incomplete':money(c.actualCondiments)],['Common / order packing actually used',c.commonCost.missing.length?'Incomplete':money(c.actualCommonPacking)],['Pricing spoilage / UUWP added to actual cost','₹0.00'],['ACTUAL DAY INCURRED COGS',incomplete?'Incomplete':money(c.actualDayCost)],['Sales',money(c.revenue)],['Actual day gross profit before fixed expenses',incomplete?'Incomplete':money(c.sold===null?null:c.revenue-c.actualDayCost)],['Unsold main food value (already inside commitment — NOT added again)',c.components[0].foodMissing||c.unsold===null?'Incomplete':money(Math.max(0,c.unsold)*c.base)]]);
 }
 function show(){for(const id of fields)$(id).value=d[id]??'';$('unit').value=d.unit;$('editor').hidden=false;renderComponents();calculate()}
@@ -136,7 +136,7 @@ $('editor').onsubmit=async e=>{
  }catch(err){status(err.message);$('saveStatus').textContent='Not verified — keep this page open'}finally{busy=false;controls.disabled=false}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
-async function refreshRecipes(){try{const master=await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1');recipes=master?.recipes||[];if(d)calculate()}catch(e){status(e.message)}}
+async function refreshRecipes(){try{const master=await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1');recipes=master?.recipes||[];const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};if(d)calculate()}catch(e){status(e.message)}}
 async function refreshPurchases(){try{const latest=M2.state(await M2.read(outlet));if(dirty&&!confirm('Use the newly saved Purchase Master rates? This replaces unsaved supplier cost edits only.')){status('Purchase Master changed. Reload its rates before saving this item.');return}baseline.purchaseMasters=latest.purchaseMasters;M2.hydratePurchases(d,item,latest.purchaseMasters);renderComponents();calculate();status('Purchase rates reloaded from Google. Save This Item to confirm this setup.')}catch(e){status(e.message)}}
 let lastPurchaseToken;
 function receivePurchase(data){if(data?.type!=='bobs-purchase-master-saved'||String(data.outlet)!==String(outlet)||data.token===lastPurchaseToken)return;lastPurchaseToken=data.token;refreshPurchases()}
@@ -156,7 +156,7 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
  $('supplyHeading').textContent='01 · '+item.name;
  const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
  choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
- if(/^idl[yi]$/i.test(item.name)){try{supportRecord=await M2.read(outlet,'IDLI_SUPPORT','default');}catch(e){supportError=e.message;}}
+ if(/^idl[yi]$/i.test(item.name)){fullCostData=await BOBS_FULL_COST.load(outlet);try{supportRecord=await M2.read(outlet,'IDLI_SUPPORT','default');}catch(e){supportError=e.message;}}
  show();status('Loaded from Google. Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
  }catch(e){status(e.message)}})();
 })();
