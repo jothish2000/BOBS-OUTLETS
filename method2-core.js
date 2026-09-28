@@ -138,10 +138,10 @@ function convert(q,from,to){
  return null;
 }
 function draft(s,cat,i,item){
- const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);saved.price=currentPrice(s,cat,i,item)??saved.price;if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.condiments=saved.condiments||[];saved.packaging=saved.packaging||[];saved.servingQty=saved.servingQty??item.servingQty??item.recipePortion;saved.servingUnit=saved.servingUnit||item.servingUnit||item.recipePortionUnit;saved.uuwpPolicy=saved.uuwpPolicy||(saved.packingSchemaVersion?'always':'legacy');return hydratePurchases(normalizePacking(saved),item,s.purchaseMasters)}
+ const {k,q,legacy}=keys(cat,i);if(s.itemEditors?.[k]){const saved=clone(s.itemEditors[k]);saved.recipeOverrides=clone(s.recipeOverrides||{});saved.price=currentPrice(s,cat,i,item)??saved.price;if((saved.businessDate||businessDate(saved.savedAt))!==businessDate())saved.soldConfirmed=false;saved.condiments=saved.condiments||[];saved.packaging=saved.packaging||[];saved.servingQty=saved.servingQty??item.servingQty??item.recipePortion;saved.servingUnit=saved.servingUnit||item.servingUnit||item.recipePortionUnit;saved.uuwpPolicy=saved.uuwpPolicy||(saved.packingSchemaVersion?'always':'legacy');return hydratePurchases(normalizePacking(saved),item,s.purchaseMasters)}
  const p={...s.prod?.[legacy],...s.prod?.[k]},c=s.commercial?.[k]||{},price=s.pricing?.[k]||{};
  const raw=s.qtys?.[q],sold=raw&&typeof raw==='object'?(raw.unit==='g'?raw.qty/1000:raw.qty):raw;
- return hydratePurchases({mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':item.defaultMode||'purchased',unit:item.side||item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',servingQty:item.servingQty??item.recipePortion,servingUnit:item.servingUnit||item.recipePortionUnit,pricingBasis:'markup',uuwpPolicy:hasItem(s,cat,i)?'legacy':'always',
+ return hydratePurchases({recipeOverrides:clone(s.recipeOverrides||{}),mode:s.prod?.[legacy]||p.todaysProduction||item.standaloneSide?'production':item.defaultMode||'purchased',unit:item.side||item.standaloneSide?'pack':item.baseUnit==='Kg'?'kg':'piece',servingQty:item.servingQty??item.recipePortion,servingUnit:item.servingUnit||item.recipePortionUnit,pricingBasis:'markup',uuwpPolicy:hasItem(s,cat,i)?'legacy':'always',
  batchSize:p.unitsPerBatch??p.batchSize??p.kgBatchSize??'',batches:p.batchesToday??p.numBatches??p.kgNumBatches??'',
  capacity:p.productionCapacityPerDay??p.capacity??p.kgCapacity??'',purchaseRate:s.purchaseMasters?.[norm(item.name)]?.unitCost??(hasItem(s,cat,i)?item.purchasedCost??'':''),purchaseBasis:s.purchaseMasters?.[norm(item.name)]?.basis??'unit',purchaseBatchQty:s.purchaseMasters?.[norm(item.name)]?.batchQty??'',purchaseBatchCost:s.purchaseMasters?.[norm(item.name)]?.batchCost??'',purchaseBatchUnit:s.purchaseMasters?.[norm(item.name)]?.batchUnit??(item.baseUnit==='Kg'?'kg':'piece'),
  sold:sold??'',soldConfirmed:false,spoilage:c.foodSpoilagePct??c.spoilagePct??p.spoil??5,
@@ -150,6 +150,7 @@ function draft(s,cat,i,item){
  packaging:clone(s.packaging?.[k]||[]).filter(x=>x.packingOwner!=='condiment'),packingPer:1,packingMode:hasItem(s,cat,i)?undefined:''},item,s.purchaseMasters);
 }
 function calculate(d,item,recipes){
+ recipes=recipes.map(r=>{const p=d.recipeOverrides?.[norm(r.name)];if(!p)return r;const stamp=JSON.stringify({name:norm(r.name),yieldQty:r.yieldQty??r.standardYield,yieldUnit:r.yieldUnit,ingredients:r.ingredients});if(p.referenceStamp!==stamp)return {...r,ingredients:[],unitCost:null,costPerUnit:null,perUnitCost:null,productionCost:null,batchCost:null,totalCost:null};return {...r,...clone(p.recipe),name:r.name,recipeId:r.recipeId};});
  const missing=[],sold=number(d.sold),mainPurchase=purchaseConfig(d,item.side?d.servingUnit:d.unit),purchaseLotQty=d.mode==='purchased'?(mainPurchase.basis==='batch'?number(mainPurchase.qty):1):null,made=d.mode==='purchased'?(purchaseLotQty||0)*(number(d.batches)||0):(number(d.batchSize)||0)*(number(d.batches)||0);
  const name=item.recipeName||item.name,primary=d.mode==='production'?recipe(recipes,name):null;
  // purchaseConfig also reads published purchaseBasis / purchaseBatch* supplier fields.
@@ -264,13 +265,14 @@ function project(s,cat,i){const k=keys(cat,i);return Object.fromEntries(maps.map
 async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  const latest=state(await read(outlet)),original=clone(latest),{k,q,legacy}=keys(cat,i);
  if(JSON.stringify(project(latest,cat,i))!==JSON.stringify(project(baseline,cat,i)))throw Error('This item changed in another window. Reload before saving; your draft remains here.');
+ if(JSON.stringify(latest.recipeOverrides||{})!==JSON.stringify(baseline.recipeOverrides||{}))throw Error('Outlet recipe changed. Reload before saving this item.');d.recipeOverrides=clone(latest.recipeOverrides||{});
  if(number(d.price)===null)throw Error('Enter a valid current selling price.');
  const purchases=purchasedSources(d,item);
  for(const [name] of purchases)if(masterFingerprint(latest.purchaseMasters,name)!==masterFingerprint(baseline.purchaseMasters,name))throw Error(name+' purchase master changed elsewhere. Reload before saving.');
  const c=calculate(d,item,recipes);if(c.missing.length)throw Error('Complete cost inputs: '+c.missing.join(', '));
  if(number(d.sold)===null||c.sold>c.made||!(c.made>0))throw Error('Enter valid availability and Sold Today quantities.');
  const token=Date.now()+'-'+Math.random().toString(36).slice(2),savedDraft={...clone(d),packingSchemaVersion:3,savedAt:new Date().toISOString(),businessDate:businessDate(),saveToken:token,soldConfirmed:true};
- normalizePacking(savedDraft);
+ delete savedDraft.recipeOverrides;normalizePacking(savedDraft);
  // Mirror the published split fields; canonical objects retain inactive rows.
  savedDraft.itemPackaging=c.packingCost.mode==='required'?clone(savedDraft.mainPacking.packaging):[];
  savedDraft.itemPackingPer=savedDraft.mainPacking.packingPer;savedDraft.itemPackingMode=savedDraft.mainPacking.packingMode;

@@ -1,3 +1,21 @@
+# BROWSER WORK HANDOVER READY — 28 September 2026
+
+Owner has decided to continue future development in browser Work. Initial query1 implementation 515148bb24c46ad58ef7950ad9f268dc44e0522b plus the final native-unit link correction are on codex/query1-guided-cost-flow. Use the latest branch or final package SOURCE_MANIFEST.json sourceCommit. Implementation is finished and locally tested. Read BROWSER_WORK_HANDOVER.md and START_HERE_BROWSER_WORK.md for portable startup, complete file/data map, test evidence, numbered retest and remaining release boundary.
+
+IMPLEMENTED / CODE CHECKED / NEW AUTOMATED TESTS / DESKTOP BROWSER TEST: PASS. Twelve new tests; complete Idli+sambar+chutney browser workflow, salary reload, verified expense save, stale quantity/expense blocks, zero runtime errors. Connected passes and three baseline-reproduced historical failures are recorded in the portable handover. Existing main/live release e83d940 was not changed. QUERY1 DEPLOYMENT / LIVE GOOGLE WRITE / OWNER UAT: NOT RUN / PENDING. No operational Google writes, no global localStorage migration. Recovery e83d940 remains intact.
+
+Post-test review (single-assistant passes): PRO—observed source-to-full-price flow works; CON—live persistence, reference calibration and old regression failures remain; COMPARE—new WORKFORCE_PLAN requirements and salaries extend existing METHOD2 without inventing employees or duplicating expense owners; OBSERVER—exact labels and truthful test/release boundaries preserved. Owner release/UAT are next decisions. Do not continue new features on older main without importing this branch.
+
+Next executable step: open continuation branch or attached source, compare main, reproduce checks, complete release decision and deployment/source verification, then numbered Owner normal-flow retest. Keep code rollback separate from Google backups. Future storage removal requires its own inventory, migration review, verified backups and connected tests.
+
+---
+# ACTIVE IMPLEMENTATION — 28 September 2026: Owner query1 approved
+Owner approved necessary changes after seven-point query review. Baseline e83d940; preserve existing untracked owner documents and Google records. Single-assistant PRO/CON/COMPARE/OBSERVER review presented in chat; scope approved by Owner.
+INTENT BEFORE IMPLEMENTATION: (1) explicit UUWP numerator/denominator and rupee base; (2) dual-column shared reference versus outlet production recipe, portion size and proportional ingredients without rewriting shared reference; (3) verified sharded shared-recipe save, outlet overrides through protected METHOD2 records; (4) source-quantity refresh and plain-language workload help; (5) save covered workforce before salaries, expose required positions in Staff Master; (6) reverse take-home planning with explicit employee deductions/employer additions (no invented statutory rates), calendar-day daily cost; (7) explicit labour and non-duplicate operating-expense allocations into full-cost price, separate from legacy direct COGS. Normal case before emergency testing.
+Data map: shared Recipe Master manifest/chunks -> METHOD2 recipeOverrides -> saved production quantities -> IDLI_SUPPORT workforce decision -> WORKFORCE_PLAN positions/salary/product allocation -> FIXED_EXPENSES selected daily rows -> full-cost price reader. Actual employee records remain distinct from unfilled required positions. No automatic reseed, operational data correction, or migration on page load. All changed writes require backup/readback and stale-baseline check. User selects a preserved reference before replacing an outlet recipe calculation.
+Recovery: local branch recovery/pre-query1-20260928 at e83d940. Code rollback separate from Google records. Tests: scaling/yield/units, calendar months/leap year, reverse THP arithmetic, no double count, stale/failed backup, normal save-reload flow, stale quantity, browser desktop/mobile fixtures and read-only live verification after publication.
+Exact next action: implement pure calculation/storage helpers, then integrate recipe and workforce screens; log each checkpoint and actual failures.
+---
 # RELEASE VERIFIED — 27 September 2026
 
 Owner approved publication in Codex. Approved repair implementation: 1f794fb; published release: f7fa794 (normal fast-forward to main).
@@ -867,3 +885,24 @@ CHECKPOINT RESULT: implementation and verification committed locally as 1f794fb 
 RELEASE RESULT: normal push to origin/main succeeded at f7fa794, preserving remote history. Deployment/CI verification in progress. Exact next action: confirm Actions completion, compare served planner source, run read-only live browser check.
 
 
+
+
+CHECKPOINT 1 RESULT: added pure cost/storage helpers, outlet recipe override integration in shared Method 2 calculations, explicit UUWP basis, and dual-column production editor. Shared recipe editing now uses verified immutable chunks plus backup before activation, correcting the old direct oversized-master write path. No operational data changed. Next: test these rules and integrate workforce/salary/expense pages.
+
+
+CHECKPOINT 2 RESULT: staffing now has separate covered-workforce save before salary; required positions appear in Staff Master without creating employees. Reverse THP page calculates employer cost from explicit monthly amounts, uses actual calendar days, supports existing-employee linkage, and requires explicit expense allocation/exclusion. Normal flow and manual/emergency flow separated. Next: connect full-cost reader and outlet staff-expense projection, refresh workload quantities and add regression/browser coverage.
+
+
+Query1 integration checkpoint: recipe and workforce pages written; integration script stopped on a versioned script tag anchor. No data writes. Repair exact anchor, then integrate daily expenses and test; implementation remains unverified.
+
+Query1 checkpoint 3: exact script anchor repaired; full-cost reader integrated, source quantities imported, duplicate shared workloads blocked, fixed-expense calendar division and verified saves added. Required positions remain distinct from employees. No live operational writes. Next: syntax, pure rules, save failure/conflict tests, and browser fixture end-to-end; NOT RUN until results below.
+
+Query1 Tester checkpoint: syntax 17 scripts PASS; nine new pure/persistence tests PASS; Idli support, recipe standards (104), recipe sync, recipe shards, Method2 order recovery PASS. Browser fixture setup missing queueMicrotask repaired; floating-point assertion corrected to tolerance (39000/30 equals 1299.9999999999998 across positions). Browser reaches workforce and salary save. Existing method2-commerce and component-packing fail unchanged at baseline e83d940 as well as current; NOT marked passed. Next finish browser end-to-end, stale guards and recipe-shard save tests.
+
+Browser checkpoint: all new screen transitions and final price passed, but runtime exception detected in pre-existing workload-idli-bridge.js (missing closing brace in findIdli). Repairing that connected bridge and showing new workforce state. Eleven new rule/store tests PASS, 7 selling-price and 8 equipment persistence tests PASS. Reconciliation test also failed and baseline comparison pending. No live data writes.
+
+Query1 final implementation checkpoint: all 11 new pure/store tests PASS; end-to-end desktop Chrome test PASS with saved 50 yield preserved, selected 120 reference scaled to 360, sambar/chutney, stale workload15 corrected, covered workforce -> required positions -> Reverse THP -> calendar-day salaries -> rent/excluded LPG -> full-price display; salary reload, expense save, stale expense and stale quantity guards PASS; zero runtime errors. Visual review of recipe columns, salary page and full-cost item performed. Three historical suites (commerce/component-packing/reconciliation) fail identically at baseline e83d940; not new failures and not marked passed. Workload bridge missing brace and recipe editor missing core dependency repaired during tests. Owner now requests portable browser-Work handover; no whole-project localStorage migration authorized or performed. Next: commit tested source, export portable source/111Q/handover package, document exact deployment state and next action.
+
+Final portable-source audit: recipe link target for a separately sold side now converts sales-pack quantity to native recipe output (for example 10 x 200 ml = 2 L), rather than labelling 10 packs as 10 L. Idli piece output remains unchanged. Pure and complete browser tests rerun before final export.
+
+FINAL TESTED HANDOVER: native recipe link regression PASS; total 12 new tests PASS; complete Idli+sides browser test rerun PASS with zero runtime exceptions. Final package exports the source commit, handovers, 111Q references and original query; every packaged file is SHA-256 checked. Source and handover branch are on GitHub; main remains e83d940. No release or Google-data write performed. Exact next action remains release decision/deployment verification, then Owner normal UAT in browser Work.
