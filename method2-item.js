@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));let item;
  $('sharedOrderLink').href='method2-overall.html?outlet='+encodeURIComponent(outlet||'');
 const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','uuwpPolicy','markup','price','sold','servingQty','servingUnit','pricingBasis'];
-let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false;
+let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false;
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
 function link(name){const a=document.createElement('a');const isMain=M2.purchaseKey(name)===M2.purchaseKey(item.recipeName||item.name),side=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)),r=M2.recipe(recipes,name);let qty=Number(d.batchSize)*Number(d.batches);if(isMain){const per=M2.convert(item.side?M2.number(d.servingQty):1,item.side?d.servingUnit:d.unit,r?.yieldUnit);qty=per==null?0:qty*per;}if(!isMain){const per=side&&M2.convert(Number(side.portion),side.portionUnit,r?.yieldUnit);qty=per==null?0:qty*per;}a.href='recipe-cost-editor.html?'+new URLSearchParams({item:M2.canonicalRecipeName(name),outlet,qty:String(qty),cat,i:String(i)});a.target='_blank';a.textContent=name+' · recipe & cost';return a}
@@ -144,7 +144,7 @@ window.addEventListener('message',e=>{if(e.origin===location.origin)receivePurch
 if(window.BroadcastChannel){const purchaseChannel=new BroadcastChannel('bobs-purchase-master');purchaseChannel.onmessage=e=>receivePurchase(e.data)}
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='bobs-recipe-master-saved')refreshRecipes()});
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-master');channel.onmessage=()=>refreshRecipes()}
-(async()=>{try{
+async function loadEditor(){if(loading)return;loading=true;$('retryGoogle').hidden=true;status('Checking Google records…');try{
  if(!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
  const [data,master]=await Promise.all([M2.read(outlet),M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')]);
  baseline=M2.state(data);recipes=master?.recipes||[];M2.installSides(baseline,recipes);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
@@ -155,9 +155,11 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
  $('title').textContent=item.name;$('outletLabel').textContent='Outlet '+outlet+' · Google-backed item editor';
  $('supplyHeading').textContent='01 · '+item.name;
  const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
- choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
+ $('condimentChoice').replaceChildren();choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
  if(/^idl[yi]$/i.test(item.name)){fullCostData=await BOBS_FULL_COST.load(outlet);try{supportRecord=await M2.read(outlet,'IDLI_SUPPORT','default');}catch(e){supportError=e.message;}}
  show();status('Loaded from Google. Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
- }catch(e){status(e.message)}})();
+ }catch(e){status('Could not load and verify this item: '+e.message+'. Click “Retry Google read” below. No item was saved by this attempt.');$('retryGoogle').hidden=false}
+ finally{loading=false}}
+$('retryGoogle').onclick=loadEditor;
+loadEditor();
 })();
-
