@@ -31,6 +31,7 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));
  const page=await context.newPage();
  await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('status').textContent.includes('Loaded from Google'));
+ assert.equal(await page.locator('#review').isVisible(),true);
  assert.equal(await page.locator('#catList tr').count(),0);assert.equal(masterReads,0);
  async function chooser(){const opened=page.waitForEvent('popup');await page.locator('#chooseItems').click();const p=await opened;await p.waitForSelector('.category-tile');await p.getByRole('link',{name:/^Breakfast/}).click();await p.waitForSelector('#selectionForm:not([hidden])');return p}
  let choose=await chooser();assert.equal(masterReads,0);const cat='Breakfast Catalogue';
@@ -76,6 +77,10 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  await page.goto('https://bobs.test/outlet-method-flow.html?outlets=1');await page.waitForFunction(()=>!document.getElementById('method2Btn').disabled);
  const firstScreen=page.waitForEvent('popup');await page.locator('#method2Btn').click();const menu=await firstScreen;await menu.waitForSelector('.category-tile');assert.equal(await menu.locator('.category-tile').count(),14);
  const mainFrame=page.frameLocator('#methodFrame');await mainFrame.locator('#catList tr').first().waitFor();
+ assert.equal(await mainFrame.locator('#review').isVisible(),false);
+ assert.match(await mainFrame.locator('#guideText').textContent(),/click that row’s “Edit item/);
+ assert.match(await mainFrame.locator('#guideExpected').textContent(),/Save & Continue/);
+ assert.equal(await mainFrame.locator('#guideAction').getAttribute('href'),'#selectedCard');
  const menuClosed=menu.waitForEvent('close');await menu.locator('#returnToMethod').click();await menuClosed;
  assert(!requested.some(x=>/method2-production-(runtime|input-fix)|method2-condiments\.js/.test(x)));
  await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('status').textContent.includes('Loaded from Google'));
