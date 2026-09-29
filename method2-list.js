@@ -52,7 +52,7 @@ function render(){
 }
 async function reload(){
  const refresh=$('refresh'),status=$('status');if(!refresh||!status)return;
- const request=++generation;ready=false;status.textContent='Checking Google…';refresh.disabled=true;
+ const request=++generation;ready=false;status.textContent='Checking Google…';refresh.disabled=true;setGuide('CHECKING GOOGLE','Reading the saved Method 2 items for this outlet.','BOBS will show the next action when Google confirms the record.');
  try{if(!outlet)throw Error('Select an outlet in Outlet Setup first.');
  const next=M2.state(await M2.read(outlet));if(request!==generation||!refresh.isConnected)return;
  M2.installSides(next);
@@ -63,7 +63,7 @@ async function reload(){
  if(master)M2.installSides(master?.recipes||[],next);s=next;for(const k of Object.keys(pending))if(s.itemEditors[k]?.saveToken&&s.itemEditors[k].saveToken!==pending[k])delete pending[k];
  sessionStorage.setItem(pendingKey,JSON.stringify(pending));recipes=master?.recipes||[];try{M2.cache(outlet,s)}catch(e){}
  ready=true;$('status').textContent='Outlet '+outlet+' · Loaded from Google. Only selected items are shown.';render();
- }catch(e){if(request===generation&&status.isConnected){status.textContent=e.message;ready=false}}
+ }catch(e){if(request===generation&&status.isConnected){status.textContent=e.message;ready=false;setGuide('GOOGLE READ FAILED','BOBS could not check your saved Method 2 items. Click “Retry Google read” here (or “Reload Google records” below). Do not click “Save & Continue” until the selected items load.','Your selected items appear and the Page Guide shows the next item to edit. If the timeout repeats, keep this page open and report the error; do not reselect or overwrite items.','Retry Google read','#refresh')}}
  finally{if(request===generation)refresh.disabled=false}
 }
 window.BOBS_METHOD2_REVIEW=function(){
@@ -77,6 +77,7 @@ window.BOBS_METHOD2_REVIEW=function(){
  $('reviewItems').replaceChildren();for(const x of problems){const p=document.createElement('p'),b=document.createElement('button');b.textContent=x.item.name+' — '+x.reason;b.onclick=()=>{open(x.cat,x.i,x.d.mode);$('reviewDialog').close()};p.append(b);$('reviewItems').append(p)}$('reviewDialog').showModal();return false;
 };
 $('review').onclick=()=>{if(window.BOBS_METHOD2_REVIEW())$('status').textContent='All selected items have confirmed Sold Today quantities.'};
+if($('guideAction'))$('guideAction').addEventListener('click',e=>{if($('guideAction').getAttribute('href')==='#refresh'){e.preventDefault();reload()}});
 // The containing outlet flow runs the same review from Save & Continue.
 if(embedded)$('review').hidden=true;
 $('closeReview').onclick=()=>$('reviewDialog').close();$('refresh').onclick=reload;$('search').oninput=filterRows;
