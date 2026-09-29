@@ -1,6 +1,7 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search);
 let outlet=q.get('outlet')||JSON.parse(localStorage.getItem('outlet-selection')||'{}').id||'',s=M2.state(),recipes=[],ready=false,generation=0,refreshTimer;
+const embedded=q.get('flow')==='1';
 const pendingKey='method2-pending-'+outlet;let pending=JSON.parse(sessionStorage.getItem(pendingKey)||'{}');
 const money=n=>'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function setGuide(stage,text,expected,actionText,href){
@@ -28,9 +29,9 @@ function render(){
   const mode=document.createElement('td'),select=document.createElement('select');select.setAttribute('aria-label',item.name+' mode');['purchased','production'].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m==='purchased'?'Purchase':'Production';select.append(o)});select.value=d.mode;
   // Mode selection is local UI only. The explicit Edit button opens the editor once.
   mode.append(select);const sold=document.createElement('td');sold.textContent=d.sold===''?'Not entered':d.sold;
-  const status=document.createElement('td');status.className='muted';status.textContent=pending[k]?'Editor opened — save required':d.soldConfirmed?'Saved to Google':'Needs Sold Today / item setup';
+  const status=document.createElement('td');status.className='muted';status.textContent=pending[k]?'Editor opened — save required':!d.soldConfirmed?'Needs Sold Today / item setup':c.missing.length?'Cost inputs incomplete — edit item':'Saved to Google';
   const actions=document.createElement('td'),button=document.createElement('button');button.textContent='Edit item ↗';button.onclick=()=>open(cat,i,select.value);button.disabled=!ready;actions.append(button);
-  const cancel=document.createElement('button');cancel.className='secondary cancel-edit';cancel.textContent='Keep saved version';cancel.hidden=!pending[k];cancel.onclick=()=>{if(!confirm('Ignore unfinished edits for '+item.name+' and keep the saved Google version? Close the editor without saving.'))return;delete pending[k];sessionStorage.setItem(pendingKey,JSON.stringify(pending));cancel.hidden=true;status.textContent=d.soldConfirmed?'Saved to Google':'Needs Sold Today / item setup'};actions.append(cancel);
+  const cancel=document.createElement('button');cancel.className='secondary cancel-edit';cancel.textContent='Keep saved version';cancel.hidden=!pending[k];cancel.onclick=()=>{if(!confirm('Ignore unfinished edits for '+item.name+' and keep the saved Google version? Close the editor without saving.'))return;delete pending[k];sessionStorage.setItem(pendingKey,JSON.stringify(pending));cancel.hidden=true;status.textContent=!d.soldConfirmed?'Needs Sold Today / item setup':c.missing.length?'Cost inputs incomplete — edit item':'Saved to Google'};actions.append(cancel);
   row.append(name,mode,sold,status,actions);$('catList').append(row);
  }
  $('selectedCount').textContent=rows.length+' selected items';$('emptySelection').hidden=rows.length>0;$('selectedCard').hidden=rows.length===0;
@@ -39,11 +40,13 @@ function render(){
  $('grandTotalSale').textContent=money(sales);$('grandTotalCost').textContent=unknown?'Incomplete — review selected items':money(cost);$('grandTotalProfit').textContent=unknown?'Incomplete':money(sales-cost);
  if(!rows.length){
   setGuide('STEP 1','Choose the categories and items this outlet will sell. Use “Choose categories & items”, tick only the items you need, and save the selection.','Your selected items appear on this page and BOBS can start item-level costing.','Choose categories & items →',$('chooseItems').href);
- }else if(incomplete||shared.missing.length){
-  const left=incomplete+(shared.missing.length?1:0);
-  setGuide('STEP 2','Complete the selected item setup. Open each item, confirm Purchase or Production, enter Sold Today and finish the required recipe/purchase/packing inputs. '+left+' setup item'+(left===1?' remains':'s remain')+'.','Every selected item shows “Saved to Google” and Overall COGS is complete. Then BOBS can move to staffing.','Review selected items ↓','#selectedCard');
+ }else if(incomplete){
+  setGuide('STEP 2','Click “Go to selected items ↓” below. In the table, find a row marked “Needs Sold Today / item setup”, “Cost inputs incomplete — edit item” or “Editor opened — save required”; click that row’s “Edit item ↗”. In the editor, complete Sold Today, Purchase or Production cost, and packing, then click “SAVE THIS ITEM”. '+incomplete+' item'+(incomplete===1?' needs':'s need')+' attention.','Return to this page. If the row has not updated, click “Reload Google records”. Complete every row until it says “Saved to Google”. '+(embedded?'Then scroll below the Method 2 panel and click “Save & Continue”.':'Then click “Review Sold Today”.'),'Go to selected items ↓','#selectedCard');
+ }else if(shared.missing.length){
+  setGuide('STEP 2','The selected items are saved. Click “Open Overall COGS ↗” below, complete and save the shared order-packing choices there. Return here and click “Reload Google records”.','Shared order packing shows a cost instead of “Incomplete”. '+(embedded?'Then scroll below the Method 2 panel and click “Save & Continue”.':'Then click “Review Sold Today”.'),'Open Overall COGS ↗',$('overall').href);
  }else{
-  setGuide('STEP 3','Your selected items are complete. Now open “Workload & staffing plan” to calculate the roles, positions, timing and labour requirement needed to produce this menu.','A staffing plan is saved with required position coverage and labour allocation. That labour can then feed the labour-inclusive product cost and ideal-price calculation, while the existing direct RM/fuel/packing COGS remains preserved.','Open Workload & Staffing Plan →',$('staffing').href);
+  if(embedded)setGuide('STEP 3','All selected items and shared packing are complete. Scroll below this Method 2 panel and click “Save & Continue”.','BOBS saves this outlet’s Method 2 analysis and asks whether you also want to analyse the other method.');
+  else setGuide('STEP 3','Your selected items are complete. Open “Workload & staffing plan” to calculate the roles, positions, timing and labour requirement for this menu.','Save the staffing plan to use labour in product cost and ideal-price calculations.','Open Workload & Staffing Plan →',$('staffing').href);
  }
  filterRows();window.scrollTo({top:y,left:window.scrollX,behavior:'instant'});
 }
@@ -74,6 +77,8 @@ window.BOBS_METHOD2_REVIEW=function(){
  $('reviewItems').replaceChildren();for(const x of problems){const p=document.createElement('p'),b=document.createElement('button');b.textContent=x.item.name+' — '+x.reason;b.onclick=()=>{open(x.cat,x.i,x.d.mode);$('reviewDialog').close()};p.append(b);$('reviewItems').append(p)}$('reviewDialog').showModal();return false;
 };
 $('review').onclick=()=>{if(window.BOBS_METHOD2_REVIEW())$('status').textContent='All selected items have confirmed Sold Today quantities.'};
+// The containing outlet flow runs the same review from Save & Continue.
+if(embedded)$('review').hidden=true;
 $('closeReview').onclick=()=>$('reviewDialog').close();$('refresh').onclick=reload;$('search').oninput=filterRows;
 $('overall').href='method2-overall.html?outlet='+encodeURIComponent(outlet);$('staffing').href='workload-planner.html?outlet='+encodeURIComponent(outlet);$('chooseItems').href='method2-select.html?outlet='+encodeURIComponent(outlet);$('chooseItems').target='bobs-select-'+outlet;
 function receive(data){if(!['bobs-method2-item-saved','bobs-method2-selection-saved','bobs-purchase-master-saved'].includes(data?.type)||String(data.outlet)!==String(outlet))return;if(data.key)delete pending[data.key];sessionStorage.setItem(pendingKey,JSON.stringify(pending));clearTimeout(refreshTimer);refreshTimer=setTimeout(reload,100)}
