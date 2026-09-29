@@ -19,11 +19,11 @@ function open(cat,i,mode){
 }
 function filterRows(){const filter=$('search').value.trim().toLowerCase();for(const row of $('catList').children)row.hidden=!row.dataset.search.includes(filter)}
 function render(){
- const y=window.scrollY,rows=entries();$('catList').replaceChildren();let sales=0,cost=0,unknown=false,incomplete=0;
+ const y=window.scrollY,rows=entries();$('catList').replaceChildren();let sales=0,cost=0,unknown=false,incomplete=0,firstIncomplete='';
  for(const {cat,i,item} of rows){
   const d=M2.draft(s,cat,i,item),k=M2.keys(cat,i).k,c=M2.calculate(d,item,recipes);
   sales+=c.revenue||0;if(c.missing.length)unknown=true;else cost+=c.soldCost||0;
-  if(pending[k]||M2.number(d.sold)===null||!d.soldConfirmed||c.missing.length)incomplete++;
+  if(pending[k]||M2.number(d.sold)===null||!d.soldConfirmed||c.missing.length){incomplete++;if(!firstIncomplete)firstIncomplete=item.name}
   const row=document.createElement('tr');row.className='item selected-row';row.dataset.search=(cat+' '+item.name).toLowerCase();row.dataset.key=k;
   const name=document.createElement('td'),strong=document.createElement('strong');strong.textContent=item.name;name.append(strong);const category=document.createElement('p');category.className='muted';category.textContent=cat.replace(' Catalogue','');name.append(category);
   const mode=document.createElement('td'),select=document.createElement('select');select.setAttribute('aria-label',item.name+' mode');['purchased','production'].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m==='purchased'?'Purchase':'Production';select.append(o)});select.value=d.mode;
@@ -41,7 +41,7 @@ function render(){
  if(!rows.length){
   setGuide('STEP 1','Choose the categories and items this outlet will sell. Use “Choose categories & items”, tick only the items you need, and save the selection.','Your selected items appear on this page and BOBS can start item-level costing.','Choose categories & items →',$('chooseItems').href);
  }else if(incomplete){
-  setGuide('STEP 2','Click “Go to selected items ↓” below. In the table, find a row marked “Needs Sold Today / item setup”, “Cost inputs incomplete — edit item” or “Editor opened — save required”; click that row’s “Edit item ↗”. In the editor, complete Sold Today, Purchase or Production cost, and packing, then click “SAVE THIS ITEM”. '+incomplete+' item'+(incomplete===1?' needs':'s need')+' attention.','Return to this page. If the row has not updated, click “Reload Google records”. Complete every row until it says “Saved to Google”. '+(embedded?'Then scroll below the Method 2 panel and click “Save & Continue”.':'Then click “Review Sold Today”.'),'Go to selected items ↓','#selectedCard');
+  setGuide('STEP 2','Click “Go to selected items ↓”. In the selected-items table, find '+firstIncomplete+' and click “Edit item ↗” in that row. In the item window, enter and confirm Sold Today, complete the Purchase or Production cost and packing fields, then click “SAVE THIS ITEM”. '+(incomplete>1?'Repeat for the other '+(incomplete-1)+' item'+(incomplete===2?'':'s')+' needing attention.':''),'The item window returns you here and the row says “Saved to Google”. If it still shows an old status, click “Reload Google records”. '+(embedded?'After all selected items and shared packing are complete, scroll below this Method 2 panel and click “Save & Continue”.':'After all selected items and shared packing are complete, click “Review Sold Today”.'),'Go to selected items ↓','#selectedCard');
  }else if(shared.missing.length){
   setGuide('STEP 2','The selected items are saved. Click “Open Overall COGS ↗” below, complete and save the shared order-packing choices there. Return here and click “Reload Google records”.','Shared order packing shows a cost instead of “Incomplete”. '+(embedded?'Then scroll below the Method 2 panel and click “Save & Continue”.':'Then click “Review Sold Today”.'),'Open Overall COGS ↗',$('overall').href);
  }else{
