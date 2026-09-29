@@ -17,9 +17,21 @@ function render(){
  const setup=document.createElement('td');setup.textContent=M2.hasItem(baseline,cat,i)?'Existing setup retained':'New item';row.append(setup);$('items').append(row)});updateCount();
 }
 async function load(){try{if(!outlet)throw Error('Select an outlet first.');baseline=M2.state(await M2.read(outlet));const master=cat===M2.SIDES?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;M2.installSides(master?.recipes||[],baseline);render();$('status').textContent='Outlet '+outlet+' · Selections loaded from Google.';$('retry').hidden=true}catch(e){$('status').textContent=e.message;$('retry').hidden=false}}
+function unchangedSelection(indices,changedPrices){
+ if(changedPrices.length)return false;
+ const saved=baseline.selection?.[cat];
+ if(cat===M2.SIDES){
+  if(!Array.isArray(saved?.names))return false;
+  const names=indices.map(i=>ITEM_DATA[cat]?.[i]?.name).filter(Boolean);
+  return names.length===saved.names.length&&names.every((name,i)=>name===saved.names[i]);
+ }
+ if(!Array.isArray(saved?.indices))return false;
+ const clean=[...new Set(indices)].sort((a,b)=>a-b),previous=[...new Set(saved.indices)].sort((a,b)=>a-b);
+ return clean.length===previous.length&&clean.every((i,n)=>i===previous[n]);
+}
 async function save(another){
  if(busy||!baseline)return;const controls=$('selectionControls');busy=true;controls.disabled=true;$('status').textContent='Saving selection and verifying Google…';
- try{const indices=Array.from($('items').querySelectorAll('input[type=checkbox]:checked'),x=>Number(x.value));const changedPrices=Array.from($('items').querySelectorAll('input[data-price-index]')).filter(x=>x.value!==x.dataset.originalValue);if(changedPrices.some(x=>M2.number(x.value)===null))throw Error('Enter a valid current selling price for each changed item.');const prices=Object.fromEntries(changedPrices.map(x=>[x.dataset.priceIndex,x.value]));const saved=await M2.saveSelection(outlet,cat,indices,baseline,ITEM_DATA[M2.SIDES],prices);baseline=M2.state(saved);dirty=false;busy=false;notify();$('status').textContent='Selection and selling prices verified in Google.';if(another)location.href=menu;else returnToMethod()}
+ try{const indices=Array.from($('items').querySelectorAll('input[type=checkbox]:checked'),x=>Number(x.value));const changedPrices=Array.from($('items').querySelectorAll('input[data-price-index]')).filter(x=>x.value!==x.dataset.originalValue);if(changedPrices.some(x=>M2.number(x.value)===null))throw Error('Enter a valid current selling price for each changed item.');if(unchangedSelection(indices,changedPrices)){dirty=false;busy=false;$('status').textContent='No changes — existing Google selection retained.';if(another)location.href=menu;else returnToMethod();return}const prices=Object.fromEntries(changedPrices.map(x=>[x.dataset.priceIndex,x.value]));const saved=await M2.saveSelection(outlet,cat,indices,baseline,ITEM_DATA[M2.SIDES],prices);baseline=M2.state(saved);dirty=false;busy=false;notify();$('status').textContent='Selection and selling prices verified in Google.';if(another)location.href=menu;else returnToMethod()}
  catch(e){$('status').textContent=e.message}finally{busy=false;controls.disabled=false}
 }
 $('selectionForm').onsubmit=e=>{e.preventDefault();save(false)};$('saveAnother').onclick=()=>save(true);
@@ -28,4 +40,3 @@ $('returnToMethod').onclick=returnToMethod;$('retry').onclick=load;
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
 load();
 })();
-
