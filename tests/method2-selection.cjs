@@ -13,12 +13,12 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  {name:'Idly',kind:'PRIMARY',yieldQty:120,yieldUnit:'pieces',ingredients:[['Rice',1,'kg',120]]},
  {name:'Idli Sambar',kind:'CONDIMENT',yieldQty:1,yieldUnit:'L',ingredients:[['Dal',1,'kg',50]]}
  ]}};
- let failWrites=false,masterReads=0,methodReads=0,nextReadDelay=0;const errors=[],requested=[];
+ let failWrites=false,masterReads=0,methodReads=0,methodWrites=0,nextReadDelay=0;const errors=[],requested=[];
  const clone=x=>JSON.parse(JSON.stringify(x));
  await context.route('**/*',async route=>{
   const req=route.request(),u=new URL(req.url());requested.push(u.pathname);
   if(u.hostname==='script.google.com'){
-   if(req.method()==='POST'){const body=JSON.parse(req.postData());if(body.action==='moduleSave'&&!failWrites)db[body.outletId+'/'+body.module+'/'+body.recordKey]=body.data;return route.fulfill({body:'ok'})}
+   if(req.method()==='POST'){const body=JSON.parse(req.postData());if(body.action==='moduleSave'){if(body.module==='METHOD2')methodWrites++;if(!failWrites)db[body.outletId+'/'+body.module+'/'+body.recordKey]=body.data}return route.fulfill({body:'ok'})}
    const cb=u.searchParams.get('callback');if(u.searchParams.get('action')==='outletList')return route.fulfill({contentType:'application/javascript',body:cb+'('+JSON.stringify({ok:true,outlets:[{outletId:'1',outletName:'Test outlet',data:{id:'1',name:'Test outlet'}}]})+')'});
    const mod=u.searchParams.get('module');if(mod==='RECIPE_MASTER')masterReads++;if(mod==='METHOD2')methodReads++;
    const data=db[u.searchParams.get('outletId')+'/'+mod+'/'+u.searchParams.get('recordKey')],response=JSON.stringify({ok:true,found:!!data,data});
@@ -44,6 +44,8 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  const closed=choose.waitForEvent('close');await choose.locator('#saveReturn').click();await closed;
  await page.waitForFunction(()=>document.querySelectorAll('#catList tr').length===2);
  assert.deepEqual(db['1/METHOD2/default'].selection[cat].indices,[0,1]);assert.equal(db['1/METHOD2/default'].custom,'KEEP');
+ choose=await chooser();const readsAtNoChange=methodReads,writesAtNoChange=methodWrites;const noChangeClosed=choose.waitForEvent('close');await choose.locator('#saveReturn').click();await noChangeClosed;
+ assert.equal(methodReads,readsAtNoChange);assert.equal(methodWrites,writesAtNoChange);
  assert.equal(await page.evaluate(()=>BOBS_METHOD2_REVIEW()),false);assert.equal(await page.locator('#reviewItems button').count(),2);await page.locator('#closeReview').click();
  await page.waitForTimeout(300);await page.setViewportSize({width:1100,height:380});
  const scrollBefore=await page.evaluate(()=>{document.querySelector('#catList tr').dataset.probe='original';window.scrollTo(0,400);return scrollY}),readsBefore=methodReads;
