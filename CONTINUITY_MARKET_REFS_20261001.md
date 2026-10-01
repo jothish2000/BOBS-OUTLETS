@@ -63,3 +63,16 @@ Owner has now explicitly asked to continue implementation and audit **all in-hou
 - Lemon/tamarind/tomato/coconut rice and restaurant vegetable biryani references provide per-serving raw-rice and seasoning ratios suitable for family calibration.
 
 Exact next action: expand `recipe-market-references.js` from Idli-first calibration into a full family audit/normalization layer; then strengthen tests to fail if any generated in-house reference lacks a market family, audit status or evidence basis.
+
+## Full-audit implementation + CI result
+- Expanded the market-reference layer to cover every generated in-house recipe with an explicit market family and audit state. High-evidence families now receive direct quantity corrections; families without sufficiently specific evidence retain a transparent family-calibrated reference rather than being falsely called universal industry standards.
+- Material direct corrections include Idli, Dosa variants, Medu Vada, Pongal, Kesari, Poori (explicit 3-piece serving assumption), Chapati, Curd Rice, Lemon/Tamarind/Tomato/Coconut Rice, Vegetable Biryani, Jalebi and Kachori. Bajji/Bonda/Pakoda, Upma, Appam/Idiyappam, Sundal, Samosa, bakery fast-food, beverages, Sambar and Chutney are family-checked with explicit confidence/basis notes.
+- Added `BOBS_MARKET_REFERENCE_AUDIT` and version `2026-10-01-MARKET-V2`.
+- Strengthened `tests/market-reference-calibration.cjs` so known overweight seeds are caught and every generated reference must have family, audit status, evidence basis, calibration note and evidence.
+- Updated Recipe Master CI to run the market audit together with the existing structural, Google read-back and sharded-storage tests.
+- CI initially caught three implementation typos in array filters; each was repaired on the protected branch before release. This validated the new gate rather than bypassing it.
+- Final branch commit `62b3816aee17f0fc58c8a901532a1de2274ba76b`; GitHub Actions run `36804505217`: **SUCCESS**. Steps passing: existing production-recipe audit, market-reference calibration audit, Recipe Master Google read-back retry, and sharded-storage integrity. The existing audit still reports **91 eligible catalogue recipes / 104 total standard recipes and condiments, all required production parameters complete**.
+- Main/live remains unchanged; no Google operational records were written by this audit.
+
+### WACP next verification intent
+Before merge/release, add one real-catalogue integration test that loads the actual `shared_data.js` + `recipe-guide-seeds.js` + market overlay (rather than only the synthetic focused fixture) and asserts that the full generated market library has no missing family/evidence, no invalid/non-positive yield or ingredient quantities, and the known direct corrections survive on the actual catalogue. Then rerun CI and record the exact totals/result before release.
