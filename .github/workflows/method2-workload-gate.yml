@@ -4,6 +4,12 @@ on:
   push:
     paths:
       - 'method2.html'
+      - 'method2-list.js'
+      - 'method2-select.js'
+      - 'method2-select.html'
+      - 'bobs-config.js'
+      - 'tests/method2-setup-before-workload.cjs'
+      - 'tests/method2-outlet-handoff.cjs'
       - 'method2-workload-gate.js'
       - 'method2-flow-review.js'
       - 'workload-planner.html'
@@ -13,6 +19,12 @@ on:
   pull_request:
     paths:
       - 'method2.html'
+      - 'method2-list.js'
+      - 'method2-select.js'
+      - 'method2-select.html'
+      - 'bobs-config.js'
+      - 'tests/method2-setup-before-workload.cjs'
+      - 'tests/method2-outlet-handoff.cjs'
       - 'method2-workload-gate.js'
       - 'method2-flow-review.js'
       - 'workload-planner.html'
@@ -30,8 +42,18 @@ jobs:
           node-version: 22
       - name: Test workload completion gate
         run: node --test tests/method2-workload-gate.cjs
+      - name: Install isolated DOM test dependency
+        run: npm install --prefix "$RUNNER_TEMP/bobs-dom" jsdom@30.1.1 --no-audit --no-fund
+      - name: Test selection to item setup before staffing
+        env:
+          JSDOM_PATH: ${{ runner.temp }}/bobs-dom/node_modules/jsdom
+        run: |
+          node tests/method2-setup-before-workload.cjs
+          node tests/method2-outlet-handoff.cjs
       - name: Syntax check changed browser scripts
         run: |
+          node --check method2-list.js
+          node --check method2-select.js
           node --check method2-workload-gate.js
           node --check method2-flow-review.js
       - name: Run historical workspace browser test when Playwright is installed
