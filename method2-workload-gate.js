@@ -65,7 +65,8 @@
     const e='BOBS can now complete Method 2 without bypassing staffing analysis.';
     observerGuard=true;stage.textContent='STEP 4';text.textContent=t;expected.innerHTML='<strong>Expected result:</strong> '+e;action.hidden=true;action.removeAttribute('href');action.removeAttribute('target');observerGuard=false;
   }
-  function applyGuide(){if(!reqs.length)return;if(result.ok)showCompleteGuide();else setGuide()}
+  function itemsComplete(){return typeof root.BOBS_METHOD2_ITEMS_COMPLETE==='function'&&root.BOBS_METHOD2_ITEMS_COMPLETE()}
+  function applyGuide(){if(!itemsComplete()||!reqs.length)return;if(result.ok)showCompleteGuide();else setGuide()}
   async function refresh(){
     if(checking)return result;checking=true;result={ok:false,reason:'CHECKING',missing:[]};
     try{
@@ -77,6 +78,7 @@
     finally{checking=false;applyGuide()}
   }
   function review(){
+    if(!itemsComplete())return false;
     if(!reqs.length&&result.reason!=='CHECKING')return true;
     if(result.ok)return true;
     applyGuide();
@@ -85,7 +87,7 @@
     if(typeof root.alert==='function')root.alert(msg);
     return false;
   }
-  const guide=root.document.getElementById('pageGuide');if(guide&&root.MutationObserver){const ob=new MutationObserver(()=>{if(!observerGuard)setTimeout(applyGuide,0)});ob.observe(guide,{subtree:true,childList:true,characterData:true,attributes:true})}
+  root.addEventListener('bobs-method2-items-rendered',()=>refresh());
   root.addEventListener('focus',()=>refresh());
   root.addEventListener('message',e=>{if(e.origin===root.location.origin&&e.data?.type==='bobs-workload-plan-saved'&&String(e.data.outlet)===String(outlet))refresh()});
   if(root.BroadcastChannel){const ch=new BroadcastChannel('bobs-workload-plan');ch.onmessage=e=>{if(e.data?.type==='bobs-workload-plan-saved'&&String(e.data.outlet)===String(outlet))refresh()}}

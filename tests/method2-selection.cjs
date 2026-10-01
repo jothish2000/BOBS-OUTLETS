@@ -80,7 +80,7 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  const firstScreen=page.waitForEvent('popup');await page.locator('#method2Btn').click();const menu=await firstScreen;await menu.waitForSelector('.category-tile');assert.equal(await menu.locator('.category-tile').count(),14);
  const mainFrame=page.frameLocator('#methodFrame');await mainFrame.locator('#catList tr').first().waitFor();
  assert.equal(await mainFrame.locator('#review').isVisible(),false);
- assert.match(await mainFrame.locator('#guideText').textContent(),/find Idl[iy] and click “Edit item ↗” in that row/);
+ assert.match(await mainFrame.locator('#guideText').textContent(),/find Idl[iy], choose Purchase or Production in its Mode column, then click “Edit item ↗” in that row/);
  assert.match(await mainFrame.locator('#guideExpected').textContent(),/Save & Continue/);
  assert.equal(await mainFrame.locator('#guideAction').getAttribute('href'),'#selectedCard');
  const menuClosed=menu.waitForEvent('close');await menu.locator('#returnToMethod').click();await menuClosed;

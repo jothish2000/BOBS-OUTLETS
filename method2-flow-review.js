@@ -6,7 +6,7 @@ document.addEventListener('click',function(e){
  const itemReview=f.contentWindow?.BOBS_METHOD2_REVIEW;
  const workloadReview=f.contentWindow?.BOBS_METHOD2_WORKLOAD_REVIEW;
  const itemsOk=typeof itemReview==='function'&&itemReview();
- const workloadOk=typeof workloadReview==='function'&&workloadReview();
+ const workloadOk=itemsOk&&typeof workloadReview==='function'&&workloadReview();
  if(!itemsOk||!workloadOk){
   e.preventDefault();e.stopImmediatePropagation();
   const note=document.getElementById('saveNote');
