@@ -1,0 +1,39 @@
+name: Method 2 workload gate audit
+
+on:
+  push:
+    paths:
+      - 'method2.html'
+      - 'method2-workload-gate.js'
+      - 'method2-flow-review.js'
+      - 'workload-planner.html'
+      - 'tests/method2-workload-gate.cjs'
+      - 'tests/method2-workspace.cjs'
+      - '.github/workflows/method2-workload-gate.yml'
+  pull_request:
+    paths:
+      - 'method2.html'
+      - 'method2-workload-gate.js'
+      - 'method2-flow-review.js'
+      - 'workload-planner.html'
+      - 'tests/method2-workload-gate.cjs'
+      - 'tests/method2-workspace.cjs'
+      - '.github/workflows/method2-workload-gate.yml'
+
+jobs:
+  workload-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test workload completion gate
+        run: node --test tests/method2-workload-gate.cjs
+      - name: Syntax check changed browser scripts
+        run: |
+          node --check method2-workload-gate.js
+          node --check method2-flow-review.js
+      - name: Run Method 2 core/workspace tests when browser dependencies permit
+        run: |
+          if [ -f tests/method2-workspace.cjs ]; then node --test tests/method2-workspace.cjs || exit $?; fi
