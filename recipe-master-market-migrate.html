@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOBS Recipe Master Market Migration</title>
+<link rel="stylesheet" href="style.css">
+<script src="bobs-config.js"></script><script src="bobs-google-data.js?v=recipe-shards-v2"></script><script src="shared_data.js"></script>
+<script src="recipe-guide-seeds.js?v=small-outlet-v8"></script><script src="recipe-market-references.js?v=20261001-market-v2"></script>
+<script src="poriyal-recipes.js?v=small-outlet-v4"></script><script src="recipe-market-poriyal-references.js?v=20261001-market-v2"></script>
+<script src="recipe-master-sync.js?v=20260926-readback-v1"></script><script src="recipe-master-shards.js?v=20260926-shards-v1"></script>
+<script src="recipe-master-market-migration.js?v=20261001-v1"></script>
+<style>main{max-width:900px;margin:auto;padding:20px}.card{padding:16px;border:1px solid #ddd;border-radius:12px;margin:12px 0}.warning{background:#fff4e5}.ok{background:#eef9f0}button{padding:10px 14px}.mono{font-family:monospace;overflow-wrap:anywhere}</style></head>
+<body><main><a href="recipe-master.html">← Recipe Master</a><h1>Promote audited market recipes to operational Recipe Master</h1>
+<div class="card warning"><b>Controlled migration.</b> This updates the company operational Recipe Master quantities/yields/process basis from the audited BOBS market-reference library. Matching ingredient+unit supplier rates are preserved. Method-2 outlet overrides and actual-production observations are not edited. A Google recovery snapshot is verified before the active master is switched.</div>
+<div id="summary" class="card">Loading current Google Recipe Master and market references…</div>
+<div class="card"><button id="run" disabled>Promote audited references to Recipe Master</button> <button id="reload" type="button">Reload comparison</button></div>
+<div id="status" class="card" role="status">No write sent.</div>
+</main><script>
+(function(){'use strict';
+const RECORD={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'},CHUNK='RECIPE_MASTER_CHUNKS',BACKUP='RECIPE_MASTER_BACKUPS';
+const VERSION='2026-10-MARKET-AUDITED-V3',SCHEMA='4.0-MARKET-AUDITED-OPERATIONAL';
+const clone=x=>JSON.parse(JSON.stringify(x)),M=window.BOBS_RECIPE_MARKET_MIGRATION,S=window.BOBS_RECIPE_SHARDS,sync=window.BOBS_RECIPE_SYNC;
+let current=null,next=null,busy=false;
+const status=s=>document.getElementById('status').textContent=s;
+async function read(){return BOBS_DATA.getModule(RECORD.outletId,RECORD.module,RECORD.recordKey)}
+async function raw(module,key){return BOBS_DATA.getRawModule(RECORD.outletId,module,key)}
+async function wait(readFn,accept,label){return sync.waitForVerifiedRead(readFn,accept,{attempts:7,onAttempt:({attempt,attempts})=>status(label+' ('+attempt+'/'+attempts+')')});}
+function market(){return (window.BOBS_MARKET_REFERENCES||[]).map(clone)}
+function render(){
+ const d=M.diff(current?.recipes||[],next?.recipes||[]),direct=market().filter(r=>r.auditStatus==='DIRECTLY_CALIBRATED').length,family=market().filter(r=>r.auditStatus==='FAMILY_CHECKED').length;
+ document.getElementById('summary').innerHTML='<b>Current standard:</b> '+String(current?.standardVersion||'legacy')+'<br><b>Target:</b> '+VERSION+'<br><b>Market references:</b> '+market().length+' ('+direct+' directly calibrated, '+family+' family checked)<br><b>Operational recipes after migration:</b> '+d.total+'<br><b>Recipes whose operational costing basis changes:</b> '+d.changed.length+'<br><b>New market recipes:</b> '+d.added.length+'<br><small>Custom/non-market legacy recipes are preserved.</small>';
+ document.getElementById('run').disabled=busy||!current||!next||current.standardVersion===VERSION;
+ if(current?.standardVersion===VERSION)status('Operational Recipe Master is already '+VERSION+'. No migration required.');
+}
+async function load(){
+ try{busy=true;document.getElementById('run').disabled=true;status('Reading Google Recipe Master…');current=await read();if(!current||!Array.isArray(current.recipes))throw Error('Google Recipe Master is unavailable; no write allowed.');
+  next={...clone(current),schemaVersion:SCHEMA,standardVersion:VERSION,standardSource:'BOBS_MARKET_AUDITED_OPERATIONAL_MASTER',masterScope:'ALL_PRODUCED_ITEMS',recipes:M.migrate(current.recipes,market(),VERSION),marketReferenceVersion:'2026-10-01-MARKET-V2',marketApprovedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),notes:'Operational Recipe Master approved from audited BOBS market references. Matching ingredient+unit supplier rates preserved; outlet actuals/overrides remain separate.'};
+  busy=false;render();if(current.standardVersion!==VERSION)status('Comparison ready. No write has been sent.');
+ }catch(e){busy=false;status('SAFE MODE — '+e.message);document.getElementById('run').disabled=true;}
+}
+async function backup(data){
+ const token=Date.now()+'-'+Math.random().toString(36).slice(2),key='MARKET_V3_BEFORE_'+token,base=clone(data);let snapshot;
+ if(base.storageMode==='SHARDED_RECIPE_MASTER_V2'){delete base.recipes;snapshot={schema:'RECIPE_MASTER_BACKUP_POINTER_V2',master:base,_backup:{key,reason:'Before market-audited operational Recipe Master V3 migration',createdAt:new Date().toISOString()}}}
+ else snapshot={...base,_backup:{key,reason:'Before market-audited operational Recipe Master V3 migration',createdAt:new Date().toISOString()}};
+ await BOBS_DATA.saveModule(RECORD.outletId,BACKUP,key,snapshot);
+ const v=await wait(()=>raw(BACKUP,key),x=>!!x&&x._backup?.key===key,'Verifying Google recovery snapshot');if(!v.ok)throw Error('Recovery snapshot was not verified. Active master was not changed.');return {key,token};
+}
+async function stageAndActivate(data,backupKey){
+ const token=Date.now()+'-'+Math.random().toString(36).slice(2),chunks=S.splitRecipes(data.recipes||[],30000),keys=[];
+ for(let i=0;i<chunks.length;i++){const key='MARKET_V3_'+token+'_'+i,chunk=S.chunkData(chunks[i],token,i,chunks.length,VERSION);keys.push(key);status('Saving staged recipe chunk '+(i+1)+'/'+chunks.length+'…');await BOBS_DATA.saveModule(RECORD.outletId,CHUNK,key,chunk);const ok=await wait(()=>raw(CHUNK,key),x=>!!x&&x.token===token&&Number(x.index)===i&&Array.isArray(x.recipes)&&x.recipes.length===chunks[i].length,'Verifying staged chunk '+(i+1));if(!ok.ok)throw Error('Chunk '+(i+1)+' was not verified. Active master was not switched. Recovery '+backupKey+' remains available.');}
+ const latest=await read();if(JSON.stringify(latest)!==JSON.stringify(current))throw Error('Recipe Master changed during migration. Active master was not switched. Recovery '+backupKey+' remains available. Reload and compare again.');
+ const manifest=S.manifest(data,keys,token);manifest.schemaVersion=SCHEMA;manifest.standardVersion=VERSION;manifest.standardSource='BOBS_MARKET_AUDITED_OPERATIONAL_MASTER';manifest.marketReferenceVersion='2026-10-01-MARKET-V2';manifest.marketApprovedAt=data.marketApprovedAt;
+ status('Activating audited operational Recipe Master…');await BOBS_DATA.saveModule(RECORD.outletId,RECORD.module,RECORD.recordKey,manifest);
+ const verified=await wait(read,x=>!!x&&x.standardVersion===VERSION&&Array.isArray(x.recipes)&&x.recipes.length===data.recipes.length&&JSON.stringify(x.recipes)===JSON.stringify(data.recipes),'Verifying active Recipe Master');if(!verified.ok)throw Error('Activation was sent but full Recipe Master read-back did not verify. Recovery '+backupKey+' is available.');return verified.value;
+}
+document.getElementById('run').onclick=async()=>{if(busy||!current||!next)return;if(!confirm('Promote the audited market-reference quantities/yields into the operational Recipe Master? A verified Google recovery snapshot will be created first.'))return;
+ busy=true;document.getElementById('run').disabled=true;try{status('Creating recovery snapshot…');const b=await backup(current);status('Recovery '+b.key+' verified. Staging corrected recipes…');const verified=await stageAndActivate(next,b.key);current=verified;next={...verified,recipes:M.migrate(verified.recipes,market(),VERSION)};status('MIGRATION COMPLETE + GOOGLE VERIFIED. Recovery: '+b.key);render();document.getElementById('status').classList.add('ok');}catch(e){status('MIGRATION NOT CONFIRMED — '+e.message)}finally{busy=false;render()}};
+document.getElementById('reload').onclick=load;load();
+})();
+</script></body></html>
