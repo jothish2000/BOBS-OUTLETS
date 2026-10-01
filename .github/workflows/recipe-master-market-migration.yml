@@ -1,0 +1,44 @@
+name: Recipe Master market migration audit
+
+on:
+  push:
+    branches: [main, 'chatgpt/recipe-master-market-migration-20261001']
+    paths:
+      - 'recipe-master-market-migration.js'
+      - 'recipe-master-market-migrate.html'
+      - 'recipe-master-sync.js'
+      - 'recipe-market-references.js'
+      - 'recipe-market-poriyal-references.js'
+      - 'recipe-guide-seeds.js'
+      - 'poriyal-recipes.js'
+      - 'recipe-master-shards.js'
+      - 'bobs-google-data.js'
+      - 'tests/recipe-master-market-migration.cjs'
+      - 'tests/recipe-standards-v2.cjs'
+      - 'tests/market-reference-calibration.cjs'
+      - 'tests/market-reference-real-catalogue.cjs'
+      - 'tests/recipe-master-sync.cjs'
+      - 'tests/recipe-master-shards.cjs'
+      - '.github/workflows/recipe-master-market-migration.yml'
+  workflow_dispatch:
+
+jobs:
+  migration-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test audited market to operational Recipe Master migration
+        run: node tests/recipe-master-market-migration.cjs
+      - name: Audit production Recipe Master standards
+        run: node tests/recipe-standards-v2.cjs
+      - name: Audit researched market reference layer
+        run: node tests/market-reference-calibration.cjs
+      - name: Audit real market catalogue integration
+        run: node tests/market-reference-real-catalogue.cjs
+      - name: Test Google read-back retry
+        run: node tests/recipe-master-sync.cjs
+      - name: Test Recipe Master shard integrity
+        run: node tests/recipe-master-shards.cjs
