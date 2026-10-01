@@ -76,3 +76,6 @@ Exact next action: expand `recipe-market-references.js` from Idli-first calibrat
 
 ### WACP next verification intent
 Before merge/release, add one real-catalogue integration test that loads the actual `shared_data.js` + `recipe-guide-seeds.js` + market overlay (rather than only the synthetic focused fixture) and asserts that the full generated market library has no missing family/evidence, no invalid/non-positive yield or ingredient quantities, and the known direct corrections survive on the actual catalogue. Then rerun CI and record the exact totals/result before release.
+
+## FINAL RESULT LINK
+The real-catalogue/Poriyal integration, final green CI, 111Q post-test review and release intent are recorded in `CONTINUITY_MARKET_REFS_RELEASE_20261001.md`. Final verified integration result: **103 unique real market references; 20 directly calibrated; 83 family checked; zero missing family/evidence/invalid rows**. GitHub Actions run `36804887778` passed all five audit/persistence steps on source commit `81b9f4f89a4a3859eef66cf47360d634f0e35d3a`. The subsequent continuity-only commits do not change application/runtime behavior.
