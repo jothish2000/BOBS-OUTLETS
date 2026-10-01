@@ -36,3 +36,14 @@ The 103-vs-104 difference is a unique-name/reference count versus structural rec
 
 ## WACP release intent
 Next material action: convert draft PR #9 to ready, merge the verified source into `main`, then verify Pages deployment and perform a **read-only** live Idli page check (no Google save) to confirm the right side loads BOBS market reference by default and the left side still receives intended production quantity. Record deployment/source/UAT boundary immediately after. Code rollback baseline remains the pre-work main commit above; data rollback is not required because no operational data migration/write is part of this release.
+
+## RELEASE RESULT — merged and deployed
+- PR #9 was converted from draft to ready and merged into `main` successfully.
+- Merge commit: `1e7a6d9349520980314b83bc0bc90233020841fb`.
+- Main Recipe Master standards audit run `36805229599`: **SUCCESS** on the merged commit. All five gates passed: structural recipe audit, focused market-reference audit, real-catalogue market integration, Google read-back retry, and sharded-storage integrity.
+- GitHub Pages deployment run `36805228952` (#680): **SUCCESS**. Build, artifact upload and deploy all completed successfully.
+- The public-page fetch tool available in this chat could not directly open the `github.io` site, so I did not claim a browser-rendered live UAT that I could not observe. Deployment success plus the merged-source/CI verification is recorded separately from Owner/browser UAT.
+- No Google operational Recipe Master, Method-2, price, inventory or outlet records were migrated, rewritten or deleted by this release. The change is a source-level non-destructive market-reference layer.
+- Exact next Owner/browser UAT: open the Idli recipe production URL, confirm left intended output is 360, right source defaults to **BOBS researched market reference**, Idli reference shows 120 pieces with 1.60 kg rice / 0.48 kg urad / 0.08 kg poha, and legacy saved Recipe Master remains separately selectable. Do not save unless the displayed inputs are intended actual outlet values.
+
+Rollback boundary: source can be reverted to pre-work main `7b25d42eca73221bc187cbe8a864091e33f6c367`; no business-data rollback is required because this release performed no operational data migration/write.
