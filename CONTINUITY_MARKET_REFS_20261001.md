@@ -38,3 +38,28 @@ Source files were re-read from the working branch after writes. A local runtime 
 111Q review: PRO — right/left architecture now matches owner intent and avoids legacy data masquerading as market reference. CON — the full catalogue is not yet individually researched; uncalibrated recipes are intentionally marked engineering estimates rather than falsely promoted. COMPARE — Google Recipe Master and Method-2 persistence remain separate; market references are a read-only overlay. OBSERVER — Idli food quantities are materially corrected, while fuel/energy still needs actual equipment trial data. OWNER decision still required before merge/release.
 
 Exact next step: review diff/PR, then continue evidence-backed calibration family-by-family before promoting each remaining ENGINEERING_ESTIMATE recipe to MARKET_RESEARCHED. Do not bulk-label old seeds as industry standard without evidence.
+
+## FULL RECIPE MASTER MARKET AUDIT — owner continuation request
+Owner has now explicitly asked to continue implementation and audit **all in-house recipes**, because the Recipe Master was originally intended to contain industrial/market-level standard recipe data. This supersedes the earlier Idli-first stopping point.
+
+### WACP intent before this audit pass
+1. Treat the current generated Recipe Master values as candidates, not truth. Compare each recipe family against published standardized/hotel/restaurant recipe evidence and commercial equipment realities.
+2. Use a family-calibrated market reference for every in-house recipe on the right side. Do not let an old saved Recipe Master row become the default merely because it exists.
+3. Separate four concerns: (a) culinary ingredient ratio/yield, (b) serving/portion policy, (c) equipment capacity/process time, and (d) actual supplier rates/fuel consumption. Only (a) and evidence-backed parts of (b)/(c) are market references; rates remain owner/current-supplier data.
+4. Calibrate high-volume BOBS families first: Idli/Dosa/Appam, Vada/Bonda/Bajji/Pakoda, Upma/Pongal/Poori/Chapati, Sambar/Chutney, variety rice/curd rice/biryani, tea/coffee/cold beverages, sandwiches/puffs/rolls/samosa/kachori/jalebi. Any recipe without a defensible direct source will inherit a documented family ratio and MEDIUM confidence, not a false HIGH-confidence label.
+5. Standardized recipe records must carry yield, portion, ingredient weights, process/equipment and evidence status. Current food-service standardization guidance explicitly requires these fields and also warns that a recipe standardized for one operation can require adaptation to another operation.
+6. Preserve Google Recipe Master, Method-2 overrides and business data. This pass changes only the read-only market-reference overlay, its UI/audit metadata and tests until release is verified.
+7. Add a complete audit summary to the reference library (`auditStatus`, `family`, `evidenceBasis`, `calibrationNotes`) so future UAT can see which recipe was directly researched versus family-derived.
+
+### Research checkpoint for this audit pass
+- Quantity-food-production guidance: standardized commercial recipes require ingredient weights/volumes, serving size, yield, cooking time/temperature and equipment; recipe enlargement uses desired yield/current yield factor, but operational verification is still required.
+- Idli: commercial equipment is sold across many capacities; 120 is one practical commercial size, not a culinary standard.
+- Medu vada: published reference ~14 vada from 200 g urad dal.
+- Poori: published reference ~25–30 poori from 360 g atta.
+- Chapati/roti: published reference ~15 from 360 g atta.
+- Ven pongal: published reference 3 servings from 100 g rice + 60 g moong dal.
+- Upma: common published breakfast reference uses ~1 cup rava for 2–3 servings depending style.
+- Curd rice: published reference 3 servings from 100 g rice + 250 g curd.
+- Lemon/tamarind/tomato/coconut rice and restaurant vegetable biryani references provide per-serving raw-rice and seasoning ratios suitable for family calibration.
+
+Exact next action: expand `recipe-market-references.js` from Idli-first calibration into a full family audit/normalization layer; then strengthen tests to fail if any generated in-house reference lacks a market family, audit status or evidence basis.
