@@ -7,6 +7,7 @@ on:
       - 'shared_data.js'
       - 'recipe-guide-seeds.js'
       - 'recipe-market-references.js'
+      - 'recipe-market-poriyal-references.js'
       - 'recipe-production-editor.js'
       - 'recipe-cost-editor.html'
       - 'poriyal-recipes.js'
@@ -17,6 +18,7 @@ on:
       - 'method2-core.js'
       - 'tests/recipe-standards-v2.cjs'
       - 'tests/market-reference-calibration.cjs'
+      - 'tests/market-reference-real-catalogue.cjs'
       - 'tests/recipe-master-sync.cjs'
       - 'tests/recipe-master-shards.cjs'
       - '.github/workflows/recipe-standards-v2.yml'
@@ -34,6 +36,8 @@ jobs:
         run: node tests/recipe-standards-v2.cjs
       - name: Audit researched market reference layer
         run: node tests/market-reference-calibration.cjs
+      - name: Audit real Recipe Master market-reference integration
+        run: node tests/market-reference-real-catalogue.cjs
       - name: Test Recipe Master Google read-back retry
         run: node tests/recipe-master-sync.cjs
       - name: Test Recipe Master sharded storage integrity
