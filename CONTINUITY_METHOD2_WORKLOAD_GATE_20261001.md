@@ -23,4 +23,21 @@ Material actions intended:
 - OBSERVER: the screenshot shows item setup is complete but flow state is not operationally complete because workload/staffing has not been reviewed.
 - OWNER: explicit instruction is to rectify the flow.
 
-Exact next action: implement the narrow workload-completion check in `method2-list.js`, update the Page Guide, and add workload-save notification before touching the outer flow or tests.
+## RESULT after first implementation/test pass
+Implemented a separate `method2-workload-gate.js` rather than embedding the new logic inside `method2-list.js`; this keeps existing item/packing calculations untouched and makes the gate independently testable.
+- Production requirements are derived from the current saved Method 2 production-mode items and `batchSize × batches` quantity.
+- Purchased-only menus bypass workload gating.
+- Production completion requires a Google `WORKLOAD_PLAN/default` with `review.ownerReviewed === true`, no `calculation.complete === false`, and a matching workload profile/quantity for every current production item.
+- Missing, unreviewed, incomplete, stale or quantity-mismatched workload plans force the Page Guide to **STEP 3 — Workload & Staffing** with a direct planner link.
+- A matching reviewed workload changes the guide to **STEP 4** and allows the outer Method 2 flow to finish.
+- `method2-flow-review.js` now applies both the original item/packing review and the workload gate before outer `Save & Continue`.
+- The gate refreshes from Google on initial load, frame focus, and on any future `bobs-workload-plan-saved` message. Because the current workload page does not yet emit that message and this narrow fix intentionally avoids rewriting its large inline implementation, the safe fallback is automatic refresh when the Method 2 frame regains focus plus another gate refresh when Save & Continue is attempted; the existing “Reload Google records” remains available. This supersedes the original intent to edit workload save solely to emit a notification.
+
+Focused CI result on run `36808252344`:
+- `tests/method2-workload-gate.cjs`: **5/5 PASS**.
+- `node --check method2-workload-gate.js`: **PASS**.
+- `node --check method2-flow-review.js`: **PASS**.
+- Existing `tests/method2-workspace.cjs`: did **not execute** because that historical test hardcodes `C:/Users/HP/.../playwright`, which is unavailable on the Linux GitHub runner. This is an environment/dependency failure before any browser test logic ran, not a Method 2 gate failure.
+
+## WACP intent before CI adjustment
+Adjust only the new CI workflow so the historical Playwright-dependent workspace test runs when its required Playwright module is available and otherwise reports a clear skip; do not weaken the new five gate assertions or syntax checks. Then rerun the gate CI. If green, inspect the branch diff and merge through a PR, then verify Pages deployment.
