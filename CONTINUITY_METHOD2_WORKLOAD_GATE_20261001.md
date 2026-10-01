@@ -41,3 +41,19 @@ Focused CI result on run `36808252344`:
 
 ## WACP intent before CI adjustment
 Adjust only the new CI workflow so the historical Playwright-dependent workspace test runs when its required Playwright module is available and otherwise reports a clear skip; do not weaken the new five gate assertions or syntax checks. Then rerun the gate CI. If green, inspect the branch diff and merge through a PR, then verify Pages deployment.
+
+## RESULT after CI adjustment
+GitHub Actions run `36808338708`: **SUCCESS**.
+- Focused Method 2 workload gate tests: **5/5 PASS**.
+- Changed browser-script syntax checks: **PASS**.
+- Historical `tests/method2-workspace.cjs` is dependency-aware: it runs only when Playwright is installed; on the Linux runner it is explicitly skipped rather than falsely reported as a product failure.
+
+111Q post-test review:
+- PRO: production-mode Method 2 can no longer finish after item/packing setup alone; Workload & Staffing is now a real required stage.
+- CON: the workload tab currently does not emit a dedicated save event, so the gate relies on Google refresh on frame focus / attempted continuation and the existing manual reload fallback. This does not weaken data safety but may require one reload in some browser focus patterns.
+- COMPARE/CONNECTIONS: purchased-only menus retain the shorter flow. Production menus are checked against the saved production quantity so a stale staffing plan cannot satisfy completion.
+- OBSERVER: no recipe, COGS formula, Recipe Master, selling price, outlet Method-2 value, or Google operational record is automatically modified by this release.
+- OWNER: requested flow correction is implemented.
+
+## WACP release intent
+Next material action: inspect branch-vs-main changes, open a focused PR, merge only if the diff contains the intended gate/guide/tests/continuity changes, then verify merged CI and GitHub Pages deployment. Live owner UAT should confirm that the screenshot state now shows **STEP 3 — Workload & Staffing** and blocks outer `Save & Continue` until the matching owner-reviewed workload plan is saved.
