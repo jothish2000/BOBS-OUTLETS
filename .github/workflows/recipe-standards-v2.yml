@@ -2,10 +2,13 @@ name: Recipe Master standards audit
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'chatgpt/market-reference-calibration-20261001']
     paths:
       - 'shared_data.js'
       - 'recipe-guide-seeds.js'
+      - 'recipe-market-references.js'
+      - 'recipe-production-editor.js'
+      - 'recipe-cost-editor.html'
       - 'poriyal-recipes.js'
       - 'recipe-master-sync.js'
       - 'recipe-master-shards.js'
@@ -13,6 +16,7 @@ on:
       - 'recipe-master.html'
       - 'method2-core.js'
       - 'tests/recipe-standards-v2.cjs'
+      - 'tests/market-reference-calibration.cjs'
       - 'tests/recipe-master-sync.cjs'
       - 'tests/recipe-master-shards.cjs'
       - '.github/workflows/recipe-standards-v2.yml'
@@ -28,6 +32,8 @@ jobs:
           node-version: '22'
       - name: Audit all BOBS production recipes
         run: node tests/recipe-standards-v2.cjs
+      - name: Audit researched market reference layer
+        run: node tests/market-reference-calibration.cjs
       - name: Test Recipe Master Google read-back retry
         run: node tests/recipe-master-sync.cjs
       - name: Test Recipe Master sharded storage integrity
