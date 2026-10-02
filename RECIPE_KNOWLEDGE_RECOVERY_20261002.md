@@ -1,7 +1,7 @@
 # Google recipe knowledge preservation — 2 October 2026
 
 ## Current execution status
-Live initialization run37046744914 succeeded on 2 October 2026 with full-content readback: 103 records in each of the three layers, historical104 recipes preserved, and Idli yield120/1.6kg rice confirmed. Twelve raw historical recovery records and eight complete calibrated-library archive chunks were verified. Independent verification and live browser read are pending.
+Live initialization run37046744914 succeeded on 2 October 2026 with full-content readback: 103 records in each of the three layers, historical104 recipes preserved, and Idli yield120/1.6kg rice confirmed. Twelve raw historical recovery records and eight complete calibrated-library archive chunks were verified. Independent read-only run37047881137 passed full reconstruction/content comparison and actual live Idli cold/reload checks. The source guide reports the BOBS standard loaded from Google Sheets. Owner UAT and intended-value live save are still pending.
 
 ## Data owners
 The existing Google Data Vault spreadsheet remains authoritative. Logical records are stored in its BOBS_MODULE_DATA worksheet, under COMPANY:
