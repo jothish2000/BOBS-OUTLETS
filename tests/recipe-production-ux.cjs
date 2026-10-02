@@ -7,7 +7,7 @@ assert.match(js,/currentRecipe\.id='currentRecipe'/,'production mode must show s
 assert.match(js,/\$\('currentRecipeName'\)\.textContent=q\.get\('item'\)\|\|'Selected item'/,'route item must be visible before async load');
 assert.match(js,/const routeQty=Number\(q\.get\('qty'\)\);if\(routeQty>0\)\$\('targetQty'\)\.value=String\(routeQty\)/,'positive route qty must prefill target immediately');
 assert.match(js,/\$\('currentRecipeName'\)\.textContent=original\.name;\$\('targetQty'\)\.value=Number\(q\.get\('qty'\)\)>0\?q\.get\('qty'\):original\.yieldQty/,'loaded recipe must preserve route qty and canonical recipe name');
-assert.match(js,/Reference source <select id="referenceSource">/,'real production reference-source selector must remain available');
+assert.match(js,/Reference source <select id="referenceSource" disabled>/,'reference source must be visible but cannot switch to legacy');
 assert.match(js,/retryGoogle\.textContent='Read again from Google Data Vault'/,'failed load must offer explicit Google Vault reread');
 assert.match(js,/className='evidence-head'/,'reference basis must have its own readable block');
 assert.match(js,/className='evidence-source'/,'each reference source must render as a separate spaced row');
