@@ -10,7 +10,7 @@
         if(root.document.getElementById('marketMigrationNotice'))return;
         const main=root.document.querySelector('main');if(!main)return;
         const box=root.document.createElement('section');box.id='marketMigrationNotice';box.className='stack';
-        box.innerHTML='<div class="section-head"><h2>Audited Recipe Master migration</h2><span class="tag">Market V3</span></div><p class="warning"><b>Operational COGS update:</b> the researched market-reference layer can now be promoted into the company Recipe Master with a verified Google recovery snapshot. Matching ingredient + unit supplier rates are preserved; outlet overrides/actuals are not changed.</p><p><a href="recipe-master-market-migrate.html"><b>Open controlled market-to-Recipe-Master migration →</b></a></p>';
+        box.innerHTML='<div class="section-head"><h2>Historical Recipe Master</h2><span class="tag">Backup only</span></div><p class="warning"><b>Not an operational fallback:</b> this older Recipe Master is preserved for recovery/history. BOBS production costing should use the Google BOBS Standard Recipe, with audited market research as fallback.</p><p><a href="recipe-master-market-migrate.html"><b>Open Google Recipe Knowledge migration →</b></a></p>';
         main.insertBefore(box,main.firstChild);
       }catch(_e){}
     });
