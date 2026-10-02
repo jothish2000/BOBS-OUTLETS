@@ -1,0 +1,26 @@
+name: Live recipe preservation verification (read only)
+on:
+  push:
+    branches: [codex/google-recipe-preservation-20261002]
+    paths:
+      - 'scripts/verify-google-recipe-preservation.cjs'
+      - 'scripts/verify-live-recipe-source.cjs'
+      - '.github/workflows/google-recipe-live-verify.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Independently reconstruct and compare Google recovery and active layers
+        run: node scripts/verify-google-recipe-preservation.cjs
+      - run: npm install --prefix "$RUNNER_TEMP/bobs-recipe-live" playwright@1.58.2 --no-audit --no-fund
+      - name: Actual live Idli source, cold load and reload with writes blocked
+        env:
+          PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-recipe-live/node_modules/playwright
+        run: node scripts/verify-live-recipe-source.cjs
