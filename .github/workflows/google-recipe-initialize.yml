@@ -7,6 +7,9 @@ on:
       - 'scripts/initialize-google-recipe-knowledge.cjs'
       - 'recipe-master-market-migrate.html'
       - 'recipe-master.html'
+      - 'recipe-production-editor.js'
+      - 'recipe-cost-editor.html'
+      - 'scripts/verify-production-save-guidance.cjs'
       - 'scripts/verify-historical-recipes-readonly.cjs'
       - 'scripts/verify-recipe-setup-layout.cjs'
       - 'tests/recipe-knowledge-bootstrap.cjs'
@@ -17,6 +20,9 @@ on:
       - 'scripts/recipe-knowledge-bootstrap.cjs'
       - 'recipe-master-market-migrate.html'
       - 'recipe-master.html'
+      - 'recipe-production-editor.js'
+      - 'recipe-cost-editor.html'
+      - 'scripts/verify-production-save-guidance.cjs'
       - 'scripts/verify-historical-recipes-readonly.cjs'
       - 'scripts/verify-recipe-setup-layout.cjs'
       - 'tests/recipe-knowledge-bootstrap.cjs'
@@ -45,6 +51,8 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.58.2
           node scripts/verify-recipe-setup-layout.cjs
           node scripts/verify-historical-recipes-readonly.cjs
+          node tests/recipe-production-ux.cjs
+          node scripts/verify-production-save-guidance.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: recipe-setup-layout
