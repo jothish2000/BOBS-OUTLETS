@@ -8,4 +8,8 @@ assert.match(js,/\$\('currentRecipeName'\)\.textContent=q\.get\('item'\)\|\|'Sel
 assert.match(js,/const routeQty=Number\(q\.get\('qty'\)\);if\(routeQty>0\)\$\('targetQty'\)\.value=String\(routeQty\)/,'positive route qty must prefill target immediately');
 assert.match(js,/\$\('currentRecipeName'\)\.textContent=original\.name;\$\('targetQty'\)\.value=Number\(q\.get\('qty'\)\)>0\?q\.get\('qty'\):original\.yieldQty/,'loaded recipe must preserve route qty and canonical recipe name');
 assert.match(js,/Reference source <select id="referenceSource">/,'real production reference-source selector must remain available');
-console.log('PASS recipe production UX: fixed recipe identity, usable reference source, qty route prefill, shared selector preserved');
+assert.match(js,/retryGoogle\.textContent='Read again from Google Data Vault'/,'failed load must offer explicit Google Vault reread');
+assert.match(js,/retryGoogle\.onclick=\(\)=>location\.reload\(\)/,'retry must start fresh page read without saving');
+assert.match(js,/retryGoogle\.hidden=true;\$\('status'\)\.textContent='Market reference, saved Recipe Master and Method 2 data loaded/,'successful load hides retry');
+assert.match(js,/catch\(e\)\{\$\('status'\)\.textContent=e\.message;\$\('saveProduction'\)\.disabled=true;retryGoogle\.hidden=false\}/,'failed load shows retry and keeps save disabled');
+console.log('PASS recipe production UX: fixed recipe identity, qty route prefill, Google Vault retry, shared selector preserved');
