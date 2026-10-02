@@ -1,0 +1,11 @@
+const fs=require('fs'),assert=require('assert');
+const html=fs.readFileSync('recipe-cost-editor.html','utf8');
+const js=fs.readFileSync('recipe-production-editor.js','utf8');
+assert.match(html,/<label>Recipe <select id="recipe"><\/select><\/label>/,'shared Recipe Master selector must remain for non-outlet mode');
+assert.match(js,/legacyRecipeLabel=\$\('recipe'\)\.closest\('label'\);if\(legacyRecipeLabel\)legacyRecipeLabel\.hidden=true/,'production mode must hide legacy unusable selector');
+assert.match(js,/currentRecipe\.id='currentRecipe'/,'production mode must show static recipe identity');
+assert.match(js,/\$\('currentRecipeName'\)\.textContent=q\.get\('item'\)\|\|'Selected item'/,'route item must be visible before async load');
+assert.match(js,/const routeQty=Number\(q\.get\('qty'\)\);if\(routeQty>0\)\$\('targetQty'\)\.value=String\(routeQty\)/,'positive route qty must prefill target immediately');
+assert.match(js,/\$\('currentRecipeName'\)\.textContent=original\.name;\$\('targetQty'\)\.value=Number\(q\.get\('qty'\)\)>0\?q\.get\('qty'\):original\.yieldQty/,'loaded recipe must preserve route qty and canonical recipe name');
+assert.match(js,/Reference source <select id="referenceSource">/,'real production reference-source selector must remain available');
+console.log('PASS recipe production UX: fixed recipe identity, usable reference source, qty route prefill, shared selector preserved');
