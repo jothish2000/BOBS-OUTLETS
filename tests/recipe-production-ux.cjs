@@ -13,6 +13,10 @@ assert.match(js,/className='evidence-head'/,'reference basis must have its own r
 assert.match(js,/className='evidence-source'/,'each reference source must render as a separate spaced row');
 assert.match(js,/sources\.length>1\?\(i\+1\)\+'\. ':'/,'multiple evidence sources should be numbered for scanability');
 assert.match(js,/retryGoogle\.onclick=\(\)=>location\.reload\(\)/,'retry must start fresh page read without saving');
-assert.match(js,/retryGoogle\.hidden=true;\$\('status'\)\.textContent='Market reference, saved Recipe Master and Method 2 data loaded/,'successful load hides retry');
+assert.match(js,/Historical Recipe Master is not used/,'successful production load must explicitly exclude legacy master');
 assert.match(js,/catch\(e\)\{\$\('status'\)\.textContent=e\.message;\$\('saveProduction'\)\.disabled=true;retryGoogle\.hidden=false\}/,'failed load shows retry and keeps save disabled');
 console.log('PASS recipe production UX: fixed recipe identity, qty route prefill, Google Vault retry, shared selector preserved');
+
+assert.match(js,/K\?\.loadStandards\(BOBS_DATA\)\.catch\(\(\)=>null\)/,'production must prefer Google BOBS standard');
+assert.match(js,/knowledgeSource='market'/,'audited market library must be the non-legacy fallback');
+assert.doesNotMatch(js,/value=\"saved\">Legacy saved Recipe Master/,'legacy Recipe Master must not be an operational reference option');
