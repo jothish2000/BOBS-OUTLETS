@@ -3,13 +3,13 @@ const fs=require('node:fs');
 const url=fs.readFileSync('bobs-config.js','utf8').match(/DATA_VAULT_WEB_APP_URL:\s*'([^']+)'/)[1];
 const pause=()=>new Promise(r=>setTimeout(r,2000));
 async function request(params){
- for(let attempt=0;attempt<3;attempt++){
+ for(let attempt=0;attempt<5;attempt++){
   try{
    const u=new URL(url);for(const [k,v] of Object.entries({...params,_bobs:String(Date.now())}))u.searchParams.set(k,v);
    const res=await fetch(u,{signal:AbortSignal.timeout(60000)});if(!res.ok)throw Error('Google read HTTP '+res.status);
    let r;try{r=JSON.parse(await res.text())}catch(e){throw Error('Google response is not JSON')}
    if(r?.ok!==true)throw Error('Google read not verified');return r;
-  }catch(e){if(attempt===2)throw Error(e.name==='TimeoutError'?'Google read timed out':e.message);await pause()}
+  }catch(e){if(attempt===4)throw Error((e.name==='TimeoutError'?'Google read timed out':e.message)+' ['+params.module+'/'+(params.recordKey||'inventory')+']');await new Promise(r=>setTimeout(r,2000*(attempt+1)))}
  }
 }
 async function getRawModule(outletId,module,recordKey){

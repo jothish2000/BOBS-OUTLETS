@@ -8,7 +8,7 @@ for(const f of ['shared_data.js','recipe-guide-seeds.js','recipe-market-referenc
 }
 const refs=JSON.parse(JSON.stringify(ctx.window.BOBS_MARKET_REFERENCES));
 const idli=refs.find(r=>r.name==='Idli');assert.equal(idli.yieldQty,120);assert.equal(idli.ingredients.find(a=>a[0]==='Idli rice')[1],1.6);
-const token='PRESERVE_20261002_'+process.env.GITHUB_RUN_ID;
+const token='PRESERVE_20261002_37045857257';
 bootstrap(api,refs,{token,progress:msg=>console.log(msg)}).then(r=>{
  const idli=r.built.standard.find(x=>x.name==='Idli');
  console.log(JSON.stringify({result:'COMPLETE_FULL_READBACK_VERIFIED',recoveryModule:'RECIPE_KNOWLEDGE_BACKUPS',recoveryKey:r.token,recordsPerLayer:r.count,historicalRecipesPreserved:r.legacyCount,idliYield120:idli.yieldQty===120,idliCalibratedRice:idli.ingredients.find(a=>a[0]==='Idli rice')[1]===1.6,operationalOutletWrites:0}));

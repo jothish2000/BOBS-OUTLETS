@@ -64,3 +64,13 @@ test('concurrent active pointer prevents standard activation',async()=>{
  await assert.rejects(bootstrap(x.api,[ref],{token:'test'}),/Concurrent knowledge activation/);
  assert(!x.writes.some(w=>w.k==='ACTIVE_V1'));assert.deepEqual(x.db['BOBS_STANDARD_RECIPE/ACTIVE_V1'],{owner:'newer'});
 });
+
+test('resume retains exact verified recovery records but refuses changed copies',async()=>{
+ for(const corrupt of [false,true]){
+  const x=fixture(),snapshot={schema:'BOBS_RECIPE_RAW_RECOVERY_V1',module:'RECIPE_MASTER',key:'STANDARD_V1',data:clone(x.db['RECIPE_MASTER/STANDARD_V1'])};
+  if(corrupt)snapshot.data.recipes[0].yieldQty=123;
+  x.db['RECIPE_KNOWLEDGE_BACKUPS/test_legacy_0']=snapshot;
+  if(corrupt){await assert.rejects(bootstrap(x.api,[ref],{token:'test'}),/changed recovery content/);assert.equal(x.writes.length,0)}
+  else{await bootstrap(x.api,[ref],{token:'test'});assert(!x.writes.some(w=>w.k==='test_legacy_0'))}
+ }
+});

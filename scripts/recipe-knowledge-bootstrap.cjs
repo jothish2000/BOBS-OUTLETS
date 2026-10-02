@@ -50,7 +50,8 @@ async function bootstrap(api,references,{token,progress=()=>{}}={}){
  }
  async function putNew(m,k,data){
   if(JSON.stringify(data).length>45000)throw Error('Record exceeds safe cell size');
-  if(await read(m,k)!==null)throw Error('Preservation key collision');
+  const existing=await read(m,k);
+  if(existing!==null){if(m===BACKUP&&equal(existing,data))return;throw Error('Preservation key collision or changed recovery content');}
   let writeError;
   try{await api.saveModule('COMPANY',m,k,data)}catch(e){writeError=e}
   for(let attempt=0;attempt<4;attempt++){
@@ -62,12 +63,14 @@ async function bootstrap(api,references,{token,progress=()=>{}}={}){
  }
  const legacyCopies=[];
  for(let i=0;i<baseline.length;i++){
+  progress('Verifying historical recovery record '+(i+1)+'/'+baseline.length);
   const key=token+'_legacy_'+i;
   await putNew(BACKUP,key,{schema:'BOBS_RECIPE_RAW_RECOVERY_V1',...baseline[i]});
   legacyCopies.push(key);
  }
  const referenceCopies=[],groups=K.shard(references);
  for(let i=0;i<groups.length;i++){
+  progress('Verifying reference archive chunk '+(i+1)+'/'+groups.length);
   const key=token+'_references_'+i;
   await putNew(BACKUP,key,{schema:'BOBS_MARKET_REFERENCE_RECOVERY_V1',index:i,total:groups.length,records:groups[i]});
   referenceCopies.push(key);
