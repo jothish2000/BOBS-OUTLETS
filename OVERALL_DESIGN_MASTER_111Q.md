@@ -3,7 +3,7 @@
 ### Canonical definition: **111Q = 111QS5PVDDRT**
 
 **Owner / final decision-maker:** Jothish Babu Sadasivam  
-**Version:** 4.0 — 2 October 2026  
+**Version:** 4.1 — 2 October 2026
 **Purpose:** Portable blueprint for designing, changing, testing, recovering and handing over software, spreadsheets, automation, operational systems and AI-assisted projects across capable platforms.
 
 ## 1. Activation instruction
@@ -62,6 +62,30 @@ The handover must be usable without rereading the prior chat. If Work/Codex can 
 
 Testing is not an appendix. Test evidence must feed back into PRO, CON, COMPARE, OBSERVER and OWNER before completion.
 
+### 4C. Work-completion return gate
+At the end of Work/Codex execution, inspect the exact next step. Recommend **Return to Chat** when it is Owner review/UAT discussion, architecture, UX or business-rule decisions. Recommend **Continue in Work/Codex** when implementation, debugging, testing, research or release execution remains. Include the exact current URL/page/module, completion/pending status, evidence and next action. Obtain the Owner's choice before a mode transfer; a recommendation does not itself move or synchronize a conversation. Preserve the existing Chat ↔ Work mode gate.
+
+### 4D. Conversation Capacity Gate — best-effort 75–80%
+During software-development conversations, proactively warn the Owner when the conversation appears to be around **75–80% of practical context capacity**, before continuity degrades, and offer a fresh-conversation handover. This is a **best-effort threshold**, based on conversation length and context pressure. There is **no exact live context-percentage meter available**; never invent a measured percentage. Prefer early handover to context loss.
+
+Use this warning, filling all fields with current facts or explicitly marking unavailable/not applicable:
+
+> **111QS — Conversation capacity warning**<br>
+> This conversation appears close to its practical context capacity. This is a best-effort estimate, not a measured percentage. I recommend a fresh conversation with a continuity handover.<br>
+> **Project:** [project]<br>
+> **Exact current URL / page / module:** [full URL and module]<br>
+> **Current mode:** [Chat / Work / Codex]<br>
+> **Current task:** [bounded objective]<br>
+> **Complete / pending:** [truthful status]<br>
+> **Repository / HEAD / branch / recovery:** [verified refs where relevant; code and data protection separately]<br>
+> **Approved decisions:** [scope and conditions]<br>
+> **Tests / status:** [actual PASS, FAIL, BLOCKED, NOT RUN; deployment/live/UAT separately]<br>
+> **Unresolved issues:** [risks, blockers, open decisions]<br>
+> **Exact next executable step:** [one concrete action]<br>
+> **111QS / WACP rules:** [current master/version; inspect source; four dual-role reviews; Owner decisions; write-ahead intent and contemporaneous results; protection; Tester and second review; mode/return gates; handover location]<br>
+> **Prepare handover to a new conversation? — YES / NO**
+
+If YES, prepare a self-contained handover containing all these fields plus relevant files and authoritative data owners. Update the current continuity ledger before transfer. The receiving conversation must inspect current evidence and resume from the recorded next step rather than restart architecture. If NO, keep the ledger current and continue within approved scope. These rules do not automatically synchronize unrelated chats, services or computers; supply the master and handover there. Preserve all three gates: Chat ↔ Work routing, Work-completion return, and conversation capacity.
 ## 5. Connection discipline
 Treat software as a dependency network, not isolated screens:
 **Input/Master → Validation → Calculation Engine → Authoritative Storage → Screens/Reports/APIs → Downstream totals → Backup/Recovery/Audit.**
@@ -164,3 +188,5 @@ Future project annexes may add context but must not silently weaken this master.
 - **v2.0 — 20 Sep 2026:** canonicalized **111Q = 111Q5PVDRT**; mandatory Tester; link/load/navigation/persistence/regression testing; mandatory post-test second 5PV-DR; consolidated universal master + BOBS constitution + Codex handover principles.
 - **v3.0 — 23 Sep 2026:** canonicalized **111Q = 111Q5PVDDRT**; made developer/Codex handover the first D; added mandatory inspect-current-HEAD/intervening-commits continuity rule; prohibited restart/overwrite behavior; made handover update a completion gate.\n- **v3.1 — 27 Sep 2026:** made the repository handover a continuous cross-AI implementation ledger updated during material work, so Codex and normal ChatGPT can resume each other after abrupt credit/session stops.
 - **v4.0 — 2 Oct 2026:** canonicalized **111Q = 111QS5PVDDRT**; added **S = Switch / execution-mode routing gate**, a ten-activity Chat/Work/Codex routing rule, mandatory pre-development switch suggestion when beneficial, and a self-contained Mode Handover Packet for cross-mode continuation.
+
+- **v4.1 — 2 Oct 2026:** Owner-approved best-effort 75–80% Conversation Capacity Gate and complete warning/handover fields; explicit Work-completion return gate; existing routing and 5PV/DD/RT/WACP retained. No exact live context meter claimed.

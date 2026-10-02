@@ -1,0 +1,53 @@
+name: Vault read reliability
+on:
+  push:
+    paths:
+      - 'bobs-google-data.js'
+      - 'bobs-operational-recipes.js'
+      - 'method2-item.js'
+      - 'method2-item.html'
+      - 'apps-script/04_ModuleData.gs'
+      - 'google-vault-apps-script.gs'
+      - 'tests/*vault*.cjs'
+      - 'scripts/verify-vault-browser.cjs'
+      - '.github/workflows/vault-read-reliability.yml'
+  pull_request:
+    paths:
+      - 'bobs-google-data.js'
+      - 'bobs-operational-recipes.js'
+      - 'method2-item.js'
+      - 'method2-item.html'
+      - 'apps-script/04_ModuleData.gs'
+      - 'google-vault-apps-script.gs'
+      - 'tests/*vault*.cjs'
+      - 'scripts/verify-vault-browser.cjs'
+      - '.github/workflows/vault-read-reliability.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --prefix "$RUNNER_TEMP/bobs-vault-tests" jsdom@30.1.1 playwright@1.58.2 --no-audit --no-fund
+      - name: Read, backend and editor regressions
+        env:
+          JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
+        run: |
+          node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs
+          node tests/method2-outlet-handoff.cjs
+          node tests/method2-setup-before-workload.cjs
+          node --test tests/query1-cost-flow.cjs tests/method2-selling-price.cjs tests/method2-workload-gate.cjs
+          node tests/recipe-market-google-store.cjs
+          node tests/recipe-production-ux.cjs
+      - name: Chrome isolated save and reload
+        env:
+          PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
+        run: node scripts/verify-vault-browser.cjs
+      - name: Syntax and whitespace
+        run: |
+          node --check bobs-google-data.js
+          node --check bobs-operational-recipes.js
+          node --check method2-item.js
+          git diff --check HEAD^ HEAD

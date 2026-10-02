@@ -166,14 +166,19 @@ function saveModuleData_(body){
 function getModuleData_(body){
   const sheet=ensureSheets_().module;
   const outletId=String(body.outletId||''),module=String(body.module||'').trim().toUpperCase(),recordKey=String(body.recordKey||'default').trim();
-  const values=sheet.getDataRange().getValues();
-  for(let r=1;r<values.length;r++)if(String(values[r][0])===outletId&&String(values[r][1])===module&&String(values[r][2])===recordKey&&String(values[r][5])!=='DELETED'){
-    let data={};try{data=JSON.parse(String(values[r][6]||'{}'));}catch(err){data={};}
-    return {ok:true,source:'GOOGLE_SHEETS',sheet:MODULE_SHEET,found:true,outletId:outletId,module:module,recordKey:recordKey,createdAt:values[r][3],updatedAt:values[r][4],status:values[r][5],data:data};
+  // Scan identity columns only. Read payload only for matching identities.
+  // No persistent row cache: inserts/deletes and direct Sheet edits remain visible.
+  const count=sheet.getLastRow()-1;
+  const keys=count>0?sheet.getRange(2,1,count,3).getValues():[];
+  for(let r=0;r<keys.length;r++)if(String(keys[r][0])===outletId&&String(keys[r][1])===module&&String(keys[r][2])===recordKey){
+    const row=sheet.getRange(r+2,1,1,7).getValues()[0];
+    if(String(row[0])!==outletId||String(row[1])!==module||String(row[2])!==recordKey)throw Error('Module rows changed during read. Retry Google read.');
+    if(String(row[5])==='DELETED')continue;
+    let data;try{data=JSON.parse(String(row[6]||'{}'));}catch(err){return {ok:false,error:'Stored module payload is invalid JSON. No verified record returned.'};}
+    return {ok:true,source:'GOOGLE_SHEETS',sheet:MODULE_SHEET,found:true,outletId:outletId,module:module,recordKey:recordKey,createdAt:row[3],updatedAt:row[4],status:row[5],data:data};
   }
   return {ok:true,source:'GOOGLE_SHEETS',sheet:MODULE_SHEET,found:false,outletId:outletId,module:module,recordKey:recordKey,data:null};
 }
-
 function listModuleData_(body){
   const sheet=ensureSheets_().module;
   const outletId=String(body.outletId||''),module=String(body.module||'').trim().toUpperCase();
