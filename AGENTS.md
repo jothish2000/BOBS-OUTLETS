@@ -136,3 +136,7 @@ When the Owner says something like `continue`, `go ahead`, `222`, `333`, `999` o
 
 ## 111QS continuity gates
 Follow universal master v4.1 sections 4A–4D: preserve Chat/Work routing, apply the Work-completion return gate, and proactively offer the complete fresh-conversation handover at an estimated 75–80% practical context capacity. This is best effort; no exact live percentage meter is available. Keep WACP contemporaneous. Latest Owner hierarchy for this item repair: Google BOBS_STANDARD_RECIPE, then audited market references; legacy Recipe Master is history/backup only, never an operational fallback.
+
+
+## Owner communication override — 2 October 2026
+Assume ChatGPT Windows Work mode on the Owner's laptop unless the Owner explicitly says they are on mobile. Do not ask laptop-or-phone confirmation. This supersedes the older personal device-question rule. Follow universal master v4.2 section 4E: selectable YES/NO mode gate, decision pending until explicit response; no timeout/default consent. Use supported mode transfer only after choice and handover; verify it. If popup persistence or mode switching is unavailable, disclose the limitation and preserve a replyable YES/NO choice rather than claiming a switch. These project instructions do not automatically change unrelated chats or local global settings.

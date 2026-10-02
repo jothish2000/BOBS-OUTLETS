@@ -3,7 +3,7 @@
 ### Canonical definition: **111Q = 111QS5PVDDRT**
 
 **Owner / final decision-maker:** Jothish Babu Sadasivam  
-**Version:** 4.1 — 2 October 2026
+**Version:** 4.2 — 2 October 2026
 **Purpose:** Portable blueprint for designing, changing, testing, recovering and handing over software, spreadsheets, automation, operational systems and AI-assisted projects across capable platforms.
 
 ## 1. Activation instruction
@@ -86,6 +86,20 @@ Use this warning, filling all fields with current facts or explicitly marking un
 > **Prepare handover to a new conversation? — YES / NO**
 
 If YES, prepare a self-contained handover containing all these fields plus relevant files and authoritative data owners. Update the current continuity ledger before transfer. The receiving conversation must inspect current evidence and resume from the recorded next step rather than restart architecture. If NO, keep the ledger current and continue within approved scope. These rules do not automatically synchronize unrelated chats, services or computers; supply the master and handover there. Preserve all three gates: Chat ↔ Work routing, Work-completion return, and conversation capacity.
+
+### 4E. Owner device default and explicit mode-choice gate
+**Owner instruction, 2 October 2026:** “I will explicitly tell ChatGPT I am on my mobile; otherwise I am always using Work mode in the ChatGPT Windows software on my laptop.”
+
+Assume the Owner is using ChatGPT Windows Work mode on their laptop unless they explicitly say they are on mobile. Do not ask “laptop or phone?” at the start of requests. This replaces the earlier personal communication preference requiring device confirmation. Tailor steps to the laptop by default. Record an actual confirmed mode transfer separately; the default is not evidence that a transfer occurred.
+
+For every recommended Chat ↔ Work transfer, including the Work-completion return gate:
+- Present a selectable YES / NO choice naming the destination: for example, “Return to Chat for review/UAT? YES — Return to Chat; NO — Stay in Work.” Plain informational text alone does not satisfy this gate.
+- Keep the decision pending until the Owner explicitly responds. Required UX: the choice remains available while the Owner is away or using another app, with no expiry, automatic dismissal, preselected-option submission or automatic transfer. Silence, elapsed time and a vanished popup are not an answer.
+- Use a persistent, blocking choice when the host provides one. With an asynchronous choice, do not immediately finalize the turn in a way that dismisses the choice. Wait for the explicit answer before doing work dependent on the transfer. If the host removes or cannot persist the popup, disclose this limitation, retain the pending decision and provide the same YES / NO choice in the conversation so the Owner can answer later; do not repeatedly flash transient prompts.
+- YES authorizes the named mode transfer. Save the Mode Handover Packet and use a supported host mode-transfer action when available. Verify the destination before saying the switch occurred. If no such control is available, say so and provide the minimal supported manual handoff; a question tool is not itself a mode-switch tool.
+- NO retains the current mode and continues only the previously authorized scope. Do not interpret NO as authorization for unrelated work.
+- Preserve the routing table, Work-completion gate, best-effort capacity gate and WACP. These written rules cannot themselves modify the host application's popup lifecycle, add unavailable mode controls or synchronize settings across unrelated conversations/devices.
+
 ## 5. Connection discipline
 Treat software as a dependency network, not isolated screens:
 **Input/Master → Validation → Calculation Engine → Authoritative Storage → Screens/Reports/APIs → Downstream totals → Backup/Recovery/Audit.**
@@ -190,3 +204,5 @@ Future project annexes may add context but must not silently weaken this master.
 - **v4.0 — 2 Oct 2026:** canonicalized **111Q = 111QS5PVDDRT**; added **S = Switch / execution-mode routing gate**, a ten-activity Chat/Work/Codex routing rule, mandatory pre-development switch suggestion when beneficial, and a self-contained Mode Handover Packet for cross-mode continuation.
 
 - **v4.1 — 2 Oct 2026:** Owner-approved best-effort 75–80% Conversation Capacity Gate and complete warning/handover fields; explicit Work-completion return gate; existing routing and 5PV/DD/RT/WACP retained. No exact live context meter claimed.
+
+- **v4.2 — 2 Oct 2026:** Owner defaults to ChatGPT Windows Work on laptop unless mobile explicitly stated; removed recurring device question. Mode gate requires explicit selectable YES/NO, pending decision until response, persistent-choice requirement and truthful host-capability fallback; never imply a choice popup itself switched mode.
