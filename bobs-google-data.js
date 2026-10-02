@@ -8,20 +8,29 @@
   'use strict';
   const cfg=window.BOBS_CONFIG||{};
   const VAULT_URL=cfg.DATA_VAULT_WEB_APP_URL||'';
-  function jsonp(params){
+  function jsonpAttempt(params,timeout){
     return new Promise(function(resolve,reject){
       if(!VAULT_URL)return reject(new Error('Data Vault URL is not configured'));
       const cb='bobsData_'+Date.now()+'_'+Math.random().toString(36).slice(2);
       const s=document.createElement('script');
       const q=Object.keys(params||{}).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]==null?'':params[k])}).join('&');
       let done=false;
-      function finish(fn,v){if(done)return;done=true;clearTimeout(timer);try{delete window[cb]}catch(e){}s.remove();fn(v)}
-      const timer=setTimeout(function(){finish(reject,new Error('Google Data Vault timeout'))},12000);
+      function finish(fn,v){if(done)return;done=true;clearTimeout(timer);if(fn===reject){window[cb]=function(){};setTimeout(function(){try{delete window[cb]}catch(e){}},60000)}else{try{delete window[cb]}catch(e){}}s.remove();fn(v)}
+      const timer=setTimeout(function(){finish(reject,Object.assign(new Error('Google Data Vault timeout'),{retryable:true}))},timeout);
       window[cb]=function(v){finish(resolve,v)};
-      s.onerror=function(){finish(reject,new Error('Google Data Vault request failed'))};
+      s.onerror=function(){finish(reject,Object.assign(new Error('Google Data Vault request failed'),{retryable:true}))};
       s.src=VAULT_URL+'?'+q+'&callback='+cb+'&_bobs='+Date.now();
       document.head.appendChild(s);
     });
+  }
+  async function jsonp(params){
+    // Retry only idempotent reads, never JSONP actions that may write or restore.
+    const readOnly=['moduleGet','moduleList','outletList'].includes(params&&params.action);
+    const attempts=readOnly?2:1;
+    for(let n=0;n<attempts;n++){
+      try{return await jsonpAttempt(params,n===0?12000:24000)}
+      catch(e){if(!e.retryable||n===attempts-1)throw e;await new Promise(r=>setTimeout(r,600));}
+    }
   }
   function latestVersion(){return Date.now()*1000+Math.floor(Math.random()*1000)}
   async function saveModule(outletId,module,recordKey,data){
@@ -36,7 +45,11 @@
   }
   async function getRawModule(outletId,module,recordKey){
     const r=await jsonp({action:'moduleGet',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default')});
-    return r&&r.data!=null?r.data:(r&&r.record&&r.record.data!=null?r.record.data:null);
+    if(!r||r.ok!==true)throw new Error(r&&r.error||'Google did not verify the requested record.');
+    const data=r.data!=null?r.data:(r.record&&r.record.data);
+    if(data!=null)return typeof data==='string'?JSON.parse(data):data;
+    if(r.found===false)return null;
+    throw new Error('Google did not confirm whether the requested record exists.');
   }
   async function getModule(outletId,module,recordKey){
     let d=await getRawModule(outletId,module,recordKey);

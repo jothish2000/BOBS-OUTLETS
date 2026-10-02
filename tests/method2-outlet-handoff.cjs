@@ -42,7 +42,7 @@ function core(w){w.eval(source('shared_data.js')+';window.CAT_ORDER=CAT_ORDER;wi
    assert.equal(route.searchParams.get('outlet'),id);assert.equal(route.searchParams.get('cat'),cat);assert.equal(route.searchParams.get('i'),String(i));assert.equal(route.searchParams.get('mode'),mode);
    const editor=dom('method2-item.html',route.href),e=editor.window;core(e);
    e.M2.read=async(o)=>o==='COMPANY'?{recipes}:raw;e.BOBS_PORIYAL=[];
-   e.BOBS_FULL_COST={load:async()=>({})};e.IdliSupportReaders={render:()=>{}};
+   e.BOBS_OPERATIONAL_RECIPES={load:async()=>({recipes,source:'Google BOBS Standard Recipe',notice:''})};e.BOBS_FULL_COST={load:async()=>({}),render:()=>{}};e.IdliSupportReaders={renderItem:()=>{}};
    e.eval(source('method2-packing-ui.js'));e.eval(source('method2-item.js'));
    await until(()=>!e.document.getElementById('editor').hidden);
    assert.equal(e.document.getElementById('mode').value,mode);

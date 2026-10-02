@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));let item;
  $('sharedOrderLink').href='method2-overall.html?outlet='+encodeURIComponent(outlet||'');
 const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','uuwpPolicy','markup','price','sold','servingQty','servingUnit','pricingBasis'];
-let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false;
+let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false,ready=false,loadEpoch=0,recipeNotice='';
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
 function link(name){const a=document.createElement('a');const isMain=M2.purchaseKey(name)===M2.purchaseKey(item.recipeName||item.name),side=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)),r=M2.recipe(recipes,name);let qty=Number(d.batchSize)*Number(d.batches);if(isMain){const per=M2.convert(item.side?M2.number(d.servingQty):1,item.side?d.servingUnit:d.unit,r?.yieldUnit);qty=per==null?0:qty*per;}if(!isMain){const per=side&&M2.convert(Number(side.portion),side.portionUnit,r?.yieldUnit);qty=per==null?0:qty*per;}a.href='recipe-cost-editor.html?'+new URLSearchParams({item:M2.canonicalRecipeName(name),outlet,qty:String(qty),cat,i:String(i)});a.target='_blank';a.textContent=name+' · recipe & cost';return a}
@@ -42,7 +42,7 @@ function renderComponents(){
  $('condiments').replaceChildren();for(const x of d.condiments){
  const box=document.createElement('div');box.className='component';const title=document.createElement('h3');title.dataset.recipeName=x.recipeName;title.append(x.source==='purchase'?purchaseLink(x.recipeName,x.portionUnit):link(x.recipeName));box.append(title);
  const grid=document.createElement('div');grid.className='fields';
- grid.append(pick('Cost source',x.source,[['recipe','Production Mode — Recipe Master'],['purchase','Purchase Mode — Purchase Master']],v=>x.source=v),
+ grid.append(pick('Cost source',x.source,[['recipe','Production Mode — BOBS Standard Recipe'],['purchase','Purchase Mode — Purchase Master']],v=>x.source=v),
  field('QUANTITY SERVED PER UNIT SOLD',x.portion,v=>x.portion=v),
  pick('Portion unit',x.portionUnit,[['g','grams'],['kg','kg'],['ml','ml'],['L','litres'],['piece','pieces']],v=>x.portionUnit=v));
  box.append(grid);
@@ -57,7 +57,7 @@ function consolidatedCosts(c){
  c.components.forEach((component,index)=>{
   const details=document.createElement('details');details.className='cost-component';
   const summary=document.createElement('summary');summary.className='line';
-  const outletRecipe=recipes.find(r=>M2.purchaseKey(r.name)===M2.purchaseKey(component.name)),hasOverride=!!d.recipeOverrides?.[String(outletRecipe?.name||'').trim().toLowerCase().replace(/idly/g,'idli')];const label=component.name+(index===0?(d.mode==='production'?(hasOverride?' Outlet production COGS':' Recipe Master COGS'):' Purchase COGS'):' COGS')+' per '+d.unit+' · food + packing';
+  const outletRecipe=recipes.find(r=>M2.purchaseKey(r.name)===M2.purchaseKey(component.name)),hasOverride=!!d.recipeOverrides?.[String(outletRecipe?.name||'').trim().toLowerCase().replace(/idly/g,'idli')];const label=component.name+(index===0?(d.mode==='production'?(hasOverride?' Outlet production COGS':' Standard recipe COGS'):' Purchase COGS'):' COGS')+' per '+d.unit+' · food + packing';
   const a=index===0?primaryCostLink(label):component.source==='purchased'?purchaseLink(component.name,d.condiments[index-1].portionUnit):link(component.name);a.textContent=label;
   const amount=document.createElement('strong');amount.textContent=component.incomplete?'Incomplete':money(component.subtotal);summary.append(a,amount);
   const breakdown=document.createElement('p');breakdown.className='muted';breakdown.textContent='Food: '+(component.foodMissing?'Incomplete':money(component.food))+' + packing: '+(component.packingCost.missing.length?'Incomplete':money(component.packing))+'. '+(component.packingCost.mode==='included'?'Packing is already in the supplier price; no second charge.':component.packingCost.mode==='none'?'No extra packing for this component.':'Packing is allocated from this component’s whole packing sets.');
@@ -111,7 +111,7 @@ for(const id of fields)$(id).addEventListener('input',changed);
 $('sold').addEventListener('input',()=>{soldTouched=true;calculate()});
 $('mode').addEventListener('change',()=>{pull();renderComponents();changed()});
 $('editor').onsubmit=async e=>{
- e.preventDefault();if(busy)return;pull();
+ e.preventDefault();if(busy||loading||!ready)return;pull();
  if(M2.number(d.sold)===null){$('sold').className='invalid';$('sold').setAttribute('aria-invalid','true');$('soldError').textContent='Please enter Sold Today quantity.';$('sold').focus();return}
  $('sold').removeAttribute('aria-invalid');
  if(!$('editor').reportValidity())return;
@@ -125,7 +125,7 @@ $('editor').onsubmit=async e=>{
  const controls=$('controls');busy=true;controls.disabled=true;$('saveStatus').textContent='Saving & verifying…';
  try{
  // Re-read rates at save time so a recipe edit in another window cannot leave stale costs.
- const master=await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1');recipes=master?.recipes||[];calculate();
+ const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;recipeNotice=master.notice;calculate();
  const saved=await M2.saveItem(outlet,cat,i,item,d,baseline,recipes);baseline=M2.state(saved);dirty=false;
  try{M2.cache(outlet,saved)}catch(e){/* A blocked browser cache does not undo a verified Google save. */}
  $('saveStatus').textContent='Verified in Google';status('Saved and read back from Google.');
@@ -136,18 +136,18 @@ $('editor').onsubmit=async e=>{
  }catch(err){status(err.message);$('saveStatus').textContent='Not verified — keep this page open'}finally{busy=false;controls.disabled=false}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
-async function refreshRecipes(){try{const master=await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1');recipes=master?.recipes||[];const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};if(d)calculate()}catch(e){status(e.message)}}
-async function refreshPurchases(){try{const latest=M2.state(await M2.read(outlet));if(dirty&&!confirm('Use the newly saved Purchase Master rates? This replaces unsaved supplier cost edits only.')){status('Purchase Master changed. Reload its rates before saving this item.');return}baseline.purchaseMasters=latest.purchaseMasters;M2.hydratePurchases(d,item,latest.purchaseMasters);renderComponents();calculate();status('Purchase rates reloaded from Google. Save This Item to confirm this setup.')}catch(e){status(e.message)}}
+async function refreshRecipes(){if(!ready||busy)return;try{const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;recipeNotice=master.notice;const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};if(d)calculate()}catch(e){status(e.message)}}
+async function refreshPurchases(){if(!ready||busy)return;try{const latest=M2.state(await M2.read(outlet));if(dirty&&!confirm('Use the newly saved Purchase Master rates? This replaces unsaved supplier cost edits only.')){status('Purchase Master changed. Reload its rates before saving this item.');return}baseline.purchaseMasters=latest.purchaseMasters;M2.hydratePurchases(d,item,latest.purchaseMasters);renderComponents();calculate();status('Purchase rates reloaded from Google. Save This Item to confirm this setup.')}catch(e){status(e.message)}}
 let lastPurchaseToken;
 function receivePurchase(data){if(data?.type!=='bobs-purchase-master-saved'||String(data.outlet)!==String(outlet)||data.token===lastPurchaseToken)return;lastPurchaseToken=data.token;refreshPurchases()}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receivePurchase(e.data)});
 if(window.BroadcastChannel){const purchaseChannel=new BroadcastChannel('bobs-purchase-master');purchaseChannel.onmessage=e=>receivePurchase(e.data)}
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='bobs-recipe-master-saved')refreshRecipes()});
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-master');channel.onmessage=()=>refreshRecipes()}
-async function loadEditor(){if(loading)return;loading=true;$('retryGoogle').hidden=true;status('Checking Google records…');try{
+async function loadEditor(){if(loading||busy)return;loading=true;ready=false;const epoch=++loadEpoch;$('controls').disabled=true;$('editor').hidden=true;$('retryGoogle').hidden=true;status('Checking Google records…');try{
  if(!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
- const [data,master]=await Promise.all([M2.read(outlet),M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')]);
- baseline=M2.state(data);recipes=master?.recipes||[];M2.installSides(baseline,recipes);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
+ const [data,master]=await Promise.all([M2.read(outlet),BOBS_OPERATIONAL_RECIPES.load()]);
+ baseline=M2.state(data);recipes=master.recipes;recipeNotice=master.notice;M2.installSides(baseline,recipes);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
  soldTouched=!!d.soldConfirmed;
  if(['purchased','production'].includes(q.get('mode')))d.mode=q.get('mode');
  if(!d.packingPer)d.packingPer=1;if(item.standaloneSide&&item.recipePortion&&!baseline.itemEditors[M2.keys(cat,i).k]){d.batchSize=d.batchSize||1;d.batches=d.batches||1;}
@@ -156,10 +156,22 @@ async function loadEditor(){if(loading)return;loading=true;$('retryGoogle').hidd
  $('supplyHeading').textContent='01 · '+item.name;
  const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
  $('condimentChoice').replaceChildren();choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
- if(/^idl[yi]$/i.test(item.name)){fullCostData=await BOBS_FULL_COST.load(outlet);try{supportRecord=await M2.read(outlet,'IDLI_SUPPORT','default');}catch(e){supportError=e.message;}}
- show();status('Loaded from Google. Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
+ supportRecord=null;supportError='';fullCostData={error:'Labour and full-cost records are still loading. Direct item editing is available.'};
+ show();ready=true;$('controls').disabled=false;status('Loaded from Google. '+master.source+'. '+recipeNotice+' Save This Item confirms permanent storage. Unsaved edits are not permanent.');dirty=false;
+ if(/^idl[yi]$/i.test(item.name))loadOptionalCosts(epoch);
  }catch(e){status('Could not load and verify this item: '+e.message+'. Click “Retry Google read” below. No item was saved by this attempt.');$('retryGoogle').hidden=false}
  finally{loading=false}}
+async function loadOptionalCosts(epoch){
+ const [full,support]=await Promise.allSettled([
+   Promise.resolve().then(()=>BOBS_FULL_COST.load(outlet)),
+   Promise.resolve().then(()=>M2.read(outlet,'IDLI_SUPPORT','default'))
+ ]);
+ if(epoch!==loadEpoch||!ready)return;
+ fullCostData=full.status==='fulfilled'?full.value:{error:'Full-cost Google read failed: '+full.reason.message};
+ supportRecord=support.status==='fulfilled'?support.value:null;
+ supportError=support.status==='rejected'?'Support Google read failed: '+support.reason.message:'';
+ try{calculate()}catch(e){status('Item data loaded; supporting cost display is unavailable: '+e.message)}
+}
 $('retryGoogle').onclick=loadEditor;
 loadEditor();
 })();

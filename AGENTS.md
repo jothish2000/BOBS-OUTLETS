@@ -133,3 +133,6 @@ When the Owner says something like `continue`, `go ahead`, `222`, `333`, `999` o
 
 > Continue from current HEAD. First read `AGENTS.md`, `CODEX_HANDOVER_111Q_CURRENT.md` and `OVERALL_DESIGN_MASTER_111Q.md`; inspect the current implementation and intervening commits; preserve data/recovery; extend the existing architecture rather than restarting it; test the actual result; then update `CODEX_HANDOVER_111Q_CURRENT.md` before declaring the material change complete.
 
+
+## 111QS continuity gates
+Follow universal master v4.1 sections 4A–4D: preserve Chat/Work routing, apply the Work-completion return gate, and proactively offer the complete fresh-conversation handover at an estimated 75–80% practical context capacity. This is best effort; no exact live percentage meter is available. Keep WACP contemporaneous. Latest Owner hierarchy for this item repair: Google BOBS_STANDARD_RECIPE, then audited market references; legacy Recipe Master is history/backup only, never an operational fallback.
