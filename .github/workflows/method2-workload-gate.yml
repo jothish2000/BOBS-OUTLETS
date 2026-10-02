@@ -55,7 +55,7 @@ jobs:
           node --check method2-list.js
           node --check method2-select.js
           node --check method2-workload-gate.js
-          node --check method2-flow-review.js
+          node --check method2-flow-review.js\n          node --check recipe-production-editor.js
       - name: Run historical workspace browser test when Playwright is installed
         run: |
           if node -e "require.resolve('playwright')" >/dev/null 2>&1; then
