@@ -70,11 +70,14 @@ test('family-checked items remain market references without pretending direct re
   assert.match(unmatched.guideNote,/retained provisionally|family/i);
 });
 
-test('production editor uses market library and defaults new plans to market reference',()=>{
+test('production editor uses Google standard first and audited market fallback only',()=>{
   const s=fs.readFileSync(path.join(root,'recipe-production-editor.js'),'utf8');
+  assert.match(s,/K\?\.loadStandards\(BOBS_DATA\)\.catch\(\(\)=>null\)/);
   assert.match(s,/BOBS_MARKET_REFERENCES\|\|window\.BOBS_GUIDE_RECIPES/);
-  assert.match(s,/saved\?\.source\|\|\(guide\?'guide':'saved'\)/);
-  assert.match(s,/BOBS researched market reference/);
-  assert.match(s,/Legacy saved Recipe Master/);
+  assert.match(s,/knowledgeSource='google'/);
+  assert.match(s,/knowledgeSource='market'/);
+  assert.match(s,/Historical Recipe Master is backup only/);
+  assert.doesNotMatch(s,/value="saved">Legacy saved Recipe Master/);
   assert.match(s,/marketReferenceVersion/);
+  assert.match(s,/standardVersion/);
 });
