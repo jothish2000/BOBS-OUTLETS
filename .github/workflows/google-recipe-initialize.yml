@@ -6,6 +6,7 @@ on:
       - 'scripts/google-recipe-preservation-client.cjs'
       - 'scripts/initialize-google-recipe-knowledge.cjs'
       - 'recipe-master-market-migrate.html'
+      - 'scripts/verify-recipe-setup-layout.cjs'
       - 'tests/recipe-knowledge-bootstrap.cjs'
       - 'tests/recipe-knowledge-publication-guard.cjs'
       - '.github/workflows/google-recipe-initialize.yml'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'scripts/recipe-knowledge-bootstrap.cjs'
       - 'recipe-master-market-migrate.html'
+      - 'scripts/verify-recipe-setup-layout.cjs'
       - 'tests/recipe-knowledge-bootstrap.cjs'
       - 'tests/recipe-knowledge-publication-guard.cjs'
       - '.github/workflows/google-recipe-initialize.yml'
