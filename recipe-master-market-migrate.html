@@ -8,7 +8,7 @@
 <style>main{max-width:920px;margin:auto;padding:20px}.card{padding:16px;border:1px solid #ddd;border-radius:12px;margin:12px 0}.warning{background:#fff4e5}.ok{background:#eef9f0}button{padding:10px 14px}.mono{font-family:monospace;overflow-wrap:anywhere}</style></head>
 <body><main><a href="recipe-master.html">← Historical Recipe Master</a><h1>Build Google-backed Recipe Knowledge</h1>
 <div class="card warning"><b>New operational architecture.</b> The old Recipe Master is preserved only as historical backup. It is not promoted and is not an operational fallback. This controlled migration stores three permanent Google layers: published market evidence, BOBS calibration decisions, and the approved BOBS small-hotel standard. Outlet production recipes remain in Method 2.</div>
-<div id="summary" class="card">Loading current Google legacy Recipe Master and audited market references…</div>
+<div id="summary" class="card">Checking whether initial recipe publication is allowed…</div>
 <div class="card"><button id="run" disabled>Back up legacy master & publish 3 Google knowledge layers</button> <button id="reload" type="button">Reload comparison</button></div>
 <div id="status" class="card" role="status">No write sent.</div>
 </main><script>
@@ -37,8 +37,11 @@ async function requireEmptyKnowledge(){
  knowledgeBlocked=false;
 }
 async function load(){
+ if(busy)return;
+ $('summary').textContent='Checking whether initial recipe publication is allowed…';$('reload').disabled=true;
  try{busy=true;$('run').disabled=true;status('Checking existing Google recipe knowledge…');await requireEmptyKnowledge();status('Reading historical Google Recipe Master…');legacy=await readLegacy();if(!legacy||!Array.isArray(legacy.recipes))throw Error('Historical Google Recipe Master unavailable; migration is blocked because a recovery copy cannot be guaranteed.');built=K.build(refs(),legacy.recipes);busy=false;render();status('Comparison ready. No Google write has been sent.');}
- catch(e){busy=false;status('SAFE MODE — '+e.message);$('run').disabled=true;}
+ catch(e){busy=false;$('summary').textContent='Check stopped. Initial publication is blocked. See the reason below. No Google write was sent by this check.';status('SAFE MODE — '+e.message);$('run').disabled=true;}
+ finally{$('reload').disabled=false;}
 }
 async function backupLegacy(){
  const token=Date.now()+'-'+Math.random().toString(36).slice(2),key='PRE_GOOGLE_KNOWLEDGE_'+token;
