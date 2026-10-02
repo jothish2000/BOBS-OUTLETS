@@ -30,3 +30,7 @@ jobs:
           node tests/market-reference-calibration.cjs
           node --check scripts/initialize-google-recipe-knowledge.cjs
           node --check scripts/google-recipe-preservation-client.cjs
+      - name: Initialize only verified-empty Google knowledge with protected recovery
+        env:
+          BOBS_CREATE_MISSING_KNOWLEDGE: OWNER_APPROVED_20261002
+        run: node scripts/initialize-google-recipe-knowledge.cjs

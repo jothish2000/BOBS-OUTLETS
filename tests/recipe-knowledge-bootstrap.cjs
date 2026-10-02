@@ -49,3 +49,18 @@ test('lost write response accepts only exact subsequent readback without replay'
  const x=fixture(),save=x.api.saveModule;x.api.saveModule=async(...args)=>{await save(...args);throw Error('response lost')};
  const r=await bootstrap(x.api,[ref],{token:'test'});assert.equal(r.count,1);assert.equal(new Set(x.writes.map(w=>w.m+'/'+w.k)).size,x.writes.length);
 });
+
+test('sharded historical master is fully reconstructed and each raw record preserved',async()=>{
+ const x=fixture(),original=clone(x.db['RECIPE_MASTER/STANDARD_V1']);
+ x.db['RECIPE_MASTER/STANDARD_V1']={storageMode:'SHARDED_RECIPE_MASTER_V2',chunkKeys:['old0'],migrationToken:'old',recipeCount:2};
+ x.db['RECIPE_MASTER_CHUNKS/old0']={schema:'RECIPE_MASTER_CHUNK_V2',token:'old',index:0,total:1,recipes:original.recipes,unknownOwnerField:'retain'};
+ const before=clone(x.db);await bootstrap(x.api,[ref],{token:'test'});
+ assert.deepEqual(x.db['RECIPE_KNOWLEDGE_BACKUPS/test_legacy_1'].data,before['RECIPE_MASTER_CHUNKS/old0']);
+ assert.deepEqual(x.db['RECIPE_MASTER_CHUNKS/old0'],before['RECIPE_MASTER_CHUNKS/old0']);
+});
+test('concurrent active pointer prevents standard activation',async()=>{
+ const x=fixture(),save=x.api.saveModule;
+ x.api.saveModule=async(o,m,k,d)=>{await save(o,m,k,d);if(m==='RECIPE_KNOWLEDGE_BACKUPS'&&k==='test')x.db['BOBS_STANDARD_RECIPE/ACTIVE_V1']={owner:'newer'}};
+ await assert.rejects(bootstrap(x.api,[ref],{token:'test'}),/Concurrent knowledge activation/);
+ assert(!x.writes.some(w=>w.k==='ACTIVE_V1'));assert.deepEqual(x.db['BOBS_STANDARD_RECIPE/ACTIVE_V1'],{owner:'newer'});
+});
