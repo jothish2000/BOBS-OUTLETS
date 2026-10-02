@@ -15,8 +15,9 @@ Before editing any file:
 
 ## Canonical governance
 
-Apply **111Q = 111Q5PVDDRT**.
+Apply **111Q = 111QS5PVDDRT**.
 
+- **S — Switch / execution-mode routing gate:** before material execution, route the current activity to the best mode and preserve continuity. Chat: architecture, UX, business rules, small diagnosis. Work: broad research, testing, browser/multi-step execution. Codex/Work: coding, repository/release, deep debugging, durable-data implementation. Before moving from an approved design into material development, surface a concise Switch-to-Work/Codex suggestion when it would materially improve execution and prepare a self-contained handover. The Owner may explicitly stay in Chat.
 - **5PV:** PRO / CON / COMPARE & CONNECTIONS / OBSERVER / YOU-OWNER.
 - **First D:** Developer/Codex handover continuity.
 - **DR:** the first four perspectives inspect both business/logic and code/software effects.
@@ -24,6 +25,12 @@ Apply **111Q = 111Q5PVDDRT**.
 - Feed real test evidence back through post-test 5PV-DR before declaring completion.
 - The Owner is the final decision-maker for genuine business/architecture choices.
 
+
+## 111QS mode-routing gate — mandatory
+
+Before starting material implementation, classify the current step using the ten fixed categories in `OVERALL_DESIGN_MASTER_111Q.md`. Do not collapse them into a generic rule. If the task is market research, substantial coding, repository/release work, repeated testing, implementation of Google/durable-data architecture, implementation-time documentation, or deep debugging, prefer Work/Codex and surface a switch suggestion before development when beneficial.
+
+Before a cross-mode handoff, record a Mode Handover Packet with current HEAD/recovery, approved rule, files/data owners, constraints, current status/tests and exact next step. A mode switch never authorizes destructive action and never bypasses Owner decisions.
 
 ## 111Q continuous continuity ledger — mandatory
 
