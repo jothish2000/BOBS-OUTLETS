@@ -18,13 +18,9 @@ on:
       - '.github/workflows/google-recipe-initialize.yml'
 permissions:
   contents: read
-concurrency:
-  group: bobs-google-recipe-initialization
-  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,8 +34,3 @@ jobs:
           node tests/market-reference-calibration.cjs
           node --check scripts/initialize-google-recipe-knowledge.cjs
           node --check scripts/google-recipe-preservation-client.cjs
-      - name: Resume approved missing-layer initialization after exact recovery comparison
-        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/google-recipe-preservation-20261002'
-        env:
-          BOBS_CREATE_MISSING_KNOWLEDGE: OWNER_APPROVED_20261002
-        run: node scripts/initialize-google-recipe-knowledge.cjs
