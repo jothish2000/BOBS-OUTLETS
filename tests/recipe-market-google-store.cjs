@@ -12,7 +12,7 @@ const chunks=K.shard(Array.from({length:25},(_,i)=>({...b.standard[0],name:'Idli
 assert(chunks.length>1,'knowledge records should shard below cell-size risk');
 const token='t1',store={};
 const api={getRawModule:async(o,m,k)=>store[m+'|'+k]||null};
-const module=K.MODULES.standard,keys=[];
-chunks.forEach((records,i)=>{const key='c'+i;keys.push(key);store[module+'|'+key]=K.chunkData('standard',records,token,i,chunks.length)});
-store[module+'|'+K.MANIFEST_KEY]=K.manifest('standard',keys,token,25);
+const standardModule=K.MODULES.standard,keys=[];
+chunks.forEach((records,i)=>{const key='c'+i;keys.push(key);store[standardModule+'|'+key]=K.chunkData('standard',records,token,i,chunks.length)});
+store[standardModule+'|'+K.MANIFEST_KEY]=K.manifest('standard',keys,token,25);
 K.loadStandards(api).then(x=>{assert.equal(x.records.length,25);console.log('PASS Google recipe knowledge: evidence + calibration + audited standard, sharded verified load');}).catch(e=>{console.error(e);process.exit(1)});
