@@ -7,12 +7,16 @@ assert.match(js,/currentRecipe\.id='currentRecipe'/,'production mode must show s
 assert.match(js,/\$\('currentRecipeName'\)\.textContent=q\.get\('item'\)\|\|'Selected item'/,'route item must be visible before async load');
 assert.match(js,/const routeQty=Number\(q\.get\('qty'\)\);if\(routeQty>0\)\$\('targetQty'\)\.value=String\(routeQty\)/,'positive route qty must prefill target immediately');
 assert.match(js,/\$\('currentRecipeName'\)\.textContent=original\.name;\$\('targetQty'\)\.value=Number\(q\.get\('qty'\)\)>0\?q\.get\('qty'\):original\.yieldQty/,'loaded recipe must preserve route qty and canonical recipe name');
-assert.match(js,/Reference source <select id="referenceSource">/,'real production reference-source selector must remain available');
+assert.match(js,/Reference source <select id="referenceSource" disabled>/,'reference source must be visible but cannot switch to legacy');
 assert.match(js,/retryGoogle\.textContent='Read again from Google Data Vault'/,'failed load must offer explicit Google Vault reread');
 assert.match(js,/className='evidence-head'/,'reference basis must have its own readable block');
 assert.match(js,/className='evidence-source'/,'each reference source must render as a separate spaced row');
 assert.match(js,/sources\.length>1\?\(i\+1\)\+'\. ':'/,'multiple evidence sources should be numbered for scanability');
 assert.match(js,/retryGoogle\.onclick=\(\)=>location\.reload\(\)/,'retry must start fresh page read without saving');
-assert.match(js,/retryGoogle\.hidden=true;\$\('status'\)\.textContent='Market reference, saved Recipe Master and Method 2 data loaded/,'successful load hides retry');
+assert.match(js,/Historical Recipe Master is not used/,'successful production load must explicitly exclude legacy master');
 assert.match(js,/catch\(e\)\{\$\('status'\)\.textContent=e\.message;\$\('saveProduction'\)\.disabled=true;retryGoogle\.hidden=false\}/,'failed load shows retry and keeps save disabled');
 console.log('PASS recipe production UX: fixed recipe identity, qty route prefill, Google Vault retry, shared selector preserved');
+
+assert.match(js,/K\?\.loadStandards\(BOBS_DATA\)\.catch\(\(\)=>null\)/,'production must prefer Google BOBS standard');
+assert.match(js,/knowledgeSource='market'/,'audited market library must be the non-legacy fallback');
+assert.doesNotMatch(js,/value=\"saved\">Legacy saved Recipe Master/,'legacy Recipe Master must not be an operational reference option');
