@@ -2,16 +2,31 @@
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat'),i=Number(q.get('i'));let item;
  $('sharedOrderLink').href='method2-overall.html?outlet='+encodeURIComponent(outlet||'');
 const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','uuwpPolicy','markup','price','sold','servingQty','servingUnit','pricingBasis'];
-let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false,ready=false,loadEpoch=0,recipeNotice='',recipeSource='';
+let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false,ready=false,loadEpoch=0,standardRecipes=[];
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
 function link(name){const a=document.createElement('a');const isMain=M2.purchaseKey(name)===M2.purchaseKey(item.recipeName||item.name),side=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)),r=M2.recipe(recipes,name);let qty=Number(d.batchSize)*Number(d.batches);if(isMain){const per=M2.convert(item.side?M2.number(d.servingQty):1,item.side?d.servingUnit:d.unit,r?.yieldUnit);qty=per==null?0:qty*per;}if(!isMain){const per=side&&M2.convert(Number(side.portion),side.portionUnit,r?.yieldUnit);qty=per==null?0:qty*per;}a.href='recipe-cost-editor.html?'+new URLSearchParams({item:M2.canonicalRecipeName(name),outlet,qty:String(qty),cat,i:String(i)});a.target='_blank';a.textContent=name+' · recipe & cost';return a}
 function purchaseLink(name,unit){const a=document.createElement('a');a.href='purchase-cost-editor.html?'+new URLSearchParams({outlet,item:name,unit:unit||'piece'});a.target='_blank';a.textContent=name+' · Purchase Master COGS';return a}
 function primaryCostLink(label){const a=d.mode==='production'?link(item.recipeName||item.name):purchaseLink(item.recipeName||item.name,item.side?d.servingUnit:d.unit);a.textContent=label;return a}
 function renderItemGuide(){
- const production=d.mode==='production',fallback=recipeSource==='Audited market-reference fallback';
- $('guideSourceTitle').textContent=production?(fallback?'Recipe reference: checked market research':'Recipe reference: Google BOBS Standard Recipe'):'Cost source: supplier purchase details';
- $('guideSourceText').textContent=production?(fallback?'The Google standard recipe could not be loaded. BOBS is using a checked market-reference recipe so you can continue. Review its ingredients, quantities and current prices before saving.':recipeNotice?'Google standard recipes are available. Where a recipe is missing, BOBS uses a checked market reference. Review the recipe and current prices before saving.':'Google standard recipes are available. Review the ingredients, quantities and current prices for your outlet before saving.'):'This item uses your supplier’s quantity and price. Check these against your current purchase details.';
+ const production=d.mode==='production',name=item.recipeName||item.name;
+ const reference=M2.recipe(recipes,name),standard=reference&&standardRecipes.includes(reference);
+ let title='Cost source: supplier purchase details',message='This item uses your supplier’s quantity and price. Check these against your current purchase details.';
+ if(production){
+  if(standard){
+   title='BOBS standard recipe loaded from Google Sheets';
+   message='This page retrieved the BOBS standard recipe for this item from Google Sheets. Review its ingredients, quantities and current prices before saving.';
+  }else if(reference){
+   title='BOBS standard recipe unavailable';
+   message='This page could not retrieve the BOBS standard recipe for this item from Google Sheets. It is currently using a previously prepared market-reference recipe. Check its ingredients, quantities and current prices before saving.';
+  }else{
+   title='Recipe unavailable for this item';
+   message='This page could not retrieve a BOBS standard recipe for this item from Google Sheets, and no previously prepared market-reference recipe is available for it. Open the recipe link below to review the missing details before saving.';
+  }
+  message+=' Saved outlet recipe changes may also apply. Check each side’s recipe separately.';
+ }
+ $('guideSourceTitle').textContent=title;
+ $('guideSourceText').textContent=message;
  $('guideCheckTitle').textContent=production?'Check the recipe and prices.':'Check the supplier quantity and price.';
  $('guideCheckText').textContent='Open the link below in a new tab, review the details, then return to this item.';
  $('guideCostLink').replaceChildren(primaryCostLink(production?'Review '+item.name+' recipe & costs ↗':'Review '+item.name+' purchase costs ↗'));
@@ -134,7 +149,7 @@ $('editor').onsubmit=async e=>{
  const controls=$('controls');busy=true;controls.disabled=true;$('saveStatus').textContent='Saving & verifying…';
  try{
  // Re-read rates at save time so a recipe edit in another window cannot leave stale costs.
- const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;recipeNotice=master.notice;recipeSource=master.source;calculate();
+ const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;standardRecipes=master.standardRecipes||[];calculate();
  const saved=await M2.saveItem(outlet,cat,i,item,d,baseline,recipes);baseline=M2.state(saved);dirty=false;
  try{M2.cache(outlet,saved)}catch(e){/* A blocked browser cache does not undo a verified Google save. */}
  $('saveStatus').textContent='Verified in Google';status('Saved and read back from Google.');
@@ -145,7 +160,7 @@ $('editor').onsubmit=async e=>{
  }catch(err){status(err.message);$('saveStatus').textContent='Not verified — keep this page open'}finally{busy=false;controls.disabled=false}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
-async function refreshRecipes(){if(!ready||busy)return;try{const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;recipeNotice=master.notice;recipeSource=master.source;const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};if(d)calculate()}catch(e){status(e.message)}}
+async function refreshRecipes(){if(!ready||busy)return;try{const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;standardRecipes=master.standardRecipes||[];const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};if(d)calculate()}catch(e){status(e.message)}}
 async function refreshPurchases(){if(!ready||busy)return;try{const latest=M2.state(await M2.read(outlet));if(dirty&&!confirm('Use the newly saved Purchase Master rates? This replaces unsaved supplier cost edits only.')){status('Purchase Master changed. Reload its rates before saving this item.');return}baseline.purchaseMasters=latest.purchaseMasters;M2.hydratePurchases(d,item,latest.purchaseMasters);renderComponents();calculate();status('Purchase rates reloaded from Google. Save This Item to confirm this setup.')}catch(e){status(e.message)}}
 let lastPurchaseToken;
 function receivePurchase(data){if(data?.type!=='bobs-purchase-master-saved'||String(data.outlet)!==String(outlet)||data.token===lastPurchaseToken)return;lastPurchaseToken=data.token;refreshPurchases()}
@@ -156,7 +171,7 @@ if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-mast
 async function loadEditor(){if(loading||busy)return;loading=true;ready=false;const epoch=++loadEpoch;$('controls').disabled=true;$('editor').hidden=true;$('retryGoogle').hidden=true;$('itemGuide').hidden=true;status('Checking Google records…');try{
  if(!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
  const [data,master]=await Promise.all([M2.read(outlet),BOBS_OPERATIONAL_RECIPES.load()]);
- baseline=M2.state(data);recipes=master.recipes;recipeNotice=master.notice;recipeSource=master.source;M2.installSides(baseline,recipes);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
+ baseline=M2.state(data);recipes=master.recipes;standardRecipes=master.standardRecipes||[];M2.installSides(baseline,recipes);item=ITEM_DATA[cat]?.[i];if(!item)throw Error('Select this item from its category first.');d=M2.draft(baseline,cat,i,item);d.pricingBasis=d.pricingBasis||'markup';
  soldTouched=!!d.soldConfirmed;
  if(['purchased','production'].includes(q.get('mode')))d.mode=q.get('mode');
  if(!d.packingPer)d.packingPer=1;if(item.standaloneSide&&item.recipePortion&&!baseline.itemEditors[M2.keys(cat,i).k]){d.batchSize=d.batchSize||1;d.batches=d.batches||1;}

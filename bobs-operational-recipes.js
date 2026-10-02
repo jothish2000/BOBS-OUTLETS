@@ -9,9 +9,9 @@ window.BOBS_OPERATIONAL_RECIPES={load:async function(){
   const names=new Set(approved.map(r=>M2.purchaseKey(r.name)));
   const fallback=market.filter(r=>!names.has(M2.purchaseKey(r.name)));
   const recipes=[...approved,...fallback];
-  if(!recipes.length)throw Error('Google standard and audited market-reference recipes are unavailable.');
-  return {recipes,source:approved.length?'Google BOBS Standard Recipe':'Audited market-reference fallback',
-    notice:approved.length?(fallback.length?'Missing Google recipes use audited market references.':''):
-      'Google standard unavailable'+(problem?' ('+problem+')':'')+'; using audited market references. Check ingredient rates before saving.'};
+  if(!recipes.length)throw Error('BOBS standard recipes from Google Sheets and previously prepared market-reference recipes are unavailable.');
+  return {recipes,standardRecipes:approved,source:approved.length?'Google BOBS Standard Recipe':'Audited market-reference fallback',
+    notice:approved.length?(fallback.length?'Recipes not retrieved from Google Sheets use previously prepared market references.':''):
+      'BOBS standard recipes unavailable from Google Sheets'+(problem?' ('+problem+')':'')+'; using previously prepared market references. Check ingredients, quantities and current prices before saving.'};
 }};
 })();
