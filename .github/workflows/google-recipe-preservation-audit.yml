@@ -1,0 +1,19 @@
+name: Read-only Google recipe preservation audit
+on:
+  push:
+    branches: [codex/google-recipe-preservation-20261002]
+    paths:
+      - 'scripts/audit-google-recipe-preservation.cjs'
+      - '.github/workflows/google-recipe-preservation-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/audit-google-recipe-preservation.cjs
