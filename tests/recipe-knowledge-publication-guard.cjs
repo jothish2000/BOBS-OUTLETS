@@ -13,7 +13,7 @@ function fixture(){
 test('initial publication page blocks existing active knowledge and partial records without writes',async()=>{
  for(const type of ['active','partial']){
   const x=fixture();if(type==='active')x.setActive({token:'existing'});else x.setRows([{recordKey:'orphan'}]);x.start();await tick();
-  assert(x.get('run').disabled);assert.match(x.get('status').textContent,/already stored|need review/);assert.equal(x.writes,0);assert.match(x.get('summary').textContent,/Check stopped/);assert.doesNotMatch(x.get('summary').textContent,/Loading|Checking/);assert.equal(x.get('reload').disabled,false);
+  assert(x.get('run').disabled);assert.match(x.get('status').textContent,/already stored|need review/);assert.equal(x.writes,0);assert.match(x.get('summary').textContent,/Saved recipe records found|Recipe setup needs attention/);assert.doesNotMatch(x.get('summary').textContent,/Loading|Checking/);assert.equal(x.get('reload').disabled,false);
  }
 });
 test('page rechecks before first backup/write when knowledge appears after comparison',async()=>{
@@ -23,7 +23,7 @@ test('page rechecks before first backup/write when knowledge appears after compa
 
 test('failed read clears pending summary and retry returns to a usable comparison',async()=>{
  const x=fixture();x.setError(Error('Network read unavailable'));x.start();await tick();
- assert.match(x.get('summary').textContent,/Check stopped/);assert.match(x.get('status').textContent,/Network read unavailable/);
+ assert.match(x.get('summary').textContent,/Saved recipe records found|Recipe setup needs attention/);assert.match(x.get('status').textContent,/Network read unavailable/);
  assert(x.get('run').disabled);assert.equal(x.get('reload').disabled,false);assert.equal(x.writes,0);
  x.setError(null);await x.get('reload').onclick();
  assert.match(x.get('summary').innerHTML,/Audited market references/);assert.match(x.get('status').textContent,/Comparison ready/);assert.equal(x.get('run').disabled,false);
@@ -34,6 +34,18 @@ test('reload shows current progress, prevents overlap, and clears stale comparis
  const pending=x.get('reload').onclick(),reads=x.reads;
  assert.match(x.get('summary').textContent,/Checking whether/);assert(x.get('reload').disabled);assert(x.get('run').disabled);
  await x.get('reload').onclick();assert.equal(x.reads,reads);
- release();await pending;assert.match(x.get('summary').textContent,/Check stopped/);
+ release();await pending;assert.match(x.get('summary').textContent,/Saved recipe records found|Recipe setup needs attention/);
  assert(x.get('run').disabled);assert.equal(x.get('reload').disabled,false);assert.equal(x.writes,0);
+});
+
+test('novice guide explains the first save, normal editing and shared-standard revision without claiming complete setup',async()=>{
+ assert.match(html,/What does “publish” mean here/);assert.match(html,/does not mean posting recipes publicly/);
+ assert.match(html,/Save initial recipe library to Google Sheets/);assert.match(html,/Keep any unsaved edits/);
+ assert.match(html,/This page cannot make that revision/);
+ const x=fixture();x.setActive({token:'existing'});x.start();await tick();
+ assert.match(x.get('summary').textContent,/Saved recipe records found/);
+ assert.doesNotMatch(x.get('summary').textContent,/complete|SAFE MODE/);
+ assert.match(x.get('status').textContent,/Return to your Item Editor/);
+ assert.match(x.get('status').textContent,/does not verify every saved recipe/);
+ assert.equal(x.writes,0);
 });

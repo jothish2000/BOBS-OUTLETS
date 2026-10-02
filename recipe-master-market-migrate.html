@@ -1,15 +1,25 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOBS Google Recipe Knowledge Migration</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOBS Initial Recipe Library Setup</title>
 <link rel="stylesheet" href="style.css">
 <script src="bobs-config.js"></script><script src="bobs-google-data.js"></script><script src="shared_data.js"></script>
 <script src="recipe-guide-seeds.js"></script><script src="recipe-market-references.js"></script>
 <script src="poriyal-recipes.js"></script><script src="recipe-market-poriyal-references.js"></script>
 <script src="recipe-master-sync.js"></script><script src="recipe-market-google-store.js"></script>
 <style>main{max-width:920px;margin:auto;padding:20px}.card{padding:16px;border:1px solid #ddd;border-radius:12px;margin:12px 0}.warning{background:#fff4e5}.ok{background:#eef9f0}button{padding:10px 14px}.mono{font-family:monospace;overflow-wrap:anywhere}</style></head>
-<body><main><a href="recipe-master.html">← Historical Recipe Master</a><h1>Build Google-backed Recipe Knowledge</h1>
-<div class="card warning"><b>New operational architecture.</b> The old Recipe Master is preserved only as historical backup. It is not promoted and is not an operational fallback. This controlled migration stores three permanent Google layers: published market evidence, BOBS calibration decisions, and the approved BOBS small-hotel standard. Outlet production recipes remain in Method 2.</div>
-<div id="summary" class="card">Checking whether initial recipe publication is allowed…</div>
-<div class="card"><button id="run" disabled>Back up legacy master & publish 3 Google knowledge layers</button> <button id="reload" type="button">Reload comparison</button></div>
+<body><main><a href="recipe-master.html">← Historical Recipe Master</a><h1>First-time recipe library setup</h1>
+<section class="card" aria-labelledby="setupGuideTitle">
+<h2 id="setupGuideTitle">What is this page for?</h2>
+<p>This page is for the person setting up BOBS for the first time, when its shared recipe library has not yet been saved in Google Sheets. It saves the prepared market references, BOBS quantity adjustments (calibration), and BOBS standard recipes so BOBS can use them.</p>
+<p><b>What does “publish” mean here?</b> It means saving this prepared recipe information into BOBS’s Google Sheets. It does not mean posting recipes publicly on the internet or doing a new Google search.</p>
+<ol>
+<li><b>For everyday recipe work:</b> return to your open Item Editor or Recipe cost editor tab. Review ingredients, change the required quantity, or edit your outlet recipe there. You do not need this first-time setup page for those tasks. Keep any unsaved edits in that tab.</li>
+<li><b>For first-time setup:</b> this page checks for saved records. Only when the required recipe sections are empty and the historical recipes can be read will it offer the first save. Review the comparison before saving. The save creates a historical backup, saves the three recipe sections, and checks them again.</li>
+<li><b>If records already exist:</b> do not repeat the first save. Return to your recipe work. To correct the shared BOBS standard, ask the person maintaining BOBS to compare the proposed correction with the saved version, back it up, and save an approved revision. This page cannot make that revision; ordinary outlet recipe editing is a separate action.</li>
+</ol>
+<p>The old Recipe Master is kept as historical backup. It is not used as the operational fallback recipe.</p>
+</section>
+<div id="summary" class="card">Checking whether the recipe library can be saved for the first time…</div>
+<div class="card"><button id="run" disabled>Save initial recipe library to Google Sheets</button> <button id="reload" type="button">Check saved records again</button></div>
 <div id="status" class="card" role="status">No write sent.</div>
 </main><script>
 (function(){'use strict';
@@ -29,18 +39,18 @@ async function requireEmptyKnowledge(){
  knowledgeBlocked=true;
  for(const module of Object.values(K.MODULES)){
   const active=await BOBS_DATA.getRawModule('COMPANY',module,K.MANIFEST_KEY);
-  if(active!==null)throw Error('Recipe knowledge is already stored in Google Sheets. Initial publication is blocked to preserve it. Any revision must compare and back up the saved records first.');
+  if(active!==null)throw Object.assign(Error('BOBS found recipe records already stored in Google Sheets. The first-time save is disabled to protect them. Return to your Item Editor or Recipe cost editor tab to continue. This check does not verify every saved recipe; shared-standard corrections need a separate comparison and backup.'),{code:'EXISTING_KNOWLEDGE'});
   const inventory=await BOBS_DATA.jsonp({action:'moduleList',outletId:'COMPANY',module});
-  if(!inventory||inventory.ok!==true||!Array.isArray(inventory.records)||Number(inventory.count)!==inventory.records.length)throw Error('Existing recipe records could not be verified. No publication is allowed.');
-  if(inventory.records.length)throw Error('Previously saved recipe records need review before publication. They will not be replaced by this page.');
+  if(!inventory||inventory.ok!==true||!Array.isArray(inventory.records)||Number(inventory.count)!==inventory.records.length)throw Error('BOBS could not check the saved recipe records. No save is allowed. Check your connection and use Check saved records again. This does not mean your recipes were deleted.');
+  if(inventory.records.length)throw Error('Previously saved recipe records need review before first-time setup can continue. Ask the person maintaining BOBS to inspect them. This page will not replace them.');
  }
  knowledgeBlocked=false;
 }
 async function load(){
  if(busy)return;
- $('summary').textContent='Checking whether initial recipe publication is allowed…';$('reload').disabled=true;
- try{busy=true;$('run').disabled=true;status('Checking existing Google recipe knowledge…');await requireEmptyKnowledge();status('Reading historical Google Recipe Master…');legacy=await readLegacy();if(!legacy||!Array.isArray(legacy.recipes))throw Error('Historical Google Recipe Master unavailable; migration is blocked because a recovery copy cannot be guaranteed.');built=K.build(refs(),legacy.recipes);busy=false;render();status('Comparison ready. No Google write has been sent.');}
- catch(e){busy=false;$('summary').textContent='Check stopped. Initial publication is blocked. See the reason below. No Google write was sent by this check.';status('SAFE MODE — '+e.message);$('run').disabled=true;}
+ $('summary').textContent='Checking whether the recipe library can be saved for the first time…';$('reload').disabled=true;
+ try{busy=true;$('run').disabled=true;status('Checking existing Google recipe knowledge…');await requireEmptyKnowledge();status('Reading historical Google Recipe Master…');legacy=await readLegacy();if(!legacy||!Array.isArray(legacy.recipes))throw Error('The historical recipes could not be read, so BOBS cannot make the required backup. First-time saving is unavailable. Try checking again; if this continues, ask the person maintaining BOBS.');built=K.build(refs(),legacy.recipes);busy=false;render();status('Comparison ready. Review the recipe information above before choosing Save initial recipe library to Google Sheets. Nothing has been saved by this check.');}
+ catch(e){busy=false;$('summary').textContent=e.code==='EXISTING_KNOWLEDGE'?'Saved recipe records found. You do not need to repeat the first-time save. See the next steps below.':'Recipe setup needs attention. See the reason and next step below.';status(e.message+' No Google write was sent by this check.');$('run').disabled=true;}
  finally{$('reload').disabled=false;}
 }
 async function backupLegacy(){
@@ -75,7 +85,7 @@ async function activate(module,manifest){
  if(!v.ok)throw Error(module+' manifest activation was not verified.');
 }
 $('run').onclick=async()=>{
- if(busy||!built)return;if(!confirm('Create a verified historical backup, then publish Evidence → Calibration → BOBS Standard to Google? The old Recipe Master will remain backup-only and will not be overwritten.'))return;
+ if(busy||!built)return;if(!confirm('Save the initial recipe library to BOBS’s Google Sheets? BOBS will first back up the historical recipes, then save market references, BOBS quantity adjustments and standard recipes. This does not post recipes publicly. The old Recipe Master will remain unchanged as history.'))return;
  busy=true;$('run').disabled=true;
  try{
   await requireEmptyKnowledge();
@@ -90,7 +100,7 @@ $('run').onclick=async()=>{
   if(ev.records.length!==built.evidence.length||ca.records.length!==built.calibration.length||st.records.length!==built.standard.length)throw Error('Final full Google read-back count mismatch.');
   status('GOOGLE RECIPE KNOWLEDGE COMPLETE + VERIFIED. Legacy backup: '+legacyKey+(priorKey?' · Prior knowledge pointer: '+priorKey:'')+' · Operational standard records: '+st.records.length);
   $('status').classList.add('ok');
- }catch(e){status('MIGRATION NOT CONFIRMED — '+e.message)}
+ }catch(e){status('Recipe save not confirmed. Do not repeat the save until the saved records and backups have been checked. Details: '+e.message)}
  finally{busy=false;render();}
 };
 $('reload').onclick=load;load();
