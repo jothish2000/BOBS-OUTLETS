@@ -2,9 +2,12 @@ name: Recipe Master market migration audit
 
 on:
   push:
-    branches: [main, 'chatgpt/recipe-master-market-migration-20261001']
+    branches: [main, 'chatgpt/recipe-master-market-migration-20261001', 'codex/google-recipe-knowledge-20261002']
     paths:
       - 'recipe-master-market-migration.js'
+      - 'recipe-market-google-store.js'
+      - 'recipe-production-editor.js'
+      - 'recipe-cost-editor.html'
       - 'recipe-master-market-migrate.html'
       - 'recipe-master-sync.js'
       - 'recipe-market-references.js'
@@ -14,6 +17,8 @@ on:
       - 'recipe-master-shards.js'
       - 'bobs-google-data.js'
       - 'tests/recipe-master-market-migration.cjs'
+      - 'tests/recipe-market-google-store.cjs'
+      - 'tests/recipe-production-ux.cjs'
       - 'tests/recipe-standards-v2.cjs'
       - 'tests/market-reference-calibration.cjs'
       - 'tests/market-reference-real-catalogue.cjs'
@@ -32,6 +37,10 @@ jobs:
           node-version: '22'
       - name: Test audited market to operational Recipe Master migration
         run: node tests/recipe-master-market-migration.cjs
+      - name: Test Google recipe knowledge store
+        run: node tests/recipe-market-google-store.cjs
+      - name: Test production standard/fallback UX
+        run: node tests/recipe-production-ux.cjs
       - name: Audit production Recipe Master standards
         run: node tests/recipe-standards-v2.cjs
       - name: Audit researched market reference layer
