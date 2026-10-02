@@ -55,6 +55,19 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('.rate').first().fill('60');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.match(await page.locator('#productionStatus').innerText(),/Edits are not saved/);
  await page.evaluate(()=>window.failSave=true);await page.locator('#confirmed').check();await page.locator('#saveProduction').click();
  await page.waitForFunction(()=>document.getElementById('productionStatus').textContent.includes('Simulated verification failure'));
+
+ // Reopen the actual editor using the previously saved mock payload.
+ const reopen=await browser.newPage({viewport:{width,height:800}});await reopen.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));
+ await reopen.goto('https://bobs.test/recipe-cost-editor.html?item=Idli&outlet=1&qty=360&cat=Breakfast+Catalogue&i=0');
+ await reopen.setContent(html.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
+ await reopen.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
+ const fixture=await page.evaluate(()=>({recipe:window.recipe,state:window.savedNext}));
+ await reopen.evaluate(f=>{window.M2={purchaseKey:s=>s.toLowerCase()};window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
+ await reopen.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await reopen.evaluate(()=>BOBSRecipeProduction.start());
+ assert.equal(await reopen.locator('#portion').inputValue(),'custom');assert.equal(await reopen.locator('#customPortion').inputValue(),'110');
+ assert.equal(await reopen.locator('.quantity').first().inputValue(),'10.56');
+ assert.match(await reopen.locator('#appliedPortion').innerText(),/Loaded saved outlet recipe:.*intended 110.00 g/);
+ await reopen.close();
  assert.deepEqual(errors,[]);console.log('PASS portion flow and save guidance '+width+'px: preview, checkbox/no auto-save, recalculate gate, mock save success/return, edits and failure status');await page.close();
  }}finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
