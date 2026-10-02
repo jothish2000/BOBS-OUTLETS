@@ -15,6 +15,9 @@ on:
       - 'workload-planner.html'
       - 'tests/method2-workload-gate.cjs'
       - 'tests/method2-workspace.cjs'
+      - 'recipe-production-editor.js'
+      - 'recipe-cost-editor.html'
+      - 'tests/recipe-production-ux.cjs'
       - '.github/workflows/method2-workload-gate.yml'
   pull_request:
     paths:
@@ -30,6 +33,9 @@ on:
       - 'workload-planner.html'
       - 'tests/method2-workload-gate.cjs'
       - 'tests/method2-workspace.cjs'
+      - 'recipe-production-editor.js'
+      - 'recipe-cost-editor.html'
+      - 'tests/recipe-production-ux.cjs'
       - '.github/workflows/method2-workload-gate.yml'
 
 jobs:
@@ -50,12 +56,15 @@ jobs:
         run: |
           node tests/method2-setup-before-workload.cjs
           node tests/method2-outlet-handoff.cjs
+      - name: Test production recipe selector and quantity handoff
+        run: node tests/recipe-production-ux.cjs
       - name: Syntax check changed browser scripts
         run: |
           node --check method2-list.js
           node --check method2-select.js
           node --check method2-workload-gate.js
-          node --check method2-flow-review.js\n          node --check recipe-production-editor.js
+          node --check method2-flow-review.js
+          node --check recipe-production-editor.js
       - name: Run historical workspace browser test when Playwright is installed
         run: |
           if node -e "require.resolve('playwright')" >/dev/null 2>&1; then
