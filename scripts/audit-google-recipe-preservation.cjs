@@ -40,6 +40,7 @@ const api={getRawModule:read};
    console.log(JSON.stringify({kind,complete:true,count:result.records.length,idliPresent:!!idli,idliYield120:kind==='standard'?Number(idli?.yieldQty)===120:kind==='calibration'?Number(idli?.selectedYield)===120:null,idliEvidencePresent:kind==='evidence'?!!idli?.sources?.length:null}));
   }catch(e){console.log(JSON.stringify({kind,complete:false,error:e.name==='TimeoutError'?'READ_TIMEOUT':e.message}));process.exitCode=1}
  }
+ try{const inventory=await request({action:'moduleList',outletId:'COMPANY',module:'RECIPE_KNOWLEDGE_BACKUPS'});const rows=inventory.records.filter(r=>r.recordKey.startsWith('PRESERVE_20261002_37045857257'));console.log(JSON.stringify({preservationAttemptRecords:rows.length,keys:rows.map(r=>r.recordKey)}));}catch(e){console.log(JSON.stringify({preservationInventoryError:e.message}));process.exitCode=1}
  try{const old=await read('COMPANY','RECIPE_MASTER','STANDARD_V1');console.log(JSON.stringify({legacyPresent:!!old,sharded:old?.storageMode==='SHARDED_RECIPE_MASTER_V2',count:old?.recipeCount??old?.recipes?.length??null}));
  if(old?.storageMode==='SHARDED_RECIPE_MASTER_V2'){
  const chunks=[];for(const key of old.chunkKeys||[])chunks.push(await read('COMPANY',old.chunkModule||'RECIPE_MASTER_CHUNKS',key));
