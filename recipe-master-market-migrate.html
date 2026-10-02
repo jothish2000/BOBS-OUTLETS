@@ -5,22 +5,50 @@
 <script src="recipe-guide-seeds.js"></script><script src="recipe-market-references.js"></script>
 <script src="poriyal-recipes.js"></script><script src="recipe-market-poriyal-references.js"></script>
 <script src="recipe-master-sync.js"></script><script src="recipe-market-google-store.js"></script>
-<style>main{max-width:920px;margin:auto;padding:20px}.card{padding:16px;border:1px solid #ddd;border-radius:12px;margin:12px 0}.warning{background:#fff4e5}.ok{background:#eef9f0}button{padding:10px 14px}.mono{font-family:monospace;overflow-wrap:anywhere}</style></head>
-<body><main><a href="recipe-master.html">← Historical Recipe Master</a><h1>First-time recipe library setup</h1>
-<section class="card" aria-labelledby="setupGuideTitle">
-<h2 id="setupGuideTitle">What is this page for?</h2>
-<p>This page is for the person setting up BOBS for the first time, when its shared recipe library has not yet been saved in Google Sheets. It saves the prepared market references, BOBS quantity adjustments (calibration), and BOBS standard recipes so BOBS can use them.</p>
-<p><b>What does “publish” mean here?</b> It means saving this prepared recipe information into BOBS’s Google Sheets. It does not mean posting recipes publicly on the internet or doing a new Google search.</p>
-<ol>
-<li><b>For everyday recipe work:</b> return to your open Item Editor or Recipe cost editor tab. Review ingredients, change the required quantity, or edit your outlet recipe there. You do not need this first-time setup page for those tasks. Keep any unsaved edits in that tab.</li>
-<li><b>For first-time setup:</b> this page checks for saved records. Only when the required recipe sections are empty and the historical recipes can be read will it offer the first save. Review the comparison before saving. The save creates a historical backup, saves the three recipe sections, and checks them again.</li>
-<li><b>If records already exist:</b> do not repeat the first save. Return to your recipe work. To correct the shared BOBS standard, ask the person maintaining BOBS to compare the proposed correction with the saved version, back it up, and save an approved revision. This page cannot make that revision; ordinary outlet recipe editing is a separate action.</li>
-</ol>
+<style>
+main{max-width:1020px;margin:auto;padding:32px 24px;line-height:1.6}
+.setup-header{margin-bottom:24px}.eyebrow{color:var(--ledger);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+h1{font-size:clamp(26px,4vw,38px);line-height:1.2;margin:8px 0 12px}h2{font-size:21px;line-height:1.3;margin:0 0 12px}h3{font-size:17px;margin:0 0 8px}p{margin:8px 0 14px}
+.card{padding:24px;border:1px solid #cbbfa8;border-radius:14px;margin:18px 0;background:#fffdf7;box-shadow:0 3px 12px #2b231808}
+.result-card{border-left:5px solid var(--ledger)}#summary{font-size:18px;font-weight:700;color:var(--ledger)}#status{margin-top:12px;color:var(--ink-soft)}
+.next-step{background:#edf3eb;border-color:#afc2ad}.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.action-grid .card{margin:0;display:flex;flex-direction:column;align-items:flex-start}
+.action-grid button{margin-top:auto}.helper{font-size:14px;color:var(--ink-soft)}.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--ledger);background:#edf3eb;border-radius:20px;padding:3px 10px;margin-bottom:12px}
+button{padding:12px 16px;font-family:inherit;font-size:15px;font-weight:600;line-height:1.4;border:1px solid var(--ledger);border-radius:8px;background:var(--ledger);color:#fff;cursor:pointer;max-width:100%;white-space:normal}
+#reload{background:#fff;color:var(--ledger)}button:disabled{background:#e9e6df;color:#625e54;border-color:#c8c2b7;cursor:not-allowed}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.steps{padding-left:24px}.steps li{padding:0 0 14px 8px}.steps li:last-child{padding-bottom:0}
+details summary{cursor:pointer;font-weight:700;color:var(--ledger)}details p:last-child{margin-bottom:0}.history-link{display:inline-block;margin-top:18px;color:var(--ledger)}.ok{background:#eef9f0}
+@media(max-width:650px){main{padding:20px 14px}.card{padding:18px}.action-grid{grid-template-columns:1fr}button{width:100%}.action-grid .card{align-items:stretch}h2{font-size:19px}}
+</style></head>
+<body><main>
+<div class="setup-header"><span class="eyebrow">BOBS · Recipe setup</span><h1>First-time recipe library setup</h1>
+<p>Save the shared recipe library into Google Sheets once, so BOBS can use it. For everyday recipe work, use the Item Editor or Recipe cost editor.</p></div>
+<section class="card result-card" aria-labelledby="resultTitle"><h2 id="resultTitle">Current check result</h2>
+<div id="summary">Checking whether the recipe library can be saved for the first time…</div>
+<div id="status" role="status" aria-live="polite">No write sent.</div></section>
+<section class="card next-step" aria-labelledby="nextTitle"><h2 id="nextTitle">What should I do now?</h2>
+<ol class="steps">
+<li><b>Just testing or editing a recipe?</b> Return to your open Item Editor or Recipe cost editor tab. Review ingredients, change the required quantity, or edit your outlet recipe there. Keep any unsaved edits in that tab.</li>
+<li><b>Saved recipe records found?</b> You can leave this setup page. You do not need to save the library again or keep clicking the check button.</li>
+<li><b>Check failed or records need review?</b> Read the reason above. After a connection problem, try the optional check below. If records need review or the problem continues, ask the person maintaining BOBS before saving anything.</li>
+</ol></section>
+<div class="action-grid">
+<section class="card" aria-labelledby="recheckTitle"><span class="badge">Optional · checks only</span><h2 id="recheckTitle">Need to check again?</h2>
+<p id="reloadHelp">This button reads Google Sheets again and updates the result above. It does not save, replace, or delete recipes.</p>
+<p class="helper">Use it after a connection problem or after the person maintaining BOBS has changed the setup. If nothing has changed, you will usually see the same result. It does not check every ingredient or price.</p>
+<button id="reload" type="button" aria-describedby="reloadHelp">Check saved records again</button></section>
+<section class="card" aria-labelledby="saveTitle"><span class="badge">First-time setup only · saves data</span><h2 id="saveTitle">Save the library for the first time</h2>
+<p id="saveHelp">Use this only when BOBS has no saved records in the required recipe sections and the comparison is ready. Review the comparison above first.</p>
+<p class="helper">Why might this button be disabled? BOBS is still checking, records already exist, or a read/backup requirement could not be met. The result above explains why. Saving creates a historical backup, saves the three recipe sections, and checks them again.</p>
+<button id="run" type="button" aria-describedby="saveHelp" disabled>Save initial recipe library to Google Sheets</button></section>
+</div>
+<details class="card"><summary>What is this page for? What does “publish” mean here?</summary>
+<p>It is for the person setting up the shared BOBS recipe library for the first time. It saves three things: the prepared market references, BOBS quantity adjustments (calibration), and BOBS standard recipes.</p>
+<p>“Publish” means saving this prepared information into BOBS’s Google Sheets. It does not mean posting recipes publicly on the internet or doing a new Google search.</p>
+</details>
+<details class="card"><summary>How do I correct a shared BOBS standard later?</summary>
+<p>Ask the person maintaining BOBS to compare the proposed correction with the saved version, back it up, and save an approved revision. This page cannot make that revision. Editing your outlet recipe in the Recipe cost editor is a separate action.</p>
 <p>The old Recipe Master is kept as historical backup. It is not used as the operational fallback recipe.</p>
-</section>
-<div id="summary" class="card">Checking whether the recipe library can be saved for the first time…</div>
-<div class="card"><button id="run" disabled>Save initial recipe library to Google Sheets</button> <button id="reload" type="button">Check saved records again</button></div>
-<div id="status" class="card" role="status">No write sent.</div>
+<a class="history-link" href="recipe-master.html">View historical Recipe Master</a></details>
 </main><script>
 (function(){'use strict';
 const K=window.BOBS_RECIPE_KNOWLEDGE,sync=window.BOBS_RECIPE_SYNC;
