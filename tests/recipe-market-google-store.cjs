@@ -1,0 +1,18 @@
+const assert=require('assert'),K=require('../recipe-market-google-store.js');
+const refs=[{name:'Idli',yieldQty:120,yieldUnit:'pieces',portionGrams:50,ingredients:[['Idli rice',1.6,'kg',55],['Urad dal',0.48,'kg',140]],referenceEvidence:[{label:'30-idli source',url:'https://example.com/idli'}],referenceReviewedAt:'2026-10-01',referenceRegion:'Tamil Nadu',referenceKind:'MARKET_RESEARCHED',referenceConfidence:'HIGH',marketFamily:'IDLI',auditStatus:'DIRECTLY_CALIBRATED',evidenceBasis:'published ratios',calibrationNotes:'120-piece small-hotel benchmark'}];
+const legacy=[{name:'Idli',yieldQty:999,yieldUnit:'pieces',ingredients:[['Idli rice',99,'kg',61],['Urad dal',99,'kg',151]]}];
+const b=K.build(refs,legacy);
+assert.equal(b.evidence.length,1);assert.equal(b.calibration.length,1);assert.equal(b.standard.length,1);
+assert.equal(b.evidence[0].sources[0].label,'30-idli source');
+assert.equal(b.calibration[0].selectedYield,120);
+assert.equal(b.standard[0].yieldQty,120,'legacy wrong yield must never replace audited standard');
+assert.equal(b.standard[0].ingredients[0][1],1.6,'legacy wrong quantity must never replace audited quantity');
+assert.equal(b.standard[0].ingredients[0][3],61,'matching saved supplier rate may be copied once into new standard');
+const chunks=K.shard(Array.from({length:25},(_,i)=>({...b.standard[0],name:'Idli '+i,recipeKey:'idli-'+i})),1800);
+assert(chunks.length>1,'knowledge records should shard below cell-size risk');
+const token='t1',store={};
+const api={getRawModule:async(o,m,k)=>store[m+'|'+k]||null};
+const module=K.MODULES.standard,keys=[];
+chunks.forEach((records,i)=>{const key='c'+i;keys.push(key);store[module+'|'+key]=K.chunkData('standard',records,token,i,chunks.length)});
+store[module+'|'+K.MANIFEST_KEY]=K.manifest('standard',keys,token,25);
+K.loadStandards(api).then(x=>{assert.equal(x.records.length,25);console.log('PASS Google recipe knowledge: evidence + calibration + audited standard, sharded verified load');}).catch(e=>{console.error(e);process.exit(1)});
