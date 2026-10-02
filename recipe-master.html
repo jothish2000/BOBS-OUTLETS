@@ -3,15 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BOBS Recipe Master</title>
+<title>BOBS Historical Recipe Master — Read only</title>
 <link rel="stylesheet" href="style.css">
 <script src="bobs-config.js"></script>
 <script src="bobs-google-data.js?v=recipe-shards-v2"></script>
-<script src="shared_data.js"></script>
-<script src="recipe-guide-seeds.js?v=small-outlet-v8"></script>
-<script src="poriyal-recipes.js?v=small-outlet-v4"></script>
-<script src="recipe-master-sync.js?v=20260926-readback-v1"></script>
-<script src="recipe-master-shards.js?v=20260926-shards-v1"></script>
 <style>
 .recipe-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.recipe-tools input,.recipe-tools select{padding:9px}
 .recipe-card{margin:12px 0}.energy-row{background:#fff7e6}.timing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
@@ -22,33 +17,31 @@
 <body>
 <header>
 <p class="eyebrow">BOBS</p>
-<h1>Recipe Master</h1>
-<p class="sub">Small-outlet production standards: ingredients + batch yield + labour timing + equipment time + energy/fuel inside COGS.</p>
+<h1>Historical Recipe Master · Read only</h1>
+<p class="sub">View older saved recipes for comparison. This page cannot edit, save, upgrade or replace recipes.</p>
 </header>
 <main>
 <section class="stack">
-<div class="section-head"><h2>Unified Google-first Recipe Master</h2><span class="tag" id="status">Loading reference standards…</span></div>
-<p><b>Current planning basis:</b> small opening batches. Recipes can scale later; the standard batch is deliberately conservative for a first-time outlet.</p>
-<p><b>Costing rule:</b> LPG/electricity used for the batch is stored as a costed recipe input, so energy is included in Recipe Master COGS instead of being shown only as a note.</p>
-<p class="warning"><b>Migration safety:</b> before BOBS upgrades an older Recipe Master to the current standard, it writes a Google recovery snapshot. Existing local ingredient rates are preserved where the same ingredient already exists. Idli ingredient quantities/yield are preserved; only missing timing/energy is added.</p>
+<div class="section-head"><h2>Saved historical recipes</h2></div>
+<p id="status" role="status" aria-live="polite">Reading saved history from Google Sheets…</p>
+<div class="warning"><b>Why is there no Save button?</b> These are older records kept for reference. Editing them here could change the history, so this page only reads Google Sheets.
+<p><b>For your current recipe:</b> return to your open Item Editor or Recipe cost editor tab. Keep any unsaved edits in that tab. Current BOBS standards come from the separately saved market references and BOBS calibration; this historical list is not the operational fallback.</p>
+<p><b>To correct a shared BOBS standard:</b> the person maintaining BOBS must compare the proposed change with the current saved standard, back it up, and save the approved revision through a separate process.</p></div>
 <div class="recipe-tools">
-<input id="search" placeholder="Search recipe">
-<select id="category"><option value="">All categories</option></select>
+<input id="search" placeholder="Search historical recipes" aria-label="Search historical recipes">
+<select id="category" aria-label="Filter historical recipes by category"><option value="">All categories</option></select>
 </div>
 <div id="recipeList"></div>
 </section>
 <section class="stack">
-<div class="section-head"><h2>Standard costing model</h2><span class="tag">ingredients + fuel + yield</span></div>
+<div class="section-head"><h2>How the historical costs are shown</h2><span class="tag">ingredients + fuel + yield</span></div>
 <p><b>Batch COGS = food/raw-material inputs + directly attributable batch energy.</b> <b>Unit COGS = batch COGS ÷ standard yield.</b> Labour remains outside Actual COGS and is handled by Workload/Staffing and outlet economics.</p>
-<p class="muted">Planning rates are editable. The current seed uses commercial LPG ₹2,916.50 / 19 kg = ₹153.50/kg and the outlet EB planning rate ₹11/kWh. Replace ingredient/energy rates with actual invoices when available.</p>
+<p class="muted">These totals use the rates saved in the historical record. They are not current purchase prices and cannot be edited here.</p>
 </section>
 </main>
 <script>
 const URL=(window.BOBS_CONFIG||{}).DATA_VAULT_WEB_APP_URL;
 const RECORD={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'};
-const STD_VERSION=window.BOBS_SMALL_OUTLET_STANDARD_VERSION||'2026-09-SMALL-OUTLET-V2';
-const STANDARD_SCHEMA='3.0-SMALL-OUTLET-STANDARD';
-const UNITS=['kg','g','L','ml','piece','pieces','pack','batch','bunch','tsp','tbsp','kWh'];
 const clone=x=>JSON.parse(JSON.stringify(x));
 const norm=s=>String(s||'').toLowerCase().replace(/\bidly\b/g,'idli').replace(/\s+/g,' ').trim();
 const canonicalName=n=>{
@@ -59,60 +52,6 @@ const canonicalName=n=>{
 };
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function idFor(r){return r.recipeId||('RM-'+canonicalName(r.name).toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,''))}
-function enrich(r){
- const x=clone(r||{});x.name=canonicalName(x.name);x.recipeId=idFor(x);
- x.category=x.category||((x.kind||'PRIMARY')==='CONDIMENT'?'CONDIMENT':'PRODUCTION');
- x.recipeType=x.recipeType||'STANDARD';x.costBasis='RAW_MATERIAL_PLUS_DIRECT_ENERGY';return x;
-}
-const seeds=(()=>{
- const m=new Map();
- for(const src of [...(window.BOBS_GUIDE_RECIPES||[]),...(window.BOBS_PORIYAL||[])]){
-  if(!src||!src.name)continue;
-  const x=enrich(src),k=norm(x.name);
-  if(!m.has(k)||String(x.category).toLowerCase()==='poriyal')m.set(k,x);
- }
- return [...m.values()];
-})();
-function mergeIngredientRates(std,old){
- const oldBy=new Map((old.ingredients||[]).map(x=>[norm(x?.[0]),x]));
- return (std.ingredients||[]).map(x=>{
-   const z=[...x],o=oldBy.get(norm(x?.[0]));
-   if(o&&Number.isFinite(Number(o[3]))&&Number(o[3])>=0)z[3]=Number(o[3]);
-   return z;
- });
-}
-function mergeIdliKeepRecipe(old,std){
- const x={...clone(old),...clone(std)};
- x.name='Idli';x.recipeId=old.recipeId||std.recipeId;
- x.ingredients=clone(old.ingredients||std.ingredients||[]);
- const stdEnergy=(std.ingredients||[]).filter(a=>/lpg fuel|electricity/i.test(a?.[0]||''));
- const names=new Set(x.ingredients.map(a=>norm(a?.[0])));
- for(const e of stdEnergy)if(!names.has(norm(e[0])))x.ingredients.push(clone(e));
- x.yieldQty=old.yieldQty||std.yieldQty;x.yieldUnit=old.yieldUnit||std.yieldUnit;
- x.productionTiming=clone(std.productionTiming||old.productionTiming);
- x.fuel=clone(std.fuel||old.fuel);x.standardVersion=STD_VERSION;x.standardSource='BOBS_SMALL_OUTLET';
- x.guideDailyQty=std.guideDailyQty||old.guideDailyQty;return enrich(x);
-}
-function upgradeStandard(old,std){
- if(norm(std.name)==='idli')return mergeIdliKeepRecipe(old,std);
- const x={...clone(old),...clone(std)};
- x.recipeId=old.recipeId||std.recipeId;
- x.ingredients=mergeIngredientRates(std,old);
- if(old.condiments&&!std.condiments)x.condiments=clone(old.condiments);
- if(old.vegetableOptions&&!std.vegetableOptions)x.vegetableOptions=clone(old.vegetableOptions);
- x.standardVersion=STD_VERSION;x.standardSource='BOBS_SMALL_OUTLET';
- return enrich(x);
-}
-function mergeMaster(existing){
- const old=Array.isArray(existing)?existing.map(enrich):[],by=new Map(old.map(x=>[norm(x.name),x]));
- const merged=[];
- for(const std of seeds){
-   const k=norm(std.name),prev=by.get(k);
-   merged.push(prev?upgradeStandard(prev,std):enrich(std));by.delete(k);
- }
- for(const x of by.values())merged.push(x);
- return merged;
-}
 function ingredientCost(x){return (Number(x?.[1])||0)*(Number(x?.[3])||0)}
 function recipeCost(r){return (r.ingredients||[]).reduce((a,x)=>a+ingredientCost(x),0)}
 function energyCost(r){return (r.ingredients||[]).filter(x=>/lpg fuel|electricity/i.test(x?.[0]||'')).reduce((a,x)=>a+ingredientCost(x),0)}
@@ -121,16 +60,9 @@ function timingElapsed(r){
  const z=r.productionTiming||{};
  return ['setupMin','activeMinPerCycle','machineMinPerCycle','finishMinPerCycle','cleanupMin'].reduce((a,k)=>a+(Number(z[k])||0),0);
 }
-function unitOptions(selected){return UNITS.map(u=>'<option '+(u===selected?'selected':'')+'>'+u+'</option>').join('')}
-function ingredientRow(x,i){
+function ingredientRow(x){
  const energy=/lpg fuel|electricity/i.test(x?.[0]||'');
- return `<tr data-ing="${i}" class="${energy?'energy-row':''}">
- <td><input class="ing-name" value="${esc(x?.[0]||'')}" placeholder="Ingredient name"></td>
- <td><input class="ing-qty" type="number" min="0" step="any" value="${Number(x?.[1]||0)}"></td>
- <td><select class="ing-unit">${unitOptions(x?.[2]||'kg')}</select></td>
- <td><input class="ing-rate" type="number" min="0" step="any" value="${Number(x?.[3]||0)}"></td>
- <td class="ing-cost" align="right">₹${ingredientCost(x).toFixed(2)}</td>
- <td><button type="button" class="remove-ing secondary">Remove</button></td></tr>`;
+ return '<tr class="'+(energy?'energy-row':'')+'"><td>'+esc(x?.[0]??'—')+'</td><td>'+esc(x?.[1]??'—')+'</td><td>'+esc(x?.[2]??'—')+'</td><td>'+esc(x?.[3]??'—')+'</td><td align="right">₹'+ingredientCost(x).toFixed(2)+'</td></tr>';
 }
 function timingBlock(r){
  const z=r.productionTiming||{};if(!Object.keys(z).length)return '<p class="muted">Production timing not yet defined.</p>';
@@ -150,177 +82,50 @@ function timingBlock(r){
 let workingRecipes=[];
 function recipeArticle(r,ri){
  const total=recipeCost(r),energy=energyCost(r),food=foodCost(r),unit=Number(r.yieldQty)>0?total/Number(r.yieldQty):0;
- return `<article class="stack recipe-card" data-ri="${ri}" data-category="${esc(r.category||'')}" data-name="${esc(r.name.toLowerCase())}">
+ return `<article class="stack recipe-card" data-ri="${ri}" data-category="${esc(r.category||'')}" data-name="${esc(String(r.name||'').toLowerCase())}">
  <div class="section-head"><h3>${esc(r.name)}</h3><span class="tag">${esc(r.category||r.kind||'PRODUCTION')}</span></div>
  <p><b>Recipe ID:</b> ${esc(r.recipeId||idFor(r))} &nbsp; <b>Standard:</b> ${esc(r.standardVersion||'legacy')}</p>
- <p><b>Opening batch / yield:</b> <input class="yield-qty" type="number" min="0" step="any" value="${Number(r.yieldQty||0)}" style="width:90px">
- <input class="yield-unit" value="${esc(r.yieldUnit||'unit')}" style="width:95px">
- ${r.guideDailyQty?' &nbsp; <b>Initial planning batch:</b> '+esc(r.guideDailyQty):''}</p>
+ <p><b>Saved batch / yield:</b> <span class="saved-yield">${esc(r.yieldQty??'—')} ${esc(r.yieldUnit||'unit')}</span>
+ ${r.guideDailyQty?' &nbsp; <b>Historical planning batch:</b> '+esc(r.guideDailyQty):''}</p>
  ${timingBlock(r)}
- <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
- <th align="left">Ingredient / direct energy</th><th>Qty</th><th>Unit</th><th>Rate ₹ / unit</th><th>Cost</th><th></th>
- </tr></thead><tbody class="ingredient-body">${(r.ingredients||[]).map(ingredientRow).join('')}</tbody></table>
- <p><button type="button" class="add-ing secondary">+ Add ingredient</button></p>
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
+ <th align="left">Ingredient / direct energy</th><th>Qty</th><th>Unit</th><th>Rate ₹ / unit</th><th>Cost</th>
+ </tr></thead><tbody class="ingredient-body">${(r.ingredients||[]).map(ingredientRow).join('')}</tbody></table></div>
  <p class="moneyline"><span><b>Food/RM:</b> <span class="food-cost">₹${food.toFixed(2)}</span></span>
  <span><b>Fuel/energy:</b> <span class="energy-cost">₹${energy.toFixed(2)}</span></span>
  <span><b>Batch COGS:</b> <span class="batch-cost">₹${total.toFixed(2)}</span></span>
  <span><b>COGS / ${esc(r.yieldUnit||'unit')}:</b> <span class="unit-cost">₹${unit.toFixed(2)}</span></span></p>
  ${r.condiments?`<p><b>Default component associations:</b> ${r.condiments.map(x=>esc(x[0])+' — '+esc(x.slice(1).join(' '))).join(' | ')}</p>`:''}
  ${r.helperEligible?`<p><b>Helper-eligible work:</b> ${esc(r.helperEligible.join(', '))}</p>`:''}
- <p><button type="button" class="save-recipe">Save recipe</button> <span class="recipe-status tag">Not changed</span></p>
+ <p class="recipe-status tag">Historical record · Read only</p>
  </article>`;
-}
-function readCard(card){
- const ri=Number(card.dataset.ri),r=clone(workingRecipes[ri]);
- r.yieldQty=Number(card.querySelector('.yield-qty').value)||0;
- r.yieldUnit=card.querySelector('.yield-unit').value.trim()||'unit';
- r.ingredients=[...card.querySelectorAll('tr[data-ing]')].map(tr=>[
-  tr.querySelector('.ing-name').value.trim(),Number(tr.querySelector('.ing-qty').value)||0,
-  tr.querySelector('.ing-unit').value,Number(tr.querySelector('.ing-rate').value)||0
- ]).filter(x=>x[0]);
- return r;
-}
-function recalcCard(card){
- const r=readCard(card),total=recipeCost(r),energy=energyCost(r),food=total-energy,y=Number(r.yieldQty)||0;
- card.querySelector('.batch-cost').textContent='₹'+total.toFixed(2);
- card.querySelector('.food-cost').textContent='₹'+food.toFixed(2);
- card.querySelector('.energy-cost').textContent='₹'+energy.toFixed(2);
- card.querySelector('.unit-cost').textContent='₹'+(y?total/y:0).toFixed(2);
- card.querySelectorAll('tr[data-ing]').forEach(tr=>{
-   const q=Number(tr.querySelector('.ing-qty').value)||0,rate=Number(tr.querySelector('.ing-rate').value)||0;
-   tr.querySelector('.ing-cost').textContent='₹'+(q*rate).toFixed(2);
- });
- card.querySelector('.recipe-status').textContent='Unsaved changes';
 }
 function applyFilter(){
  const q=document.getElementById('search').value.toLowerCase().trim(),cat=document.getElementById('category').value;
  document.querySelectorAll('.recipe-card').forEach(x=>x.hidden=!!((q&&!x.dataset.name.includes(q))||(cat&&x.dataset.category!==cat)));
 }
-function render(recipes,readOnly=false){
+function render(recipes){
  workingRecipes=recipes.map(clone);
  document.getElementById('recipeList').innerHTML=workingRecipes.map(recipeArticle).join('');
  const cats=[...new Set(workingRecipes.map(x=>x.category||x.kind||'PRODUCTION'))].sort();
  document.getElementById('category').innerHTML='<option value="">All categories</option>'+cats.map(x=>'<option>'+esc(x)+'</option>').join('');
- document.querySelectorAll('.recipe-card').forEach(card=>{
-   card.addEventListener('input',()=>recalcCard(card));card.addEventListener('change',()=>recalcCard(card));
-   card.querySelector('.add-ing').onclick=()=>{
-     const body=card.querySelector('.ingredient-body'),i=body.children.length;
-     body.insertAdjacentHTML('beforeend',ingredientRow(['',0,'kg',0],i));recalcCard(card);
-     body.lastElementChild.querySelector('.ing-name').focus();
-   };
-   card.addEventListener('click',e=>{if(e.target.classList.contains('remove-ing')){e.target.closest('tr').remove();recalcCard(card)}});
-   card.querySelector('.save-recipe').onclick=()=>saveRecipe(card);
- });
- document.getElementById('search').oninput=applyFilter;document.getElementById('category').onchange=applyFilter;
- if(readOnly){
-  document.querySelectorAll('.recipe-card').forEach(card=>{
-   card.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
-   const st=card.querySelector('.recipe-status');if(st)st.textContent='Reference preview — waiting for Google verification';
-  });
- }
-}
-async function verifiedRead(check,label){
- const sync=window.BOBS_RECIPE_SYNC;
- if(!sync||typeof sync.waitForVerifiedRead!=='function')throw Error('Recipe Master read-back helper did not load. Refresh the page.');
- return sync.waitForVerifiedRead(readMaster,check,{attempts:7,onAttempt:({attempt,attempts})=>{
-  document.getElementById('status').textContent=label+' — waiting for Google read-back ('+attempt+'/'+attempts+')';
- }});
-}
-const CHUNK_MODULE='RECIPE_MASTER_CHUNKS';
-async function readMaster(){return BOBS_DATA.getModule(RECORD.outletId,RECORD.module,RECORD.recordKey)}
-async function rawRead(module,key){return BOBS_DATA.getRawModule(RECORD.outletId,module,key)}
-async function waitRaw(module,key,check,label){
- const sync=window.BOBS_RECIPE_SYNC;
- return sync.waitForVerifiedRead(()=>rawRead(module,key),check,{attempts:7,onAttempt:({attempt,attempts})=>{document.getElementById('status').textContent=label+' ('+attempt+'/'+attempts+')'}});
-}
-async function saveMaster(data){
- const S=window.BOBS_RECIPE_SHARDS;if(!S)throw Error('Recipe Master sharding helper did not load.');
- const chunks=S.splitRecipes(data.recipes||[],32000),token=Date.now()+'-'+Math.random().toString(36).slice(2);
- const keys=chunks.map((_,i)=>'STANDARD_V2_'+token+'_'+String(i+1).padStart(2,'0'));
- for(let i=0;i<chunks.length;i++){
-  const chunk=S.chunkData(chunks[i],token,i,chunks.length,data.standardVersion);
-  document.getElementById('status').textContent='Saving Recipe Master chunk '+(i+1)+' of '+chunks.length+'…';
-  await BOBS_DATA.saveModule(RECORD.outletId,CHUNK_MODULE,keys[i],chunk);
-  const ok=await waitRaw(CHUNK_MODULE,keys[i],v=>!!v&&v.schema==='RECIPE_MASTER_CHUNK_V2'&&v.token===token&&Number(v.index)===i&&Array.isArray(v.recipes)&&v.recipes.length===chunks[i].length,'Verifying chunk '+(i+1));
-  if(!ok.ok)throw Error('Google did not verify Recipe Master chunk '+(i+1)+'. The active master was not switched.');
- }
- const manifest=S.manifest(data,keys,token);
- document.getElementById('status').textContent='All '+chunks.length+' chunks verified — activating Recipe Master…';
- await BOBS_DATA.saveModule(RECORD.outletId,RECORD.module,RECORD.recordKey,manifest);
- return {token,keys,chunks:chunks.length};
-}
-async function backupMaster(data,reason){
- const key='STANDARD_V1_BACKUP_'+Date.now(),base=clone(data);let snap;
- if(base.storageMode==='SHARDED_RECIPE_MASTER_V2'){
-  delete base.recipes;snap={schema:'RECIPE_MASTER_BACKUP_POINTER_V2',master:base,_backup:{key,reason,createdAt:new Date().toISOString()}};
- }else snap={...base,_backup:{key,reason,createdAt:new Date().toISOString()}};
- await BOBS_DATA.saveModule(RECORD.outletId,'RECIPE_MASTER_BACKUPS',key,snap);
- const ok=await waitRaw('RECIPE_MASTER_BACKUPS',key,v=>!!v&&v._backup?.key===key,'Verifying recovery snapshot');
- if(!ok.ok)throw Error('Backup failed; master was not changed.');
- return key;
-}
-async function saveRecipe(card){
- const ri=Number(card.dataset.ri),status=card.querySelector('.recipe-status'),button=card.querySelector('.save-recipe');
- button.disabled=true;status.textContent='Saving…';
- try{
-   const latest=await readMaster();if(!latest)throw Error('Permanent Google Recipe Master could not be read. Nothing changed.');
-   const edited=readCard(card);if(!edited.ingredients.length)throw Error('Keep at least one ingredient/direct-energy line.');
-   if(!(edited.yieldQty>0))throw Error('Yield must be greater than zero.');
-   const recipes=(latest.recipes||[]).map(enrich),idx=recipes.findIndex(x=>norm(x.name)===norm(edited.name));
-   if(idx<0)throw Error('Recipe no longer exists in Google master. Reload first.');
-   const backupKey=await backupMaster(latest,'Before manual recipe edit: '+edited.name);
-   recipes[idx]=edited;
-   const next={...latest,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,recipes,updatedAt:new Date().toISOString()};
-   await saveMaster(next);
-   const synced=await verifiedRead(v=>{
-     const vr=(v?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
-     return !!vr&&JSON.stringify(vr.ingredients)===JSON.stringify(edited.ingredients)&&Number(vr.yieldQty)===Number(edited.yieldQty);
-   },'Recipe save sent');
-   if(!synced.ok)throw Error('Save sent, but Google did not return the saved recipe after repeated read-back checks. Recovery '+backupKey+' remains available.');
-   const verify=synced.value,vr=(verify?.recipes||[]).find(x=>norm(x.name)===norm(edited.name));
-   workingRecipes[ri]=enrich(vr);status.textContent='Saved + Google verified';
-   document.getElementById('status').textContent='Recipe saved safely — recovery '+backupKey;
- }catch(e){status.textContent='NOT SAVED — '+e.message}finally{button.disabled=false}
+ document.getElementById('search').oninput=applyFilter;
+ document.getElementById('category').onchange=applyFilter;
+ applyFilter();
 }
 async function load(){
- render(seeds,true);
- document.getElementById('status').textContent='Reference standards loaded ('+seeds.length+') — verifying Google…';
+ document.getElementById('recipeList').textContent='';
+ document.getElementById('status').textContent='Reading saved history from Google Sheets…';
  try{
   if(!URL)throw Error('Data Vault URL is not configured.');
-  const current=await readMaster();
-  if(current){
-    const merged=mergeMaster(current.recipes||[]);
-    const next={...current,schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
-      recipes:merged,rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},updatedAt:new Date().toISOString(),
-      notes:'BOBS small-outlet standard recipes. Direct batch energy is costed as recipe input. Labour stays outside Actual COGS.'};
-    // A published standard version is immutable. Once the verified V2 sharded master is active,
-    // normal reloads must read it rather than regenerate it. Future seed changes must bump STD_VERSION.
-    const changed=!(current.standardVersion===STD_VERSION&&current.schemaVersion===STANDARD_SCHEMA&&current.storageMode==='SHARDED_RECIPE_MASTER_V2');
-    if(changed){
-      const backupKey=await backupMaster(current,'Before automatic small-outlet recipe-standard migration');
-      document.getElementById('status').textContent='Recovery saved — writing Recipe Master '+STD_VERSION+'…';
-      await saveMaster(next);
-      const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION&&JSON.stringify(v.recipes||[])===JSON.stringify(merged),'Migration sent');
-      if(!synced.ok)throw Error('Migration was sent, but Google did not return the new master after repeated read-back checks. Recovery '+backupKey+' remains available.');
-      const verify=synced.value;
-      render(verify.recipes||[]);
-      document.getElementById('status').textContent='Google master upgraded + verified — recovery '+backupKey;
-    }else{
-      render(current.recipes||[]);document.getElementById('status').textContent='Google master loaded — current standard verified';
-    }
-    return;
-  }
-  const initial={schemaVersion:STANDARD_SCHEMA,standardVersion:STD_VERSION,masterScope:'ALL_PRODUCED_ITEMS',
-    version:'2026-09-23-small-outlet',recipes:mergeMaster([]),rateBasis:window.BOBS_RECIPE_RATE_BASIS||{},
-    updatedAt:new Date().toISOString(),notes:'BOBS small-outlet opening recipe standard.'};
-  await saveMaster(initial);
-  const synced=await verifiedRead(v=>!!v&&v.standardVersion===STD_VERSION,'Initial Recipe Master sent');
-  if(!synced.ok)throw Error('Initial master save was sent but Google read-back could not verify it.');
-  const verify=synced.value;
-  render(verify.recipes||[]);document.getElementById('status').textContent='Google master created + verified';
+  const current=await BOBS_DATA.getModule(RECORD.outletId,RECORD.module,RECORD.recordKey);
+  if(current===null){render([]);document.getElementById('status').textContent='No saved historical record was returned. Nothing was created or changed. This does not establish whether a previous record was deleted.';return;}
+  if(!current||!Array.isArray(current.recipes))throw Error('The historical recipe record could not be read in the expected format.');
+  render(current.recipes);
+  document.getElementById('status').textContent=current.recipes.length+' historical recipes loaded from Google Sheets · Read only. These are not the current BOBS standards.';
  }catch(e){
-  render(seeds,true);
-  document.getElementById('status').textContent='SAFE MODE — '+e.message+' Reference standards remain visible read-only.';
+  render([]);
+  document.getElementById('status').textContent='Historical recipes could not be loaded. Nothing was created or changed. Try refreshing; if this continues, ask the person maintaining BOBS. Details: '+e.message;
  }
 }
 load();
