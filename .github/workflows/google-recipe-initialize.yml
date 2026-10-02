@@ -1,22 +1,26 @@
-name: Protected Google recipe initialization
+name: Recipe preservation safety
 on:
   push:
-    branches: [codex/google-recipe-preservation-20261002]
     paths:
       - 'scripts/recipe-knowledge-bootstrap.cjs'
       - 'scripts/google-recipe-preservation-client.cjs'
       - 'scripts/initialize-google-recipe-knowledge.cjs'
+      - 'recipe-master-market-migrate.html'
       - 'tests/recipe-knowledge-bootstrap.cjs'
+      - 'tests/recipe-knowledge-publication-guard.cjs'
+      - '.github/workflows/google-recipe-initialize.yml'
+  pull_request:
+    paths:
+      - 'scripts/recipe-knowledge-bootstrap.cjs'
+      - 'recipe-master-market-migrate.html'
+      - 'tests/recipe-knowledge-bootstrap.cjs'
+      - 'tests/recipe-knowledge-publication-guard.cjs'
       - '.github/workflows/google-recipe-initialize.yml'
 permissions:
   contents: read
-concurrency:
-  group: bobs-google-recipe-initialization
-  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,13 +28,9 @@ jobs:
           node-version: 22
       - name: Preservation safety and calibrated reference checks
         run: |
-          node --test tests/recipe-knowledge-bootstrap.cjs
+          node --test tests/recipe-knowledge-bootstrap.cjs tests/recipe-knowledge-publication-guard.cjs
           node tests/recipe-market-google-store.cjs
           node tests/market-reference-real-catalogue.cjs
           node tests/market-reference-calibration.cjs
           node --check scripts/initialize-google-recipe-knowledge.cjs
           node --check scripts/google-recipe-preservation-client.cjs
-      - name: Initialize only verified-empty Google knowledge with protected recovery
-        env:
-          BOBS_CREATE_MISSING_KNOWLEDGE: OWNER_APPROVED_20261002
-        run: node scripts/initialize-google-recipe-knowledge.cjs

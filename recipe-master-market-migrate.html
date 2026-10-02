@@ -15,7 +15,7 @@
 (function(){'use strict';
 const K=window.BOBS_RECIPE_KNOWLEDGE,sync=window.BOBS_RECIPE_SYNC;
 const LEGACY={outletId:'COMPANY',module:'RECIPE_MASTER',recordKey:'STANDARD_V1'},BACKUP='RECIPE_MASTER_BACKUPS',KB='RECIPE_KNOWLEDGE_BACKUPS';
-const clone=x=>JSON.parse(JSON.stringify(x));let legacy=null,built=null,busy=false;
+const clone=x=>JSON.parse(JSON.stringify(x));let legacy=null,built=null,busy=false,knowledgeBlocked=true;
 const $=id=>document.getElementById(id),status=s=>$('status').textContent=s;
 async function wait(readFn,accept,label){return sync.waitForVerifiedRead(readFn,accept,{attempts:7,onAttempt:({attempt,attempts})=>status(label+' ('+attempt+'/'+attempts+')')});}
 async function readLegacy(){return BOBS_DATA.getModule(LEGACY.outletId,LEGACY.module,LEGACY.recordKey)}
@@ -23,10 +23,21 @@ function refs(){return (window.BOBS_MARKET_REFERENCES||[]).map(clone)}
 function render(){
  const direct=refs().filter(r=>r.auditStatus==='DIRECTLY_CALIBRATED').length,family=refs().filter(r=>r.auditStatus==='FAMILY_CHECKED').length;
  $('summary').innerHTML='<b>Audited market references:</b> '+refs().length+' ('+direct+' directly calibrated, '+family+' family checked)<br><b>Google module 1:</b> RECIPE_MARKET_EVIDENCE — '+built.evidence.length+' records<br><b>Google module 2:</b> RECIPE_CALIBRATION — '+built.calibration.length+' records<br><b>Google module 3:</b> BOBS_STANDARD_RECIPE — '+built.standard.length+' records<br><b>Legacy Recipe Master:</b> backup/history only; not used as fallback after this architecture is deployed.<br><small>Matching legacy ingredient rates are copied once into the approved standard where ingredient + unit match. Legacy recipe quantities are never used as the standard.</small>';
- $('run').disabled=busy||!legacy||!built||!built.standard.length;
+ $('run').disabled=busy||knowledgeBlocked||!legacy||!built||!built.standard.length;
+}
+async function requireEmptyKnowledge(){
+ knowledgeBlocked=true;
+ for(const module of Object.values(K.MODULES)){
+  const active=await BOBS_DATA.getRawModule('COMPANY',module,K.MANIFEST_KEY);
+  if(active!==null)throw Error('Recipe knowledge is already stored in Google Sheets. Initial publication is blocked to preserve it. Any revision must compare and back up the saved records first.');
+  const inventory=await BOBS_DATA.jsonp({action:'moduleList',outletId:'COMPANY',module});
+  if(!inventory||inventory.ok!==true||!Array.isArray(inventory.records)||Number(inventory.count)!==inventory.records.length)throw Error('Existing recipe records could not be verified. No publication is allowed.');
+  if(inventory.records.length)throw Error('Previously saved recipe records need review before publication. They will not be replaced by this page.');
+ }
+ knowledgeBlocked=false;
 }
 async function load(){
- try{busy=true;$('run').disabled=true;status('Reading historical Google Recipe Master…');legacy=await readLegacy();if(!legacy||!Array.isArray(legacy.recipes))throw Error('Historical Google Recipe Master unavailable; migration is blocked because a recovery copy cannot be guaranteed.');built=K.build(refs(),legacy.recipes);busy=false;render();status('Comparison ready. No Google write has been sent.');}
+ try{busy=true;$('run').disabled=true;status('Checking existing Google recipe knowledge…');await requireEmptyKnowledge();status('Reading historical Google Recipe Master…');legacy=await readLegacy();if(!legacy||!Array.isArray(legacy.recipes))throw Error('Historical Google Recipe Master unavailable; migration is blocked because a recovery copy cannot be guaranteed.');built=K.build(refs(),legacy.recipes);busy=false;render();status('Comparison ready. No Google write has been sent.');}
  catch(e){busy=false;status('SAFE MODE — '+e.message);$('run').disabled=true;}
 }
 async function backupLegacy(){
@@ -64,6 +75,7 @@ $('run').onclick=async()=>{
  if(busy||!built)return;if(!confirm('Create a verified historical backup, then publish Evidence → Calibration → BOBS Standard to Google? The old Recipe Master will remain backup-only and will not be overwritten.'))return;
  busy=true;$('run').disabled=true;
  try{
+  await requireEmptyKnowledge();
   const legacyKey=await backupLegacy(),priorKey=await backupActiveKnowledge(),token=Date.now()+'-'+Math.random().toString(36).slice(2);
   const e=await stageModule(K.MODULES.evidence,'evidence',built.evidence,token);
   const c=await stageModule(K.MODULES.calibration,'calibration',built.calibration,token);
