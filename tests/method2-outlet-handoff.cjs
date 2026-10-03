@@ -3,7 +3,7 @@ const {JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const root=path.resolve(__dirname,'..'),source=f=>fs.readFileSync(path.join(root,f),'utf8');
 function dom(file,url){const d=new JSDOM(source(file),{url,runScripts:'outside-only',pretendToBeVisual:true});d.window.scrollTo=()=>{};d.window.alert=()=>{};d.window.confirm=()=>true;return d;}
 async function until(fn){for(let n=0;n<60;n++){if(fn())return;await new Promise(r=>setTimeout(r,5));}throw Error('DOM initialization did not complete');}
-function core(w){w.eval(source('shared_data.js')+';window.CAT_ORDER=CAT_ORDER;window.ITEM_DATA=ITEM_DATA;');w.eval(source('method2-core.js'));}
+function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_data.js')+';window.CAT_ORDER=CAT_ORDER;window.ITEM_DATA=ITEM_DATA;');w.eval(source('method2-core.js'));}
 (async()=>{
  const parent=dom('outlet-method-flow.html','https://bobs.test/outlet-method-flow.html?outlets=1%2C2'),w=parent.window;
  const inline=[...w.document.scripts].find(s=>s.textContent.includes('function loadMethod')).textContent;
