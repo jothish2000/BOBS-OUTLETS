@@ -23,7 +23,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  assert.match(await page.locator('#productionSaveHelp').innerText(),/Ticking the checkbox does not save/);
 
  assert.equal(await page.locator('#confirmed').getAttribute('aria-disabled'),'true');
- await page.locator('#confirmed').click();assert.equal(await page.locator('#confirmed').isChecked(),false);
+ await page.locator('#confirmed').click({force:true});assert.equal(await page.locator('#confirmed').isChecked(),false);
  assert(await page.locator('#referenceSection').evaluate(el=>el.classList.contains('reference-attention')));
  assert.equal(await page.evaluate(()=>document.activeElement.id),'scale');
  await page.locator('#confirmed').focus();await page.keyboard.press('Space');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.equal(await page.evaluate(()=>document.activeElement.id),'scale');
@@ -62,7 +62,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#portion').selectOption('');
  assert(await page.locator('#customPortion').isDisabled());assert.equal(await page.locator('#customPortion').inputValue(),'');
  assert.match(await page.locator('#calculationStatus').innerText(),/Not recalculated/);
- await page.locator('#confirmed').click();assert.equal(await page.locator('#confirmed').isChecked(),false);await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);
+ await page.locator('#confirmed').click({force:true});assert.equal(await page.locator('#confirmed').isChecked(),false);await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);
  await calculate();
  assert.equal(await page.locator('.quantity').first().inputValue(),'4.800');
  assert.match(await page.locator('#appliedPortion').innerText(),/reference 50 g/);
@@ -90,7 +90,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  const fixture=await page.evaluate(()=>({recipe:window.recipe,state:window.savedNext}));
  await reopen.evaluate(f=>{window.M2={purchaseKey:s=>s.toLowerCase()};window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
  await reopen.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await reopen.evaluate(()=>BOBSRecipeProduction.start());
- assert.equal(await reopen.locator('#confirmed').getAttribute('aria-disabled'),'true');await reopen.locator('#confirmed').click();assert.equal(await reopen.locator('#confirmed').isChecked(),false);assert.equal(await reopen.evaluate(()=>document.activeElement.id),'scale');
+ assert.equal(await reopen.locator('#confirmed').getAttribute('aria-disabled'),'true');await reopen.locator('#confirmed').click({force:true});assert.equal(await reopen.locator('#confirmed').isChecked(),false);assert.equal(await reopen.evaluate(()=>document.activeElement.id),'scale');
  assert(await reopen.locator('#customPortion').isEnabled());assert.equal(await reopen.locator('#portion').inputValue(),'custom');assert.equal(await reopen.locator('#customPortion').inputValue(),'110');
  assert.equal(await reopen.locator('.quantity').first().inputValue(),'10.560');
  assert.match(await reopen.locator('#appliedPortion').innerText(),/Loaded saved outlet recipe:.*intended 110 g/);
