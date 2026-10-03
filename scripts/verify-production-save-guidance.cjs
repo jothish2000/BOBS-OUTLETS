@@ -72,7 +72,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#saveProduction').click();assert.match(await page.locator('#productionStatus').innerText(),/Check the reference/);assert.equal(await page.evaluate(()=>window.saves),0);
  await page.locator('#confirmed').check();assert.equal(await page.evaluate(()=>window.saves),0);
  await page.locator('#targetQty').fill('480');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.match(await page.locator('#productionStatus').innerText(),/Click Calculate/);
- await page.locator('#confirmed').check();await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);
+ await page.locator('#confirmed').click({force:true});assert.equal(await page.locator('#confirmed').isChecked(),false);await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);
  await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);await page.locator('#confirmed').check();await page.locator('#saveProduction').click();
  await page.waitForFunction(()=>document.getElementById('productionStatus').textContent.includes('saved and verified'));
  assert.equal(await page.locator('.quantity').nth(1).inputValue(),'35');
