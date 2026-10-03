@@ -3,7 +3,7 @@ const {JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const root=path.resolve(__dirname,'..'),src=f=>fs.readFileSync(path.join(root,f),'utf8');
 const clone=x=>JSON.parse(JSON.stringify(x));
 function dom(file,url){const d=new JSDOM(src(file),{url,runScripts:'outside-only',pretendToBeVisual:true});d.window.scrollTo=()=>{};d.window.alert=()=>{};d.window.confirm=()=>true;return d;}
-function core(w){w.eval(src('shared_data.js')+';window.CAT_ORDER=CAT_ORDER;window.ITEM_DATA=ITEM_DATA;');w.eval(src('method2-core.js'));}
+function core(w){w.eval(src('bobs-number-format.js'));w.eval(src('shared_data.js')+';window.CAT_ORDER=CAT_ORDER;window.ITEM_DATA=ITEM_DATA;');w.eval(src('method2-core.js'));}
 async function wait(fn){for(let i=0;i<100;i++){if(fn())return;await new Promise(r=>setTimeout(r,10))}throw Error('Expected DOM state timed out')}
 (async()=>{
  const d=dom('method2.html','https://bobs.test/method2.html?outlet=1&flow=1'),w=d.window;core(w);

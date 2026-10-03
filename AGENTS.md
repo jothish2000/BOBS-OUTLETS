@@ -140,3 +140,7 @@ Follow universal master v4.1 sections 4A–4D: preserve Chat/Work routing, apply
 
 ## Owner communication override — 2 October 2026
 Assume ChatGPT Windows Work mode on the Owner's laptop unless the Owner explicitly says they are on mobile. Do not ask laptop-or-phone confirmation. This supersedes the older personal device-question rule. Follow universal master v4.2 section 4E: selectable YES/NO mode gate, decision pending until explicit response; no timeout/default consent. Use supported mode transfer only after choice and handover; verify it. If popup persistence or mode switching is unavailable, disclose the limitation and preserve a replyable YES/NO choice rather than claiming a switch. These project instructions do not automatically change unrelated chats or local global settings.
+
+
+## Owner quantity formatting — 3 October 2026
+Follow the 111QS BOBS annex quantity-numbering rule in OVERALL_DESIGN_MASTER_111Q.md. Quantity displays: kg/litres three decimals; grams/pieces/dozens/cartons and other discrete packs/sets whole numbers. Use BOBS_NUMBERS.quantity at presentation boundaries. Never round calculation, saved/exported Google values or exact editable inputs; preserve raw values for any rounded grid input. Do not change currency/percentage/time precision under this rule. Add explicit unit-aware formatting when adding new screens.

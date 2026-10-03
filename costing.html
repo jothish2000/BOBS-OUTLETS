@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><script src="bobs-number-format.js?v=20261003"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Purchase &amp; Production Cost</title>
@@ -132,10 +132,10 @@ function render(){
         ${r.name}<span class="price">${r.cat}${r.brand ? ' · '+r.brand : ''} · ${r.mode} (${r.costNote})</span>
       </span>
       <div style="display:flex;justify-content:space-between;width:100%;margin-top:6px;font-size:11.5px;">
-        <span>Sold: <strong>${fmt(r.qty)} ${r.unit}</strong> × ₹${r.price}${r.unit==='g'?'/kg':''} = <strong class="num">₹${fmt(r.revenue)}</strong></span>
+        <span>Sold: <strong>${BOBS_NUMBERS.quantity(r.qty,r.unit)} ${r.unit}</strong> × ₹${r.price}${r.unit==='g'?'/kg':''} = <strong class="num">₹${fmt(r.revenue)}</strong></span>
       </div>
       <div style="display:flex;justify-content:space-between;width:100%;margin-top:3px;font-size:11.5px;color:var(--ink-soft);">
-        <span>Cost: ₹${fmt2(r.unitCost)}/${r.unit==='g'?'g':'unit'} × ${fmt(r.qty)} = <strong class="num" style="color:var(--loss);">₹${fmt(r.totalCost)}</strong></span>
+        <span>Cost: ₹${fmt2(r.unitCost)}/${r.unit==='g'?'g':'unit'} × ${BOBS_NUMBERS.quantity(r.qty,r.unit)} = <strong class="num" style="color:var(--loss);">₹${fmt(r.totalCost)}</strong></span>
         <span style="color:var(--profit);font-weight:700;">Profit ₹${fmt(r.profit)}</span>
       </div>
     </div>

@@ -10,7 +10,7 @@ function applySupply(){
  else{$('basis').value='unit';$('qty').value='1';$('unit').value=supply}
  $('priceLabel').textContent='Supplier price ₹ / '+supply;
 }
-function calculate(){applySupply();const p=values(),rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;$('calculation').textContent=rate===null?'Enter the supplier definition and price.':'₹'+Number(p.total).toFixed(2)+' ÷ '+p.qty+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' per '+unit}
+function calculate(){applySupply();const p=values(),rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;$('calculation').textContent=rate===null?'Enter the supplier definition and price.':'₹'+Number(p.total).toFixed(2)+' ÷ '+BOBS_NUMBERS.quantity(p.qty,p.unit)+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' per '+unit}
 function close(){if(busy)return;if(dirty&&!confirm('Leave without saving these supplier rates?'))return;dirty=false;if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet)}
 $('close').onclick=close;
 $('editor').oninput=()=>{dirty=true;calculate()};

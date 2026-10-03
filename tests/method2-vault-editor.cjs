@@ -6,7 +6,7 @@ async function until(fn){for(let n=0;n<100;n++){if(fn())return;await new Promise
 function fixture({mode='production',initial=null,optional=null,standardUnavailable=false,standardRecords,marketRecords}={}){
  const dom=new JSDOM(source('method2-item.html'),{url:'https://bobs.test/method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode='+mode,runScripts:'outside-only'}),w=dom.window,$=id=>w.document.getElementById(id);
  w.confirm=()=>true;w.close=()=>{};w.opener={closed:false,focus(){},postMessage(){}};w.BroadcastChannel=class{postMessage(){}close(){}};
- w.eval(source('shared_data.js')+';window.ITEM_DATA=ITEM_DATA;');w.eval(source('method2-core.js'));
+ w.eval(source('bobs-number-format.js'));w.eval(source('shared_data.js')+';window.ITEM_DATA=ITEM_DATA;');w.eval(source('method2-core.js'));
  const recipes=[{name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',3,'kg',60]]}];
  const draft={mode,unit:'piece',batchSize:120,batches:mode==='purchased'?360:3,capacity:1000,sold:290,price:10,spoilage:0,uuwp:5,uuwpPolicy:'always',markup:25,pricingBasis:'markup',condiments:[],packaging:[],packingMode:'none',mainPacking:{packingMode:'none',packaging:[],packingPer:1},commonPacking:{packingMode:'none',packaging:[],packingPer:1},purchase:{basis:'unit',supplyUnit:'piece',unit:'piece',qty:1,total:2},soldConfirmed:true};
  let db={'1/METHOD2/default':{itemEditors:{'Breakfast Catalogue::0':draft}}},fail=false,standardCalls=0;const reads=[],writes=[];

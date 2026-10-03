@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><script src="bobs-number-format.js?v=20261003"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Archived Method 2 — legacy reference only</title>
@@ -273,12 +273,12 @@ function updateBatchPanel(cat, i) {
     const soldQty = parseFloat(qtyInput.value) || 0;
 
     if (pieceCap > 0 && soldQty > pieceCap) {
-      infoDiv.innerHTML = `⚠️ Sold (${soldQty}) exceeds your daily production capacity (${pieceCap}).`;
+      infoDiv.innerHTML = `⚠️ Sold (${BOBS_NUMBERS.quantity(soldQty,'piece')}) exceeds your daily production capacity (${BOBS_NUMBERS.quantity(pieceCap,'piece')}).`;
       infoDiv.className = 'batchInfo batchError';
       costChainDiv.innerHTML = '';
       return;
     }
-    infoDiv.innerHTML = `Made individually. Sold: ${soldQty} of ${pieceCap} capacity.`;
+    infoDiv.innerHTML = `Made individually. Sold: ${BOBS_NUMBERS.quantity(soldQty,'piece')} of ${BOBS_NUMBERS.quantity(pieceCap,'piece')} capacity.`;
     infoDiv.className = 'batchInfo';
     renderCostChain(costChainDiv, baseCost, spoilPct, soldQty, item.price);
     return;
@@ -311,18 +311,18 @@ function updateBatchPanel(cat, i) {
     const producedToday = batchSize * numBatches;
 
     if (capacity > 0 && producedToday > capacity) {
-      infoDiv.innerHTML = `⚠️ ${numBatches} batches × ${batchSize} = ${producedToday}, exceeds your production capacity of ${capacity}/day.`;
+      infoDiv.innerHTML = `⚠️ ${numBatches} batches × ${BOBS_NUMBERS.quantity(batchSize,'piece')} = ${BOBS_NUMBERS.quantity(producedToday,'piece')}, exceeds your production capacity of ${BOBS_NUMBERS.quantity(capacity,'piece')}/day.`;
       infoDiv.className = 'batchInfo batchError';
       costChainDiv.innerHTML = '';
       return;
     }
     if (soldQty > producedToday) {
-      infoDiv.innerHTML = `⚠️ Sold (${soldQty}) can't exceed what was produced (${producedToday}).`;
+      infoDiv.innerHTML = `⚠️ Sold (${BOBS_NUMBERS.quantity(soldQty,'piece')}) can't exceed what was produced (${BOBS_NUMBERS.quantity(producedToday,'piece')}).`;
       infoDiv.className = 'batchInfo batchError';
       return;
     }
     const wastage = producedToday - soldQty;
-    infoDiv.innerHTML = `Produced today: ${producedToday} (${numBatches} × ${batchSize}). Sold: ${soldQty}. <span style="color:var(--loss);">Unsold (wastage-tracked): ${wastage}</span>`;
+    infoDiv.innerHTML = `Produced today: ${BOBS_NUMBERS.quantity(producedToday,'piece')} (${numBatches} × ${BOBS_NUMBERS.quantity(batchSize,'piece')}). Sold: ${BOBS_NUMBERS.quantity(soldQty,'piece')}. <span style="color:var(--loss);">Unsold (wastage-tracked): ${BOBS_NUMBERS.quantity(wastage,'piece')}</span>`;
     infoDiv.className = 'batchInfo';
     renderCostChain(costChainDiv, baseCost, spoilPct, soldQty, item.price);
   }
@@ -353,7 +353,7 @@ function renderCostChain(div, baseCost, spoilPct, soldQty, price, isKgTrimAdjust
   const effectiveCost = baseCost * (1 + spoilPct/100);
   const purchaseCostToday = effectiveCost * soldQty;
   const unitLabel = isKgTrimAdjusted ? 'True cost/g (trim-adjusted)' : 'Base cost/unit';
-  const soldLabel = isKgTrimAdjusted ? `× ${soldQty} g sold = Purchase Cost` : `× ${soldQty} sold = Purchase Cost`;
+  const soldLabel = isKgTrimAdjusted ? `× ${BOBS_NUMBERS.quantity(soldQty,'piece')} g sold = Purchase Cost` : `× ${BOBS_NUMBERS.quantity(soldQty,'piece')} sold = Purchase Cost`;
   div.innerHTML = `
     <div class="ccRow"><span>${unitLabel}</span><span>₹${baseCost.toFixed(4)}</span></div>
     <div class="ccRow"><span>+ Spoilage (${spoilPct}%)</span><span>₹${effectiveCost.toFixed(4)}</span></div>
@@ -488,11 +488,11 @@ function updateKgPanel(cat, i, item, spoilPct) {
   const producedKg = kgBatchSize * kgNumBatches;
 
   if (kgCapacity > 0 && producedKg > kgCapacity) {
-    kgProducedInfo.innerHTML = `⚠️ ${kgNumBatches} × ${kgBatchSize}kg = ${producedKg}kg, exceeds capacity of ${kgCapacity}kg/day.`;
+    kgProducedInfo.innerHTML = `⚠️ ${kgNumBatches} × ${BOBS_NUMBERS.quantity(kgBatchSize,'kg')}kg = ${BOBS_NUMBERS.quantity(producedKg,'kg')}kg, exceeds capacity of ${BOBS_NUMBERS.quantity(kgCapacity,'kg')}kg/day.`;
     kgProducedInfo.style.color = 'var(--loss)';
     return;
   }
-  kgProducedInfo.innerHTML = `Produced today: ${producedKg} kg (${kgNumBatches} × ${kgBatchSize}kg)`;
+  kgProducedInfo.innerHTML = `Produced today: ${BOBS_NUMBERS.quantity(producedKg,'kg')} kg (${kgNumBatches} × ${BOBS_NUMBERS.quantity(kgBatchSize,'kg')}kg)`;
   kgProducedInfo.style.color = 'var(--ink-soft)';
 
   const totalBatchG = producedKg * 1000;
@@ -506,9 +506,9 @@ function updateKgPanel(cat, i, item, spoilPct) {
   const remaining = totalBatchG - totalAllocated;
 
   if (remaining < 0) {
-    allocInfo.innerHTML = `<span style="color:var(--loss);font-weight:600;">⚠️ Allocated: ${totalAllocated} g — exceeds batch size (${totalBatchG} g) by ${-remaining} g. Reduce a quantity above.</span>`;
+    allocInfo.innerHTML = `<span style="color:var(--loss);font-weight:600;">⚠️ Allocated: ${BOBS_NUMBERS.quantity(totalAllocated,'g')} g — exceeds batch size (${BOBS_NUMBERS.quantity(totalBatchG,'g')} g) by ${BOBS_NUMBERS.quantity(-remaining,'g')} g. Reduce a quantity above.</span>`;
   } else {
-    allocInfo.textContent = `Allocated: ${totalAllocated} g   Remaining: ${remaining} g`;
+    allocInfo.textContent = `Allocated: ${BOBS_NUMBERS.quantity(totalAllocated,'g')} g   Remaining: ${BOBS_NUMBERS.quantity(remaining,'g')} g`;
   }
   const remainingSafe = Math.max(0, remaining);
 
@@ -917,7 +917,7 @@ async function syncToSheet(){
         const inp2 = document.querySelector(`.qtyInput[data-cat="${cat}"][data-i="${i}"]`);
         const qty2 = parseFloat(inp2.value) || 0;
         if (qty2 > 0 && pieceCap > 0 && qty2 > pieceCap) {
-          invalidItems.push(`${item.name} (sold ${qty2} exceeds daily capacity ${pieceCap})`);
+          invalidItems.push(`${item.name} (sold ${BOBS_NUMBERS.quantity(qty2,'piece')} exceeds daily capacity ${BOBS_NUMBERS.quantity(pieceCap,'piece')})`);
         }
         return;
       }
@@ -933,9 +933,9 @@ async function syncToSheet(){
       const qty = parseFloat(inp.value) || 0;
       if (qty === 0) return;
       if (capacity > 0 && producedToday > capacity) {
-        invalidItems.push(`${item.name} (produced ${producedToday} exceeds capacity ${capacity}/day)`);
+        invalidItems.push(`${item.name} (produced ${BOBS_NUMBERS.quantity(producedToday,'piece')} exceeds capacity ${BOBS_NUMBERS.quantity(capacity,'piece')}/day)`);
       } else if (producedToday > 0 && qty > producedToday) {
-        invalidItems.push(`${item.name} (sold ${qty} exceeds produced ${producedToday})`);
+        invalidItems.push(`${item.name} (sold ${BOBS_NUMBERS.quantity(qty,'piece')} exceeds produced ${BOBS_NUMBERS.quantity(producedToday,'piece')})`);
       }
     });
   });
