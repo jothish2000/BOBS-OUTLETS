@@ -3,7 +3,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'C:/Users/HP/.cache/codex-
 const K=require('../recipe-market-google-store.js'),root=path.resolve(__dirname,'..');
 const r={name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',3,'kg',60]]};
 const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const draft={mode:'production',unit:'piece',batchSize:120,batches:3,capacity:1440,sold:290,price:10,spoilage:0,uuwp:5,uuwpPolicy:'always',markup:25,pricingBasis:'markup',condiments:[],packaging:[],packingMode:'none',mainPacking:{packingMode:'none',packaging:[],packingPer:1},commonPacking:{packingMode:'none',packaging:[],packingPer:1},soldConfirmed:true,businessDate:day};
+const draft={mode:'production',unit:'piece',batchSize:120,batches:3,capacity:1440,sold:290,price:10,spoilage:0,uuwp:5,uuwpPolicy:'always',markup:25,pricingBasis:'markup',condiments:[],packaging:[],packingMode:'none',mainPacking:{packingMode:'required',packaging:[{name:'Box',qty:1,unitCost:2}],packingPer:2},commonPacking:{packingMode:'required',packaging:[{name:'Bag',qty:1,unitCost:1}],packingPer:3},soldConfirmed:true,businessDate:day};
 const db={'1/METHOD2/default':{itemEditors:{'Breakfast Catalogue::0':draft}},'COMPANY/BOBS_STANDARD_RECIPE/ACTIVE_V1':K.manifest('standard',['test-chunk'],'token',1),'COMPANY/BOBS_STANDARD_RECIPE/test-chunk':K.chunkData('standard',[r],'token',0,1)};
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  const context=await browser.newContext({viewport:{width:1366,height:900}}),errors=[],reads=[],writes=[];let first=true;
@@ -18,12 +18,13 @@ const db={'1/METHOD2/default':{itemEditors:{'Breakfast Catalogue::0':draft}},'CO
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  const route='https://bobs.test/method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode=production';
  await page.goto(route);await page.waitForFunction(()=>!document.getElementById('controls').disabled,{},{timeout:15000});
- assert.equal(await page.inputValue('#sold'),'290');assert(!reads.includes('RECIPE_MASTER'));assert.equal(writes.length,0);
+ assert.equal(await page.inputValue('#sold'),'290');assert.match(await page.locator('#packingSummary').textContent(),/2 sales units/);assert.match(await page.locator('#commonPacking .packing-summary').textContent(),/3 sales units/);assert(!reads.includes('RECIPE_MASTER'));assert.equal(writes.length,0);
  await page.waitForFunction(()=>document.getElementById('idliLabourCost').textContent.includes('request failed'));
  assert(await page.locator('#editor').isVisible());assert.equal(await page.locator('#save').isEnabled(),true);console.log('PASS Chrome: first network failure retried; optional failures isolated; quantities retained; zero initial writes');
+ await page.fill('#sold','288');assert.match(await page.locator('#packingSummary').textContent(),/288 sold → 144 whole sets/);
  await page.click('#save');try{await page.waitForFunction(()=>document.getElementById('saveStatus').textContent==='Verified in Google')}catch(e){console.error('SAVE DIAGNOSTIC',JSON.stringify({url:page.url(),status:await page.locator('#status').textContent(),save:await page.locator('#saveStatus').textContent(),invalid:await page.locator(':invalid').evaluateAll(es=>es.map(x=>({id:x.id,value:x.value,message:x.validationMessage}))),errors,writes}));throw e}
- assert.deepEqual(writes,['METHOD2_BACKUPS','METHOD2']);assert.equal(Number(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].sold),290);
- await page.reload();await page.waitForFunction(()=>!document.getElementById('controls').disabled);assert.equal(await page.inputValue('#sold'),'290');assert.equal(await page.inputValue('#batches'),'3');
+ assert.deepEqual(writes,['METHOD2_BACKUPS','METHOD2']);assert.equal(Number(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].sold),288);
+ await page.reload();await page.waitForFunction(()=>!document.getElementById('controls').disabled);assert.equal(await page.inputValue('#sold'),'288');assert.match(await page.locator('#packingSummary').textContent(),/2 sales units/);assert.equal(await page.inputValue('#batches'),'3');
  await page.setViewportSize({width:390,height:844});assert(await page.locator('#save').isVisible());assert.equal(errors.length,0,errors.join('\n'));console.log('PASS Chrome: protected mock save/readback/reload, narrow viewport, zero runtime errors');
  await context.close();
  if(process.env.BOBS_LIVE_READ==='1'){

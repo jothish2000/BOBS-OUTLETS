@@ -51,7 +51,7 @@ function create(data,options){
 }
 function update(element,cost,sold){
  const p=cost.packingCost,output=element.querySelector('.packing-summary');
- output.textContent=p.missing.length?p.missing.join('. '):p.mode==='none'||p.mode==='included'?'Additional packing: ₹0.00.':money(p.perPack)+' per packing set ÷ '+BOBS_NUMBERS.quantity(p.per,root.packingOptions.salesUnit)+' sales units = '+money(p.perItem)+' standard packing per sales unit'+(sold===null?'':'. '+BOBS_NUMBERS.quantity(sold,root.packingOptions.salesUnit)+' sold → '+BOBS_NUMBERS.quantity(p.parcels,'set')+' whole sets → '+money(p.total)+'; allocated per unit '+money(p.allocated)+'.');
+ output.textContent=p.missing.length?p.missing.join('. '):p.mode==='none'||p.mode==='included'?'Additional packing: ₹0.00.':money(p.perPack)+' per packing set ÷ '+BOBS_NUMBERS.quantity(p.per,element.packingOptions.salesUnit)+' sales units = '+money(p.perItem)+' standard packing per sales unit'+(sold===null?'':'. '+BOBS_NUMBERS.quantity(sold,element.packingOptions.salesUnit)+' sold → '+BOBS_NUMBERS.quantity(p.parcels,'set')+' whole sets → '+money(p.total)+'; allocated per unit '+money(p.allocated)+'.');
 }
 root.M2PackingUI={create,update};
 })(window);

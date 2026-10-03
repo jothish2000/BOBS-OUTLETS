@@ -4,6 +4,7 @@ on:
     paths:
       - 'bobs-google-data.js'
       - 'bobs-operational-recipes.js'
+      - 'method2-packing-ui.js'
       - 'method2-item.js'
       - 'method2-item.html'
       - 'apps-script/04_ModuleData.gs'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'bobs-google-data.js'
       - 'bobs-operational-recipes.js'
+      - 'method2-packing-ui.js'
       - 'method2-item.js'
       - 'method2-item.html'
       - 'apps-script/04_ModuleData.gs'
@@ -51,5 +53,6 @@ jobs:
         run: |
           node --check bobs-google-data.js
           node --check bobs-operational-recipes.js
+          node --check method2-packing-ui.js
           node --check method2-item.js
           git diff --check HEAD^ HEAD

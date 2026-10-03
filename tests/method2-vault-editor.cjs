@@ -3,12 +3,13 @@ const {JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const source=f=>fs.readFileSync(f,'utf8'),clone=x=>JSON.parse(JSON.stringify(x));
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject}};
 async function until(fn){for(let n=0;n<100;n++){if(fn())return;await new Promise(r=>setTimeout(r,5))}throw Error('Expected editor state did not arrive')}
-function fixture({mode='production',initial=null,optional=null,standardUnavailable=false,standardRecords,marketRecords}={}){
+function fixture({mode='production',initial=null,optional=null,standardUnavailable=false,standardRecords,marketRecords,packingRequired=false}={}){
  const dom=new JSDOM(source('method2-item.html'),{url:'https://bobs.test/method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode='+mode,runScripts:'outside-only'}),w=dom.window,$=id=>w.document.getElementById(id);
  w.confirm=()=>true;w.close=()=>{};w.opener={closed:false,focus(){},postMessage(){}};w.BroadcastChannel=class{postMessage(){}close(){}};
  w.eval(source('bobs-number-format.js'));w.eval(source('shared_data.js')+';window.ITEM_DATA=ITEM_DATA;');w.eval(source('method2-core.js'));
  const recipes=[{name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',3,'kg',60]]}];
  const draft={mode,unit:'piece',batchSize:120,batches:mode==='purchased'?360:3,capacity:1000,sold:290,price:10,spoilage:0,uuwp:5,uuwpPolicy:'always',markup:25,pricingBasis:'markup',condiments:[],packaging:[],packingMode:'none',mainPacking:{packingMode:'none',packaging:[],packingPer:1},commonPacking:{packingMode:'none',packaging:[],packingPer:1},purchase:{basis:'unit',supplyUnit:'piece',unit:'piece',qty:1,total:2},soldConfirmed:true};
+ if(packingRequired){draft.mainPacking={packingMode:'required',packingPer:2,packaging:[{name:'Box',qty:1,unitCost:2}]};draft.commonPacking={packingMode:'required',packingPer:3,packaging:[{name:'Bag',qty:1,unitCost:1}]};}
  let db={'1/METHOD2/default':{itemEditors:{'Breakfast Catalogue::0':draft}}},fail=false,standardCalls=0;const reads=[],writes=[];
  w.BOBS_DATA={jsonp:async p=>{reads.push(p.module);if(p.module==='RECIPE_MASTER')throw Error('Legacy recipe access forbidden');if(p.module==='METHOD2'&&initial){const v=initial;initial=null;return v.promise}if(p.module==='METHOD2'&&fail)throw Error('Google Data Vault timeout');if(p.module==='IDLI_SUPPORT'&&optional)return optional.promise;const data=db[p.outletId+'/'+p.module+'/'+p.recordKey];return {ok:true,found:!!data,data:clone(data??null)}},saveModule:async(o,m,k,d)=>{writes.push(m);db[o+'/'+m+'/'+k]=clone(d)}};
  w.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>{standardCalls++;if(standardUnavailable)throw Error('Google standard timeout');return standardRecords===null?null:{records:clone(standardRecords===undefined?recipes:standardRecords)}}};w.BOBS_MARKET_REFERENCES=clone(marketRecords===undefined?recipes:marketRecords);w.BOBS_PORIYAL=[];
@@ -69,4 +70,35 @@ test('guide does not claim a fallback exists for an item missing from both colle
  assert.equal(x.$('guideSourceTitle').textContent,'Recipe unavailable for this item');
  assert.match(x.$('guideSourceText').textContent,/no previously prepared market-reference recipe is available/);
  assert.equal(x.writes.length,0);x.dom.window.close();
+});
+
+test('complete required main/common packing loads, recalculates and saves without salesUnit crash',async()=>{
+ const x=fixture({packingRequired:true});await until(()=>!x.$('controls').disabled);
+ assert.match(x.$('status').textContent,/Loaded from Google/);
+ assert.match(x.$('packingSummary').textContent,/2 sales units/);
+ assert.match(x.$('commonPacking').textContent,/3 sales units/);
+ assert.equal(x.writes.length,0);
+ x.$('sold').value='288';x.$('sold').dispatchEvent(new x.w.Event('input'));
+ assert.match(x.$('packingSummary').textContent,/288 sold → 144 whole sets/);
+ await x.$('editor').onsubmit({preventDefault(){}});
+ assert.equal(x.$('saveStatus').textContent,'Verified in Google',x.$('status').textContent);
+ assert.equal(x.db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].mainPacking.packingPer,2);
+ assert.deepEqual(x.writes,['METHOD2_BACKUPS','METHOD2']);x.dom.window.close();
+});
+test('packing summaries use each main, side and common element unit; display never changes raw values',async()=>{
+ const x=fixture();await until(()=>!x.$('controls').disabled);
+ for(const [name,unit,per,sold,expected,flags] of [
+ ['Idli','piece',2,3,['2 sales units','3 sold'],{main:true}],
+ ['Sambar','kg',0.002,0.006,['0.002 sales units','0.006 sold'],{}],
+ ['Common / order','carton',2,4,['2 sales units','4 sold'],{common:true}]
+ ]){
+  const data={packingMode:'required',packingPer:per,packaging:[{name:'Container',qty:1,unitCost:2}]},before=clone(data);
+  const el=x.w.M2PackingUI.create(data,{name,salesUnit:unit,changed(){},...flags});
+  const p={missing:[],mode:'required',perPack:2,per,perItem:2/per,parcels:3,total:6,allocated:6/sold};
+  x.w.M2PackingUI.update(el,{packingCost:p},sold);
+  for(const text of expected)assert(el.textContent.includes(text),el.textContent);
+  x.w.M2PackingUI.update(el,{packingCost:p},null);assert(!el.querySelector('.packing-summary').textContent.includes('sold →'));
+  assert.deepEqual(JSON.parse(JSON.stringify(data)),before);
+ }
+ x.dom.window.close();
 });
