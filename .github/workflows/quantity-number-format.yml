@@ -1,0 +1,23 @@
+name: BOBS quantity numbering
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  quantity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Quantity rules, availability, syntax and connected business checks
+        run: |
+          node tests/quantity-number-format.cjs
+          node --test tests/query1-cost-flow.cjs tests/method2-commerce.cjs tests/method2-component-packing.cjs tests/method2-reconciliation.cjs tests/method2-selling-price.cjs tests/method2-selection.cjs tests/method2-order-recovery.cjs
+          node tests/equipment-planner.cjs
+          node tests/equipment-planner-persistence.cjs
+      - name: Isolated recipe display and exact save/reopen
+        run: |
+          npm install --no-save --package-lock=false playwright@1.58.2
+          node scripts/verify-production-save-guidance.cjs
+          node scripts/verify-historical-recipes-readonly.cjs

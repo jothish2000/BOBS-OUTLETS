@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><script src="bobs-number-format.js?v=20261003"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Archived Method 2 — legacy reference only</title>
@@ -488,11 +488,11 @@ function updateKgPanel(cat, i, item, spoilPct) {
   const producedKg = kgBatchSize * kgNumBatches;
 
   if (kgCapacity > 0 && producedKg > kgCapacity) {
-    kgProducedInfo.innerHTML = `⚠️ ${kgNumBatches} × ${kgBatchSize}kg = ${producedKg}kg, exceeds capacity of ${kgCapacity}kg/day.`;
+    kgProducedInfo.innerHTML = `⚠️ ${kgNumBatches} × ${BOBS_NUMBERS.quantity(kgBatchSize,'kg')}kg = ${BOBS_NUMBERS.quantity(producedKg,'kg')}kg, exceeds capacity of ${BOBS_NUMBERS.quantity(kgCapacity,'kg')}kg/day.`;
     kgProducedInfo.style.color = 'var(--loss)';
     return;
   }
-  kgProducedInfo.innerHTML = `Produced today: ${producedKg} kg (${kgNumBatches} × ${kgBatchSize}kg)`;
+  kgProducedInfo.innerHTML = `Produced today: ${BOBS_NUMBERS.quantity(producedKg,'kg')} kg (${kgNumBatches} × ${BOBS_NUMBERS.quantity(kgBatchSize,'kg')}kg)`;
   kgProducedInfo.style.color = 'var(--ink-soft)';
 
   const totalBatchG = producedKg * 1000;
@@ -506,9 +506,9 @@ function updateKgPanel(cat, i, item, spoilPct) {
   const remaining = totalBatchG - totalAllocated;
 
   if (remaining < 0) {
-    allocInfo.innerHTML = `<span style="color:var(--loss);font-weight:600;">⚠️ Allocated: ${totalAllocated} g — exceeds batch size (${totalBatchG} g) by ${-remaining} g. Reduce a quantity above.</span>`;
+    allocInfo.innerHTML = `<span style="color:var(--loss);font-weight:600;">⚠️ Allocated: ${BOBS_NUMBERS.quantity(totalAllocated,'g')} g — exceeds batch size (${BOBS_NUMBERS.quantity(totalBatchG,'g')} g) by ${BOBS_NUMBERS.quantity(-remaining,'g')} g. Reduce a quantity above.</span>`;
   } else {
-    allocInfo.textContent = `Allocated: ${totalAllocated} g   Remaining: ${remaining} g`;
+    allocInfo.textContent = `Allocated: ${BOBS_NUMBERS.quantity(totalAllocated,'g')} g   Remaining: ${BOBS_NUMBERS.quantity(remaining,'g')} g`;
   }
   const remainingSafe = Math.max(0, remaining);
 

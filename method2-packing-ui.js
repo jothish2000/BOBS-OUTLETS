@@ -3,7 +3,7 @@
 const materials=['Aluminium coated food box - small','Aluminium coated food box - large / rice pack','Idli container / tray','Food container - small','Food container - medium','Food container - large','Sambar pouch / cup - small','Sambar pouch / cup - medium','Chutney pouch / cup','Container lid','Butter paper / food sheet','Carry bag','Spoon / fork','Rubber band / sealing item','Other packing'];
 const money=n=>'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function create(data,options){
- const root=document.createElement('section');root.className='packing-editor';root.packingData=data;
+ const root=document.createElement('section');root.className='packing-editor';root.packingData=data;root.packingOptions=options;
  function change(){options.changed()}
  function input(label,value,set,type='number'){
   const l=document.createElement('label');l.textContent=label;const e=document.createElement('input');e.type=type;e.value=value??'';
@@ -51,7 +51,7 @@ function create(data,options){
 }
 function update(element,cost,sold){
  const p=cost.packingCost,output=element.querySelector('.packing-summary');
- output.textContent=p.missing.length?p.missing.join('. '):p.mode==='none'||p.mode==='included'?'Additional packing: ₹0.00.':money(p.perPack)+' per packing set ÷ '+p.per+' sales units = '+money(p.perItem)+' standard packing per sales unit'+(sold===null?'':'. '+sold+' sold → '+p.parcels+' whole sets → '+money(p.total)+'; allocated per unit '+money(p.allocated)+'.');
+ output.textContent=p.missing.length?p.missing.join('. '):p.mode==='none'||p.mode==='included'?'Additional packing: ₹0.00.':money(p.perPack)+' per packing set ÷ '+BOBS_NUMBERS.quantity(p.per,root.packingOptions.salesUnit)+' sales units = '+money(p.perItem)+' standard packing per sales unit'+(sold===null?'':'. '+BOBS_NUMBERS.quantity(sold,root.packingOptions.salesUnit)+' sold → '+BOBS_NUMBERS.quantity(p.parcels,'set')+' whole sets → '+money(p.total)+'; allocated per unit '+money(p.allocated)+'.');
 }
 root.M2PackingUI={create,update};
 })(window);

@@ -17,6 +17,7 @@ const recipes=[{name:'Vada',category:'SNACK',yieldQty:77,yieldUnit:'pieces',ingr
  window.before=JSON.stringify(window.saved);
  window.BOBS_DATA={getModule:async(...args)=>{window.calls.push(args);if(scenario==='failed')throw Error('Simulated read failure');return window.saved},saveModule:async()=>{window.writes++;throw Error('Unexpected write')}};
  },{scenario,recipes});
+ await page.addScriptTag({content:fs.readFileSync('bobs-number-format.js','utf8')});
  await page.addScriptTag({content:inline});await page.waitForFunction(()=>!document.getElementById('status').textContent.startsWith('Reading'));
  assert.equal(await page.evaluate(()=>window.writes),0);
  assert.equal(await page.evaluate(()=>JSON.stringify(window.saved)===window.before),true);

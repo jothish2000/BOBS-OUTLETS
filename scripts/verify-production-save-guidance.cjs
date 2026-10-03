@@ -9,6 +9,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  const html=fs.readFileSync('recipe-cost-editor.html','utf8');
  await page.setContent(html.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
  await page.addStyleTag({content:fs.readFileSync('style.css','utf8')});
+ await page.addScriptTag({content:fs.readFileSync('bobs-number-format.js','utf8')});
  await page.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
  await page.evaluate(()=>{
  window.saves=0;window.failSave=false;window.recipe={name:'Idli',yieldQty:120,yieldUnit:'pieces',portionGrams:50,ingredients:[['Rice',1.6,'kg',55],['Fenugreek',0.004,'kg',160],['LPG fuel',0.2,'kg',153.5]],referenceEvidence:[]};
@@ -25,7 +26,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  assert.match(await page.locator('#portionSource').innerText(),/BOBS-calibrated planning weight/);
  assert(await page.evaluate(()=>document.getElementById('referencePortion').getBoundingClientRect().top<document.getElementById('portion').getBoundingClientRect().top));
  assert(await page.locator('#scale').evaluate(el=>el.closest('section')===document.getElementById('portion').closest('section')));
- assert.equal(await page.locator('.quantity').nth(1).inputValue(),'12.000');
+ assert.equal(await page.locator('.quantity').nth(1).inputValue(),'12');
  assert(await page.locator('#customPortion').isDisabled());assert.equal(await page.locator('#customPortion').inputValue(),'');
  assert.equal(await page.getByLabel('Choose intended cooked portion weight (g)').count(),1);
  await page.locator('#portion').selectOption('custom');assert(await page.locator('#customPortion').isEnabled());
@@ -33,10 +34,10 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  assert.match(await page.locator('#calculationStatus').innerText(),/Not recalculated/);
  await calculate();
  assert.match(await page.locator('#calculationStatus').innerText(),/complete on this page/);
- assert.match(await page.locator('#appliedPortion').innerText(),/intended 100.000 g/);
+ assert.match(await page.locator('#appliedPortion').innerText(),/intended 100 g/);
  assert.equal(await page.locator('.quantity').first().inputValue(),'9.600');
- assert.equal(await page.locator('.quantity').nth(1).inputValue(),'24.000');
- assert.equal(await page.locator('.quantity').nth(2).inputValue(),'600.000');
+ assert.equal(await page.locator('.quantity').nth(1).inputValue(),'24');
+ assert.equal(await page.locator('.quantity').nth(2).inputValue(),'600');
  await page.locator('#customPortion').fill('110');await calculate();
  assert.equal(await page.locator('.quantity').first().inputValue(),'10.560');
  assert.match(await page.locator('#appliedPortion').innerText(),/2.200×/);
@@ -53,7 +54,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#confirmed').check();await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);
  await calculate();
  assert.equal(await page.locator('.quantity').first().inputValue(),'4.800');
- assert.match(await page.locator('#appliedPortion').innerText(),/reference 50.000 g/);
+ assert.match(await page.locator('#appliedPortion').innerText(),/reference 50 g/);
  await page.locator('#referencePortion').fill('');await page.locator('#portion').selectOption('custom');await page.locator('#customPortion').fill('100');await calculate();
  assert.match(await page.locator('#calculationStatus').innerText(),/Calculation not completed/);
  await page.locator('#referencePortion').fill('50');await page.locator('#customPortion').fill('110');await calculate();
@@ -72,13 +73,14 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  const reopen=await browser.newPage({viewport:{width,height:800}});await reopen.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));
  await reopen.goto('https://bobs.test/recipe-cost-editor.html?item=Idli&outlet=1&qty=360&cat=Breakfast+Catalogue&i=0');
  await reopen.setContent(html.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
+ await reopen.addScriptTag({content:fs.readFileSync('bobs-number-format.js','utf8')});
  await reopen.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
  const fixture=await page.evaluate(()=>({recipe:window.recipe,state:window.savedNext}));
  await reopen.evaluate(f=>{window.M2={purchaseKey:s=>s.toLowerCase()};window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
  await reopen.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await reopen.evaluate(()=>BOBSRecipeProduction.start());
  assert(await reopen.locator('#customPortion').isEnabled());assert.equal(await reopen.locator('#portion').inputValue(),'custom');assert.equal(await reopen.locator('#customPortion').inputValue(),'110');
  assert.equal(await reopen.locator('.quantity').first().inputValue(),'10.560');
- assert.match(await reopen.locator('#appliedPortion').innerText(),/Loaded saved outlet recipe:.*intended 110.000 g/);
+ assert.match(await reopen.locator('#appliedPortion').innerText(),/Loaded saved outlet recipe:.*intended 110 g/);
  await reopen.close();
  assert.deepEqual(errors,[]);console.log('PASS portion flow and save guidance '+width+'px: preview, checkbox/no auto-save, recalculate gate, mock save success/return, edits and failure status');await page.close();
  }}finally{await browser.close()}

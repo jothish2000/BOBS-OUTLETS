@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head>
+<head><script src="bobs-number-format.js?v=20261003"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BOBS Historical Recipe Master — Read only</title>
@@ -62,7 +62,7 @@ function timingElapsed(r){
 }
 function ingredientRow(x){
  const energy=/lpg fuel|electricity/i.test(x?.[0]||'');
- return '<tr class="'+(energy?'energy-row':'')+'"><td>'+esc(x?.[0]??'—')+'</td><td>'+esc(x?.[1]??'—')+'</td><td>'+esc(x?.[2]??'—')+'</td><td>'+esc(x?.[3]??'—')+'</td><td align="right">₹'+ingredientCost(x).toFixed(2)+'</td></tr>';
+ return '<tr class="'+(energy?'energy-row':'')+'"><td>'+esc(x?.[0]??'—')+'</td><td>'+esc(BOBS_NUMBERS.quantity(x?.[1],x?.[2]))+'</td><td>'+esc(x?.[2]??'—')+'</td><td>'+esc(x?.[3]??'—')+'</td><td align="right">₹'+ingredientCost(x).toFixed(2)+'</td></tr>';
 }
 function timingBlock(r){
  const z=r.productionTiming||{};if(!Object.keys(z).length)return '<p class="muted">Production timing not yet defined.</p>';
@@ -85,8 +85,8 @@ function recipeArticle(r,ri){
  return `<article class="stack recipe-card" data-ri="${ri}" data-category="${esc(r.category||'')}" data-name="${esc(String(r.name||'').toLowerCase())}">
  <div class="section-head"><h3>${esc(r.name)}</h3><span class="tag">${esc(r.category||r.kind||'PRODUCTION')}</span></div>
  <p><b>Recipe ID:</b> ${esc(r.recipeId||idFor(r))} &nbsp; <b>Standard:</b> ${esc(r.standardVersion||'legacy')}</p>
- <p><b>Saved batch / yield:</b> <span class="saved-yield">${esc(r.yieldQty??'—')} ${esc(r.yieldUnit||'unit')}</span>
- ${r.guideDailyQty?' &nbsp; <b>Historical planning batch:</b> '+esc(r.guideDailyQty):''}</p>
+ <p><b>Saved batch / yield:</b> <span class="saved-yield">${esc(BOBS_NUMBERS.quantity(r.yieldQty,r.yieldUnit))} ${esc(r.yieldUnit||'unit')}</span>
+ ${r.guideDailyQty?' &nbsp; <b>Historical planning batch:</b> '+esc(BOBS_NUMBERS.quantity(r.guideDailyQty,r.yieldUnit)):''}</p>
  ${timingBlock(r)}
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
  <th align="left">Ingredient / direct energy</th><th>Qty</th><th>Unit</th><th>Rate ₹ / unit</th><th>Cost</th>
