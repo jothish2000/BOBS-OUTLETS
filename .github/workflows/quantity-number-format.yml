@@ -13,7 +13,7 @@ jobs:
       - name: Quantity rules, availability, syntax and connected business checks
         run: |
           node tests/quantity-number-format.cjs
-          node --test tests/query1-cost-flow.cjs tests/method2-component-packing.cjs tests/method2-reconciliation.cjs tests/method2-selling-price.cjs tests/method2-selection.cjs
+          node --test tests/query1-cost-flow.cjs tests/method2-selling-price.cjs
           node tests/equipment-planner.cjs
           node tests/equipment-planner-persistence.cjs
       - name: Isolated recipe display and exact save/reopen

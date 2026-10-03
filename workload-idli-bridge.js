@@ -33,8 +33,8 @@ function start(){
         if(status==='accepted'&&!pending&&qtyMatch!==false){box='ok';title='Idli staffing bridge: ACCEPTED';details='Saved staffing/support plan is accepted'+(activeDate?' and applicable today.':'.')}
         else if(pending){box='bridge-danger';title='Idli staffing bridge: COVERAGE STILL OPEN';details='Saved plan still contains uncovered/pending duties. It must not be treated as complete.'}
         else if(status==='draft'){box='warn';title='Idli staffing bridge: DRAFT';details='A draft exists, but its labour/support cost is not active.'}
-        else if(qtyMatch===false){box='warn';title='Idli staffing bridge: QUANTITY CHANGED';details='Saved staffing quantity '+esc(p.qty)+' differs from current Method 2 quantity '+esc(currentQty)+'. Rebuild before relying on labour cost.'}
-        host.innerHTML='<div class="'+box+'"><strong>'+esc(title)+'</strong><p class="bridge-kv">'+esc(details)+'</p><p class="bridge-kv">Plan date: '+esc(p.date||'not set')+' · quantity: '+esc(p.qty||'not set')+' · support: '+esc(p.support?(p.source||'selected'):'none')+'</p></div><div class="bridge-actions">'+actions.join('')+'</div>';
+        else if(qtyMatch===false){box='warn';title='Idli staffing bridge: QUANTITY CHANGED';details='Saved staffing quantity '+esc(BOBS_NUMBERS.quantity(p.qty,'piece'))+' differs from current Method 2 quantity '+esc(BOBS_NUMBERS.quantity(currentQty,'piece'))+'. Rebuild before relying on labour cost.'}
+        host.innerHTML='<div class="'+box+'"><strong>'+esc(title)+'</strong><p class="bridge-kv">'+esc(details)+'</p><p class="bridge-kv">Plan date: '+esc(p.date||'not set')+' · quantity: '+esc(p.qty==null||p.qty===''?'not set':BOBS_NUMBERS.quantity(p.qty,'piece'))+' · support: '+esc(p.support?(p.source||'selected'):'none')+'</p></div><div class="bridge-actions">'+actions.join('')+'</div>';
         return;
       }
       host.innerHTML='<div class="'+box+'"><strong>'+esc(title)+'</strong><p class="bridge-kv">'+esc(details)+'</p></div><div class="bridge-actions">'+actions.join('')+'</div>';

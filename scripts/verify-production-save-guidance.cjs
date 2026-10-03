@@ -27,6 +27,9 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  assert(await page.evaluate(()=>document.getElementById('referencePortion').getBoundingClientRect().top<document.getElementById('portion').getBoundingClientRect().top));
  assert(await page.locator('#scale').evaluate(el=>el.closest('section')===document.getElementById('portion').closest('section')));
  assert.equal(await page.locator('.quantity').nth(1).inputValue(),'12');
+ assert.equal(await page.locator('#referenceRows tr').first().locator('td').nth(1).innerText(),'1.600');
+ assert.equal(await page.locator('#referenceRows tr').nth(1).locator('td').nth(1).innerText(),'4');
+ assert.match(await page.locator('#referenceTotal').innerText(),/120 pieces$/);
  assert(await page.locator('#customPortion').isDisabled());assert.equal(await page.locator('#customPortion').inputValue(),'');
  assert.equal(await page.getByLabel('Choose intended cooked portion weight (g)').count(),1);
  await page.locator('#portion').selectOption('custom');assert(await page.locator('#customPortion').isEnabled());
@@ -64,6 +67,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#confirmed').check();await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);
  await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);await page.locator('#confirmed').check();await page.locator('#saveProduction').click();
  await page.waitForFunction(()=>document.getElementById('productionStatus').textContent.includes('saved and verified'));
+ assert.equal(await page.locator('.quantity').nth(1).inputValue(),'35');
  assert.equal(await page.evaluate(()=>window.saves),1);const saved=await page.evaluate(()=>window.savedNext.recipeOverrides.idli);assert.equal(saved.portion,'110');assert.equal(saved.referencePortion,'50');assert(Math.abs(saved.recipe.ingredients[1][1]-0.0352)<1e-12);assert.equal(saved.recipe.ingredients[1][2],'kg');assert.equal(saved.recipe.ingredients[1][3],160);assert(Math.abs(saved.recipe.ingredients[2][1]-0.8)<1e-12);assert.match(await page.locator('#productionStatus a').getAttribute('href'),/mode=production/);
  await page.locator('.rate').first().fill('60');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.match(await page.locator('#productionStatus').innerText(),/Edits are not saved/);
  await page.evaluate(()=>window.failSave=true);await page.locator('#confirmed').check();await page.locator('#saveProduction').click();
