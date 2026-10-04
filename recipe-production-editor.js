@@ -23,7 +23,32 @@ function appliedSummary(prefix){const choice=chosenPortion(),base=C.number($('re
 function signature(){return JSON.stringify([$('targetQty').value,knowledgeSource,$('referenceYield').value,$('referencePortion').value,$('portion').value,$('customPortion').value])}
 function reviewReady(){return userCalculated&&!calculating&&!busy&&scaleSignature===signature();}
 function syncReview(){const ready=reviewReady();$('confirmed').setAttribute('aria-disabled',String(!ready));$('reviewConfirmation').classList.toggle('review-locked',!ready);if(!ready)$('confirmed').checked=false;$('reviewCheckpoint').textContent=ready?'Calculation complete. Review the quantities and rates, then tick the checkbox.':'Review is locked. Go to section 2 and click Calculate first.';}
-function focusReference(){if(!reference){$('productionStatus').textContent='Wait for the recipe and reference to load before calculating.';return;}$('referenceSection').classList.add('reference-attention');$('referenceCheckpoint').textContent='Calculate first: check this reference and your portion choices, then click Calculate quantities from reference. Return to section 1 to review and tick the checkbox.';$('productionStatus').textContent='Review is locked. Check section 2 and click Calculate quantities from reference first.';$('scale').scrollIntoView({behavior:'smooth',block:'center'});$('scale').focus({preventScroll:true});}
+// Explain the existing checkpoint without calculating, confirming or saving.
+const portionDialog=document.createElement('dialog');
+portionDialog.id='portionReviewDialog';
+portionDialog.setAttribute('aria-labelledby','portionReviewTitle');
+portionDialog.setAttribute('aria-describedby','portionReviewReason');
+portionDialog.innerHTML=`<style>
+#portionReviewDialog{box-sizing:border-box;width:calc(100% - 32px);max-width:520px;max-height:85vh;max-height:85dvh;overflow:auto;padding:22px;border:2px solid #214b35;border-radius:12px;background:#fff;color:#202820;line-height:1.55}
+#portionReviewDialog::backdrop{background:rgba(0,0,0,.5)}
+#portionReviewDialog h2{margin-top:0;font-size:1.3rem}
+#portionReviewDialog li{margin-bottom:12px}
+#portionReviewDialog button{white-space:normal;min-height:44px}
+#reviewPortions{background:#214b35;color:#fff}
+</style><h2 id="portionReviewTitle">Check portion sizes before calculating</h2>
+<p id="portionReviewReason">Calculate uses your intended output quantity and the portion-size comparison to work out the ingredient quantities you need. Check these weights first so the result matches the size you plan to serve.</p>
+<p id="portionReviewOutput"></p>
+<ol><li><strong>Reference cooked portion weight (g):</strong> the weight of one cooked portion in the reference recipe. Check its value and source.</li>
+<li><strong>Intended cooked portion weight (g):</strong> the weight of one cooked portion you plan to serve. Choose reference size, a listed weight, or Custom weight and enter grams.</li></ol>
+<p>After checking both, click <strong>Calculate quantities from reference</strong>. Return to section 1, review the calculated quantities and rates, then tick the checkbox.</p>
+<p>Continuing from this message does not calculate, tick the checkbox or save anything.</p>
+<button id="reviewPortions" type="button" autofocus>Review portion sizes</button><button id="closePortionReview" type="button">Close</button>`;
+document.body.append(portionDialog);
+function moveToReference(){$('scale').scrollIntoView({behavior:'smooth',block:'center'});$('scale').focus({preventScroll:true});}
+portionDialog.addEventListener('close',moveToReference);
+$('reviewPortions').onclick=()=>portionDialog.close();
+$('closePortionReview').onclick=()=>portionDialog.close();
+function focusReference(){if(!reference){$('productionStatus').textContent='Wait for the recipe and reference to load before calculating.';return;}$('referenceSection').classList.add('reference-attention');$('referenceCheckpoint').textContent='Calculate first: check this reference and your portion choices, then click Calculate quantities from reference. Return to section 1 to review and tick the checkbox.';$('productionStatus').textContent='Review is locked. Check section 2 and click Calculate quantities from reference first.';$('portionReviewOutput').textContent='Intended output: '+quantityText($('targetQty').value,original.yieldUnit)+' '+original.yieldUnit+'.';if(!portionDialog.open)portionDialog.showModal();}
 $('goToReference').onclick=focusReference;
 $('confirmed').addEventListener('click',e=>{if(!reviewReady()){e.preventDefault();focusReference();}});
 $('confirmed').addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!reviewReady()){e.preventDefault();focusReference();}});
