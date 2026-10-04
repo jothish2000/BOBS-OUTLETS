@@ -1,3 +1,15 @@
+# PUBLISHED — 4 October 2026: current continuation status
+
+This section supersedes the historical local-only/publication-blocked checkpoint below. Owner explicitly approved publication. PR #37 merged as `0e8c6e03378909ed7a73162ff75cb1519e5c25a8`; Pages run `37189118660` succeeded. All branch/PR and postmerge checks passed. Native Chrome tests passed at 1366/615/390px, including dialogue, Escape/Close, restored focus, calculation guard and exact mock save/reopen. Live JS and HTML matched approved bytes. No operational Google writes; live Google interaction/Owner UAT remain pending.
+
+**Laptop Codex next:** pull current `main`; read `AGENTS.md`, `OVERALL_DESIGN_MASTER_111Q.md`, and the latest 4 October entries in `CODEX_HANDOVER_111Q_CURRENT.md`. This change is already published—do not reapply the earlier patch. Record Owner mobile results before further changes. Recovery: `recovery/pre-portion-dialog-20261004` at `3edff461c57952cda98c6bdb05c9105a8719840c`.
+
+**Mobile retest:** reload the Idli recipe URL below; try the review checkbox before Calculate; read the dialogue explaining reference/intended cooked grams; press Review portion sizes; check both weights; Calculate; return to Section 1 and tick manually after review. Save only intended real values.
+
+Postmerge checks: quantity37189119227; preservation37189119452; workload37189119322; standards37189119245; market37189119184—all SUCCESS. Prior local Chrome/authorization blocks below are retained as history, resolved by explicit approval and GitHub native-browser CI.
+
+---
+
 # BOBS portion-review dialogue — laptop continuation
 
 Owner requested implementation from mobile, with contemporaneous 111QS5PVDDRT/WACP documentation. Full chronological entries are in CODEX_HANDOVER_111Q_CURRENT.md under 4 October 2026. Read AGENTS.md and OVERALL_DESIGN_MASTER_111Q.md before continuing.
