@@ -1,3 +1,9 @@
+# Latest follow-up — per-idli reference cost published
+
+4 October2026: PR38 merged `5a58c3b7d15daf5bfc40d200bbc53fa51e42f58b`; Pages37189811094 and all postmerge checks passed. Existing reference batch line now also displays reference recipe cost per idli (₹191.820 /120 =₹1.599 displayed). Three-width Chrome checks pass; live JS/HTML matched approved source. No Google writes; Owner visual acceptance pending. Read latest entries in CODEX_HANDOVER_111Q_CURRENT.md; pull main, do not reapply previous patches. Recovery baseline1ac0aa8. Next reload recipe page and check reference line. Earlier dialogue release below remains valid.
+
+---
+
 # PUBLISHED — 4 October 2026: current continuation status
 
 This section supersedes the historical local-only/publication-blocked checkpoint below. Owner explicitly approved publication. PR #37 merged as `0e8c6e03378909ed7a73162ff75cb1519e5c25a8`; Pages run `37189118660` succeeded. All branch/PR and postmerge checks passed. Native Chrome tests passed at 1366/615/390px, including dialogue, Escape/Close, restored focus, calculation guard and exact mock save/reopen. Live JS and HTML matched approved bytes. No operational Google writes; live Google interaction/Owner UAT remain pending.
