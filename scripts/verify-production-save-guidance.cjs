@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 (async()=>{
- const browser=await chromium.launch({channel:'chrome',headless:true});
+ const browser=await chromium.launch({channel:process.env.BOBS_BROWSER_CHANNEL||'chrome',headless:true});
  try{for(const width of [1366,615,390]){
  let fixture;
  const page=await browser.newPage({viewport:{width,height:800}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -33,7 +33,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
   const before=await p.locator('#calculationStatus').innerText();
   const bounds=await dialog.boundingBox();assert(bounds.x>=0&&bounds.x+bounds.width<=width);assert(bounds.y>=0&&bounds.height<=800);
   if(method==='escape')await p.keyboard.press('Escape');else await p.locator(method==='close'?'#closePortionReview':'#reviewPortions').click();
-  await p.waitForFunction(()=>document.activeElement.id==='scale');
+  await p.waitForFunction(()=>document.activeElement.id==='referencePortion');
   assert.equal(await dialog.isVisible(),false);assert.equal(await p.locator('#calculationStatus').innerText(),before);
   assert.equal(await p.locator('#confirmed').isChecked(),false);
  };
@@ -42,11 +42,12 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#confirmed').click({force:true});assert.equal(await page.locator('#confirmed').isChecked(),false);
  assert(await page.locator('#referenceSection').evaluate(el=>el.classList.contains('reference-attention')));
  assert.match(await page.locator('#portionReviewOutput').innerText(),/360 pieces/);await dismissGuidance();
- assert.equal(await page.evaluate(()=>document.activeElement.id),'scale');
- await page.locator('#confirmed').focus();await page.keyboard.press('Space');assert.equal(await page.locator('#confirmed').isChecked(),false);await dismissGuidance(page,'escape');assert.equal(await page.evaluate(()=>document.activeElement.id),'scale');
+ assert.equal(await page.evaluate(()=>document.activeElement.id),'referencePortion');
+ await page.locator('#confirmed').focus();await page.keyboard.press('Space');assert.equal(await page.locator('#confirmed').isChecked(),false);await dismissGuidance(page,'escape');assert.equal(await page.evaluate(()=>document.activeElement.id),'referencePortion');
  await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);await dismissGuidance(page,'close');
  await page.locator('#goToReference').click();await dismissGuidance();
- const calculate=async()=>{await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);};
+ await page.locator('#scale').click();assert(await page.locator('#portionReviewDialog').isVisible());assert.match(await page.locator('#weightReviewStatus').innerText(),/Calculation blocked/);await dismissGuidance();assert.equal(await page.locator('#referenceWeightReviewed').isChecked(),false);assert.equal(await page.locator('#intendedWeightReviewed').isChecked(),false);
+ const calculate=async()=>{await page.locator('#referenceWeightReviewed').check();await page.locator('#intendedWeightReviewed').check();await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);};
  assert.match(await page.locator('#portionSource').innerText(),/BOBS-calibrated planning weight/);
  assert(await page.evaluate(()=>document.getElementById('referencePortion').getBoundingClientRect().top<document.getElementById('portion').getBoundingClientRect().top));
  assert(await page.locator('#scale').evaluate(el=>el.closest('section')===document.getElementById('portion').closest('section')));
@@ -67,7 +68,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  assert.equal(await page.locator('.quantity').first().inputValue(),'9.600');
  assert.equal(await page.locator('.quantity').nth(1).inputValue(),'24');
  assert.equal(await page.locator('.quantity').nth(2).inputValue(),'600');
- await page.locator('#customPortion').fill('110');await calculate();
+ await page.locator('#customPortion').fill('110');assert.equal(await page.locator('#referenceWeightReviewed').isChecked(),false);assert.equal(await page.locator('#intendedWeightReviewed').isChecked(),false);await calculate();
  assert.equal(await page.locator('.quantity').first().inputValue(),'10.560');
  assert.match(await page.locator('#appliedPortion').innerText(),/2.200×/);
  await page.locator('#portion').selectOption('55');
@@ -91,7 +92,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#confirmed').check();assert.equal(await page.evaluate(()=>window.saves),0);
  await page.locator('#targetQty').fill('480');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.match(await page.locator('#productionStatus').innerText(),/Click Calculate/);
  await page.locator('#confirmed').click({force:true});assert.equal(await page.locator('#confirmed').isChecked(),false);await dismissGuidance();await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);await dismissGuidance(page,'close');
- await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);await page.locator('#confirmed').check();
+ await calculate();await page.locator('#confirmed').check();
  await page.evaluate(()=>window.failSave=true);await page.locator('#saveProduction').click();
  await page.waitForFunction(()=>document.getElementById('productionStatus').textContent.includes('Simulated verification failure'));
  assert(page.url().includes('recipe-cost-editor.html'));assert(await page.locator('#targetQty').isEnabled());
@@ -109,7 +110,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await reopen.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
  await reopen.evaluate(f=>{window.M2={purchaseKey:s=>s.toLowerCase()};window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
  await reopen.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await reopen.evaluate(()=>BOBSRecipeProduction.start());
- assert.equal(await reopen.locator('#confirmed').getAttribute('aria-disabled'),'true');await reopen.locator('#confirmed').click({force:true});assert.equal(await reopen.locator('#confirmed').isChecked(),false);await dismissGuidance(reopen);assert.equal(await reopen.evaluate(()=>document.activeElement.id),'scale');
+ assert.equal(await reopen.locator('#confirmed').getAttribute('aria-disabled'),'true');await reopen.locator('#confirmed').click({force:true});assert.equal(await reopen.locator('#confirmed').isChecked(),false);await dismissGuidance(reopen);assert.equal(await reopen.evaluate(()=>document.activeElement.id),'referencePortion');
  assert(await reopen.locator('#customPortion').isEnabled());assert.equal(await reopen.locator('#portion').inputValue(),'custom');assert.equal(await reopen.locator('#customPortion').inputValue(),'110');
  assert.equal(await reopen.locator('.quantity').first().inputValue(),'10.560');
  assert.match(await reopen.locator('#appliedPortion').innerText(),/Loaded saved outlet recipe:.*intended 110 g/);
