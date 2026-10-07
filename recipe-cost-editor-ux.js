@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);let edited=false;
 function stampSaved(){edited=false;const s=$('saveState');if(s)s.textContent='✓ Saved to Google — '+new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});}
 function markUnsaved(){edited=true;const s=$('saveState');if(s)s.textContent='● Unsaved changes';}
-function closeEditor(){if(edited&&!confirm('You have unsaved recipe changes. Close anyway?'))return;if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else if(history.length>1)history.back();else location.href='recipe-master.html'}
+function closeEditor(){if(edited&&!confirm('You have unsaved recipe changes. Close anyway?'))return;if(window.BOBS_WINDOW_RETURN){BOBS_WINDOW_RETURN.returnToParent('recipe-master.html');return;}if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else if(history.length>1)history.back();else location.href='recipe-master.html'}
 function boot(){const form=$('editor'),status=$('status');if(!form)return;
  form.addEventListener('input',markUnsaved,true);form.addEventListener('change',markUnsaved,true);
  $('add')?.addEventListener('click',markUnsaved);$('gas')?.addEventListener('click',markUnsaved);

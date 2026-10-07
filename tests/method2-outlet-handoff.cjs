@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const root=path.resolve(__dirname,'..'),source=f=>fs.readFileSync(path.join(root,f),'utf8');
-function dom(file,url){const d=new JSDOM(source(file),{url,runScripts:'outside-only',pretendToBeVisual:true});d.window.scrollTo=()=>{};d.window.alert=()=>{};d.window.confirm=()=>true;return d;}
+function dom(file,url){const d=new JSDOM(source(file),{url,runScripts:'outside-only',pretendToBeVisual:true});d.window.scrollTo=()=>{};d.window.alert=()=>{};d.window.confirm=()=>true;d.window.eval(source('bobs-window-return.js'));return d;}
 async function until(fn){for(let n=0;n<60;n++){if(fn())return;await new Promise(r=>setTimeout(r,5));}throw Error('DOM initialization did not complete');}
 function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_data.js')+';window.CAT_ORDER=CAT_ORDER;window.ITEM_DATA=ITEM_DATA;');w.eval(source('method2-core.js'));}
 (async()=>{
@@ -15,7 +15,7 @@ function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_d
   w.setFixture(idx);w.document.getElementById('method2Btn').click();
   const route=new URL(w.document.getElementById('methodFrame').src);
   assert.equal(route.searchParams.get('outlet'),id);assert.equal(route.searchParams.get('flow'),'1');
-  assert.equal(new URL(popup.url,'https://bobs.test').searchParams.get('outlet'),id);
+  assert.equal(new URL(popup.url,'https://bobs.test').searchParams.get('outlet'),id);assert.equal(new URL(popup.url,'https://bobs.test').searchParams.get('returnTo'),w.location.href);
  }
  w.setFixture(0);w.open=()=>null;w.document.getElementById('method2Btn').click();
  assert.match(w.document.getElementById('saveNote').textContent,/Choose categories/);

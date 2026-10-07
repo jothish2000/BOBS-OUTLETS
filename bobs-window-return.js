@@ -1,0 +1,14 @@
+/* Navigation context only; never owns business data or save verification. */
+(function(root){'use strict';
+const base=new URL('.',root.location.href);
+function safe(value){try{const u=new URL(value,base);return u.origin===base.origin&&!u.username&&!u.password&&u.pathname.startsWith(base.pathname)&&/^[a-z0-9-]+\.html$/i.test(u.pathname.slice(base.pathname.length))&&u.href.length<12000?u.href:null}catch(e){return null}}
+function parentAddress(){let value=new URL(root.location.href).searchParams.get('returnTo');if(value)return safe(value);try{if(root.opener&&!root.opener.closed)return safe(root.opener.top.location.href)}catch(e){}return safe(root.document.referrer)}
+const recordedParent=parentAddress();
+function child(value){const address=safe(value);if(!address)return value;const u=new URL(address);let parent=root.location.href;try{parent=root.top.location.href}catch(e){}u.searchParams.set('returnTo',parent);return u.href}
+function notify(message,channels=[]){try{if(root.opener&&!root.opener.closed)root.opener.postMessage(message,root.location.origin)}catch(e){console.warn('Parent notification failed',e)}for(const name of channels){let channel;try{if(root.BroadcastChannel){channel=new root.BroadcastChannel(name);channel.postMessage(message)}}catch(e){console.warn('Window notification failed',e)}finally{try{channel?.close()}catch(e){}}}}
+function returnToParent(fallback){let parent=null;try{if(root.opener&&!root.opener.closed&&safe(root.opener.top.location.href)){parent=root.opener;parent.top.focus();root.close();if(root.closed)return true}}catch(e){}const destination=recordedParent||safe(fallback);if(!destination)return false;root.location.assign(destination);return true}
+function afterSave(fallback){if(!recordedParent&&!fallback){try{if(!root.opener||root.opener.closed)return false}catch(e){return false}}root.setTimeout(()=>returnToParent(fallback),0);return true}
+root.BOBS_WINDOW_RETURN={safe,child,notify,returnToParent,afterSave};
+root.document.addEventListener('click',e=>{const a=e.target.closest?.('a');if(a?.target==='_blank'&&safe(a.href)){a.href=child(a.href);a.rel=a.rel.split(/\s+/).filter(v=>v&&!['noopener','noreferrer'].includes(v)).concat('opener').join(' ')}},true);
+root.document.addEventListener('auxclick',e=>{const a=e.target.closest?.('a');if(a?.target==='_blank'&&safe(a.href)){a.href=child(a.href);a.rel=a.rel.split(/\s+/).filter(v=>v&&!['noopener','noreferrer'].includes(v)).concat('opener').join(' ')}},true);
+})(window);

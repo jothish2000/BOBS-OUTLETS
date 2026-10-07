@@ -66,7 +66,7 @@ async function save(){
   await BOBS_DATA.saveModule(outlet,'EQUIPMENT_PLAN','default',payload);
   const back=await verifiedRead('EQUIPMENT_PLAN','default',x=>x&&equal(content(x),content(payload)));
   baseline=copy(back);saved=copy(back);
-  $('saveStatus').textContent='Equipment decisions saved and read back from Google.';
+  $('saveStatus').textContent='Equipment decisions saved and read back from Google.';if(typeof window!=='undefined'&&window.BOBS_WINDOW_RETURN)BOBS_WINDOW_RETURN.afterSave();
  }catch(e){ready=false;throw e}finally{busy=false;controls()}
 }
 $('ebRate').onchange=updateForm;
