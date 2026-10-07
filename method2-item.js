@@ -3,13 +3,18 @@ const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),o
  $('sharedOrderLink').href='method2-overall.html?outlet='+encodeURIComponent(outlet||'');
 const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','uuwpPolicy','markup','price','sold','servingQty','servingUnit','pricingBasis'];
 let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false,ready=false,loadEpoch=0,standardRecipes=[];
+let activeGuideStep=location.hash==='#supplyHeading'?2:1,costReviewMode=null,costReviewComplete=false,recipeRefresh=null,pendingRecipeReceipt=null,lastReviewReceipt=null;
+function guideProgress(){for(let step=1;step<=3;step++)$('guideStep'+step).setAttribute('aria-current',activeGuideStep===step?'step':'false');$('guideProgress').textContent='Step '+activeGuideStep+' of 3: '+['','review recipe or purchase costs','enter today’s quantities, sides and packing','save this item and continue the parent flow'][activeGuideStep];}
+function continueItemDetails(){activeGuideStep=2;guideProgress();const u=new URL(location.href);u.hash='supplyHeading';history.replaceState(null,'',u);const field=d.mode==='production'?$('batchSize'):$('batches');field.scrollIntoView({behavior:'smooth',block:'center'});field.focus({preventScroll:true});}
+$('continueItemDetails').onclick=e=>{e.preventDefault();continueItemDetails()};
+$('continueItemSave').onclick=()=>{activeGuideStep=3;guideProgress();$('save').scrollIntoView({behavior:'smooth',block:'center'});$('save').focus({preventScroll:true})};
 const money=n=>n===null?'—':'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function status(t){$('status').textContent=t}
 function link(name){const a=document.createElement('a');const isMain=M2.purchaseKey(name)===M2.purchaseKey(item.recipeName||item.name),side=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)),r=M2.recipe(recipes,name);let qty=Number(d.batchSize)*Number(d.batches);if(isMain){const per=M2.convert(item.side?M2.number(d.servingQty):1,item.side?d.servingUnit:d.unit,r?.yieldUnit);qty=per==null?0:qty*per;}if(!isMain){const per=side&&M2.convert(Number(side.portion),side.portionUnit,r?.yieldUnit);qty=per==null?0:qty*per;}a.href='recipe-cost-editor.html?'+new URLSearchParams({item:M2.canonicalRecipeName(name),outlet,qty:String(qty),cat,i:String(i)});a.target='_blank';a.textContent=name+' · recipe & cost';return a}
 function purchaseLink(name,unit){const a=document.createElement('a');a.href='purchase-cost-editor.html?'+new URLSearchParams({outlet,item:name,unit:unit||'piece'});a.target='_blank';a.textContent=name+' · Purchase Master COGS';return a}
 function primaryCostLink(label){const a=d.mode==='production'?link(item.recipeName||item.name):purchaseLink(item.recipeName||item.name,item.side?d.servingUnit:d.unit);a.textContent=label;return a}
 function renderItemGuide(){
- const production=d.mode==='production',name=item.recipeName||item.name;
+ const production=d.mode==='production',name=item.recipeName||item.name;if(costReviewMode!==null&&costReviewMode!==d.mode){costReviewComplete=false;activeGuideStep=1;lastReviewReceipt=null;}costReviewMode=d.mode;guideProgress();
  const reference=M2.recipe(recipes,name),standard=reference&&standardRecipes.includes(reference);
  let title='Cost source: supplier purchase details',message='This item uses your supplier’s quantity and price. Check these against your current purchase details.';
  if(production){
@@ -27,8 +32,8 @@ function renderItemGuide(){
  }
  $('guideSourceTitle').textContent=title;
  $('guideSourceText').textContent=message;
- $('guideCheckTitle').textContent=production?'Check the recipe and prices.':'Check the supplier quantity and price.';
- $('guideCheckText').textContent='Open the link below in a new tab, review the details, then return to this item.';
+ $('guideCheckTitle').textContent=costReviewComplete?'Cost review saved and verified — continue to step 2.':production?'Check the recipe and prices.':'Check the supplier quantity and price.';
+ $('guideCheckText').textContent=costReviewComplete?'The saved cost details are refreshed here. Continue with today’s item quantities below; reopen this link only if you need another cost change.':'Save the reviewed cost details in the child window. Its verified return continues here at step 2, without restarting the review.';
  $('guideCostLink').replaceChildren(primaryCostLink(production?'Review '+item.name+' recipe & costs ↗':'Review '+item.name+' purchase costs ↗'));
 }
 function field(label,value,oninput,type='number'){
@@ -163,14 +168,14 @@ $('editor').onsubmit=async e=>{
  }catch(err){status(err.message);$('saveStatus').textContent='Not verified — keep this page open'}finally{busy=false;controls.disabled=false}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
-async function refreshRecipes(){if(!ready||busy)return;try{const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;standardRecipes=master.standardRecipes||[];const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};if(d)calculate()}catch(e){status(e.message)}}
-async function refreshPurchases(){if(!ready||busy)return;try{const latest=M2.state(await M2.read(outlet));if(dirty&&!confirm('Use the newly saved Purchase Master rates? This replaces unsaved supplier cost edits only.')){status('Purchase Master changed. Reload its rates before saving this item.');return}baseline.purchaseMasters=latest.purchaseMasters;M2.hydratePurchases(d,item,latest.purchaseMasters);renderComponents();calculate();status('Purchase rates reloaded from Google. Save This Item to confirm this setup.')}catch(e){status(e.message)}}
+async function refreshRecipes(receipt){if(!ready||busy)return;if(receipt?.outlet===outlet&&d.mode==='production'&&M2.purchaseKey(receipt.recipeName||'')===M2.purchaseKey(item.recipeName||item.name)&&receipt.savedAt)pendingRecipeReceipt=receipt;if(recipeRefresh)return recipeRefresh;recipeRefresh=(async()=>{try{const master=await BOBS_OPERATIONAL_RECIPES.load();recipes=master.recipes;standardRecipes=master.standardRecipes||[];const current=M2.state(await M2.read(outlet));baseline.recipeOverrides=current.recipeOverrides;d.recipeOverrides=current.recipeOverrides||{};const receipt=pendingRecipeReceipt;pendingRecipeReceipt=null;const saved=receipt&&d.mode==='production'&&receipt.outlet===outlet&&M2.purchaseKey(receipt.recipeName||'')===M2.purchaseKey(item.recipeName||item.name)&&current.recipeOverrides?.[M2.norm(receipt.recipeName)];if(saved&&saved.savedAt===receipt.savedAt&&saved.referenceStamp===BOBS_COST_FLOW.recipeStamp(M2.recipe(recipes,receipt.recipeName))&&lastReviewReceipt!==receipt.savedAt){lastReviewReceipt=receipt.savedAt;costReviewComplete=true;calculate();status('Recipe saved and verified. Continue at step 2 with today’s quantities; your item edits are retained.');continueItemDetails();}else calculate();}catch(e){status(e.message)}finally{recipeRefresh=null;}})();return recipeRefresh;}
+async function refreshPurchases(receipt){if(!ready||busy)return;try{const latest=M2.state(await M2.read(outlet));if(dirty&&!confirm('Use the newly saved Purchase Master rates? This replaces unsaved supplier cost edits only.')){status('Purchase Master changed. Reload its rates before saving this item.');return}baseline.purchaseMasters=latest.purchaseMasters;M2.hydratePurchases(d,item,latest.purchaseMasters);const verified=receipt?.item&&d.mode==='purchased'&&M2.purchaseKey(receipt.item)===M2.purchaseKey(item.recipeName||item.name)&&M2.masterEntry(latest.purchaseMasters,receipt.item)?.saveToken===receipt.token;if(verified)costReviewComplete=true;renderComponents();calculate();status('Purchase rates reloaded from Google. Continue with today’s quantities, then Save This Item.');if(verified)continueItemDetails()}catch(e){status(e.message)}}
 let lastPurchaseToken;
-function receivePurchase(data){if(data?.type!=='bobs-purchase-master-saved'||String(data.outlet)!==String(outlet)||data.token===lastPurchaseToken)return;lastPurchaseToken=data.token;refreshPurchases()}
+function receivePurchase(data){if(data?.type!=='bobs-purchase-master-saved'||String(data.outlet)!==String(outlet)||data.token===lastPurchaseToken)return;lastPurchaseToken=data.token;refreshPurchases(data)}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receivePurchase(e.data)});
 if(window.BroadcastChannel){const purchaseChannel=new BroadcastChannel('bobs-purchase-master');purchaseChannel.onmessage=e=>receivePurchase(e.data)}
-window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='bobs-recipe-master-saved')refreshRecipes()});
-if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-master');channel.onmessage=()=>refreshRecipes()}
+window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='bobs-recipe-master-saved')refreshRecipes(e.data)});
+if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-master');channel.onmessage=e=>{if(e.data?.type==='bobs-recipe-master-saved')refreshRecipes(e.data)}}
 async function loadEditor(){if(loading||busy)return;loading=true;ready=false;const epoch=++loadEpoch;$('controls').disabled=true;$('editor').hidden=true;$('retryGoogle').hidden=true;$('itemGuide').hidden=true;status('Checking Google records…');try{
  if(!outlet)throw Error('Open an item from Method 2 after selecting an outlet.');
  const [data,master]=await Promise.all([M2.read(outlet),BOBS_OPERATIONAL_RECIPES.load()]);
