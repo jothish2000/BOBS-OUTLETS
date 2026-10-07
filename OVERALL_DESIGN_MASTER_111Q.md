@@ -1,20 +1,21 @@
-# OVERALL DESIGN MASTER 111Q
+# OVERALL DESIGN MASTER 111QS
 ## Universal Software / System Building Blueprint
-### Canonical definition: **111Q = 111QS5PVDDRT**
+### Canonical definition: **111QS = 111QS5PVDRT**
+Legacy references to 111Q invoke this current 111QS method.
 
 **Owner / final decision-maker:** Jothish Babu Sadasivam  
-**Version:** 4.2 — 2 October 2026
+**Version:** 5.0 — 7 October 2026
 **Purpose:** Portable blueprint for designing, changing, testing, recovering and handing over software, spreadsheets, automation, operational systems and AI-assisted projects across capable platforms.
 
 ## 1. Activation instruction
-> Apply OVERALL DESIGN MASTER 111Q. Treat every reference to “111Q” as “111QS5PVDDRT”. Inspect the existing system before changing it. Use the five-person view: PRO, CON, COMPARE & CONNECTIONS, OBSERVER, and OWNER. The first four views have DUAL ROLE: each examines both business/logic and code/software architecture. The OWNER is the fifth and final decision-maker. Before implementation, create/maintain a developer-ready continuation handover so another AI/developer can inspect the current state instead of restarting or overwriting it. After approval, protect the current state, implement only the approved scope, then perform the mandatory TESTER stage. Feed actual test findings back through the five-person dual-role review before declaring completion. Distinguish implemented, code-checked, tested, deployed/live-verified and Owner-accepted. Preserve rollback. Finish every material change by updating the current handover so another AI can continue without rebuilding understanding from zero.
+> Apply OVERALL DESIGN MASTER 111Q. Treat every reference to “111Q” as “111QS5PVDRT”. Inspect the existing system before changing it. Use the five-person view: PRO, CON, COMPARE & CONNECTIONS, OBSERVER, and OWNER. The first four views have DUAL ROLE: each examines both business/logic and code/software architecture. The OWNER is the fifth and final decision-maker. Before implementation, create/maintain a developer-ready continuation handover so another AI/developer can inspect the current state instead of restarting or overwriting it. After approval, protect the current state, implement only the approved scope, then perform the mandatory TESTER stage. Feed actual test findings back through the five-person dual-role review before declaring completion. Distinguish implemented, code-checked, tested, deployed/live-verified and Owner-accepted. Preserve rollback. Finish every material change by updating the current handover so another AI can continue without rebuilding understanding from zero.
 
 This master defines HOW to work. A project annex/handover defines WHAT the current project contains.
 
-## 2. 111Q = 111QS5PVDDRT
+## 2. 111QS = 111QS5PVDRT
 - **S — Switch / execution-mode routing gate:** before material execution, classify the current work and recommend the best execution mode. Chat is preferred for rapid Owner discussion, architecture, UX and business-rule decisions; Work/Codex is preferred for broad research, multi-file implementation, repository/release operations, repeated testing, deep debugging and contemporaneous implementation documentation. When a task crosses from decision/design into material execution, surface a concise **Switch to Work/Codex** suggestion when appropriate and prepare a self-contained continuation handover before the switch. The Owner may explicitly remain in Chat; S guides routing and continuity, it does not remove Owner control.
 - **5PV:** PRO → CON → COMPARE & CONNECTIONS → OBSERVER → YOU/OWNER.
-- **First D — Developer/Codex handover:** preserve the current state, decisions, files, data ownership, recovery point, test evidence and exact next action so the next AI/developer continues from reality instead of starting over.
+- **Continuous dual-mode handover (mandatory, independent of acronym spelling):** preserve the current state, decisions, files, data ownership, recovery point, test evidence and exact next action so the next AI/developer continues from reality instead of starting over.
 - **DR:** each of the first four views performs both Logic/Business analysis and Code/Software analysis.
 - **T:** mandatory Tester stage after implementation, followed by a second evidence-based 5PV-DR.
 
@@ -28,7 +29,7 @@ This master defines HOW to work. A project annex/handover defines WHAT the curre
 | YOU / OWNER | Decide priorities/trade-offs | Authorize scope, implementation, release or rollback | Approve / condition / revise / defer / reject |
 
 ## 4. Complete 111Q loop
-**Proposal / observation → S mode-routing check → inspect current evidence → 5PV-DR → Owner decision → S execution handoff check → First-D handover/checkpoint → protect/backup → implement bounded scope → T tester stage → 5PV-DR AGAIN using actual test evidence → fix/retest if needed → Owner acceptance/release → update handover.**
+**Proposal / observation → S mode-routing check → inspect current evidence → 5PV-DR → Owner decision → S execution handoff check → continuity handover/checkpoint → protect/backup → implement bounded scope → T tester stage → 5PV-DR AGAIN using actual test evidence → fix/retest if needed → Owner acceptance/release → update handover.**
 
 ### 4A. S — mode-routing rule
 Use this routing table without consolidating the ten activities:
@@ -41,7 +42,7 @@ Use this routing table without consolidating the ten activities:
 6. **Repository / release → Codex/Work.** Branching, recovery, PR, CI, merge and deployment verification should normally run as one execution chain.
 7. **Testing → Work.** Prefer Work for repeated run → inspect → repair → rerun loops and browser/cloud testing. Owner mobile/UAT observations return to Chat for discussion.
 8. **Google / durable-data architecture → Chat first, Work for implementation.** Source-of-truth/schema/migration ownership is an Owner architecture decision; implementation, migration guards and read-back verification belong in Work/Codex.
-9. **Documentation / continuity → Work/Codex automatically during execution.** WACP/First-D records must be written contemporaneously. Chat still records material actions when Chat itself performs implementation.
+9. **Documentation / continuity → Work/Codex automatically during execution.** WACP/continuity records must be written contemporaneously. Chat still records material actions when Chat itself performs implementation.
 10. **Debugging → Chat for small diagnosis; Work/Codex for deep tracing.** Screenshot/simple symptom diagnosis can stay in Chat; multi-file/browser/state/persistence tracing should trigger a switch suggestion.
 
 ### 4B. Mandatory switch suggestion trigger
@@ -156,16 +157,36 @@ Always distinguish: **DESIGNED, OWNER APPROVED, IMPLEMENTED, CODE CHECKED, AUTOM
 
 A commit is not proof of deployment. Deployment is not proof of live correctness. Live correctness is not Owner acceptance.
 
-## 11. First-D handover and completion gate
+## 11. Dual-mode handover and completion gate
 Every material implementation records: project/module; approved scope; before/after rule; architecture/connections; authoritative data; files changed; untouched areas; recovery point; implementation commit/version; deployment status; passed/failed/blocked/not-run tests; live verification; known issues; rollback; exact next action; next genuine Owner decision.
 
 **A material implementation is not complete until its current handover is updated in the same work cycle.** The next AI/developer must read that handover before modifying the affected system.
+
+## 11A. Two mandatory continuation sections
+Every current handover has exactly these two named execution sections, maintained together:
+
+### Section 1 — Work mode handover
+Self-contained for ChatGPT Work on phone or laptop. Include current full live URL and module; Owner request/approved scope; business rule and invariants; authoritative data owners; deployed version, pending branch/PR and timestamps; observed tests and release/live/UAT status; protection and risks; plain-language exact next action; repository links to the master, shared ledger and source. State available/missing connectors and permissions. Work must inspect current durable evidence before execution; access cannot be assumed.
+
+### Section 2 — Codex handover
+Self-contained for repository continuation. Include repository/branch/local and remote HEAD; deployed commit and PR; recovery refs and separate data-backup status; changed files/functions; schemas, writers/readers and dependencies; exact commands/test evidence; deployment/live/UAT boundaries; unresolved failures; exact next executable command/action and current approved scope. Fetch and inspect before edits; never restart from a stale packet.
+
+Both sections describe ONE project state, share checkpoint/release identifiers and distinguish intended actions from verified results. Neither is a separate source of operational truth. Update both at material checkpoints, before interruption/handoff and immediately after results become available. Preserve chronological WACP intent, action, failure, repair and retest evidence; do not invent instantaneous recording or unobserved results.
+
+Publish continuation records to the project repository during the authorized execution cycle so another accessible mode/device can retrieve them. Do not leave the sole handover on one laptop or in chat. If remote documentation is blocked, retain a local durable record, state the unsynchronized checkpoint and exact blocker, and provide a portable packet. Written rules cannot grant connectors, sync unrelated chats or activate unavailable mode-transfer controls.
+
+## 11B. Live-project completion and standing release scope
+Owner instruction of7 October2026: for the live BOBS project, a request to fix/improve the site authorizes the bounded implementation AND its normal source publication, PR/merge and deployment after required tests pass. Do not repeatedly ask for a separate publication approval within that already-approved scope. Carry the fix through deploy-status verification, served-source comparison and proportionate live-browser checks; update both handovers contemporaneously. Local implementation alone is not delivery of a live-site fix. Owner UAT remains a distinct status.
+
+This standing scope does not authorize unrelated features, destructive operational-data writes, migration/restoration/deletion, expanded exposure of private information or bypassing failed tests, branch protections or explicit approval restrictions. Obtain a new scope decision only for a genuine change of scope/risk or required higher-priority approval. Record actual blocking review/access decisions instead of claiming release.
+
+Release trace: approved scope -> protected checkpoint -> implementation -> Tester -> second four-view review -> source publication/CI -> merge/deployment -> served source/live checks -> dual handover update -> Owner acceptance. Preserve code rollback separately from operational-data recovery. Failure returns to diagnosis/repair/retest; NOT RUN is never PASS.
 
 ## 12. Continuous cross-AI implementation ledger
 111Q documentation is simultaneous with implementation, not only an end-of-session summary. After each material checkpoint, the repository handover records the request/decision, inspected HEAD/recovery point, files/data paths inspected, rule implemented, files changed, persistence effect, test/result, repair/retest if any, truthful release status, pending work and exact next executable action. This is mandatory in both directions: Codex documents so normal ChatGPT can resume after credit/session exhaustion, and normal ChatGPT documents so Codex can resume without reconstructing work from chat history. Record material actions/results in execution order; do not pad the ledger with meaningless keystroke narration.
 
 ## 13. Portable continuation command
-> Continue from current HEAD using OVERALL DESIGN MASTER 111Q, repository `AGENTS.md` where present, and the latest project/Codex handover. Treat 111Q as 111QS5PVDDRT. Inspect current source and intervening commits first; do not restart completed architecture or overwrite durable data. Perform the required tester stage and feed test findings back through 5PV-DR before declaring completion. Update the handover after each material change.
+> Continue from current HEAD using OVERALL DESIGN MASTER 111Q, repository `AGENTS.md` where present, and the latest project/Codex handover. Treat 111Q as 111QS5PVDRT. Inspect current source and intervening commits first; do not restart completed architecture or overwrite durable data. Perform the required tester stage and feed test findings back through 5PV-DR before declaring completion. Update the handover after each material change.
 
 ## 14. New-project charter
 Define: project/version/Owner; problem/outcome; users; first end-to-end workflow; in/out scope; baseline assets; business invariants; data entities/IDs; authoritative store; backup store; screens; APIs/integrations; reports; permissions/security; devices; scale/performance; acceptance tests; release criteria; migration; rollback; approved and pending decisions.
@@ -192,12 +213,13 @@ Legacy compatibility state may remain internally while required by older records
 A prior UI edit caused the Item Editor to remain at “Loading from Google…” because invalid JavaScript was introduced. This is why T is mandatory. Similar changes must verify page load, Google data load, changed controls, calculations, save/read-back where safely testable, shared-value propagation, affected links/navigation and nearby regressions.
 
 ## 16. Canonical-master rule
-Future project annexes may add context but must not silently weaken this master. Conflicts must be identified, reviewed under 111QS5PVDDRT and decided by the Owner.
+Future project annexes may add context but must not silently weaken this master. Conflicts must be identified, reviewed under 111QS5PVDRT and decided by the Owner.
 
 ## 17. Definition of success
 111Q succeeds when the Owner can see the choice, benefits, risks and connected effects; existing work is protected; implementation stays bounded; real testing observes the changed system; findings return through 5PV-DR; failures trigger repair/retest; status is truthful; rollback exists; current handover is updated; and another AI/developer can continue without rebuilding understanding from zero or overwriting existing work.
 
 ## Revision history
+- **v5.0 — 7 Oct 2026:** Owner canonical spelling **111QS = 111QS5PVDRT**; continuous documentation retained without a separate acronym D; mandatory Work mode and Codex handover sections; bounded live fixes include tested publication/deployment/live verification under standing Owner authorization. Earlier definitions below are historical.
 - **v1.0 — 19 Sep 2026:** universal PRO/CON/COMPARE & CONNECTIONS/OBSERVER + OWNER framework, dual business/software review, protection/testing/handover.
 - **v2.0 — 20 Sep 2026:** canonicalized **111Q = 111Q5PVDRT**; mandatory Tester; link/load/navigation/persistence/regression testing; mandatory post-test second 5PV-DR; consolidated universal master + BOBS constitution + Codex handover principles.
 - **v3.0 — 23 Sep 2026:** canonicalized **111Q = 111Q5PVDDRT**; made developer/Codex handover the first D; added mandatory inspect-current-HEAD/intervening-commits continuity rule; prohibited restart/overwrite behavior; made handover update a completion gate.\n- **v3.1 — 27 Sep 2026:** made the repository handover a continuous cross-AI implementation ledger updated during material work, so Codex and normal ChatGPT can resume each other after abrupt credit/session stops.

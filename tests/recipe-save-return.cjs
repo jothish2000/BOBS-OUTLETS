@@ -1,0 +1,23 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const C=require('../bobs-cost-flow.js');
+const source=fs.readFileSync('recipe-production-editor.js','utf8');
+const handler=source.slice(source.indexOf("$('saveProduction').onclick=async()=>"),source.indexOf("window.addEventListener('beforeunload'"));
+function fixture(options={}){
+ const recipe={name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',1,'kg',55]]};
+ const elements=Object.fromEntries(['saveProduction','confirmed','productionStatus','calculationStatus','referencePortion','portion','customPortion','referenceSource'].map(id=>[id,{disabled:false,checked:true,value:'',textContent:'',append(...items){this.items=items}}]));
+ elements.referencePortion.value='50';elements.referenceSource.disabled=true;
+ const result={reads:0,saves:0,urls:[],focused:0};
+ const ctx={C,console:{warn(){}},URLSearchParams,Date,box:{querySelectorAll:()=>Object.values(elements)},$:id=>elements[id],busy:false,dirty:true,knowledgeSource:'google',reviewReady:()=>!options.locked,focusReference:()=>result.focused++,scaleSignature:'same',signature:()=> 'same',values:()=>structuredClone(recipe),original:recipe,reference:recipe,loadedKey:'idli',state:{ownerField:'KEEP'},outlet:'1',q:new URLSearchParams(options.fallback?'outlet=1':'outlet=1&cat=Breakfast+Catalogue&i=3'),appliedSummary(){},BOBS_DATA:{},window:{},document:{createElement:()=>({})},location:{origin:'https://bobs.test',assign(url){assert.equal(ctx.busy,false);assert.equal(ctx.dirty,false);result.urls.push(url);if(options.navFail)throw Error('Navigation failed')}}};
+ ctx.K={VERSION:'fixture',loadStandards:async()=>{result.reads++;if(options.read)await options.read;return {records:options.missing?[]:[options.stale?{...recipe,yieldQty:121}:recipe]}}};
+ ctx.V={save:async(o,m,k,next,baseline)=>{result.saves++;assert.equal(o,'1');assert.equal(m,'METHOD2');assert.equal(k,'default');assert.equal(next.ownerField,'KEEP');assert.equal(baseline.ownerField,'KEEP');if(options.failSave)throw Error('Verification failed');return next}};
+ if(options.notifyFail){ctx.window.opener={postMessage(){throw Error('Closed opener')}};ctx.window.BroadcastChannel=function(){throw Error('Channel unavailable')};ctx.BroadcastChannel=ctx.window.BroadcastChannel;}
+ vm.runInNewContext(handler,ctx);
+ return {ctx,elements,result,click:()=>elements.saveProduction.onclick()};
+}
+test('locked calculation and unchecked review cannot write or navigate',async()=>{let f=fixture({locked:true});await f.click();assert.equal(f.result.focused,1);assert.equal(f.result.reads,0);f=fixture();f.elements.confirmed.checked=false;await f.click();assert.equal(f.result.saves,0);assert.equal(f.result.urls.length,0);assert.equal(f.ctx.dirty,true)});
+test('pending reference read locks controls and prevents duplicate saves',async()=>{let release;const read=new Promise(r=>release=r),f=fixture({read});const pending=f.click();assert.match(f.elements.productionStatus.textContent,/Checking/);assert.equal(f.elements.confirmed.disabled,true);await f.click();assert.equal(f.result.reads,1);release();await pending;assert.equal(f.result.saves,1);assert.equal(f.elements.confirmed.disabled,false);assert.equal(f.elements.referenceSource.disabled,true);assert.equal(f.result.urls[0],'method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=3&mode=production')});
+test('missing and changed Google reference retain editor without save',async()=>{for(const options of [{missing:true},{stale:true}]){const f=fixture(options);await f.click();assert.equal(f.result.saves,0);assert.equal(f.result.urls.length,0);assert.equal(f.ctx.dirty,true);assert.equal(f.elements.saveProduction.disabled,false)}});
+test('verification failure leaves edits dirty and enables retry',async()=>{const f=fixture({failSave:true});await f.click();assert.match(f.elements.productionStatus.textContent,/Verification failed/);assert.equal(f.result.urls.length,0);assert.equal(f.ctx.dirty,true);assert.equal(f.elements.confirmed.disabled,false)});
+test('notification failures do not prevent verified return',async()=>{const f=fixture({notifyFail:true});await f.click();assert.equal(f.result.saves,1);assert.equal(f.result.urls.length,1)});
+test('no category returns to outlet workspace; failed navigation keeps return link',async()=>{const f=fixture({fallback:true,navFail:true});await f.click();assert.equal(f.result.urls[0],'method2.html?outlet=1');assert.match(f.elements.productionStatus.textContent,/Use the return link/);assert.equal(f.elements.productionStatus.items[1].href,'method2.html?outlet=1');assert.equal(f.ctx.dirty,false)});

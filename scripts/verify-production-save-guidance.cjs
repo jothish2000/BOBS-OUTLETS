@@ -3,7 +3,9 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
 (async()=>{
  const browser=await chromium.launch({channel:'chrome',headless:true});
  try{for(const width of [1366,615,390]){
+ let fixture;
  const page=await browser.newPage({viewport:{width,height:800}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.exposeFunction('captureFixture',f=>{fixture=f});
  await page.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));
  await page.goto('https://bobs.test/recipe-cost-editor.html?item=Idli&outlet=1&qty=360&cat=Breakfast+Catalogue&i=0');
  const html=fs.readFileSync('recipe-cost-editor.html','utf8');
@@ -15,7 +17,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  window.saves=0;window.failSave=false;window.recipe={name:'Idli',yieldQty:120,yieldUnit:'pieces',portionGrams:50,ingredients:[['Rice',1.6,'kg',55],['Fenugreek',0.004,'kg',160],['LPG fuel',0.2,'kg',153.5]],referenceEvidence:[]};
  window.M2={purchaseKey:s=>s.toLowerCase()};
  window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[window.recipe]})};window.BOBS_DATA={};
- window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>({recipeOverrides:{}}),save:async(outlet,module,key,next)=>{window.saves++;if(window.failSave)throw Error('Simulated verification failure');window.savedNext=next;return next}};
+ window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>({recipeOverrides:{}}),save:async(outlet,module,key,next)=>{window.saves++;if(window.failSave)throw Error('Simulated verification failure');window.savedNext=next;await window.captureFixture({recipe:window.recipe,state:next});return next}};
  });
  await page.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await page.evaluate(()=>BOBSRecipeProduction.start());
  assert.match(await page.locator('#productionStatus').innerText(),/Preview calculated — not saved/);
@@ -89,13 +91,15 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.locator('#confirmed').check();assert.equal(await page.evaluate(()=>window.saves),0);
  await page.locator('#targetQty').fill('480');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.match(await page.locator('#productionStatus').innerText(),/Click Calculate/);
  await page.locator('#confirmed').click({force:true});assert.equal(await page.locator('#confirmed').isChecked(),false);await dismissGuidance();await page.locator('#saveProduction').click();assert.equal(await page.evaluate(()=>window.saves),0);await dismissGuidance(page,'close');
- await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);await page.locator('#confirmed').check();await page.locator('#saveProduction').click();
- await page.waitForFunction(()=>document.getElementById('productionStatus').textContent.includes('saved and verified'));
- assert.equal(await page.locator('.quantity').nth(1).inputValue(),'35');
- assert.equal(await page.evaluate(()=>window.saves),1);const saved=await page.evaluate(()=>window.savedNext.recipeOverrides.idli);assert.equal(saved.portion,'110');assert.equal(saved.referencePortion,'50');assert(Math.abs(saved.recipe.ingredients[1][1]-0.0352)<1e-12);assert.equal(saved.recipe.ingredients[1][2],'kg');assert.equal(saved.recipe.ingredients[1][3],160);assert(Math.abs(saved.recipe.ingredients[2][1]-0.8)<1e-12);assert.match(await page.locator('#productionStatus a').getAttribute('href'),/mode=production/);
- await page.locator('.rate').first().fill('60');assert.equal(await page.locator('#confirmed').isChecked(),false);assert.match(await page.locator('#productionStatus').innerText(),/Edits are not saved/);
- await page.evaluate(()=>window.failSave=true);await page.locator('#confirmed').check();await page.locator('#saveProduction').click();
+ await page.locator('#scale').click();await page.waitForFunction(()=>!document.getElementById('scale').disabled);await page.locator('#confirmed').check();
+ await page.evaluate(()=>window.failSave=true);await page.locator('#saveProduction').click();
  await page.waitForFunction(()=>document.getElementById('productionStatus').textContent.includes('Simulated verification failure'));
+ assert(page.url().includes('recipe-cost-editor.html'));assert(await page.locator('#targetQty').isEnabled());
+ await page.evaluate(()=>window.failSave=false);
+ assert.equal(await page.locator('.quantity').nth(1).inputValue(),'35');
+ await page.locator('#saveProduction').click();await page.waitForURL('**/method2-item.html?**');
+ const returnUrl=new URL(page.url());assert.equal(returnUrl.searchParams.get('outlet'),'1');assert.equal(returnUrl.searchParams.get('cat'),'Breakfast Catalogue');assert.equal(returnUrl.searchParams.get('i'),'0');assert.equal(returnUrl.searchParams.get('mode'),'production');
+ const saved=fixture.state.recipeOverrides.idli;assert.equal(saved.portion,'110');assert.equal(saved.referencePortion,'50');assert(Math.abs(saved.recipe.ingredients[1][1]-0.0352)<1e-12);assert.equal(saved.recipe.ingredients[1][2],'kg');assert.equal(saved.recipe.ingredients[1][3],160);assert(Math.abs(saved.recipe.ingredients[2][1]-0.8)<1e-12);
 
  // Reopen the actual editor using the previously saved mock payload.
  const reopen=await browser.newPage({viewport:{width,height:800}});await reopen.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));
@@ -103,7 +107,6 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await reopen.setContent(html.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
  await reopen.addScriptTag({content:fs.readFileSync('bobs-number-format.js','utf8')});
  await reopen.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
- const fixture=await page.evaluate(()=>({recipe:window.recipe,state:window.savedNext}));
  await reopen.evaluate(f=>{window.M2={purchaseKey:s=>s.toLowerCase()};window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
  await reopen.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await reopen.evaluate(()=>BOBSRecipeProduction.start());
  assert.equal(await reopen.locator('#confirmed').getAttribute('aria-disabled'),'true');await reopen.locator('#confirmed').click({force:true});assert.equal(await reopen.locator('#confirmed').isChecked(),false);await dismissGuidance(reopen);assert.equal(await reopen.evaluate(()=>document.activeElement.id),'scale');
