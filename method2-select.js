@@ -1,10 +1,10 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),outlet=q.get('outlet'),cat=q.get('cat');
 let baseline,dirty=false,busy=false;
-const menu='method2-select.html?outlet='+encodeURIComponent(outlet||'');
+const menu='method2-select.html?outlet='+encodeURIComponent(outlet||'')+(q.get('returnTo')?'&returnTo='+encodeURIComponent(q.get('returnTo')):'');
 $('allCategories').href=menu;
-function notify(){if(window.opener&&!window.opener.closed)window.opener.postMessage({type:'bobs-method2-selection-saved',outlet,reviewItems:true},location.origin);if(window.BroadcastChannel){const c=new BroadcastChannel('bobs-method2');c.postMessage({type:'bobs-method2-selection-saved',outlet,reviewItems:true});c.close()}}
-function returnToMethod(){if(busy)return; if(dirty&&!confirm('Leave without saving your changed item selection and prices?'))return;dirty=false;notify();if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet)+'&setup=1'}
+function notify(){if(window.BOBS_WINDOW_RETURN){BOBS_WINDOW_RETURN.notify({type:'bobs-method2-selection-saved',outlet,reviewItems:true},['bobs-method2']);return;}if(window.opener&&!window.opener.closed)window.opener.postMessage({type:'bobs-method2-selection-saved',outlet,reviewItems:true},location.origin);if(window.BroadcastChannel){const c=new BroadcastChannel('bobs-method2');c.postMessage({type:'bobs-method2-selection-saved',outlet,reviewItems:true});c.close()}}
+function returnToMethod(){if(busy)return; if(dirty&&!confirm('Leave without saving your changed item selection and prices?'))return;dirty=false;notify();if(window.BOBS_WINDOW_RETURN){BOBS_WINDOW_RETURN.returnToParent('method2.html?outlet='+encodeURIComponent(outlet)+'&setup=1');return;}if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet)+'&setup=1'}
 function updateCount(){$('selectionCount').textContent=$('items').querySelectorAll('input:checked').length+' items selected'}
 function render(){
  if(!cat){$('allCategories').hidden=true;$('categoryGrid').replaceChildren();for(const category of CAT_ORDER){const a=document.createElement('a');a.className='card category-tile';a.href=menu+'&cat='+encodeURIComponent(category);const h=document.createElement('h2');h.textContent=category.replace(' Catalogue','');const info=document.createElement('p');info.textContent=category===M2.SIDES?'Original Recipe Master sides · sell separately or include with meals':ITEM_DATA[category].length+' items · '+ITEM_DATA[category].filter((_,i)=>M2.selected(baseline,category,i)).length+' selected';a.append(h,info);$('categoryGrid').append(a)}return}

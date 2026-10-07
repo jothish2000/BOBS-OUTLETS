@@ -11,14 +11,15 @@ function applySupply(){
  $('priceLabel').textContent='Supplier price ₹ / '+supply;
 }
 function calculate(){applySupply();const p=values(),rate=M2.purchaseRate(p),unit=M2.convert(1,p.unit,'ml')!==null?'ml':M2.convert(1,p.unit,'g')!==null?'g':p.unit;$('calculation').textContent=rate===null?'Enter the supplier definition and price.':'₹'+Number(p.total).toFixed(2)+' ÷ '+BOBS_NUMBERS.quantity(p.qty,p.unit)+' '+p.unit+' = ₹'+(rate/M2.convert(1,p.unit,unit)).toFixed(4)+' per '+unit}
-function close(){if(busy)return;if(dirty&&!confirm('Leave without saving these supplier rates?'))return;dirty=false;if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet)}
+function close(){if(busy)return;if(dirty&&!confirm('Leave without saving these supplier rates?'))return;dirty=false;if(window.BOBS_WINDOW_RETURN){BOBS_WINDOW_RETURN.returnToParent('method2.html?outlet='+encodeURIComponent(outlet));return;}if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet)}
 $('close').onclick=close;
 $('editor').oninput=()=>{dirty=true;calculate()};
 $('editor').onsubmit=async e=>{e.preventDefault();if(busy||!$('editor').reportValidity())return;const controls=$('controls');busy=true;controls.disabled=true;$('status').textContent='Saving and verifying Google…';
 try{const saved=await M2.savePurchase(outlet,name,values(),baseline);baseline=M2.state(saved);dirty=false;busy=false;$('status').textContent='Saved and read back from Google.';
 const message={type:'bobs-purchase-master-saved',outlet,token:M2.masterEntry(saved.purchaseMasters,name).saveToken};
-if(window.opener&&!window.opener.closed)window.opener.postMessage(message,location.origin);
-if(window.BroadcastChannel)for(const channelName of ['bobs-purchase-master','bobs-method2']){const channel=new BroadcastChannel(channelName);channel.postMessage(message);channel.close()}
+if(window.BOBS_WINDOW_RETURN)BOBS_WINDOW_RETURN.notify(message,['bobs-purchase-master','bobs-method2']);
+else if(window.opener&&!window.opener.closed)window.opener.postMessage(message,location.origin);
+if(!window.BOBS_WINDOW_RETURN&&window.BroadcastChannel)for(const channelName of ['bobs-purchase-master','bobs-method2']){const channel=new BroadcastChannel(channelName);channel.postMessage(message);channel.close()}
 close();
 }catch(err){$('status').textContent=err.message}finally{busy=false;controls.disabled=false}};
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});

@@ -119,7 +119,8 @@ function calculate(){
 }
 function show(){for(const id of fields)$(id).value=d[id]??'';$('unit').value=d.unit;$('editor').hidden=false;renderComponents();calculate()}
 function back(){
- if(dirty&&!confirm('This item is not saved to Google. Leave without saving?'))return;dirty=false;
+ if(busy)return;if(dirty&&!confirm('This item is not saved to Google. Leave without saving?'))return;dirty=false;
+ if(window.BOBS_WINDOW_RETURN){BOBS_WINDOW_RETURN.returnToParent('method2.html?outlet='+encodeURIComponent(outlet));return;}
  if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}
  else location.href='method2.html?outlet='+encodeURIComponent(outlet);
 }
@@ -154,9 +155,11 @@ $('editor').onsubmit=async e=>{
  try{M2.cache(outlet,saved)}catch(e){/* A blocked browser cache does not undo a verified Google save. */}
  $('saveStatus').textContent='Verified in Google';status('Saved and read back from Google.');
  busy=false;
- if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'bobs-method2-item-saved',outlet,key:M2.keys(cat,i).k},location.origin);window.opener.postMessage({type:'bobs-method2-price-saved',outlet,key:M2.keys(cat,i).k,price:Number(d.price)},location.origin);window.opener.focus();window.close()}
- if(window.BroadcastChannel){const pc=new BroadcastChannel('bobs-method2');pc.postMessage({type:'bobs-method2-price-saved',outlet,key:M2.keys(cat,i).k,price:Number(d.price)});pc.close()}
- else location.href='method2.html?outlet='+encodeURIComponent(outlet);
+ const itemMessage={type:'bobs-method2-item-saved',outlet,key:M2.keys(cat,i).k};
+ const priceMessage={type:'bobs-method2-price-saved',outlet,key:M2.keys(cat,i).k,price:Number(d.price)};
+ if(window.BOBS_WINDOW_RETURN){BOBS_WINDOW_RETURN.notify(itemMessage,['bobs-method2']);BOBS_WINDOW_RETURN.notify(priceMessage,['bobs-method2']);BOBS_WINDOW_RETURN.afterSave('method2.html?outlet='+encodeURIComponent(outlet));}
+ else{try{if(window.opener&&!window.opener.closed){window.opener.postMessage(itemMessage,location.origin);window.opener.postMessage(priceMessage,location.origin)}}catch(e){}if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='method2.html?outlet='+encodeURIComponent(outlet);}
+
  }catch(err){status(err.message);$('saveStatus').textContent='Not verified — keep this page open'}finally{busy=false;controls.disabled=false}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});

@@ -13,7 +13,7 @@ function setGuide(stage,text,expected,actionText,href){
  if(actionText&&href){action.textContent=actionText;action.href=href;action.hidden=false;action.target=href.startsWith('#')?'':'_blank'}else{action.hidden=true;action.removeAttribute('href');action.removeAttribute('target')}
 }
 function entries(){const rows=[],seenSides=new Set();for(const cat of CAT_ORDER)ITEM_DATA[cat].forEach((item,i)=>{if(!M2.selected(s,cat,i))return;if(cat===M2.SIDES){const key=String(item.recipeName||item.name||'').trim().toLowerCase();if(seenSides.has(key))return;seenSides.add(key)}rows.push({cat,i,item})});return rows}
-function url(cat,i,mode){return 'method2-item.html?'+new URLSearchParams({outlet,cat,i,mode})}
+function url(cat,i,mode){const target='method2-item.html?'+new URLSearchParams({outlet,cat,i,mode});return window.BOBS_WINDOW_RETURN?BOBS_WINDOW_RETURN.child(target):target}
 function open(cat,i,mode){
  if(!ready)return;const {k}=M2.keys(cat,i);pending[k]=s.itemEditors[k]?.saveToken||'new';sessionStorage.setItem(pendingKey,JSON.stringify(pending));
  const win=window.open(url(cat,i,mode),'bobs-item-'+outlet+'-'+CAT_ORDER.indexOf(cat)+'-'+i);

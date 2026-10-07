@@ -29,8 +29,12 @@ await BOBS_VERIFIED.recipeSave(updated,current?baseline:null);
 let verified=null;for(let i=0;i<3;i++){const check=await read();if(same(find(check,active),updated)){verified=check;break}}
 if(!verified)throw Error('Save was sent but could not be verified. Keep this page open and reload to check; do not assume it is saved.');
 master=verified;baseline=clone(updated);dirty=false;status('Saved and read back from Google. Batch ₹'+total.toFixed(2)+'; unit ₹'+(total/y).toFixed(4)+'.');
+if(window.BOBS_WINDOW_RETURN)BOBS_WINDOW_RETURN.notify({type:'bobs-recipe-master-saved',recipes:verified.recipes},['bobs-recipe-master']);
+else{
 if(window.opener)window.opener.postMessage({type:'bobs-recipe-master-saved',recipes:verified.recipes},location.origin);
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-recipe-master');channel.postMessage({type:'bobs-recipe-master-saved',recipes:verified.recipes});channel.close()}
+}
+if(window.BOBS_WINDOW_RETURN)BOBS_WINDOW_RETURN.afterSave();
 }catch(err){status(err.message)}finally{saving=false;Array.from($('editor').elements).forEach(e=>e.disabled=false);$('recipe').disabled=false}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 (async()=>{try{master=addTemplates(await read());let wanted=[];try{wanted=JSON.parse(q.get('names')||'[]')}catch(e){}const condiment=q.get('kind')==='condiment';let available=master.recipes.filter(r=>!condiment||(wanted.length?wanted.some(n=>norm(n)===norm(r.name)):/CONDIMENT/i.test(r.kind||r.category||'')));available.forEach(r=>{const opt=document.createElement('option');opt.value=identity(r);opt.textContent=r.name;$('recipe').append(opt)});const target=available.find(r=>norm(r.name)===norm(q.get('item')))||(condiment||!q.get('item')?available[0]:null);if(!target)throw Error('No matching recipes found in Google.');$('recipe').value=identity(target);show(identity(target))}catch(e){status(e.message)}})();
