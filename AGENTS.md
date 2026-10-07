@@ -15,11 +15,11 @@ Before editing any file:
 
 ## Canonical governance
 
-Apply **111Q = 111QS5PVDDRT**.
+Apply **111QS = 111QS5PVDRT**. Legacy 111Q references use this method.
 
 - **S — Switch / execution-mode routing gate:** before material execution, route the current activity to the best mode and preserve continuity. Chat: architecture, UX, business rules, small diagnosis. Work: broad research, testing, browser/multi-step execution. Codex/Work: coding, repository/release, deep debugging, durable-data implementation. Before moving from an approved design into material development, surface a concise Switch-to-Work/Codex suggestion when it would materially improve execution and prepare a self-contained handover. The Owner may explicitly stay in Chat.
 - **5PV:** PRO / CON / COMPARE & CONNECTIONS / OBSERVER / YOU-OWNER.
-- **First D:** Developer/Codex handover continuity.
+- **Continuous documentation:** mandatory Work mode and Codex handover sections at each material checkpoint; continuity remains required despite the shorter canonical spelling.
 - **DR:** the first four perspectives inspect both business/logic and code/software effects.
 - **T:** mandatory Tester stage after implementation.
 - Feed real test evidence back through post-test 5PV-DR before declaring completion.
@@ -135,12 +135,16 @@ When the Owner says something like `continue`, `go ahead`, `222`, `333`, `999` o
 
 
 ## 111QS continuity gates
-Follow universal master v4.1 sections 4A–4D: preserve Chat/Work routing, apply the Work-completion return gate, and proactively offer the complete fresh-conversation handover at an estimated 75–80% practical context capacity. This is best effort; no exact live percentage meter is available. Keep WACP contemporaneous. Latest Owner hierarchy for this item repair: Google BOBS_STANDARD_RECIPE, then audited market references; legacy Recipe Master is history/backup only, never an operational fallback.
+Follow universal master v5.0 sections 4A–4D: preserve Chat/Work routing, apply the Work-completion return gate, and proactively offer the complete fresh-conversation handover at an estimated 75–80% practical context capacity. This is best effort; no exact live percentage meter is available. Keep WACP contemporaneous. Latest Owner hierarchy for this item repair: Google BOBS_STANDARD_RECIPE, then audited market references; legacy Recipe Master is history/backup only, never an operational fallback.
 
 
 ## Owner communication override — 2 October 2026
-Assume ChatGPT Windows Work mode on the Owner's laptop unless the Owner explicitly says they are on mobile. Do not ask laptop-or-phone confirmation. This supersedes the older personal device-question rule. Follow universal master v4.2 section 4E: selectable YES/NO mode gate, decision pending until explicit response; no timeout/default consent. Use supported mode transfer only after choice and handover; verify it. If popup persistence or mode switching is unavailable, disclose the limitation and preserve a replyable YES/NO choice rather than claiming a switch. These project instructions do not automatically change unrelated chats or local global settings.
+Assume ChatGPT Windows Work mode on the Owner's laptop unless the Owner explicitly says they are on mobile. Do not ask laptop-or-phone confirmation. This supersedes the older personal device-question rule. Follow universal master v5.0 section 4E: selectable YES/NO mode gate, decision pending until explicit response; no timeout/default consent. Use supported mode transfer only after choice and handover; verify it. If popup persistence or mode switching is unavailable, disclose the limitation and preserve a replyable YES/NO choice rather than claiming a switch. These project instructions do not automatically change unrelated chats or local global settings.
 
 
 ## Owner quantity formatting — 3 October 2026
 Follow the 111QS BOBS annex quantity-numbering rule in OVERALL_DESIGN_MASTER_111Q.md. Quantity displays: kg/litres three decimals; grams/pieces/dozens/cartons and other discrete packs/sets whole numbers. Use BOBS_NUMBERS.quantity at presentation boundaries. Never round calculation, saved/exported Google values or exact editable inputs; preserve raw values for any rounded grid input. Do not change currency/percentage/time precision under this rule. Add explicit unit-aware formatting when adding new screens.
+
+
+## Owner standing live-delivery and dual handover rule — 7 October 2026
+Canonical **111QS =111QS5PVDRT** (master v5.0). For this live BOBS site, approved fixes include tested source publication, PR/merge, deployment and proportionate live verification; do not ask the same release approval again. Preserve explicit destructive-data/scope gates and higher-priority restrictions. Update the continuous ledger and both named sections in111QS_HANDOVER_CURRENT.md at each material checkpoint, publish them during the authorized cycle, and keep local/deployed/live/UAT status distinct. Work mode must be able to continue from repository links on phone/laptop; Codex must have exact refs/files/tests/commands. Documentation does not automatically grant access or synchronize conversations.
