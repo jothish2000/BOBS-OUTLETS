@@ -93,14 +93,15 @@ $('saveProduction').onclick=async()=>{
   $('calculationStatus').textContent='Outlet recipe saved and verified. Returning to the item.';
   appliedSummary('Saved outlet recipe:');
   $('productionStatus').textContent='Outlet recipe saved and verified. Returning to the item…';
-  try{if(window.opener)window.opener.postMessage({type:'bobs-recipe-master-saved'},location.origin)}catch(e){console.warn('Recipe opener notification failed',e)}
-  try{if(window.BroadcastChannel){const ch=new BroadcastChannel('bobs-recipe-master');try{ch.postMessage({type:'bobs-recipe-master-saved'})}finally{ch.close()}}}catch(e){console.warn('Recipe broadcast notification failed',e)}
+  const receipt={type:'bobs-recipe-master-saved',outlet,recipeName:original.name,savedAt:state.recipeOverrides[loadedKey].savedAt};
+  try{if(window.opener)window.opener.postMessage(receipt,location.origin)}catch(e){console.warn('Recipe opener notification failed',e)}
+  try{if(window.BroadcastChannel){const ch=new BroadcastChannel('bobs-recipe-master');try{ch.postMessage(receipt)}finally{ch.close()}}}catch(e){console.warn('Recipe broadcast notification failed',e)}
   const a=document.createElement('a');a.textContent='Return to Method 2 item →';
   a.href=q.has('cat')?'method2-item.html?'+new URLSearchParams({outlet,cat:q.get('cat'),i:q.get('i'),mode:'production'}):'method2.html?outlet='+encodeURIComponent(outlet);
   $('productionStatus').append(' ',a);
   // Saving is verified before releasing the unsaved-navigation guard.
   busy=false;
-  try{if(window.BOBS_WINDOW_RETURN)BOBS_WINDOW_RETURN.afterSave(a.href);else location.assign(a.href)}catch(e){$('productionStatus').textContent='Outlet recipe saved and verified. Use the return link.';$('productionStatus').append(' ',a)}
+  try{if(window.BOBS_WINDOW_RETURN)BOBS_WINDOW_RETURN.afterSave(a.href,{page:'method2-item.html',hash:'supplyHeading'});else location.assign(a.href)}catch(e){$('productionStatus').textContent='Outlet recipe saved and verified. Use the return link.';$('productionStatus').append(' ',a)}
  }catch(e){$('productionStatus').textContent=e?.message||String(e)}
  finally{busy=false;controls.forEach(([el,disabled])=>el.disabled=disabled);$('saveProduction').disabled=false}
 };
