@@ -13,13 +13,13 @@ function fixture({mode='production',initial=null,optional=null,standardUnavailab
  let db={'1/METHOD2/default':{itemEditors:{'Breakfast Catalogue::0':draft}}},fail=false,standardCalls=0;const reads=[],writes=[];
  w.BOBS_DATA={jsonp:async p=>{reads.push(p.module);if(p.module==='RECIPE_MASTER')throw Error('Legacy recipe access forbidden');if(p.module==='METHOD2'&&initial){const v=initial;initial=null;return v.promise}if(p.module==='METHOD2'&&fail)throw Error('Google Data Vault timeout');if(p.module==='IDLI_SUPPORT'&&optional)return optional.promise;const data=db[p.outletId+'/'+p.module+'/'+p.recordKey];return {ok:true,found:!!data,data:clone(data??null)}},saveModule:async(o,m,k,d)=>{writes.push(m);db[o+'/'+m+'/'+k]=clone(d)}};
  w.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>{standardCalls++;if(standardUnavailable)throw Error('Google standard timeout');return standardRecords===null?null:{records:clone(standardRecords===undefined?recipes:standardRecords)}}};w.BOBS_MARKET_REFERENCES=clone(marketRecords===undefined?recipes:marketRecords);w.BOBS_PORIYAL=[];
- w.BOBS_FULL_COST={load:()=>optional?optional.promise:Promise.resolve({error:'No cost plan'}),render:(box,data)=>box.textContent=data.error||'Full costs'};w.IdliSupportReaders={renderItem:(box,r,e)=>box.textContent=e||'Support'};
+ for(const path of ['bobs-cost-flow.js','idli-support-core.js','bobs-verified-store.js','bobs-full-cost-reader.js'])w.eval(source(path));w.BOBS_FULL_COST.load=()=>optional?optional.promise:Promise.resolve({error:'No cost plan'});w.IdliSupportReaders={renderItem:(box,r,e)=>box.textContent=e||'Support'};
  w.eval(source('bobs-operational-recipes.js'));w.eval(source('method2-packing-ui.js'));w.eval(source('method2-item.js'));
  return {dom,w,$,reads,writes,recipes,get db(){return db},setFail:v=>fail=v,get standardCalls(){return standardCalls}};
 }
 test('cold required read gates Save; optional pending/failure never blocks editor; no legacy reads',async()=>{
  const initial=deferred(),optional=deferred(),x=fixture({initial,optional});assert(x.$('controls').disabled);assert(x.$('editor').hidden);await x.$('editor').onsubmit({preventDefault(){}});assert.equal(x.writes.length,0);
- initial.resolve({ok:true,data:x.db['1/METHOD2/default']});await until(()=>!x.$('controls').disabled);assert.equal(x.$('sold').value,'290');assert.match(x.$('idliLabourCost').textContent,/still loading/);
+ initial.resolve({ok:true,data:x.db['1/METHOD2/default']});await until(()=>!x.$('controls').disabled);assert.equal(x.$('sold').value,'290');assert.match(x.$('idliLabourCost').textContent,/Loading staffing/);
  optional.reject(Error('optional timeout'));await until(()=>x.$('idliLabourCost').textContent.includes('optional timeout'));assert(!x.$('editor').hidden);assert.equal(x.writes.length,0);assert(!x.reads.includes('RECIPE_MASTER'));x.dom.window.close();
 });
 test('failed required read stays disabled; manual retry fresh load succeeds',async()=>{

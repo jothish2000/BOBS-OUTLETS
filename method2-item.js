@@ -114,7 +114,7 @@ function calculate(){
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
  consolidatedCosts(c);
- if(/^idl[yi]$/i.test(item.name)&&production){let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='card';$('pricing').closest('section').after(box);}if(fullCostData?.plan||fullCostData?.error)BOBS_FULL_COST.render(box,fullCostData,c,d,recipes,item,outlet);else IdliSupportReaders.renderItem(box,supportRecord,supportError,c,d);}else if($('idliLabourCost'))$('idliLabourCost').remove();
+ if(/^idl[yi]$/i.test(item.name)&&production){let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='card';$('pricing').closest('section').after(box);}BOBS_FULL_COST.render(box,fullCostData,c,d,recipes,item,outlet,refreshFullCost);}else if($('idliLabourCost'))$('idliLabourCost').remove();
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  const pricingIncomplete=incomplete||c.uuwpPctApplied===null;
  const uuwpSource=c.uuwpPctApplied===null?'Enter Sold Today':c.unsold>0?'Actual leftovers: '+BOBS_NUMBERS.quantity(c.unsold,d.unit)+' unsold ÷ '+BOBS_NUMBERS.quantity(c.made,d.unit)+' produced × 100':'Default allowance — 100% sold';
@@ -188,7 +188,7 @@ async function loadEditor(){if(loading||busy)return;loading=true;ready=false;con
  $('supplyHeading').textContent='01 · '+item.name;
  const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
  $('condimentChoice').replaceChildren();choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
- supportRecord=null;supportError='';fullCostData={error:'Labour and full-cost records are still loading. Direct item editing is available.'};
+ supportRecord=null;supportError='';fullCostData={pending:true};
  show();ready=true;$('controls').disabled=false;status('Loaded from Google — your outlet information is ready to review.');$('itemGuide').hidden=false;dirty=false;
  if(/^idl[yi]$/i.test(item.name))loadOptionalCosts(epoch);
  }catch(e){status('Could not load and verify this item: '+e.message+'. Click “Retry Google read” below. No item was saved by this attempt.');$('retryGoogle').hidden=false}
@@ -204,6 +204,11 @@ async function loadOptionalCosts(epoch){
  supportError=support.status==='rejected'?'Support Google read failed: '+support.reason.message:'';
  try{calculate()}catch(e){status('Item data loaded; supporting cost display is unavailable: '+e.message)}
 }
+let fullCostRefresh=null;
+async function refreshFullCost(){if(!ready||busy)return;if(fullCostRefresh)return fullCostRefresh;const epoch=loadEpoch;fullCostData={pending:true};calculate();fullCostRefresh=(async()=>{try{const data=await BOBS_FULL_COST.load(outlet);if(epoch===loadEpoch&&ready){fullCostData=data;calculate()}}finally{fullCostRefresh=null}})();return fullCostRefresh;}
+function receiveFullCost(data){if(data?.type==='bobs-full-cost-saved'&&String(data.outlet)===String(outlet))refreshFullCost()}
+window.addEventListener('message',e=>{if(e.origin===location.origin)receiveFullCost(e.data)});
+if(window.BroadcastChannel){const fullCostChannel=new BroadcastChannel('bobs-full-cost');fullCostChannel.onmessage=e=>receiveFullCost(e.data)}
 $('retryGoogle').onclick=loadEditor;
 loadEditor();
 })();
