@@ -100,7 +100,7 @@ function lines(id,entries){$(id).replaceChildren();for(const [index,[label,value
 let supportRecord=null,supportError='',fullCostData=null;
 function calculate(){
  const c=M2.calculate(d,item,recipes),production=d.mode==='production';
- renderItemGuide();
+ renderItemGuide();if($('idealBuilderJump'))$('idealBuilderJump').hidden=!(d.mode==='production'&&/^idl[yi]$/i.test(item.name));
  document.querySelectorAll('.side-cost').forEach(el=>{const x=el.side,component=c.components[d.condiments.indexOf(x)+1];el.textContent=component.incomplete?'Complete this side’s cost inputs and packing choice.':BOBS_NUMBERS.quantity(x.portion,x.portionUnit)+' '+x.portionUnit+' complimentary: food '+money(component.food)+' + packing '+money(component.packing)+' = '+money(component.subtotal)+' per '+d.unit+(c.sold===null?'':'; '+money(component.subtotal*c.sold)+' for '+BOBS_NUMBERS.quantity(c.sold,d.unit)+' sold')+'. No separate revenue.'});
  document.querySelectorAll('.packing-editor').forEach(el=>{const cost=el.packingData===d.commonPacking?{packingCost:c.commonCost}:el.packingData===d.mainPacking?c.components[0]:c.components[d.condiments.indexOf(el.packingData)+1];M2PackingUI.update(el,cost,c.sold)});
  $('standaloneServing').hidden=!item.side;$('standaloneNote').hidden=!item.side;$('servingQty').required=!!item.side;$('condimentSection').hidden=!!item.side;
