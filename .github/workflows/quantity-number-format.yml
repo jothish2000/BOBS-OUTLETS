@@ -20,6 +20,7 @@ jobs:
       - name: Isolated recipe display and exact save/reopen
         run: |
           npm install --no-save --package-lock=false playwright@1.58.2 jsdom@26.1.0
+          node --test tests/full-cost-builder.cjs
           node tests/portion-review-dialog.cjs
           node scripts/verify-production-save-guidance.cjs
           node scripts/verify-historical-recipes-readonly.cjs
