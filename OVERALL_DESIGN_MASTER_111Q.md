@@ -240,3 +240,7 @@ A subwindow returns to the immediate window that opened it after its requested s
 
 ### Owner forward-continuation clarification — 8 October 2026
 Returning from a saved child resumes the next task in the immediate parent; it must not restart the parent guide or imply completion of the whole flow. Verified main recipe/purchase saves refresh that item’s costs and continue to quantity step2 while retaining unsaved item inputs. Step2 continues to explicit item Save step3; verified item Save returns to its parent flow for the next flow action. Failed/unrelated/duplicate notifications do not advance or move a later step backward. Preserve verified persistence, intentional review-again links and separate whole-flow completion gates.
+
+
+### Owner intentional forward action — 9 October2026
+Save & Continue may advance an explicitly requested workflow inside the child window after verified save, retaining the ultimate opening item for final return. Covered workforce -> Reverse THP salary -> expenses/allocation -> verified full-cost plan -> original item. Ordinary auxiliary Save returns its immediate opener; never substitute return-to-parent for an intentional next step. Salary preview precedes expense completion; full price requires both reviewed sources.
