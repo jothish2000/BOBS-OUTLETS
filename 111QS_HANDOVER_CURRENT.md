@@ -3,6 +3,23 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Tested release candidate — 10 October 2026
+
+IMPLEMENTED / CODE CHECKED / AUTOMATED TESTED / ISOLATED BROWSER TESTED. DEPLOYMENT and LIVE VERIFICATION pending. New core/history tests8/8 passed after replacing the incomplete fixture; connected groups57/57 passed; updated roadmap group6/6 passed including current/stale/read-error capex completion. Existing salary/asset tests11/11 and item builder4/4 passed in the first combined run; quantity formatter/syntax suite passed. The first run had5 failed fixture tests (M2.recipe absent), explicitly repaired/retested, not counted as passes.
+
+Native Edge isolated Google journey passed: add/remove salary components, old package preserved in verified backup, two readable historical versions, parent drafts retained, salary norms stale guard; capital quote₹70,000 +delivery₹1,000 saved/reopened at₹71,000; changed owned quantity rejects save without writes; ASSET_MASTER unchanged by capital save, working-capital inputs exclude machine cost. Four390px layouts fit and screenshots inspected. No real operational Google writes. History date presentation changed to readable IST after inspection; final syntax/browser checks included in release verification.
+
+Second four-view review (one assistant): PRO—observed totals/history/save-reopen match intended flow; CON—real owner records are deliberately not test-written and Owner UAT remains pending; COMPARE—purchase quote changes leave asset depreciation and operating funding unchanged; OBSERVER—stale/missing records show incomplete states, partial employee application reports the already-saved proposal, and Google backup rejection is recorded. Current scope already authorizes tested publication.
+
+Recovery source de9ee4f and remote recovery/pre-capex-salary-history-20261010 are available. Proposed whole-vault copy rejected; no copy, no destructive data changes. Existing record-level backups/readback/stale protection used unchanged. Next: publish branch/PR, wait for checks, merge, verify Pages and live served sources/read-only Google load, then finalize both handovers and additive backend index links.
+
+
+### Capital expenditure and saved salary history — implementation checkpoint, 10 October 2026
+
+Owner requested a dedicated equipment purchase budget plus Google capture of salary additions/deductions/benefit removals; laptop confirmed. Branch codex/capex-salary-history-20261010 begins at de9ee4f. Recovery/pre-capex-salary-history-20261010 protects that source. Read CAPEX_SALARY_HISTORY_20261010.md for the four-view review, data ownership and exact scope. Capex is a separate Google plan with actual reviewed quotes and owned-unit exclusion; salary history reuses the existing verified package backups. New code is IN PROGRESS; tests/deployment/live verification NOT RUN for this extension. No real salaries/assets/budgets written. Next: test calculation, history continuity, save/reopen, stale guards and mobile navigation, then publish.
+
+
+
 ### LIVE — salary packages, assets and working capital, 10 October 2026
 
 PR62 is merged and live: runtime314f844854cbeb94e84616cc9e26a5f02309031d, Pages38053374157 succeeded. All49 changed runtime files match the live site. Government-reference fields are now connected to the existing Google THP_NORMS record; all30 company parameters are preserved and17 new reference fields passed native/API readback. No real employee salary, asset or working-capital records were saved during verification.
@@ -141,6 +158,23 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Tested release candidate — 10 October 2026
+
+IMPLEMENTED / CODE CHECKED / AUTOMATED TESTED / ISOLATED BROWSER TESTED. DEPLOYMENT and LIVE VERIFICATION pending. New core/history tests8/8 passed after replacing the incomplete fixture; connected groups57/57 passed; updated roadmap group6/6 passed including current/stale/read-error capex completion. Existing salary/asset tests11/11 and item builder4/4 passed in the first combined run; quantity formatter/syntax suite passed. The first run had5 failed fixture tests (M2.recipe absent), explicitly repaired/retested, not counted as passes.
+
+Native Edge isolated Google journey passed: add/remove salary components, old package preserved in verified backup, two readable historical versions, parent drafts retained, salary norms stale guard; capital quote₹70,000 +delivery₹1,000 saved/reopened at₹71,000; changed owned quantity rejects save without writes; ASSET_MASTER unchanged by capital save, working-capital inputs exclude machine cost. Four390px layouts fit and screenshots inspected. No real operational Google writes. History date presentation changed to readable IST after inspection; final syntax/browser checks included in release verification.
+
+Second four-view review (one assistant): PRO—observed totals/history/save-reopen match intended flow; CON—real owner records are deliberately not test-written and Owner UAT remains pending; COMPARE—purchase quote changes leave asset depreciation and operating funding unchanged; OBSERVER—stale/missing records show incomplete states, partial employee application reports the already-saved proposal, and Google backup rejection is recorded. Current scope already authorizes tested publication.
+
+Recovery source de9ee4f and remote recovery/pre-capex-salary-history-20261010 are available. Proposed whole-vault copy rejected; no copy, no destructive data changes. Existing record-level backups/readback/stale protection used unchanged. Next: publish branch/PR, wait for checks, merge, verify Pages and live served sources/read-only Google load, then finalize both handovers and additive backend index links.
+
+
+### Capital expenditure and saved salary history — implementation checkpoint, 10 October 2026
+
+Owner requested a dedicated equipment purchase budget plus Google capture of salary additions/deductions/benefit removals; laptop confirmed. Branch codex/capex-salary-history-20261010 begins at de9ee4f. Recovery/pre-capex-salary-history-20261010 protects that source. Read CAPEX_SALARY_HISTORY_20261010.md for the four-view review, data ownership and exact scope. Capex is a separate Google plan with actual reviewed quotes and owned-unit exclusion; salary history reuses the existing verified package backups. New code is IN PROGRESS; tests/deployment/live verification NOT RUN for this extension. No real salaries/assets/budgets written. Next: test calculation, history continuity, save/reopen, stale guards and mobile navigation, then publish.
+
+
 
 ### LIVE technical continuation — salary/capital release
 
