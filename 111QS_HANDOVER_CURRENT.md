@@ -1,7 +1,25 @@
-# 111QS dual-mode handover — mandatory staff live; THP source pending, 10 October 2026
+# 111QS dual-mode handover — salary packages, assets and working capital, 10 October 2026
 Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution views; four reviews are one assistant's separated passes.
 
 ## Work mode handover
+
+### Salary packages, asset master and working capital — release candidate, 10 October 2026
+
+Owner approved this scope on laptop Codex. Implemented and tested; deployment/live verification are still pending at this checkpoint. The existing Google Data Vault remains the database. New HR_STATUTORY_RULES tab (gid111051023) has17 official-reference fields; native JSON readback matches. Activation of the THP_NORMS formula will follow runtime deployment. Company HR_NORMS parameters remain preserved.
+
+Open the outlet baseline or salary step and choose **Review / edit salary package**. Enter THP, confirm PF/ESI/EPS eligibility and qualifying wage bases, select company provisions, recalculate and save. Consolidated pay clears optional company components; it does not exempt applicable statutory contributions or leave/bonus. Government rates have source/date labels. Planned-position proposals return to the unchanged outlet draft for review/save; actual linked employees update company Staff Master only on explicit save. New references make old accepted norms stale until reviewed.
+
+The **Asset master** records owned/needed machines, cost basis, residual value, useful life, operating days and product shares. Recipe equipment suggestions contain no assumed purchase prices. Shared machines are recorded once. Additional purchases form capex; depreciation affects Ideal Price Builder only. It does not change direct COGS, the expense ledger or operating profit. Explicit no-assets decisions need a reason.
+
+**Daily working capital** uses saved quantities, raw inputs/purchases, packing and current accepted whole-outlet labour/expenses once. Choose daily reserves or actual amounts due; review paid stock, supplier credit, opening cash and receipts available before spending. Depreciation and machine purchases are excluded. The roadmap shows assets under ideal pricing and funding under outlet analysis. Existing no-staff or no-assets choices require explicit review, never invented defaults.
+
+No real employee salaries, outlet budgets, assets or funding plans were saved by the tests. Owner acceptance remains pending. Full evidence and recovery instructions: SALARY_ASSET_CAPITAL_20261010.md. Latest Google backend index is BOBS_BACKEND (gid111051020), rows23–27. Do not treat an older historical entry below as the current task status.
+
+
+### Salary packages and capital planning — approved implementation checkpoint, 10 October 2026
+
+Owner approved employee salary editor with sourced statutory defaults and permitted increases, plus asset master/product-only depreciation and daily working-capital planning. Current base4029c5b; branch codex/salary-packages-capital-20261010; recovery/pre-salary-packages-capital-20261010. Four review passes are one assistant’s separate passes. Read SALARY_ASSET_CAPITAL_20261010.md for scope, dependency map and source distinctions. New salary engine and popup are being implemented; no new deployment or passed tests claimed. Assets/WC still pending. Opening pages must never save operational records. Google-backed proposal saves and approved outlet budgets remain distinct; salary savings preserve parent drafts. Existing legacy records and original owner files retained. Exact next: test package arithmetic/eligibility and popup save/return, then implement asset/WC modules and verify all connected consumers.
+
 
 ### Laptop checkout continuation note — 10 October 2026
 
@@ -114,6 +132,20 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Salary / capital implementation continuation — 10 October 2026
+
+Branch codex/salary-packages-capital-20261010 from main4029c5b; recovery/pre-salary-packages-capital-20261010 preserves code. Google recovery copy:17XQD1h_m11pBIqdtt5p_WirQlIVK8z0lxkYkSeTzIz0 (verified key ranges, restore NOT RUN). New modules: OUTLET_SALARY_PACKAGES/<stage>-<position>, ASSET_MASTER/default and WORKING_CAPITAL/default. All use existing verified reread/backup/write/readback; this is optimistic concurrency, not atomic server CAS.45k record bound remains.
+
+New source: bobs-salary-package-core.js, salary-editor.html/js, bobs-capital-core.js, bobs-capital-pages.js, asset-master.html, working-capital.html and bobs-planning.css. Existing outlet flow, item builder, return helper and roadmap are extended. Operational recipes remain authoritative. No legacy recipe migration or employee import.
+
+Tests: new salary/capital calculations, builder isolation, existing salary/outlet/read/editor regressions, native popup/save/reopen/stale-rules/mobile tests and existing nested recipe/item/workforce/roadmap flow passed locally. Failed attempts remain in the focused report; do not report the initial fixture/harness/environment failures as passes. Exact next: inspect final staged diff, commit/push, attach PR, check CI, merge approved scope, verify Pages, activate/reference-readback Google formula, live read-only verification, update both handovers and Google index. Do not change the owner's seven pre-existing untracked files or divergent old local main.
+
+
+### Salary packages and capital planning — approved implementation checkpoint, 10 October 2026
+
+Owner approved employee salary editor with sourced statutory defaults and permitted increases, plus asset master/product-only depreciation and daily working-capital planning. Current base4029c5b; branch codex/salary-packages-capital-20261010; recovery/pre-salary-packages-capital-20261010. Four review passes are one assistant’s separate passes. Read SALARY_ASSET_CAPITAL_20261010.md for scope, dependency map and source distinctions. New salary engine and popup are being implemented; no new deployment or passed tests claimed. Assets/WC still pending. Opening pages must never save operational records. Google-backed proposal saves and approved outlet budgets remain distinct; salary savings preserve parent drafts. Existing legacy records and original owner files retained. Exact next: test package arithmetic/eligibility and popup save/return, then implement asset/WC modules and verify all connected consumers.
+
 
 ### Laptop checkout continuation note — 10 October 2026
 
