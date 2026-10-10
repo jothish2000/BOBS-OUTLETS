@@ -100,7 +100,7 @@ document.addEventListener('input',e=>{
 },true);
 document.addEventListener('click',e=>{
   const t=e.target&&e.target.closest?e.target.closest('button,input[type="submit"],[role="button"]'):null;
-  if(!t)return;
+  if(!t||t.closest('#bobsRoadmap')||t.id==='bobsRoadmapToggle')return;
   const text=(t.textContent||'').trim().toLowerCase();
   if(/start fresh|reset|clear all|delete|remove all/.test(text))checkpoint('Before destructive-looking action: '+text.slice(0,80));
   if(isSaveAction(t))prepareSave();

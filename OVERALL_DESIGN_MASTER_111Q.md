@@ -244,3 +244,7 @@ Returning from a saved child resumes the next task in the immediate parent; it m
 
 ### Owner intentional forward action — 9 October2026
 Save & Continue may advance an explicitly requested workflow inside the child window after verified save, retaining the ultimate opening item for final return. Covered workforce -> Reverse THP salary -> expenses/allocation -> verified full-cost plan -> original item. Ordinary auxiliary Save returns its immediate opener; never substitute return-to-parent for an intentional next step. Salary preview precedes expense completion; full price requires both reviewed sources.
+
+
+### Owner entire-project roadmap — 10 October2026
+Shared collapsible laptop pane and mobile progress drawer cover company, outlets, chosen methods and selected items, including completed prerequisites/current activity/next steps. Green completion must derive from verified authoritative saved inputs and current dependency validation, never visits, local cache or acknowledgement-only writes. Missing/read-failed/stale/not-applicable remain distinct; no requirement to analyse both methods. No unsupported reports/equipment freshness ticks without completion evidence. Existing exact quantities/cost engines, protected saves, forward actions and immediate-parent context remain authoritative. Roadmap is read-only; no new business/progress schema or automatic operational write.
