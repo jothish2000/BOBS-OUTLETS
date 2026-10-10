@@ -42,3 +42,6 @@ Exact next executable action for new work: git fetch origin main; read AGENTS/ma
 WACP 10 October — Owner-approved wording repair: outlet buttons now say “Progress not loaded yet” instead of “not checked”; company guidance explains how to load saved progress. Read behavior, completion rules and Google records unchanged. Syntax and roadmap model checks pending; publication/live verification pending.
 
 WACP wording Tester: JavaScript syntax PASS; all10 roadmap model cases PASS. Small cosmetic scope; no operational writes. Publish through PR; CI/Pages/live verification pending.
+
+
+WACP wording release verified 10 October: PR50 source b83b6019e5b23f5c2ad5233232211a1d32bf6714 merged 05629157bdf63f6473761b0dcf465349f45e2739. PR quantity38009492228 and vault38009492345 PASS; Pages and both postmerge checks SUCCESS. Live served bobs-roadmap.js byte-matches source after newline normalization: new label present, old label absent. No operational writes. Owner acceptance pending. PRO clearer saved-progress meaning; CON loading remains on request; COMPARE existing read/completion rules unchanged; OBSERVER truthful unloaded wording. One assistant separated passes. Next Owner reload live flow and open BOBS progress.
