@@ -13,6 +13,8 @@ on:
       - 'bobs-capital*'
       - 'bobs-salary-package-core.js'
       - 'salary-editor.js'
+      - 'bobs-salary-summary-core.js'
+      - 'tests/salary-summary.cjs'
       - 'capital-expenditure.js'
       - '*salary-history*.js'
       - 'tests/capex-salary-history.cjs'
@@ -43,6 +45,8 @@ on:
       - 'bobs-capital*'
       - 'bobs-salary-package-core.js'
       - 'salary-editor.js'
+      - 'bobs-salary-summary-core.js'
+      - 'tests/salary-summary.cjs'
       - 'capital-expenditure.js'
       - '*salary-history*.js'
       - 'tests/capex-salary-history.cjs'
@@ -75,7 +79,7 @@ jobs:
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
         run: |
-          node --test tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
+          node --test tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs

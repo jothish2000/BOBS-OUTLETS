@@ -3,6 +3,41 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Salary editor state ownership repair
+
+The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
+
+
+### Hosted checkbox stability repair
+
+At0dcb2a0 the complete connected Chrome outlet/roadmap journey passed, but the salary journey failed when an eligibility checkbox click did not retain its state. Local Edge had passed. Removed the unnecessary full summary rebuild on eligibility change, preserving the checkbox position and expanded component rows; the eligibility state and preview validation still update. Added a regression asserting checked state and retained summary nodes. Do not relabel the failed hosted run as a pass. Final hosted retest still required.
+
+
+### Hosted test repair — salary summary
+
+PR66 head1867f01: hosted non-browser groups61/61,27/27,24/24 and standalone checks passed; Chrome regression failed because it still clicked the intentionally removed .fundingPreview summary control. Syntax step was skipped, not passed. Updated that assertion to require the replacement salary-summary entry point/CTC and absence of the old breakdown. The separate new browser journey tests actual component edit/save/reopen. Runtime21b9af6 also extends parent acknowledgement to80 seconds for real Google retries and disables Return during an in-flight protected save. Final hosted retest, merge, deployment and live verification pending. Recovery82f79a8 remains remote; no business-data writes.
+
+
+### Release candidate — salary summary
+
+Final isolated native Edge journey PASS: summary/component edit/save/reopen/history; missing-opener handoff and acknowledged return; parent working-day draft retained; ESI ceiling warning before explicit continuation; stale-rule save rejection; capital/assets/working-capital regressions; mobile layouts; zero runtime errors. Actual quantity-number-format test PASS (aliases/precision/non-mutation/page availability/affected syntax). Local focused27 plus connected70 tests passed. A final load-failure guard was added afterward; the hosted run will verify the complete committed source before merge.
+
+Post-test four views (one assistant): PRO—summary and net/CTC reconciliation observed; CON—DA source remains unverified for the specific role/outlet and Owner financial UAT remains pending; COMPARE—existing package shapes, protected Google saves and downstream cost separation retained; OBSERVER—provisional eligibility and excluded components are clearly labelled, error/retry and parent draft continuity exercised. Owner authorized the bounded live release. Deployment/live verification remain PENDING. Next: publish PR, require hosted checks, merge, verify Pages/served source/real read-only popup, and update both handovers.
+
+
+### Tested checkpoint — salary summary
+
+New summary/core/DOM tests8/8 and existing salary/capital/history19/19 passed; connected outlet/roadmap/read/return tests70/70 passed. First native journey completed edit/save/reopen/history but its conditional test init failed to remove window.opener; changed fixture to force an opener-less browser property. Next fixture salary crossed the ESI ceiling and correctly blocked save; test now explicitly checks that warning/no write and confirms continuing coverage. Final browser run pending. Earlier guessed quantity-script/workflow paths were absent (NOT RUN), then located actual tests/quantity-number-format.cjs. Native mobile screenshots inspected; excluded extras grouped after this review. No real Google writes.
+
+Current source removes the old long form, provides linked component dialogs and summary totals, allows optional DA without changing old saved calculation shapes, and sends same-origin draft requests/replies plus save acknowledgement. Failed/missing sources have a visible Retry. Owner exact in-app failure was not independently reproduced; missing-opener and failed-read cases are tested directly. Government references remain the current Google snapshot; no new applicable DA notification verified or fabricated. Implementation remains unpublished. Next: final native/quantity result, hosted CI/Pages, live read-only check and both handovers.
+
+
+### Approved salary-summary replacement — 10 October 2026
+
+Owner explicitly approved the summary-first salary popup and removal of the previous THP form. Base/main 82f79a8; branch codex/salary-summary-20261010; recovery/pre-salary-summary-20261010. Read SALARY_SUMMARY_20261010.md for scope/reviews/data ownership. Implementation in progress: linked component editors, additive DA, provisional preview, visible load recovery and same-origin popup handoff. Existing Google package/backups and legacy calculation shapes preserved. No real salary writes. Tests/deployment/live verification NOT RUN for this redesign. Exact next: run reconciliation/legacy/button/load/save-reopen tests, repair, publish and verify live; maintain both handovers.
+
+
+
 ### LIVE — capital expenditure and saved salary changes, 10 October 2026
 
 Owner's extension is implemented, tested, deployed and live-read verified. Runtime e74a6b28722f61d3d013b9ab39a6881c8eff1562 (PR64), source dd30e41ed5df9d9eb2ccfadec52ae6dee1ebb2a7; Pages38057376901 succeeded. All50 changed web files match the live deployment. Final native Edge read-only check succeeded outside the restricted Windows sandbox:0 JavaScript errors,0 business writes,2 automatic non-GET attempts blocked. Mobile390px pages fit; live screenshots inspected. The earlier sandbox Edge launch timed out and logged a Windows encryption error; that failure is retained, not relabelled as a pass. One shell probe also failed with runner spawn_ready; later probes succeeded.
@@ -188,6 +223,41 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Salary editor state ownership repair
+
+The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
+
+
+### Hosted checkbox stability repair
+
+At0dcb2a0 the complete connected Chrome outlet/roadmap journey passed, but the salary journey failed when an eligibility checkbox click did not retain its state. Local Edge had passed. Removed the unnecessary full summary rebuild on eligibility change, preserving the checkbox position and expanded component rows; the eligibility state and preview validation still update. Added a regression asserting checked state and retained summary nodes. Do not relabel the failed hosted run as a pass. Final hosted retest still required.
+
+
+### Hosted test repair — salary summary
+
+PR66 head1867f01: hosted non-browser groups61/61,27/27,24/24 and standalone checks passed; Chrome regression failed because it still clicked the intentionally removed .fundingPreview summary control. Syntax step was skipped, not passed. Updated that assertion to require the replacement salary-summary entry point/CTC and absence of the old breakdown. The separate new browser journey tests actual component edit/save/reopen. Runtime21b9af6 also extends parent acknowledgement to80 seconds for real Google retries and disables Return during an in-flight protected save. Final hosted retest, merge, deployment and live verification pending. Recovery82f79a8 remains remote; no business-data writes.
+
+
+### Release candidate — salary summary
+
+Final isolated native Edge journey PASS: summary/component edit/save/reopen/history; missing-opener handoff and acknowledged return; parent working-day draft retained; ESI ceiling warning before explicit continuation; stale-rule save rejection; capital/assets/working-capital regressions; mobile layouts; zero runtime errors. Actual quantity-number-format test PASS (aliases/precision/non-mutation/page availability/affected syntax). Local focused27 plus connected70 tests passed. A final load-failure guard was added afterward; the hosted run will verify the complete committed source before merge.
+
+Post-test four views (one assistant): PRO—summary and net/CTC reconciliation observed; CON—DA source remains unverified for the specific role/outlet and Owner financial UAT remains pending; COMPARE—existing package shapes, protected Google saves and downstream cost separation retained; OBSERVER—provisional eligibility and excluded components are clearly labelled, error/retry and parent draft continuity exercised. Owner authorized the bounded live release. Deployment/live verification remain PENDING. Next: publish PR, require hosted checks, merge, verify Pages/served source/real read-only popup, and update both handovers.
+
+
+### Tested checkpoint — salary summary
+
+New summary/core/DOM tests8/8 and existing salary/capital/history19/19 passed; connected outlet/roadmap/read/return tests70/70 passed. First native journey completed edit/save/reopen/history but its conditional test init failed to remove window.opener; changed fixture to force an opener-less browser property. Next fixture salary crossed the ESI ceiling and correctly blocked save; test now explicitly checks that warning/no write and confirms continuing coverage. Final browser run pending. Earlier guessed quantity-script/workflow paths were absent (NOT RUN), then located actual tests/quantity-number-format.cjs. Native mobile screenshots inspected; excluded extras grouped after this review. No real Google writes.
+
+Current source removes the old long form, provides linked component dialogs and summary totals, allows optional DA without changing old saved calculation shapes, and sends same-origin draft requests/replies plus save acknowledgement. Failed/missing sources have a visible Retry. Owner exact in-app failure was not independently reproduced; missing-opener and failed-read cases are tested directly. Government references remain the current Google snapshot; no new applicable DA notification verified or fabricated. Implementation remains unpublished. Next: final native/quantity result, hosted CI/Pages, live read-only check and both handovers.
+
+
+### Approved salary-summary replacement — 10 October 2026
+
+Owner explicitly approved the summary-first salary popup and removal of the previous THP form. Base/main 82f79a8; branch codex/salary-summary-20261010; recovery/pre-salary-summary-20261010. Read SALARY_SUMMARY_20261010.md for scope/reviews/data ownership. Implementation in progress: linked component editors, additive DA, provisional preview, visible load recovery and same-origin popup handoff. Existing Google package/backups and legacy calculation shapes preserved. No real salary writes. Tests/deployment/live verification NOT RUN for this redesign. Exact next: run reconciliation/legacy/button/load/save-reopen tests, repair, publish and verify live; maintain both handovers.
+
+
 
 ### LIVE — capital expenditure and saved salary changes, 10 October 2026
 
