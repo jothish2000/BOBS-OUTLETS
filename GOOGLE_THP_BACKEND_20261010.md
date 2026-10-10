@@ -75,3 +75,7 @@ Code recovery branch recovery/pre-google-thp-20261010 points to8679fe611a3bbe56a
 The Google recovery copy was created and key records read back; restoration was NOT RUN. Do not replace the active Vault with the old copy, because subsequent live records may exist. Review any data repair separately and preserve newer records.
 
 Continue from main and read this report plus both sections in111QS_HANDOVER_CURRENT.md. For a separate phone ChatGPT Work chat, provide the master and current handover; local Codex preferences do not synchronize automatically.
+
+### Laptop checkout continuation note — 10 October 2026
+
+The laptop's local main branch has separate older history. A fast-forward-only attempt refused the divergence; no merge, rebase or reset was performed on that history. The checkout was restored to codex/thp-final-record-20261010 and fast-forwarded to the verified remote release. Continue on that release branch or create a new branch from fetched origin/main. Do not treat the older local main as the live source. The seven pre-existing owner untracked reference files remain preserved. This workspace note changes no runtime or Google business records.

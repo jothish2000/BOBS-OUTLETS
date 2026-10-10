@@ -3,6 +3,11 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Laptop checkout continuation note — 10 October 2026
+
+The laptop's local main branch has separate older history. A fast-forward-only attempt refused the divergence; no merge, rebase or reset was performed on that history. The checkout was restored to codex/thp-final-record-20261010 and fast-forwarded to the verified remote release. Continue on that release branch or create a new branch from fetched origin/main. Do not treat the older local main as the live source. The seven pre-existing owner untracked reference files remain preserved. This workspace note changes no runtime or Google business records.
+
+
 ### 10 October 2026 — THP-only Google backend release completed; Owner review pending
 
 The final release is live: PR58 added Google-driven THP salaries; PR59 repaired a first-click breakdown issue found during live verification. Runtime merge db9c5e02465bb6f9bda341bbef231583079ebb54; Pages38039071816 succeeded. All44 changed live runtime files match. The final live Edge check and desktop/390px screenshot inspection passed: ₹15,000 THP → ₹22,290.64 employer/month → ₹719.05/day; breakdown opens on the first click;0 runtime errors;0 business writes (3 automatic snapshot attempts blocked).
@@ -109,6 +114,11 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Laptop checkout continuation note — 10 October 2026
+
+The laptop's local main branch has separate older history. A fast-forward-only attempt refused the divergence; no merge, rebase or reset was performed on that history. The checkout was restored to codex/thp-final-record-20261010 and fast-forwarded to the verified remote release. Continue on that release branch or create a new branch from fetched origin/main. Do not treat the older local main as the live source. The seven pre-existing owner untracked reference files remain preserved. This workspace note changes no runtime or Google business records.
+
 
 ### 10 October 2026 — THP-only Google backend release completed; Owner review pending
 
