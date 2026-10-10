@@ -1,5 +1,12 @@
 # IDLI OWNER RETEST GUIDES PUBLISHED — 29 September 2026
 
+### Published salary-summary replacement — live browser check pending
+
+PR66 merged as8505980ac9ce78f9b182feaa57a2d04a2684147a; Pages38070574003 succeeded. Final headc428c18 hosted checks passed (62+27+24 tests, connected Chrome and salary/capital journeys, quantity and syntax); the merge commit checks also passed. All16 changed web files match the live served source. The local live Edge launch timed out before opening a page, so it does not establish live interaction success. A bounded hosted Chrome read-only check is being added: GET/HEAD only, temporary unsaved THP1500 position, no Save click and no real Google writes.
+
+The old THP form and parent breakdown are replaced with summary/component links/CTC. Google saves and historical records remain protected. Code recovery is recovery/pre-salary-summary-20261010 at82f79a8; Google data recovery is separate. Owner acceptance remains pending.
+
+
 ### Salary editor state ownership repair
 
 The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.

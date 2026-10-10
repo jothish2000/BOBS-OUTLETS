@@ -1,0 +1,26 @@
+name: Salary summary live read-only
+on:
+  pull_request:
+    paths:
+      - 'scripts/verify-salary-summary-live.cjs'
+      - '.github/workflows/salary-summary-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --prefix "$RUNNER_TEMP/bobs-live-tests" playwright@1.58.2 --no-audit --no-fund
+      - name: Verify deployed files and Google-backed salary popup without writes
+        env:
+          PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-live-tests/node_modules/playwright
+          BOBS_LIVE_REPORT_DIR: ${{ runner.temp }}/salary-live-report
+        run: node scripts/verify-salary-summary-live.cjs
