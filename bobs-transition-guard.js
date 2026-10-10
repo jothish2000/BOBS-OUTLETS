@@ -12,7 +12,7 @@ window.__BOBS_TRANSITION_GUARD__=true;
 const VERSION='2026-09-12-111Q-transition-guard-v4';
 const IS_METHOD2=(location.pathname.split('/').pop()||'').toLowerCase()==='method2.html';
 const VAULT=(window.BOBS_CONFIG&&window.BOBS_CONFIG.DATA_VAULT_WEB_APP_URL)||'';
-let restoring=false,lastSnapshot=0,lastBefore=null,lastChangedKey=null,lastChangedValue=null;
+let restoring=false,lastSnapshot=0,lastBefore=null,lastChangedKey=null,lastChangedValue=null,transitionGeneration=0;
 function stableKey(el){
   if(!el||el.nodeType!==1)return null;
   const d=el.dataset||{};
@@ -72,13 +72,13 @@ function restoreAll(before,changedKey,changedValue){
 }
 function protectChange(target){
   if(restoring||!target||!target.matches||!target.matches('input,select,textarea'))return;
-  const before=collect();
+  const generation=++transitionGeneration;const before=collect();
   lastBefore=before;
   lastChangedKey=stableKey(target);
   lastChangedValue=valueOf(target);
   checkpoint('Before user input transition: '+(lastChangedKey||target.tagName));
   if(IS_METHOD2)return;
-  const restore=()=>restoreAll(before,lastChangedKey,lastChangedValue);
+  const restore=()=>{if(generation===transitionGeneration)restoreAll(before,lastChangedKey,lastChangedValue)};
   setTimeout(restore,0);setTimeout(restore,40);setTimeout(restore,150);setTimeout(restore,500);setTimeout(restore,1000);
 }
 function prepareSave(){if(IS_METHOD2||restoring)return;if(lastBefore)restoreAll(lastBefore,lastChangedKey,lastChangedValue)}
@@ -93,6 +93,7 @@ document.addEventListener('input',e=>{
   if(restoring)return;
   const t=e.target;
   if(t&&t.matches&&t.matches('input,select,textarea')){
+    transitionGeneration++;
     lastChangedKey=stableKey(t);
     lastChangedValue=valueOf(t);
     lastBefore=collect();

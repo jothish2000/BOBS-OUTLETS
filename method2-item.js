@@ -100,7 +100,7 @@ function lines(id,entries){$(id).replaceChildren();for(const [index,[label,value
 let supportRecord=null,supportError='',fullCostData=null;
 function calculate(){
  const c=M2.calculate(d,item,recipes),production=d.mode==='production';
- renderItemGuide();if($('idealBuilderJump'))$('idealBuilderJump').hidden=!(d.mode==='production'&&/^idl[yi]$/i.test(item.name));
+ renderItemGuide();if($('idealBuilderJump'))$('idealBuilderJump').hidden=false;
  document.querySelectorAll('.side-cost').forEach(el=>{const x=el.side,component=c.components[d.condiments.indexOf(x)+1];el.textContent=component.incomplete?'Complete this side’s cost inputs and packing choice.':BOBS_NUMBERS.quantity(x.portion,x.portionUnit)+' '+x.portionUnit+' complimentary: food '+money(component.food)+' + packing '+money(component.packing)+' = '+money(component.subtotal)+' per '+d.unit+(c.sold===null?'':'; '+money(component.subtotal*c.sold)+' for '+BOBS_NUMBERS.quantity(c.sold,d.unit)+' sold')+'. No separate revenue.'});
  document.querySelectorAll('.packing-editor').forEach(el=>{const cost=el.packingData===d.commonPacking?{packingCost:c.commonCost}:el.packingData===d.mainPacking?c.components[0]:c.components[d.condiments.indexOf(el.packingData)+1];M2PackingUI.update(el,cost,c.sold)});
  $('standaloneServing').hidden=!item.side;$('standaloneNote').hidden=!item.side;$('servingQty').required=!!item.side;$('condimentSection').hidden=!!item.side;
@@ -114,7 +114,7 @@ function calculate(){
  $('recipeLinks').replaceChildren();
  const incomplete=c.missing.length>0;
  consolidatedCosts(c);
- if(/^idl[yi]$/i.test(item.name)&&production){let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='card';$('pricing').closest('section').after(box);}BOBS_FULL_COST.render(box,fullCostData,c,d,recipes,item,outlet,refreshFullCost);}else if($('idliLabourCost'))$('idliLabourCost').remove();
+ {let box=$('idliLabourCost');if(!box){box=document.createElement('section');box.id='idliLabourCost';box.className='card';$('pricing').closest('section').after(box);}BOBS_FULL_COST.render(box,fullCostData,c,d,recipes,item,outlet,refreshFullCost);}
  if(incomplete){const p=document.createElement('p');p.className='error';p.textContent='Complete: '+c.missing.join(', ');$('costs').append(p)}
  const pricingIncomplete=incomplete||c.uuwpPctApplied===null;
  const uuwpSource=c.uuwpPctApplied===null?'Enter Sold Today':c.unsold>0?'Actual leftovers: '+BOBS_NUMBERS.quantity(c.unsold,d.unit)+' unsold ÷ '+BOBS_NUMBERS.quantity(c.made,d.unit)+' produced × 100':'Default allowance — 100% sold';
@@ -206,7 +206,7 @@ async function loadOptionalCosts(epoch){
 }
 let fullCostRefresh=null;
 async function refreshFullCost(){if(!ready||busy)return;if(fullCostRefresh)return fullCostRefresh;const epoch=loadEpoch;fullCostData={pending:true};calculate();fullCostRefresh=(async()=>{try{const data=await BOBS_FULL_COST.load(outlet);if(epoch===loadEpoch&&ready){fullCostData=data;calculate()}}finally{fullCostRefresh=null}})();return fullCostRefresh;}
-function receiveFullCost(data){if(data?.type==='bobs-full-cost-saved'&&String(data.outlet)===String(outlet))refreshFullCost()}
+function receiveFullCost(data){if(data?.type==='bobs-full-cost-saved'&&String(data.outlet)===String(outlet)){const action=refreshFullCost();if(data.next==='item-allocation')Promise.resolve(action).then(()=>{const u=new URL(location.href);u.hash='idliLabourCost';history.replaceState(null,'',u);const box=$('idliLabourCost');box?.scrollIntoView({behavior:'smooth',block:'start'})})}}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receiveFullCost(e.data)});
 if(window.BroadcastChannel){const fullCostChannel=new BroadcastChannel('bobs-full-cost');fullCostChannel.onmessage=e=>receiveFullCost(e.data)}
 $('retryGoogle').onclick=loadEditor;

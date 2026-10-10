@@ -8,6 +8,12 @@ on:
       - 'method2-item.js'
       - 'method2-item.html'
       - 'bobs-roadmap*'
+      - 'bobs-outlet*'
+      - 'bobs-item-full-cost.js'
+      - 'bobs-transition-guard.js'
+      - 'tests/outlet*.cjs'
+      - 'tests/transition-input-generation.cjs'
+      - 'scripts/verify-outlet-first-browser.cjs'
       - 'tests/bobs-roadmap.cjs'
       - '*.html'
       - 'apps-script/04_ModuleData.gs'
@@ -23,6 +29,12 @@ on:
       - 'method2-item.js'
       - 'method2-item.html'
       - 'bobs-roadmap*'
+      - 'bobs-outlet*'
+      - 'bobs-item-full-cost.js'
+      - 'bobs-transition-guard.js'
+      - 'tests/outlet*.cjs'
+      - 'tests/transition-input-generation.cjs'
+      - 'scripts/verify-outlet-first-browser.cjs'
       - 'tests/bobs-roadmap.cjs'
       - '*.html'
       - 'apps-script/04_ModuleData.gs'
@@ -45,6 +57,7 @@ jobs:
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
         run: |
+          node --test tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs
@@ -63,4 +76,9 @@ jobs:
           node --check method2-item.js
           node --check bobs-roadmap-core.js
           node --check bobs-roadmap.js
+          node --check bobs-outlet-flow-core.js
+          node --check bobs-outlet-plan.js
+          node --check bobs-item-full-cost.js
+          node --check bobs-roadmap-outlet-flow.js
+          node --check bobs-outlet-report.js
           git diff --check HEAD^ HEAD

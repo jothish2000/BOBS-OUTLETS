@@ -7,7 +7,7 @@ function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_d
 (async()=>{
  const parent=dom('outlet-method-flow.html','https://bobs.test/outlet-method-flow.html?outlets=1%2C2'),w=parent.window;
  const inline=[...w.document.scripts].find(s=>s.textContent.includes('function loadMethod')).textContent;
- w.setInterval=()=>0;w.setTimeout=()=>0;
+ w.setInterval=()=>0;w.setTimeout=()=>0;w.BOBS_BASELINE_READY=true;
  // Invoke actual route handlers against fixture outlet records; exclude only remote startup.
  w.eval(inline.slice(0,inline.indexOf('(async function init'))+";window.setFixture=n=>{outlets=[{id:'1',name:'Rasipuram'},{id:'2',name:'Other outlet'},{id:'A & B',name:'Encoded'}];idx=n}");
  let popup;w.open=(url,name)=>(popup={url,name,closed:false});
@@ -19,8 +19,8 @@ function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_d
  }
  w.setFixture(0);w.open=()=>null;w.document.getElementById('method2Btn').click();
  assert.match(w.document.getElementById('saveNote').textContent,/Choose categories/);
- w.document.getElementById('method1Btn').click();assert.equal(new URL(w.document.getElementById('methodFrame').src).search,'?flow=1');
- console.log('PASS parent routes: outlets 1/2/encoded, selector context, blocked popup fallback, Method 1 unchanged');
+ w.document.getElementById('method1Btn').click();assert.equal(new URL(w.document.getElementById('methodFrame').src).search,'?flow=1&outlet=1');
+ console.log('PASS parent routes: outlets 1/2/encoded, selector context, blocked popup fallback, Method 1 explicit outlet retained');
  for(const id of ['1','2']){
   const list=dom('method2.html','https://bobs.test/method2.html?flow=1&outlet='+id),l=list.window;core(l);
   // A different active tab changed the global selection; explicit URL must win.
