@@ -1,5 +1,27 @@
 # IDLI OWNER RETEST GUIDES PUBLISHED — 29 September 2026
 
+### LIVE VERIFIED — salary summary replacement
+
+**Design approved; implemented; tested; deployed; live verified. Owner acceptance pending.** The previous THP form and parent collapsible breakdown have been replaced. Enter THP in the outlet position, choose **Review / edit salary package**, then review earnings, deductions, employer expenses and monthly CTC. Basic/DA/HRA/PF/ESI and company components open focused edit links. Save the reviewed package to Google, return to the original outlet draft, then save the outlet plan to apply its cost. Linked employees use the existing verified Staff Master update.
+
+Runtime: [PR66](https://github.com/jothish2000/BOBS-OUTLETS/pull/66), merge8505980ac9ce78f9b182feaa57a2d04a2684147a; Pages run38070574003 succeeded. Final headc428c18 and merged runtime passed hosted quantity checks and Vault checks (62+27+24 automated tests, connected Chrome and salary/capital save/reopen/history journeys, syntax). Google rules, existing salary snapshots and backward-compatible package shapes are preserved; optional DA is additive.
+
+[Live Chrome evidence](https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/38070970202), job114268123768: all16 changed served web files match; real Google reads enabled the popup; unsaved THP1500 showed gross1897.00, deductions397.00, net1500.00 and provisional CTC5323.27 under the current company defaults. These are test-preview figures, not an accepted employee package. HRA edit enabled and correctly labelled company-setting/no universal statutory percentage; DA link visible; desktop/mobile and no horizontal overflow; zero JavaScript errors. All non-GET/HEAD requests blocked (one attempted request); zero real business writes. Local live Edge launch timed out before page open; hosted Chrome supplied the successful live result. No claim of a successful local Edge retest.
+
+Second four-view review, one assistant: **PRO**—summary reconciliation, edits, protected fixture persistence and real Google loading observed. **CON**—applicable role/outlet DA notification remains unverified and explicitly labelled; Owner must review the intended package. **COMPARE & CONNECTIONS**—THP_NORMS → per-position package/history → outlet or linked employee → staffing/Ideal Price Builder remains intact, with assets/capital/working-capital regression checks passing. **OBSERVER**—visible error/retry, provisional assumptions, stable review checkboxes and return to the retained outlet draft are exercised. The generic restoration guard conflict was removed only from the salary window using the existing owned-editor mechanism; its verified save/history protection remains.
+
+Continuation documentation and the bounded read-only check: [PR67](https://github.com/jothish2000/BOBS-OUTLETS/pull/67). No further implementation scope pending for this request. Next Owner UAT: open the live outlet plan, enter the desired THP, review/edit several component links, verify CTC, and save only the intended real package. Further observations should follow the owner's collect-changes/approval gate. Work mode on a phone needs this handover and the owner master supplied there; local Codex context does not transfer automatically.
+
+Code recovery: remote recovery/pre-salary-summary-20261010 at82f79a8867f36f2f6a7f54d1c55bd8a371716eca. Google data rollback is separate through verified record history; no database restore/migration was performed. Preserve both masters, historical ledger and the seven pre-existing untracked owner files.
+
+
+### Published salary-summary replacement — live browser check pending
+
+PR66 merged as8505980ac9ce78f9b182feaa57a2d04a2684147a; Pages38070574003 succeeded. Final headc428c18 hosted checks passed (62+27+24 tests, connected Chrome and salary/capital journeys, quantity and syntax); the merge commit checks also passed. All16 changed web files match the live served source. The local live Edge launch timed out before opening a page, so it does not establish live interaction success. A bounded hosted Chrome read-only check is being added: GET/HEAD only, temporary unsaved THP1500 position, no Save click and no real Google writes.
+
+The old THP form and parent breakdown are replaced with summary/component links/CTC. Google saves and historical records remain protected. Code recovery is recovery/pre-salary-summary-20261010 at82f79a8; Google data recovery is separate. Owner acceptance remains pending.
+
+
 ### Salary editor state ownership repair
 
 The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
