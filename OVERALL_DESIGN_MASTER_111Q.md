@@ -248,3 +248,7 @@ Save & Continue may advance an explicitly requested workflow inside the child wi
 
 ### Owner entire-project roadmap — 10 October2026
 Shared collapsible laptop pane and mobile progress drawer cover company, outlets, chosen methods and selected items, including completed prerequisites/current activity/next steps. Green completion must derive from verified authoritative saved inputs and current dependency validation, never visits, local cache or acknowledgement-only writes. Missing/read-failed/stale/not-applicable remain distinct; no requirement to analyse both methods. No unsupported reports/equipment freshness ticks without completion evidence. Existing exact quantities/cost engines, protected saves, forward actions and immediate-parent context remain authoritative. Roadmap is read-only; no new business/progress schema or automatic operational write.
+
+
+## Owner collected-change approval gate —10 October2026
+During site inspection collect numbered intended changes without implementing them. When the Owner finishes, ask: “Have you mentioned all your intended changes, corrections and observations? Do you want me to implement the collected recommendations?” Begin the collected implementation only after explicit yes. Owner approved current outlet-first batch. Device confirmation follows current user-supplied AGENTS instruction, superseding older laptop-default clauses in this session.

@@ -75,6 +75,7 @@
   }
   async function listOutlets(){
     const r=await jsonp({action:'outletList'});
+    if(!r||r.ok!==true||(!Array.isArray(r.outlets)&&!Array.isArray(r.records)))throw new Error('Google outlet list was not verified');
     const a=Array.isArray(r&&r.outlets)?r.outlets:Array.isArray(r&&r.records)?r.records:[];
     return a.filter(function(x){return String(x.status||'ACTIVE').toUpperCase()!=='DELETED'}).map(function(o,i){
       const d=o.data||o;
