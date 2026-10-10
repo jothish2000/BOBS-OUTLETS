@@ -3,6 +3,11 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### 10 October 2026 — live verification found and repaired a first-click regression
+
+PR58 deployed; Pages38038419306 PASS;44/44 changed live runtime files matched. Live Google-backed THP15000 displayed CTC22290.64 and daily719.05, and only THP inputs were editable. The next check FAILED: clicking the salary breakdown immediately after typing did not open it. Input blur fired change, which rebuilt all breakdown elements before the click. Repair caches unchanged funding previews and preserves expansion when real salary inputs change. Added a native browser first-click assertion. New check/deployment/live recheck PENDING; do not claim this failed live run passed. No business record save was performed.
+
+
 ### 10 October 2026 — Google THP backend and integration checkpoint
 
 - Connected Google Drive access now works. The active BOBS DATA VAULT remains 19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8. BOBS SALES LOG (1BWCKCL9nJUpgDpJNyBhsB9BtDJb19g_I9mBvtXSQMCw) is a linked historical/reference workbook; no destructive consolidation occurred.
@@ -90,6 +95,11 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### 10 October 2026 — live verification found and repaired a first-click regression
+
+PR58 deployed; Pages38038419306 PASS;44/44 changed live runtime files matched. Live Google-backed THP15000 displayed CTC22290.64 and daily719.05, and only THP inputs were editable. The next check FAILED: clicking the salary breakdown immediately after typing did not open it. Input blur fired change, which rebuilt all breakdown elements before the click. Repair caches unchanged funding previews and preserves expansion when real salary inputs change. Added a native browser first-click assertion. New check/deployment/live recheck PENDING; do not claim this failed live run passed. No business record save was performed.
+
 
 ### 10 October 2026 — Google THP backend and integration checkpoint
 
