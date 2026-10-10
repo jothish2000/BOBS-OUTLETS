@@ -9,5 +9,26 @@ K.operating=(data,outlet,F,M2,C)=>{const {items,recipes,baseline,staffing,expens
  const common=M2.orderPackingCost(data.state);if(common.missing.length)throw Error(common.missing.join(', '));if(common.total>0)lines.push({id:'common-packing',name:'Shared order packing — counted once',kind:'materials',daily:common.total});
  const pools=F.pools(F.fund(baseline,staff,hr,outlet,norms),F.fund(staffing,staff,hr,outlet,norms),expenses,staff,hr,outlet);for(const p of pools){if(/\bdepreciation\b/i.test(p.name))throw Error('Remove the depreciation expense from operating expenses; use the asset master for pricing depreciation.');lines.push({...p,kind:['labour','deliverySalary'].includes(p.kind)?'labour':'operating'});}return {items:itemRows,lines,provision:lines.reduce((s,x)=>s+x.daily,0),sourceStamp:F.stamp({date:C.today(),menu:F.menuStamp(items),recipes:F.recipeStamp(items,recipes,M2),plannedItems:itemRows,calculatedRequirements:lines,baseline,staffing,expenses,staff,hr,norms,requirements,orderPacking:data.state.orderPacking})};};
 K.workingCapital=(operating,inputs)=>{if(!inputs?.reviewed)throw Error('Review stock coverage, credit, payment timing and cash availability.');const rows=operating.lines.map(line=>{const p=inputs.lines?.[line.id];if(!p)throw Error('Review cash funding for '+line.name+'.');if(!['reserve','payment'].includes(p.mode))throw Error('Choose daily reserve or payment due for '+line.name+'.');const amount=p.mode==='payment'?n(p.amount,line.name+' cash payment'):line.daily,stock=line.kind==='materials'?n(p.stock,line.name+' existing-stock coverage',0,amount):0,credit=line.kind==='materials'?n(p.credit,line.name+' supplier credit',0,amount):0;if(stock+credit>amount+0.000001)throw Error(line.name+': stock plus credit exceed the requirement.');if(p.mode==='payment'&&amount===0&&!String(p.reason||'').trim())throw Error('Explain zero payment for '+line.name+'.');return {...line,mode:p.mode,amount,stock,credit,cash:amount-stock-credit,reason:p.reason||''}}),buffer=n(inputs.buffer,'cash buffer'),available=n(inputs.availableCash,'available opening cash'),receipts=n(inputs.receipts,'receipts available before spending'),requirement=rows.reduce((s,x)=>s+x.cash,0)+buffer;return {rows,provision:operating.provision,buffer,requirement,availableCash:available,receipts,additionalFunding:Math.max(0,requirement-available-receipts),surplus:Math.max(0,available+receipts-requirement)};};
+// Supplier purchase budgets are distinct from the asset's depreciation cost basis.
+K.capitalSource=(assets,items,recipes,F,M2)=>F.stamp({assets,menu:K.assetSource(items,recipes,F,M2)});
+K.capitalBudget=(assets,items,inputs)=>{
+ const inventory=K.assetTotals(assets,items);
+ if(!inputs?.reviewed)throw Error('Review purchase prices and additional purchase costs.');
+ const known=new Set(inventory.lines.map(a=>a.id));
+ for(const id of Object.keys(inputs.quotes||{}))if(!known.has(id))throw Error('An asset was removed. Reload the current equipment list before saving.');
+ const lines=inventory.lines.map(a=>{
+  const q=inputs.quotes?.[a.id];
+  if(a.toBuy===0)return {id:a.id,name:a.name,quantity:a.quantity,ownedQty:a.ownedQty,toBuy:0,unitPrice:null,total:0,quoteNote:''};
+  const price=n(q?.unitPrice,a.name+' purchase price per unit'),note=String(q?.quoteNote||'').trim();
+  if(price===0&&!note)throw Error('Explain the zero purchase price for '+a.name+'.');
+  const total=price*a.toBuy;if(!Number.isFinite(total))throw Error('Purchase total is too large for '+a.name+'.');
+  return {id:a.id,name:a.name,quantity:a.quantity,ownedQty:a.ownedQty,toBuy:a.toBuy,unitPrice:price,total,quoteNote:note};
+ });
+ const equipment=lines.reduce((s,a)=>s+a.total,0),extraNames={tax:'Tax not already included in equipment prices',delivery:'Equipment delivery',installation:'Installation / commissioning',other:'Other equipment purchase cost'},extras=[];
+ for(const [id,label] of Object.entries(extraNames)){const row=inputs.extras?.[id];if(!row?.enabled)continue;const amount=n(row.amount,label+' amount'),note=String(row.note||'').trim();if(!note)throw Error('Describe '+label.toLowerCase()+'.');if(!lines.some(a=>a.toBuy>0)&&amount>0)throw Error('No equipment purchases are needed. Remove additional purchase costs.');extras.push({id,name:label,amount,note});}
+ const extraTotal=extras.reduce((s,a)=>s+a.amount,0),total=equipment+extraTotal;if(!Number.isFinite(total))throw Error('Capital budget is too large.');
+ return {lines,equipment,extras,extraTotal,total,unitsToBuy:lines.reduce((s,a)=>s+a.toBuy,0)};
+};
+K.savedCapital=(saved,assets,items,recipes,F,M2)=>{K.depreciation(assets,items,recipes,F,M2,items[0]?.key);if(!saved?.reviewed||saved.sourceStamp!==K.capitalSource(assets,items,recipes,F,M2))throw Error('Review and save capital expenditure for the current asset master.');const result=K.capitalBudget(assets,items,saved.inputs);if(F.stamp(result)!==F.stamp(saved.result))throw Error('Saved capital total differs from its inputs. Review the plan.');return result;};
 root.BOBS_CAPITAL=K;if(typeof module!=='undefined')module.exports=K;
 })(typeof window==='undefined'?globalThis:window);

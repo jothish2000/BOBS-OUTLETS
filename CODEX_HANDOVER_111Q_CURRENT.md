@@ -1,5 +1,20 @@
 # IDLI OWNER RETEST GUIDES PUBLISHED — 29 September 2026
 
+### Tested release candidate — 10 October 2026
+
+IMPLEMENTED / CODE CHECKED / AUTOMATED TESTED / ISOLATED BROWSER TESTED. DEPLOYMENT and LIVE VERIFICATION pending. New core/history tests8/8 passed after replacing the incomplete fixture; connected groups57/57 passed; updated roadmap group6/6 passed including current/stale/read-error capex completion. Existing salary/asset tests11/11 and item builder4/4 passed in the first combined run; quantity formatter/syntax suite passed. The first run had5 failed fixture tests (M2.recipe absent), explicitly repaired/retested, not counted as passes.
+
+Native Edge isolated Google journey passed: add/remove salary components, old package preserved in verified backup, two readable historical versions, parent drafts retained, salary norms stale guard; capital quote₹70,000 +delivery₹1,000 saved/reopened at₹71,000; changed owned quantity rejects save without writes; ASSET_MASTER unchanged by capital save, working-capital inputs exclude machine cost. Four390px layouts fit and screenshots inspected. No real operational Google writes. History date presentation changed to readable IST after inspection; final syntax/browser checks included in release verification.
+
+Second four-view review (one assistant): PRO—observed totals/history/save-reopen match intended flow; CON—real owner records are deliberately not test-written and Owner UAT remains pending; COMPARE—purchase quote changes leave asset depreciation and operating funding unchanged; OBSERVER—stale/missing records show incomplete states, partial employee application reports the already-saved proposal, and Google backup rejection is recorded. Current scope already authorizes tested publication.
+
+Recovery source de9ee4f and remote recovery/pre-capex-salary-history-20261010 are available. Proposed whole-vault copy rejected; no copy, no destructive data changes. Existing record-level backups/readback/stale protection used unchanged. Next: publish branch/PR, wait for checks, merge, verify Pages and live served sources/read-only Google load, then finalize both handovers and additive backend index links.
+
+### Capital expenditure and saved salary history — implementation checkpoint, 10 October 2026
+
+Owner requested a dedicated equipment purchase budget plus Google capture of salary additions/deductions/benefit removals; laptop confirmed. Branch codex/capex-salary-history-20261010 begins at de9ee4f. Recovery/pre-capex-salary-history-20261010 protects that source. Read CAPEX_SALARY_HISTORY_20261010.md for the four-view review, data ownership and exact scope. Capex is a separate Google plan with actual reviewed quotes and owned-unit exclusion; salary history reuses the existing verified package backups. New code is IN PROGRESS; tests/deployment/live verification NOT RUN for this extension. No real salaries/assets/budgets written. Next: test calculation, history continuity, save/reopen, stale guards and mobile navigation, then publish.
+
+
 ### LIVE technical continuation — salary/capital release
 
 Current runtime314f844854cbeb94e84616cc9e26a5f02309031d (PR62). Corrected release head a86369a5d64a5a6c26d08edbbcb4246d61750ca0 passed all4 PR checks: Vault38053297461, quantity38053297603, recipe preservation38053297517 and workload38053297493. Pages build/deploy38053374157 passed. Local focused44/44, existing regressions51/51, return15/15, standalone suites and both native browser journeys passed. First quantity CI failure (missing formatter) was fixed before merge. Live49/49 runtime matches;0 JavaScript errors;0 business writes;2 automatic snapshot POST attempts blocked. Salary source/API checked with actual Google norms; no saved position existed for a live popup, so full popup save/return evidence is isolated-browser only.
@@ -1628,3 +1643,11 @@ Branch codex/salary-packages-capital-20261010 from main4029c5b; recovery/pre-sal
 New source: bobs-salary-package-core.js, salary-editor.html/js, bobs-capital-core.js, bobs-capital-pages.js, asset-master.html, working-capital.html and bobs-planning.css. Existing outlet flow, item builder, return helper and roadmap are extended. Operational recipes remain authoritative. No legacy recipe migration or employee import.
 
 Tests: new salary/capital calculations, builder isolation, existing salary/outlet/read/editor regressions, native popup/save/reopen/stale-rules/mobile tests and existing nested recipe/item/workforce/roadmap flow passed locally. Failed attempts remain in the focused report; do not report the initial fixture/harness/environment failures as passes. Exact next: inspect final staged diff, commit/push, attach PR, check CI, merge approved scope, verify Pages, activate/reference-readback Google formula, live read-only verification, update both handovers and Google index. Do not change the owner's seven pre-existing untracked files or divergent old local main.
+
+### Implementation checkpoint and protection exception
+
+Added capital budget core/page, source freshness and persisted-total validation; linked asset/working-capital/item/roadmap screens. Added salary company-component removal and history from the existing verified backup chain, with missing-backup errors. New salary saves carry hasPrevious. First unit run found an incomplete test fixture (mock M2 omitted recipe()); corrected it to use the actual Method2 core. Retest pending. No pass claimed for that run.
+
+Automatic approval review rejected a proposed full-vault copy to folder1CWQJnrD3QWyupWgAT2-SeYT0en3KWiL- because destination access was not established and full-payload copying there was not explicitly authorized. No copy was created and no alternate copy attempted. Unaffected implementation continues; existing protected per-record saves/backups remain. Only additive backend index rows are planned; no destructive Google action needs a new whole-workbook backup. Recovery branch was successfully pushed.
+
+Next: focused unit tests and isolated native browser save/history/capex/stale-source checks. Live and Owner acceptance still pending.
