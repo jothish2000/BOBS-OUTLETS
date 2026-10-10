@@ -38,3 +38,7 @@ Release review adjustment: parent acknowledgement budget raised to80 seconds to 
 ### Hosted test repair — salary summary
 
 PR66 head1867f01: hosted non-browser groups61/61,27/27,24/24 and standalone checks passed; Chrome regression failed because it still clicked the intentionally removed .fundingPreview summary control. Syntax step was skipped, not passed. Updated that assertion to require the replacement salary-summary entry point/CTC and absence of the old breakdown. The separate new browser journey tests actual component edit/save/reopen. Runtime21b9af6 also extends parent acknowledgement to80 seconds for real Google retries and disables Return during an in-flight protected save. Final hosted retest, merge, deployment and live verification pending. Recovery82f79a8 remains remote; no business-data writes.
+
+### Hosted checkbox stability repair
+
+At0dcb2a0 the complete connected Chrome outlet/roadmap journey passed, but the salary journey failed when an eligibility checkbox click did not retain its state. Local Edge had passed. Removed the unnecessary full summary rebuild on eligibility change, preserving the checkbox position and expanded component rows; the eligibility state and preview validation still update. Added a regression asserting checked state and retained summary nodes. Do not relabel the failed hosted run as a pass. Final hosted retest still required.
