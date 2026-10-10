@@ -1602,3 +1602,7 @@ HR_NORMS gid111051021 is the company source. HR_THP_CALCULATOR gid111051022 is a
 Owner next step: refresh outlet-plan.html, choose mandatory count/roles/shifts, enter THP for each planned position, inspect the calculated breakdown, then explicitly review/save. Existing linked employees retain their recorded package. A changed company norm requires a new salary/allocation review. No actual outlet plan was marked complete by these tests.
 
 Full source mapping, four-view review, CI/deployment evidence and separate code/data rollback are in GOOGLE_THP_BACKEND_20261010.md. Both Work mode and Codex can continue from this record. An unrelated phone chat needs the master and current handover provided to it; local Codex context does not synchronize automatically. Implementation/testing/deployment/live verification are complete; Owner acceptance is pending.
+
+### Laptop checkout continuation note — 10 October 2026
+
+The laptop's local main branch has separate older history. A fast-forward-only attempt refused the divergence; no merge, rebase or reset was performed on that history. The checkout was restored to codex/thp-final-record-20261010 and fast-forwarded to the verified remote release. Continue on that release branch or create a new branch from fetched origin/main. Do not treat the older local main as the live source. The seven pre-existing owner untracked reference files remain preserved. This workspace note changes no runtime or Google business records.
