@@ -47,3 +47,4 @@ At0dcb2a0 the complete connected Chrome outlet/roadmap journey passed, but the s
 
 The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
 
+Local post-repair summary tests9/9 PASS. Native Edge retest could not start (browser launch timeout); not counted as a pass. The laptop command runner also reported a pipe-in connection timeout. Hosted Chrome is the release gate for the final repair.
