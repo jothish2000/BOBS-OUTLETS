@@ -1,5 +1,9 @@
 # IDLI OWNER RETEST GUIDES PUBLISHED — 29 September 2026
 
+### Hosted test repair — salary summary
+
+PR66 head1867f01: hosted non-browser groups61/61,27/27,24/24 and standalone checks passed; Chrome regression failed because it still clicked the intentionally removed .fundingPreview summary control. Syntax step was skipped, not passed. Updated that assertion to require the replacement salary-summary entry point/CTC and absence of the old breakdown. The separate new browser journey tests actual component edit/save/reopen. Runtime21b9af6 also extends parent acknowledgement to80 seconds for real Google retries and disables Return during an in-flight protected save. Final hosted retest, merge, deployment and live verification pending. Recovery82f79a8 remains remote; no business-data writes.
+
 ### Release candidate — salary summary
 
 Final isolated native Edge journey PASS: summary/component edit/save/reopen/history; missing-opener handoff and acknowledged return; parent working-day draft retained; ESI ceiling warning before explicit continuation; stale-rule save rejection; capital/assets/working-capital regressions; mobile layouts; zero runtime errors. Actual quantity-number-format test PASS (aliases/precision/non-mutation/page availability/affected syntax). Local focused27 plus connected70 tests passed. A final load-failure guard was added afterward; the hosted run will verify the complete committed source before merge.
