@@ -42,3 +42,8 @@ PR66 head1867f01: hosted non-browser groups61/61,27/27,24/24 and standalone chec
 ### Hosted checkbox stability repair
 
 At0dcb2a0 the complete connected Chrome outlet/roadmap journey passed, but the salary journey failed when an eligibility checkbox click did not retain its state. Local Edge had passed. Removed the unnecessary full summary rebuild on eligibility change, preserving the checkbox position and expanded component rows; the eligibility state and preview validation still update. Added a regression asserting checked state and retained summary nodes. Do not relabel the failed hosted run as a pass. Final hosted retest still required.
+
+### Salary editor state ownership repair
+
+The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
+

@@ -3,6 +3,11 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Salary editor state ownership repair
+
+The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
+
+
 ### Hosted checkbox stability repair
 
 At0dcb2a0 the complete connected Chrome outlet/roadmap journey passed, but the salary journey failed when an eligibility checkbox click did not retain its state. Local Edge had passed. Removed the unnecessary full summary rebuild on eligibility change, preserving the checkbox position and expanded component rows; the eligibility state and preview validation still update. Added a regression asserting checked state and retained summary nodes. Do not relabel the failed hosted run as a pass. Final hosted retest still required.
@@ -218,6 +223,11 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Salary editor state ownership repair
+
+The hosted Chrome checkbox failure persisted after removing the summary redraw. Source inspection found that the generic transition guard restores prior checkbox values after component Apply intentionally clears eligibility/review. The salary window now uses the existing BOBS_OWNED_EDITOR mechanism (also used by the recipe editor), so its controller owns draft/review state. Verified Google saves, stale checks, history backups and beforeunload protection remain in the salary controller. Added native assertions that the owned editor loads without the generic restoration guard. Final hosted retest required; no real business writes.
+
 
 ### Hosted checkbox stability repair
 
