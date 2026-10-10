@@ -19,9 +19,27 @@ Daily working-capital plan: selected saved items/quantities -> direct production
 
 ## Work mode handover
 
-Implementation started; not deployed. Existing live salary integration from PR58/59 remains authoritative. New design approved; operational data unchanged at this checkpoint. Existing equipment planner reads a legacy recipe master; new asset screen must use BOBS_OPERATIONAL_RECIPES and preserve EQUIPMENT_PLAN as a legacy planning source. Existing Vault19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8 is reused. No competing database or sample employees/assets.
+### LIVE — salary packages, assets and working capital, 10 October 2026
+
+PR62 is merged and live: runtime314f844854cbeb94e84616cc9e26a5f02309031d, Pages38053374157 succeeded. All49 changed runtime files match the live site. Government-reference fields are now connected to the existing Google THP_NORMS record; all30 company parameters are preserved and17 new reference fields passed native/API readback. No real employee salary, asset or working-capital records were saved during verification.
+
+Owner next: open outlet baseline, select required positions, then **Review / edit salary package** for each. Enter THP, review eligibility and company benefits, recalculate and save; return and save the outlet plan. Use **Asset master & capital expenditure** to enter actual machinery assumptions and product shares. Then review today's menu workforce/salaries and open **Daily working capital**. The live outlet currently has no saved mandatory position available for a salary-popup test and its workforce is not current; working capital correctly shows an incomplete staffing message. No total or completion tick was invented. Full popup save/return was tested against isolated Google fixtures.
+
+Live links: https://jothish2000.github.io/BOBS-OUTLETS/outlet-plan.html?stage=baseline&outlet=1 ; https://jothish2000.github.io/BOBS-OUTLETS/asset-master.html?outlet=1 ; https://jothish2000.github.io/BOBS-OUTLETS/working-capital.html?outlet=1 . Backend and records: https://docs.google.com/spreadsheets/d/19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8/edit#gid=111051020 . Owner acceptance pending; implementation/deployment/live verification complete. Earlier entries below are historical checkpoints.
+
+
+Historical initial checkpoint: implementation started, not deployed. Existing live salary integration from PR58/59 remains authoritative. New design approved; operational data unchanged at this checkpoint. Existing equipment planner reads a legacy recipe master; new asset screen must use BOBS_OPERATIONAL_RECIPES and preserve EQUIPMENT_PLAN as a legacy planning source. Existing Vault19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8 is reused. No competing database or sample employees/assets.
 
 ## Codex handover
+
+### LIVE technical continuation — salary/capital release
+
+Current runtime314f844854cbeb94e84616cc9e26a5f02309031d (PR62). Corrected release head a86369a5d64a5a6c26d08edbbcb4246d61750ca0 passed all4 PR checks: Vault38053297461, quantity38053297603, recipe preservation38053297517 and workload38053297493. Pages build/deploy38053374157 passed. Local focused44/44, existing regressions51/51, return15/15, standalone suites and both native browser journeys passed. First quantity CI failure (missing formatter) was fixed before merge. Live49/49 runtime matches;0 JavaScript errors;0 business writes;2 automatic snapshot POST attempts blocked. Salary source/API checked with actual Google norms; no saved position existed for a live popup, so full popup save/return evidence is isolated-browser only.
+
+Google activation: BOBS_MODULE_DATA!G187 preserves the original30-parameter formula and appends payrollRules from HR_STATUTORY_RULES!F2; E187 updated. HR_STATUTORY_RULES gid111051023 stores17 sourced fields, with native JSON readback equality and live rates checked. Backup copy17XQD1h_m11pBIqdtt5p_WirQlIVK8z0lxkYkSeTzIz0 and remote recovery/pre-salary-packages-capital-20261010 (4029c5b) remain available. No restore executed. Reverting code does not restore Google records/formulas. Compare later owner edits before any rollback.
+
+Next work is Owner UAT and real staffing/asset/funding entry, not automatic data creation. Existing legacy salary snapshots require review against changed norms. Maintain both handover sections and the backend index. Preserve the seven pre-existing untracked owner reference files and divergent old local main. Local live evidence: C:/Users/HP/Documents/Codex/2026-10-07/continu/work/capital-live-verification.json and mobile screenshots. This documentation is the portable handover; unrelated chats do not automatically inherit it.
+
 
 Inspect current sources before each edit. Key owners: bobs-outlet-flow-core.js (salary/positions), bobs-outlet-plan.js (baseline/salary), bobs-item-full-cost.js (Ideal Price Builder), bobs-verified-store.js (protected saves), equipment-planner-core.js (requirement suggestions), BOBS_OPERATIONAL_RECIPES (current recipes). Additive Google module records must preserve existing values. Current tests for this change NOT RUN; deployment/live verification/Owner acceptance NOT RUN. Exact next: implement salary package calculation and popup, add focused regression tests; then asset/working-capital modules and connected read-only pricing integration. Code recovery separate from Google data recovery.
 
@@ -58,5 +76,12 @@ Google recovery copy verified: https://docs.google.com/spreadsheets/d/17XQD1h_m1
 
 Code rollback: revert this release through Git and redeploy its predecessor; recovery branch points to4029c5b. Data rollback is separate: new proposals/assets/funding records have verified per-record backups when replacing existing records. The prechange full Vault copy above is available for owner-approved recovery. No restoration test or destructive restore was run. Reverting code does not undo saved records or the Google THP_NORMS formula. Restore only the intended record/formula after comparing later owner edits; never replace the whole live Vault automatically.
 
-Google Sheet formula/value/format QA used bounded API reads, wrapped rows, frozen headers and a hidden JSON helper column. No authenticated rendered-Sheets screenshot inspection was available. Browser fixtures and mobile app screenshots were inspected separately. Deployment and live verification remain pending at this checkpoint.
+Google Sheet formula/value/format QA used bounded API reads, wrapped rows, frozen headers and a hidden JSON helper column. No authenticated rendered-Sheets screenshot inspection was available. Browser fixtures and mobile app screenshots were inspected separately. Deployment and live verification were pending at that historical checkpoint; see the current LIVE handovers above.
 PR62 first quantity CI run failed because salary-editor.html omitted the shared formatter script. Added the existing formatter; no quantity or salary arithmetic changed. The failure is retained as evidence and the revised head must pass before merge.
+
+
+## Final release review and Owner acceptance
+
+One assistant's final PRO/CON/COMPARE/OBSERVER passes: the requested pages are live and Google-connected; no required personal eligibility/asset inputs were guessed; machinery pricing stays separate from operating cost and cash funding; incomplete real staffing stays visibly incomplete. All four corrected-head PR checks and Pages passed. Live read-only verification found no JavaScript errors and wrote no business records. Code, API source and local/native checks complete. Owner acceptance and real business data entry remain pending.
+
+Google backend index rows23–27 link the live pages and this release report; the dual handover URLs remain the canonical continuation entrypoints. No download or manual replacement is needed to use these live pages.
