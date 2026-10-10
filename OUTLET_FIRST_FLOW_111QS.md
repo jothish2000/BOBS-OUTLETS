@@ -34,3 +34,9 @@ Staff recommendations are planning proposals from sourced timing/role/quantity a
 ## Continuation
 
 Inspect current code and CODEX_HANDOVER_111Q_CURRENT.md / both111QS_HANDOVER_CURRENT.md sections. No automatic phone-chat synchronization. Source recovery: recovery/pre-outlet-first-flow-20261010 at31538a297a1b201a1224de9566fbc533f7dff588. Code rollback is separate from Google data recovery. Implementation and tests are recorded in chronological checkpoints; live release and Owner UAT are separate statuses.
+
+
+Final followup: baseline edits opened from an item return to that parent after verified save. Cost-only baseline changes require item allocation review without restarting coverage. Rider transport has its own inclusion checkbox; unticked transport leaves selected rider salary included. Read-only rider charges appear in the expense checklist. Standalone selected side slots preserve saved ordering.
+
+
+Release verified: PR54 merge6acebff3dfde422d0fcba76fe212e789b4e23238; final CI and Pages SUCCESS,55 served assets match, live read-only checks PASS with zero operational writes. Owner real-value entry, calibration and UAT acceptance remain pending. See both current handover sections for exact continuation.
