@@ -1606,3 +1606,16 @@ Full source mapping, four-view review, CI/deployment evidence and separate code/
 ### Laptop checkout continuation note — 10 October 2026
 
 The laptop's local main branch has separate older history. A fast-forward-only attempt refused the divergence; no merge, rebase or reset was performed on that history. The checkout was restored to codex/thp-final-record-20261010 and fast-forwarded to the verified remote release. Continue on that release branch or create a new branch from fetched origin/main. Do not treat the older local main as the live source. The seven pre-existing owner untracked reference files remain preserved. This workspace note changes no runtime or Google business records.
+
+### Salary packages and capital planning — approved implementation checkpoint, 10 October 2026
+
+Owner approved employee salary editor with sourced statutory defaults and permitted increases, plus asset master/product-only depreciation and daily working-capital planning. Current base4029c5b; branch codex/salary-packages-capital-20261010; recovery/pre-salary-packages-capital-20261010. Four review passes are one assistant’s separate passes. Read SALARY_ASSET_CAPITAL_20261010.md for scope, dependency map and source distinctions. New salary engine and popup are being implemented; no new deployment or passed tests claimed. Assets/WC still pending. Opening pages must never save operational records. Google-backed proposal saves and approved outlet budgets remain distinct; salary savings preserve parent drafts. Existing legacy records and original owner files retained. Exact next: test package arithmetic/eligibility and popup save/return, then implement asset/WC modules and verify all connected consumers.
+
+
+### Salary / capital implementation continuation — 10 October 2026
+
+Branch codex/salary-packages-capital-20261010 from main4029c5b; recovery/pre-salary-packages-capital-20261010 preserves code. Google recovery copy:17XQD1h_m11pBIqdtt5p_WirQlIVK8z0lxkYkSeTzIz0 (verified key ranges, restore NOT RUN). New modules: OUTLET_SALARY_PACKAGES/<stage>-<position>, ASSET_MASTER/default and WORKING_CAPITAL/default. All use existing verified reread/backup/write/readback; this is optimistic concurrency, not atomic server CAS.45k record bound remains.
+
+New source: bobs-salary-package-core.js, salary-editor.html/js, bobs-capital-core.js, bobs-capital-pages.js, asset-master.html, working-capital.html and bobs-planning.css. Existing outlet flow, item builder, return helper and roadmap are extended. Operational recipes remain authoritative. No legacy recipe migration or employee import.
+
+Tests: new salary/capital calculations, builder isolation, existing salary/outlet/read/editor regressions, native popup/save/reopen/stale-rules/mobile tests and existing nested recipe/item/workforce/roadmap flow passed locally. Failed attempts remain in the focused report; do not report the initial fixture/harness/environment failures as passes. Exact next: inspect final staged diff, commit/push, attach PR, check CI, merge approved scope, verify Pages, activate/reference-readback Google formula, live read-only verification, update both handovers and Google index. Do not change the owner's seven pre-existing untracked files or divergent old local main.
