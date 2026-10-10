@@ -3,6 +3,15 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### LIVE — salary packages, assets and working capital, 10 October 2026
+
+PR62 is merged and live: runtime314f844854cbeb94e84616cc9e26a5f02309031d, Pages38053374157 succeeded. All49 changed runtime files match the live site. Government-reference fields are now connected to the existing Google THP_NORMS record; all30 company parameters are preserved and17 new reference fields passed native/API readback. No real employee salary, asset or working-capital records were saved during verification.
+
+Owner next: open outlet baseline, select required positions, then **Review / edit salary package** for each. Enter THP, review eligibility and company benefits, recalculate and save; return and save the outlet plan. Use **Asset master & capital expenditure** to enter actual machinery assumptions and product shares. Then review today's menu workforce/salaries and open **Daily working capital**. The live outlet currently has no saved mandatory position available for a salary-popup test and its workforce is not current; working capital correctly shows an incomplete staffing message. No total or completion tick was invented. Full popup save/return was tested against isolated Google fixtures.
+
+Live links: https://jothish2000.github.io/BOBS-OUTLETS/outlet-plan.html?stage=baseline&outlet=1 ; https://jothish2000.github.io/BOBS-OUTLETS/asset-master.html?outlet=1 ; https://jothish2000.github.io/BOBS-OUTLETS/working-capital.html?outlet=1 . Backend and records: https://docs.google.com/spreadsheets/d/19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8/edit#gid=111051020 . Owner acceptance pending; implementation/deployment/live verification complete. Earlier entries below are historical checkpoints.
+
+
 ### Salary packages, asset master and working capital — release candidate, 10 October 2026
 
 Owner approved this scope on laptop Codex. Implemented and tested; deployment/live verification are still pending at this checkpoint. The existing Google Data Vault remains the database. New HR_STATUTORY_RULES tab (gid111051023) has17 official-reference fields; native JSON readback matches. Activation of the THP_NORMS formula will follow runtime deployment. Company HR_NORMS parameters remain preserved.
@@ -132,6 +141,15 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### LIVE technical continuation — salary/capital release
+
+Current runtime314f844854cbeb94e84616cc9e26a5f02309031d (PR62). Corrected release head a86369a5d64a5a6c26d08edbbcb4246d61750ca0 passed all4 PR checks: Vault38053297461, quantity38053297603, recipe preservation38053297517 and workload38053297493. Pages build/deploy38053374157 passed. Local focused44/44, existing regressions51/51, return15/15, standalone suites and both native browser journeys passed. First quantity CI failure (missing formatter) was fixed before merge. Live49/49 runtime matches;0 JavaScript errors;0 business writes;2 automatic snapshot POST attempts blocked. Salary source/API checked with actual Google norms; no saved position existed for a live popup, so full popup save/return evidence is isolated-browser only.
+
+Google activation: BOBS_MODULE_DATA!G187 preserves the original30-parameter formula and appends payrollRules from HR_STATUTORY_RULES!F2; E187 updated. HR_STATUTORY_RULES gid111051023 stores17 sourced fields, with native JSON readback equality and live rates checked. Backup copy17XQD1h_m11pBIqdtt5p_WirQlIVK8z0lxkYkSeTzIz0 and remote recovery/pre-salary-packages-capital-20261010 (4029c5b) remain available. No restore executed. Reverting code does not restore Google records/formulas. Compare later owner edits before any rollback.
+
+Next work is Owner UAT and real staffing/asset/funding entry, not automatic data creation. Existing legacy salary snapshots require review against changed norms. Maintain both handover sections and the backend index. Preserve the seven pre-existing untracked owner reference files and divergent old local main. Local live evidence: C:/Users/HP/Documents/Codex/2026-10-07/continu/work/capital-live-verification.json and mobile screenshots. This documentation is the portable handover; unrelated chats do not automatically inherit it.
+
 
 ### Salary / capital implementation continuation — 10 October 2026
 
