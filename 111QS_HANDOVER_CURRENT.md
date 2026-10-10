@@ -3,6 +3,20 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### 10 October 2026 — THP-only Google backend release completed; Owner review pending
+
+The final release is live: PR58 added Google-driven THP salaries; PR59 repaired a first-click breakdown issue found during live verification. Runtime merge db9c5e02465bb6f9bda341bbef231583079ebb54; Pages38039071816 succeeded. All44 changed live runtime files match. The final live Edge check and desktop/390px screenshot inspection passed: ₹15,000 THP → ₹22,290.64 employer/month → ₹719.05/day; breakdown opens on the first click;0 runtime errors;0 business writes (3 automatic snapshot attempts blocked).
+
+Local focused checks32 PASS; CI groups32+27+24 PASS, standalone checks and native save/return/roadmap journey PASS. Initial invalid JSON helper and first-click live failure remain recorded below; neither was reported as a pass. Google native/API read-back succeeded for all30 parameters. Sheet format/formula QA used API fields; authenticated Sheets screenshot QA was unavailable.
+
+Open the existing Google backend index: https://docs.google.com/spreadsheets/d/19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8/edit#gid=111051020
+HR_NORMS gid111051021 is the company source. HR_THP_CALCULATOR gid111051022 is an example. BOBS_MODULE_DATA row187 supplies COMPANY/THP_NORMS/default through the deployed API. Existing recipes, staff and snapshot records were preserved; the older Sales Log is linked as a reference. No sample employees were imported.
+
+Owner next step: refresh outlet-plan.html, choose mandatory count/roles/shifts, enter THP for each planned position, inspect the calculated breakdown, then explicitly review/save. Existing linked employees retain their recorded package. A changed company norm requires a new salary/allocation review. No actual outlet plan was marked complete by these tests.
+
+Full source mapping, four-view review, CI/deployment evidence and separate code/data rollback are in GOOGLE_THP_BACKEND_20261010.md. Both Work mode and Codex can continue from this record. An unrelated phone chat needs the master and current handover provided to it; local Codex context does not synchronize automatically. Implementation/testing/deployment/live verification are complete; Owner acceptance is pending.
+
+
 ### 10 October 2026 — live verification found and repaired a first-click regression
 
 PR58 deployed; Pages38038419306 PASS;44/44 changed live runtime files matched. Live Google-backed THP15000 displayed CTC22290.64 and daily719.05, and only THP inputs were editable. The next check FAILED: clicking the salary breakdown immediately after typing did not open it. Input blur fired change, which rebuilt all breakdown elements before the click. Repair caches unchanged funding previews and preserves expansion when real salary inputs change. Added a native browser first-click assertion. New check/deployment/live recheck PENDING; do not claim this failed live run passed. No business record save was performed.
@@ -95,6 +109,20 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### 10 October 2026 — THP-only Google backend release completed; Owner review pending
+
+The final release is live: PR58 added Google-driven THP salaries; PR59 repaired a first-click breakdown issue found during live verification. Runtime merge db9c5e02465bb6f9bda341bbef231583079ebb54; Pages38039071816 succeeded. All44 changed live runtime files match. The final live Edge check and desktop/390px screenshot inspection passed: ₹15,000 THP → ₹22,290.64 employer/month → ₹719.05/day; breakdown opens on the first click;0 runtime errors;0 business writes (3 automatic snapshot attempts blocked).
+
+Local focused checks32 PASS; CI groups32+27+24 PASS, standalone checks and native save/return/roadmap journey PASS. Initial invalid JSON helper and first-click live failure remain recorded below; neither was reported as a pass. Google native/API read-back succeeded for all30 parameters. Sheet format/formula QA used API fields; authenticated Sheets screenshot QA was unavailable.
+
+Open the existing Google backend index: https://docs.google.com/spreadsheets/d/19E32HO9npGZugzpzVm4UvxA40A001GRDVRsBtHy-FR8/edit#gid=111051020
+HR_NORMS gid111051021 is the company source. HR_THP_CALCULATOR gid111051022 is an example. BOBS_MODULE_DATA row187 supplies COMPANY/THP_NORMS/default through the deployed API. Existing recipes, staff and snapshot records were preserved; the older Sales Log is linked as a reference. No sample employees were imported.
+
+Owner next step: refresh outlet-plan.html, choose mandatory count/roles/shifts, enter THP for each planned position, inspect the calculated breakdown, then explicitly review/save. Existing linked employees retain their recorded package. A changed company norm requires a new salary/allocation review. No actual outlet plan was marked complete by these tests.
+
+Full source mapping, four-view review, CI/deployment evidence and separate code/data rollback are in GOOGLE_THP_BACKEND_20261010.md. Both Work mode and Codex can continue from this record. An unrelated phone chat needs the master and current handover provided to it; local Codex context does not synchronize automatically. Implementation/testing/deployment/live verification are complete; Owner acceptance is pending.
+
 
 ### 10 October 2026 — live verification found and repaired a first-click regression
 
