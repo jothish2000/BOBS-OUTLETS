@@ -1,3 +1,21 @@
+
+### Production-flow implementation checkpoint — 11 October 2026
+
+Additive OUTLET_PRODUCTION_PLAN now records reviewed capacity, process quantities/units, equipment unit IDs from ASSET_MASTER, active/passive/supervised minutes, deadlines and shared preparation groups. Existing METHOD2 stores intended item inputs through protected planning saves without inventing Sold Today; actual confirmation remains separate. Shared skilled staff require explicit competence, availability, protected breaks and work/span limits. OUTLET_STAFFING stores the production fingerprint and continues to existing Reverse THP. Section06 exposes production/labour/assets links and reviewed fixed/variable break-even units and sales, with cash/depreciation separation. Roadmap, funding and report readers are connected. Google transport has a bounded read queue, in-flight coalescing and write invalidation; baseline Retry and explanatory read-only viewer remain available on load failure.
+
+Tests: initial focused run31/32 PASS, shared-skill alias case FAILED; normalized shared skills and repaired. Next model/UI run64/64 PASS including planning save/backups/partial failure/stale inputs, sharing, deadlines, break-even, Google queue/write barrier and existing outlet/capital/roadmap cases. Subsequent menu-gate/forward-route and planning-input additions still require final regression and browser tests. Native fixtures updated to exercise actual capacity → quantity → time → workforce → salary → allocation/break-even saves. No live business writes. Implementation local, NOT DEPLOYED; Owner UAT NOT RUN. Exact next: copy current staged source, run full regression/native Chrome/Edge, repair findings, publish PR and live verification.
+
+
+### Approved complete production flow — 11 October 2026
+
+Owner approved the complete outlet-first live flow, timeout repair, clearer Google records link, and break-even sales value/units. Codex laptop confirmed. Branch codex/complete-flow-20261011; recovery/pre-complete-flow-20261011 at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Current/relevant handover and source inspected; historical ledger preserved, not claimed as freshly reread line by line. Seven owner files retained.
+
+One assistant, separated 111QS reviews: PRO—capacity before quantity, explicit time/staff assessment and shared resources make full pricing explainable. CON—no recipe-yield-as-machine-capacity, automatic multiskilling, duplicate assets/staff or missing-as-zero. COMPARE & CONNECTIONS—baseline → menu → capacity → quantity → recipe → timings → workforce → salary → assets/allocations → ideal price/break-even → working capital/outlet/company. Existing recipe, METHOD2, Staff/HR, ASSET_MASTER and verified-store owners retained. OBSERVER—current/next, sourced editable references and saved/stale/failed status must be visible. Owner has approved scope and normal live delivery.
+
+Break-even: allocated fixed daily costs / contribution per sold unit; salaries/overhead/depreciation counted once, separate from direct variable unit costs. Show assumptions, unit rounding, revenue and capacity comparison; no finite break-even when contribution is not positive. Depreciation remains pricing-only. Planning save does not invent Sold Today.
+
+No operational migration or live business writes for tests. Existing verified backups/stale/readback protect owner saves; code/data rollback separate. Status OWNER APPROVED; implementation/tests/deployment/live verification pending. Next: Google read queue/retry and explanatory records viewer; additive production/capacity/time, workforce/roadmap/pricing integration; tests/release/live evidence.
+
 # IDLI OWNER RETEST GUIDES PUBLISHED — 29 September 2026
 
 ### LIVE VERIFIED — outlet Save and coverage help, 11 October 2026

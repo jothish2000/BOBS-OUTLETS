@@ -37,8 +37,9 @@
   const q=new URLSearchParams(root.location.search),outlet=q.get('outlet')||(()=>{try{return JSON.parse(root.localStorage.getItem('outlet-selection')||'{}').id||''}catch(_e){return ''}})();
   const embedded=q.get('flow')==='1';
   let result={ok:false,reason:'CHECKING',missing:[]},reqs=[],checking=false,lastPlan=null,observerGuard=false;
-  function staffingHref(){return 'workload-planner.html?outlet='+encodeURIComponent(outlet)}
+  function staffingHref(){return result.href||'outlet-plan.html?'+new URLSearchParams({outlet,stage:'workforce',returnTo:root.location.href})}
   function reasonText(){
+    if(result.message)return result.message;
     if(result.reason==='NO_WORKLOAD_PLAN')return 'Production items are complete. The next stage is Workload & Staffing. Open the planner, import the saved Method 2 menu, calculate staffing, tick “Owner reviewed this planning scenario”, and save it to Google.';
     if(result.reason==='NOT_OWNER_REVIEWED')return 'A workload plan exists, but it has not been owner-reviewed. Open Workload & Staffing, review timings/positions, tick “Owner reviewed this planning scenario”, and save again.';
     if(result.reason==='CALCULATION_INCOMPLETE')return 'The saved workload calculation is incomplete. Open Workload & Staffing and resolve the highlighted timing, assignment or coverage issue before finishing Method 2.';
@@ -46,7 +47,7 @@
     return 'Checking the saved Workload & Staffing plan before Method 2 can be completed.';
   }
   function setGuide(){
-    if(!reqs.length||result.ok)return;
+    if((!reqs.length&&!result.flowV2)||result.ok)return;
     const stage=root.document.getElementById('guideStage'),text=root.document.getElementById('guideText'),expected=root.document.getElementById('guideExpected'),action=root.document.getElementById('guideAction');
     if(!stage||!text||!expected||!action)return;
     const t=reasonText(),e='A Google-saved workload plan covers every current production item/quantity and is owner-reviewed. Only then will BOBS allow the outer “Save & Continue”.';
@@ -54,7 +55,7 @@
     if(stage.textContent!=='STEP 3')stage.textContent='STEP 3';
     if(text.textContent!==t)text.textContent=t;
     if(expected.innerHTML!=='<strong>Expected result:</strong> '+e)expected.innerHTML='<strong>Expected result:</strong> '+e;
-    action.textContent='Continue to Workload & Staffing →';action.href=staffingHref();action.target='_blank';action.hidden=false;
+    action.textContent=result.action||'Continue to Workload & Staffing →';action.href=staffingHref();action.target='_blank';action.hidden=false;
     observerGuard=false;
   }
   function showCompleteGuide(){
@@ -66,12 +67,20 @@
     observerGuard=true;stage.textContent='STEP 4';text.textContent=t;expected.innerHTML='<strong>Expected result:</strong> '+e;action.hidden=true;action.removeAttribute('href');action.removeAttribute('target');observerGuard=false;
   }
   function itemsComplete(){return typeof root.BOBS_METHOD2_ITEMS_COMPLETE==='function'&&root.BOBS_METHOD2_ITEMS_COMPLETE()}
-  function applyGuide(){if(!itemsComplete()||!reqs.length)return;if(result.ok)showCompleteGuide();else setGuide()}
+  function applyGuide(){if(result.flowV2&&!result.ok&&root.document.getElementById('guideStage')?.textContent!=='GOOGLE READ FAILED'){setGuide();return}if(!itemsComplete()||!reqs.length)return;if(result.ok)showCompleteGuide();else setGuide()}
   async function refresh(){
     if(checking)return result;checking=true;result={ok:false,reason:'CHECKING',missing:[]};
     try{
       if(!outlet)throw Error('Outlet is not selected.');
       const m2=await root.M2.read(outlet),state=root.M2.state(m2);reqs=requirements(state,root.M2,root.ITEM_DATA,root.CAT_ORDER);
+      if(root.BOBS_PRODUCTION_PLAN&&root.BOBS_OUTLET_FLOW&&root.BOBS_VERIFIED){
+        const F=root.BOBS_OUTLET_FLOW,P=root.BOBS_PRODUCTION_PLAN,V=root.BOBS_VERIFIED,C=root.BOBS_COST_FLOW,M2=root.M2,items=F.selected(state,root.ITEM_DATA,M2),route=(page,args={})=>page+'?'+new URLSearchParams({outlet,...args,returnTo:root.location.href});
+        if(!items.length){result={ok:false,flowV2:false,reason:'NO_MENU',missing:[]};return result}
+        let href=route('production-plan.html'),action='Review capacity, quantity, recipe and time →';
+        try{const [master,production,assets,b,w,req,exp,alloc,staff,hr,norms]=await Promise.all([root.BOBS_OPERATIONAL_RECIPES.load(),V.read(outlet,'OUTLET_PRODUCTION_PLAN'),V.read(outlet,'ASSET_MASTER'),V.read(outlet,'OUTLET_BASELINE'),V.read(outlet,'OUTLET_STAFFING'),V.read(outlet,'OUTLET_ITEM_REQUIREMENTS'),V.read(outlet,'FIXED_EXPENSES'),V.read(outlet,'OUTLET_COST_ALLOCATIONS'),V.read('COMPANY','STAFF_MASTER'),V.read('COMPANY','HR_OUTLET_ALLOCATION'),V.read('COMPANY','THP_NORMS')]);
+          const recipes=master.recipes;P.reconcile(production,items,recipes,assets,F,M2,C.today());href=route('outlet-plan.html',{stage:'workforce'});action='Assess shared production staff and riders →';if(!w?.reviewed||w.date!==C.today()||w.menuStamp!==F.menuStamp(items)||w.recipeStamp!==F.recipeStamp(items,recipes,M2)||w.requirementsStamp!==F.stamp(req)||!F.baselineMatches(w,b)||(production&&w.productionStamp!==F.stamp(production)))throw Error('Next: review production time, equipment conflicts and required staff for the combined menu.');href=route('outlet-plan.html',{stage:'salary'});action='Review Reverse THP salaries →';const pools=F.pools(F.fund(b,staff,hr,outlet,norms),F.fund(w,staff,hr,outlet,norms),exp,staff,hr,outlet);href=route('asset-master.html');action='Review machinery and product depreciation →';root.BOBS_CAPITAL.depreciation(assets,items,recipes,F,M2,items[0]?.key);const stamp=F.stamp({baseline:b,staffing:w,expenses:exp,requirements:req,menu:F.menuStamp(items),recipes:F.recipeStamp(items,recipes,M2),staff,hr,...F.salaryContext(b,w,norms)});for(const x of items){href=route('method2-item.html',{cat:x.cat,i:x.i})+'#idliLabourCost';action='Review '+x.item.name+' Ideal Price Builder →';const saved=alloc?.items?.[x.key];if(!saved||saved.sourceStamp!==stamp)throw Error('Next: review labour, expense allocations, ideal price and break-even for '+x.item.name+'.');F.allocate(pools,saved.choices,Object.fromEntries(items.filter(y=>y.key!==x.key).map(y=>[y.key,alloc.items[y.key]||{}])))}lastPlan=production;result={ok:true,flowV2:true,reason:'COMPLETE',missing:[]};return result;
+        }catch(e){result={ok:false,flowV2:true,reason:'REVIEW_FLOW',message:e.message,href,action,missing:[]};return result}
+      }
       if(!reqs.length){result={ok:true,reason:'NO_PRODUCTION',missing:[]};lastPlan=null;return result}
       lastPlan=await root.BOBS_DATA.getModule(outlet,'WORKLOAD_PLAN','default');result=evaluate(reqs,lastPlan);return result;
     }catch(e){result={ok:false,reason:'READ_FAILED',missing:reqs.map(x=>x.name),error:e};return result}
