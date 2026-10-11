@@ -3,6 +3,26 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### LIVE CHECK PASSED / purchased-item guard — 11 October 2026
+
+Runtime5c44903e (PR72) passed Pages38138132446 and live read-only38138132615. The live workflow checks11 served files, actual Google-backed baseline/record viewer/Idli planner/Ideal Price Builder/roadmap, visible named capacity guidance, hidden unused manual quantities and390px layout; write routes are blocked. Artifact11702246934 retains the report and screenshots; visual review in progress. This is real read-only verification, not a live operational save test.
+
+Final inspection found a boundary: the global equipment library remains available for a purchased-only item with no production requirements. A sourced grinder could otherwise try to create an undefined production stage. Added an early explanatory guard (no new asset/process/write);10/10 current production UI tests PASS, including the purchased-only case. Cache tag capacity-help-20261011b. This bounded repair and updated handovers are on codex/capacity-help-handover-20261011; not yet published/live. Next: exact-head hosted checks and normal PR/merge/Pages/live verification for this guard, then final shared handover publication. Prior code recovery787ea3a remains available. Owner UAT pending.
+
+
+
+
+### TESTED / MERGED — capacity guidance, 11 October 2026
+
+PR72 https://github.com/jothish2000/BOBS-OUTLETS/pull/72 merged as5c44903e547b8f0dd1565c57871c58263b222ce8 from exact tested91f58874fb6dcd31a09dda37a3d34fd32b976704. PR Vault38138017626 and quantity38138017512 PASS; same-head push Vault38137991470 and quantity38137991493 PASS. Hosted logs confirm95+30+24=149 model/DOM regressions, integration checks and three native Chrome journeys, including the final capacity chooser, grinder cancel, quantity visibility, protected production saves, parent return, staffing/pricing/roadmap and connected salary/capital/outlet-save flows. No real Google business writes. Local focused23/23 and connected27/27; full Edge fixture journey PASS; mobile quantity screenshot inspected, capacity screenshot prompted a corrected top-of-help capture position.
+
+Second four-view review (one assistant): PRO—visible guidance and meaningful quantities verified; CON—unknown inputs remain incomplete, referenced sizes are editable planning examples, failures keep drafts and no silent save; COMPARE & CONNECTIONS—METHOD2 quantities/actual sales, recipe requirements, ASSET_MASTER identity and protected OUTLET_PRODUCTION_PLAN → workforce/pricing remain connected; OBSERVER—named material/unit, explicit choice, keyboard dialog cancel and narrow layout pass. Owner approved implementation/release; acceptance remains pending.
+
+Publication to main is confirmed. Pages deployment and real Google-backed read-only live checks are pending; do not claim live verified yet. Code recovery/pre-capacity-help-20261011 at787ea3a46627df84403e3091c09f09eba83d0d3e is pushed; code rollback is separate from approved operational backup restoration. No data migration. Exact next: confirm Pages,11 served-source comparisons and live capacity/quantity controls, inspect screenshots, then publish this final ledger and both handovers. Current URL: https://jothish2000.github.io/BOBS-OUTLETS/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0. Supply current master and these repository handovers to a separate Work chat; access/context do not transfer automatically.
+
+
+
+
 ### RELEASE CANDIDATE — visible equipment guidance, 11 October 2026
 
 Bounded UI corrections implemented in bobs-production-plan.js and production-plan.html (capacity-help-20261011 cache tag). tests/production-plan-ui.cjs adds five behaviour regressions; native and live verification scripts inspect the changed controls. Retained exact input values, existing record writers/backups, shared physical asset IDs and untouched Actual Sold Today. The optional inputName is stored alongside the existing process quantity; existing manual records request a material name when edited/saved. There is no migration or live business-data test write.
@@ -377,6 +397,26 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### LIVE CHECK PASSED / purchased-item guard — 11 October 2026
+
+Runtime5c44903e (PR72) passed Pages38138132446 and live read-only38138132615. The live workflow checks11 served files, actual Google-backed baseline/record viewer/Idli planner/Ideal Price Builder/roadmap, visible named capacity guidance, hidden unused manual quantities and390px layout; write routes are blocked. Artifact11702246934 retains the report and screenshots; visual review in progress. This is real read-only verification, not a live operational save test.
+
+Final inspection found a boundary: the global equipment library remains available for a purchased-only item with no production requirements. A sourced grinder could otherwise try to create an undefined production stage. Added an early explanatory guard (no new asset/process/write);10/10 current production UI tests PASS, including the purchased-only case. Cache tag capacity-help-20261011b. This bounded repair and updated handovers are on codex/capacity-help-handover-20261011; not yet published/live. Next: exact-head hosted checks and normal PR/merge/Pages/live verification for this guard, then final shared handover publication. Prior code recovery787ea3a remains available. Owner UAT pending.
+
+
+
+
+### TESTED / MERGED — capacity guidance, 11 October 2026
+
+PR72 https://github.com/jothish2000/BOBS-OUTLETS/pull/72 merged as5c44903e547b8f0dd1565c57871c58263b222ce8 from exact tested91f58874fb6dcd31a09dda37a3d34fd32b976704. PR Vault38138017626 and quantity38138017512 PASS; same-head push Vault38137991470 and quantity38137991493 PASS. Hosted logs confirm95+30+24=149 model/DOM regressions, integration checks and three native Chrome journeys, including the final capacity chooser, grinder cancel, quantity visibility, protected production saves, parent return, staffing/pricing/roadmap and connected salary/capital/outlet-save flows. No real Google business writes. Local focused23/23 and connected27/27; full Edge fixture journey PASS; mobile quantity screenshot inspected, capacity screenshot prompted a corrected top-of-help capture position.
+
+Second four-view review (one assistant): PRO—visible guidance and meaningful quantities verified; CON—unknown inputs remain incomplete, referenced sizes are editable planning examples, failures keep drafts and no silent save; COMPARE & CONNECTIONS—METHOD2 quantities/actual sales, recipe requirements, ASSET_MASTER identity and protected OUTLET_PRODUCTION_PLAN → workforce/pricing remain connected; OBSERVER—named material/unit, explicit choice, keyboard dialog cancel and narrow layout pass. Owner approved implementation/release; acceptance remains pending.
+
+Publication to main is confirmed. Pages deployment and real Google-backed read-only live checks are pending; do not claim live verified yet. Code recovery/pre-capacity-help-20261011 at787ea3a46627df84403e3091c09f09eba83d0d3e is pushed; code rollback is separate from approved operational backup restoration. No data migration. Exact next: confirm Pages,11 served-source comparisons and live capacity/quantity controls, inspect screenshots, then publish this final ledger and both handovers. Current URL: https://jothish2000.github.io/BOBS-OUTLETS/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0. Supply current master and these repository handovers to a separate Work chat; access/context do not transfer automatically.
+
+
+
 
 ### RELEASE CANDIDATE — visible equipment guidance, 11 October 2026
 
