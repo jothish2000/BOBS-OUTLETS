@@ -1,3 +1,7 @@
+### Release-candidate repair checkpoint — 11 October 2026
+
+PR70 https://github.com/jothish2000/BOBS-OUTLETS/pull/70 contains47bf29b and78d18bf. Recovery/pre-complete-flow-20261011 remains at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Hosted quantity, recipe-preservation and workload checks PASS. Hosted Vault model/editor checks PASS, but the Chrome roadmap fault-injection tail FAILED because the new capacity nodes did not propagate a failed recipe read to UNKNOWN. Repaired that source-status propagation; no relaxed completion assertion. Company-view pending assertion now includes fixture diagnostics if it fails. Latest20/20 production/roadmap unit/DOM checks PASS, including new rejected partial/reversed/out-of-availability staff breaks and revalidation of conflict-bearing accepted plans. An initial local run omitted JSDOM_PATH and failed to load one test file; rerun with the installed dependency is the20/20 pass. Quantity formatter repair retest PASS. Full browser and fresh hosted verification pending; not deployed; no live business writes. Next executable step: finish browser regression, publish this repair, inspect exact-head CI and resolve any failure before merge/Pages/read-only live checks. Owner UAT pending.
+
 
 ### Final regression checkpoint — 11 October 2026
 

@@ -3,6 +3,12 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Release-candidate repair checkpoint — 11 October 2026
+
+PR70 https://github.com/jothish2000/BOBS-OUTLETS/pull/70 contains47bf29b and78d18bf. Recovery/pre-complete-flow-20261011 remains at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Hosted quantity, recipe-preservation and workload checks PASS. Hosted Vault model/editor checks PASS, but the Chrome roadmap fault-injection tail FAILED because the new capacity nodes did not propagate a failed recipe read to UNKNOWN. Repaired that source-status propagation; no relaxed completion assertion. Company-view pending assertion now includes fixture diagnostics if it fails. Latest20/20 production/roadmap unit/DOM checks PASS, including new rejected partial/reversed/out-of-availability staff breaks and revalidation of conflict-bearing accepted plans. An initial local run omitted JSDOM_PATH and failed to load one test file; rerun with the installed dependency is the20/20 pass. Quantity formatter repair retest PASS. Full browser and fresh hosted verification pending; not deployed; no live business writes. Next executable step: finish browser regression, publish this repair, inspect exact-head CI and resolve any failure before merge/Pages/read-only live checks. Owner UAT pending.
+
+
+
 ### Final regression checkpoint — 11 October 2026
 
 Local broad model/DOM run116/116 PASS. Latest planning/ideal-price follow-up21/21 PASS, including explicit expected sales without writing Sold Today. Actual selector/list/gate integration PASS. Native Edge core capacity → time → staffing → salary → protected allocation/ideal/report journey PASS; an assertion initially expected290 sold although an earlier fixture step had saved287. Changed the assertion to compare the actual prior saved value; preservation then passed. The native roadmap tail returned UNKNOWN where PENDING was expected; this is not recorded as a full browser pass, and fresh hosted Chrome must verify it before merge. Quantity audit then found the replacement record viewer omitted the shared formatter include; restored it, retest pending.
@@ -302,6 +308,12 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Release-candidate repair checkpoint — 11 October 2026
+
+PR70 https://github.com/jothish2000/BOBS-OUTLETS/pull/70 contains47bf29b and78d18bf. Recovery/pre-complete-flow-20261011 remains at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Hosted quantity, recipe-preservation and workload checks PASS. Hosted Vault model/editor checks PASS, but the Chrome roadmap fault-injection tail FAILED because the new capacity nodes did not propagate a failed recipe read to UNKNOWN. Repaired that source-status propagation; no relaxed completion assertion. Company-view pending assertion now includes fixture diagnostics if it fails. Latest20/20 production/roadmap unit/DOM checks PASS, including new rejected partial/reversed/out-of-availability staff breaks and revalidation of conflict-bearing accepted plans. An initial local run omitted JSDOM_PATH and failed to load one test file; rerun with the installed dependency is the20/20 pass. Quantity formatter repair retest PASS. Full browser and fresh hosted verification pending; not deployed; no live business writes. Next executable step: finish browser regression, publish this repair, inspect exact-head CI and resolve any failure before merge/Pages/read-only live checks. Owner UAT pending.
+
+
 
 ### Final regression checkpoint — 11 October 2026
 

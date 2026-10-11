@@ -3,6 +3,10 @@ on:
   push:
     paths:
       - 'bobs-google-data.js'
+      - 'bobs-production-plan*.js'
+      - 'bobs-google-record*.js'
+      - 'tests/complete-production-flow.cjs'
+      - 'tests/production-plan-ui.cjs'
       - 'bobs-operational-recipes.js'
       - 'method2-packing-ui.js'
       - 'method2-item.js'
@@ -36,6 +40,10 @@ on:
   pull_request:
     paths:
       - 'bobs-google-data.js'
+      - 'bobs-production-plan*.js'
+      - 'bobs-google-record*.js'
+      - 'tests/complete-production-flow.cjs'
+      - 'tests/production-plan-ui.cjs'
       - 'bobs-operational-recipes.js'
       - 'method2-packing-ui.js'
       - 'method2-item.js'
