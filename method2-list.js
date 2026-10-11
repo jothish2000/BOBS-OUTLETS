@@ -45,7 +45,7 @@ function render(){
  if(!rows.length){
   setGuide('STEP 1','Choose the categories and items this outlet will sell. Use “Choose categories & items”, tick only the items you need, and save the selection.','Your selected items appear on this page and BOBS can start item-level costing.','Choose categories & items →',$('chooseItems').href);
  }else if(incomplete){
-  setGuide('STEP 2','Click “Go to selected items ↓”. In the selected-items table, find '+firstIncomplete+', choose Purchase or Production in its Mode column, then click “Edit item ↗” in that row. In the item window, review the quantity purchased or produced today, enter and confirm Sold Today, complete the Purchase or Production cost and packing fields, then click “SAVE THIS ITEM”. '+(incomplete>1?'Repeat for the other '+(incomplete-1)+' item'+(incomplete===2?'':'s')+' needing attention.':''),'The item window returns you here and the row says “Saved to Google”. If it still shows an old status, click “Reload Google records”. '+'BOBS then shows the remaining shared-packing or Workload & Staffing step before Method 2 can be completed.','Go to selected items ↓','#selectedCard');
+  setGuide('STEP 2','Click “Go to selected items ↓”. In the selected-items table, find '+firstIncomplete+', choose Purchase or Production in its Mode column, then click “Edit item ↗” in that row. For Production, start with equipment capacity, intended quantity, recipe and time. Save planning inputs before workforce and pricing; enter Sold Today when actual sales are known. For Purchase, review supplier costs and any production sides. Save actual results with “SAVE THIS ITEM”. '+(incomplete>1?'Repeat for the other '+(incomplete-1)+' item'+(incomplete===2?'':'s')+' needing attention.':''),'The item window returns you here and the row says “Saved to Google”. If it still shows an old status, click “Reload Google records”. '+'BOBS then shows the remaining shared-packing or Workload & Staffing step before Method 2 can be completed.','Go to selected items ↓','#selectedCard');
  }else if(shared.missing.length){
   setGuide('STEP 2','The selected items are saved. Click “Open Overall COGS ↗” below, complete and save the shared order-packing choices there. Return here and click “Reload Google records”.','Shared order packing shows a cost instead of “Incomplete”. '+(embedded?'Then scroll below the Method 2 panel and click “Save & Continue”.':'Then click “Review Sold Today”.'),'Open Overall COGS ↗',$('overall').href);
  }else{
@@ -66,7 +66,7 @@ async function reload(){
  // No recipe read or per-item calculations when nothing has been selected.
  const hasSides=Array.isArray(next.selection?.['Sides & Extras']?.names)&&next.selection['Sides & Extras'].names.length>0;
  const any=CAT_ORDER.some(cat=>ITEM_DATA[cat].some((_,i)=>M2.selected(next,cat,i)));
- const master=(any||hasSides)?await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1'):null;if(request!==generation||!refresh.isConnected)return;
+ const master=(any||hasSides)?(window.BOBS_OPERATIONAL_RECIPES?await BOBS_OPERATIONAL_RECIPES.load():await M2.read('COMPANY','RECIPE_MASTER','STANDARD_V1')):null;if(request!==generation||!refresh.isConnected)return;
  if(master)M2.installSides(master?.recipes||[],next);s=next;for(const k of Object.keys(pending))if(s.itemEditors[k]?.saveToken&&s.itemEditors[k].saveToken!==pending[k])delete pending[k];
  sessionStorage.setItem(pendingKey,JSON.stringify(pending));recipes=master?.recipes||[];try{M2.cache(outlet,s)}catch(e){}
  ready=true;$('status').textContent='Outlet '+outlet+' · Loaded from Google. Only selected items are shown.';render();
@@ -89,7 +89,7 @@ if($('guideAction'))$('guideAction').addEventListener('click',e=>{if($('guideAct
 // The containing outlet flow runs the same review from Save & Continue.
 if(embedded)$('review').hidden=true;
 $('closeReview').onclick=()=>$('reviewDialog').close();$('refresh').onclick=reload;$('search').oninput=filterRows;
-$('overall').href='method2-overall.html?outlet='+encodeURIComponent(outlet);$('staffing').href='workload-planner.html?outlet='+encodeURIComponent(outlet);$('chooseItems').href='method2-select.html?outlet='+encodeURIComponent(outlet);$('chooseItems').target='bobs-select-'+outlet;
+$('overall').href='method2-overall.html?outlet='+encodeURIComponent(outlet);$('staffing').href='outlet-plan.html?'+new URLSearchParams({outlet,stage:'workforce',returnTo:location.href});$('chooseItems').href='method2-select.html?outlet='+encodeURIComponent(outlet);$('chooseItems').target='bobs-select-'+outlet;
 function receive(data){if(!['bobs-method2-item-saved','bobs-method2-selection-saved','bobs-purchase-master-saved'].includes(data?.type)||String(data.outlet)!==String(outlet))return;if(data.type==='bobs-method2-selection-saved'&&data.reviewItems)requestSetupReview(true);if(data.type==='bobs-method2-item-saved')requestSetupReview(false);if(data.key)delete pending[data.key];sessionStorage.setItem(pendingKey,JSON.stringify(pending));clearTimeout(refreshTimer);refreshTimer=setTimeout(reload,100)}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receive(e.data)});
 if(window.BroadcastChannel){const channel=new BroadcastChannel('bobs-method2');channel.onmessage=e=>receive(e.data)}

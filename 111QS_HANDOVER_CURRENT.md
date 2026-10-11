@@ -3,6 +3,43 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Roadmap repair verified — 11 October 2026
+
+After0d3a7ff, the isolated native journey again passed all production/workforce/salary/price/report saves, then the legacy breakeven-site roadmap returned UNKNOWN rather than PENDING. Root cause: that older page did not load BOBS_CONFIG; the new shared read helper was initialised with an empty endpoint. Roadmap now explicitly loads central configuration before the shared transport. Recipe-failure propagation has a new regression;7/7 roadmap model checks PASS. This is the legacy report step9 failure (earlier checkpoint described the tail too broadly as company progress). Partial/reversed breaks remain rejected. Shared positions now show their reviewed availability rather than an undefined shift number. Break-even has a visible pending explanation before costs are complete. Added a post-main read-only live workflow: compare served release files, real Google baseline/viewer/planner/item/roadmap reads, desktop/mobile snapshots; all writes blocked. Latest whole-browser/CI rerun and deployment remain pending. No live business writes. Next: publish this candidate, run exact-head CI, second four-view evidence review, merge and verify Pages/live before Owner UAT.
+
+
+
+### Release-candidate repair checkpoint — 11 October 2026
+
+PR70 https://github.com/jothish2000/BOBS-OUTLETS/pull/70 contains47bf29b and78d18bf. Recovery/pre-complete-flow-20261011 remains at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Hosted quantity, recipe-preservation and workload checks PASS. Hosted Vault model/editor checks PASS, but the Chrome roadmap fault-injection tail FAILED because the new capacity nodes did not propagate a failed recipe read to UNKNOWN. Repaired that source-status propagation; no relaxed completion assertion. Company-view pending assertion now includes fixture diagnostics if it fails. Latest20/20 production/roadmap unit/DOM checks PASS, including new rejected partial/reversed/out-of-availability staff breaks and revalidation of conflict-bearing accepted plans. An initial local run omitted JSDOM_PATH and failed to load one test file; rerun with the installed dependency is the20/20 pass. Quantity formatter repair retest PASS. Full browser and fresh hosted verification pending; not deployed; no live business writes. Next executable step: finish browser regression, publish this repair, inspect exact-head CI and resolve any failure before merge/Pages/read-only live checks. Owner UAT pending.
+
+
+
+### Final regression checkpoint — 11 October 2026
+
+Local broad model/DOM run116/116 PASS. Latest planning/ideal-price follow-up21/21 PASS, including explicit expected sales without writing Sold Today. Actual selector/list/gate integration PASS. Native Edge core capacity → time → staffing → salary → protected allocation/ideal/report journey PASS; an assertion initially expected290 sold although an earlier fixture step had saved287. Changed the assertion to compare the actual prior saved value; preservation then passed. The native roadmap tail returned UNKNOWN where PENDING was expected; this is not recorded as a full browser pass, and fresh hosted Chrome must verify it before merge. Quantity audit then found the replacement record viewer omitted the shared formatter include; restored it, retest pending.
+
+Initial publication checkpoint47bf29b on codex/complete-flow-20261011; source PR/CI pending. Timing now requires explicit review of known pre-preparation references and added preparation stages. Shared workforce stores compact task summaries plus the source fingerprint, keeping recomputable interval detail in the production planner. Both planned and actual pricing scenarios are explicit; actual sales are not invented. No live operational writes. Exact next: quantity/syntax/regression retest, hosted current-head browser/CI, repair any failures, then merge/Pages/live read-only verification and final dual handover.
+
+
+### Production-flow implementation checkpoint — 11 October 2026
+
+Additive OUTLET_PRODUCTION_PLAN now records reviewed capacity, process quantities/units, equipment unit IDs from ASSET_MASTER, active/passive/supervised minutes, deadlines and shared preparation groups. Existing METHOD2 stores intended item inputs through protected planning saves without inventing Sold Today; actual confirmation remains separate. Shared skilled staff require explicit competence, availability, protected breaks and work/span limits. OUTLET_STAFFING stores the production fingerprint and continues to existing Reverse THP. Section06 exposes production/labour/assets links and reviewed fixed/variable break-even units and sales, with cash/depreciation separation. Roadmap, funding and report readers are connected. Google transport has a bounded read queue, in-flight coalescing and write invalidation; baseline Retry and explanatory read-only viewer remain available on load failure.
+
+Tests: initial focused run31/32 PASS, shared-skill alias case FAILED; normalized shared skills and repaired. Next model/UI run64/64 PASS including planning save/backups/partial failure/stale inputs, sharing, deadlines, break-even, Google queue/write barrier and existing outlet/capital/roadmap cases. Subsequent menu-gate/forward-route and planning-input additions still require final regression and browser tests. Native fixtures updated to exercise actual capacity → quantity → time → workforce → salary → allocation/break-even saves. No live business writes. Implementation local, NOT DEPLOYED; Owner UAT NOT RUN. Exact next: copy current staged source, run full regression/native Chrome/Edge, repair findings, publish PR and live verification.
+
+
+### Approved complete production flow — 11 October 2026
+
+Owner approved the complete outlet-first live flow, timeout repair, clearer Google records link, and break-even sales value/units. Codex laptop confirmed. Branch codex/complete-flow-20261011; recovery/pre-complete-flow-20261011 at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Current/relevant handover and source inspected; historical ledger preserved, not claimed as freshly reread line by line. Seven owner files retained.
+
+One assistant, separated 111QS reviews: PRO—capacity before quantity, explicit time/staff assessment and shared resources make full pricing explainable. CON—no recipe-yield-as-machine-capacity, automatic multiskilling, duplicate assets/staff or missing-as-zero. COMPARE & CONNECTIONS—baseline → menu → capacity → quantity → recipe → timings → workforce → salary → assets/allocations → ideal price/break-even → working capital/outlet/company. Existing recipe, METHOD2, Staff/HR, ASSET_MASTER and verified-store owners retained. OBSERVER—current/next, sourced editable references and saved/stale/failed status must be visible. Owner has approved scope and normal live delivery.
+
+Break-even: allocated fixed daily costs / contribution per sold unit; salaries/overhead/depreciation counted once, separate from direct variable unit costs. Show assumptions, unit rounding, revenue and capacity comparison; no finite break-even when contribution is not positive. Depreciation remains pricing-only. Planning save does not invent Sold Today.
+
+No operational migration or live business writes for tests. Existing verified backups/stale/readback protect owner saves; code/data rollback separate. Status OWNER APPROVED; implementation/tests/deployment/live verification pending. Next: Google read queue/retry and explanatory records viewer; additive production/capacity/time, workforce/roadmap/pricing integration; tests/release/live evidence.
+
+
 ### LIVE VERIFIED — outlet Save and checkbox explanations, 11 October 2026
 
 **Design approved; implemented; tested; deployed; live verified. Owner acceptance pending.** The Save button now shows progress or a specific correction beside the button. The reported conflict was paid mandatory staff listed together with “No paid mandatory staff”; that combination was rejected, but its message appeared at the top of the long page. The new message stays visible and preserves the salary entries.
@@ -277,6 +314,43 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Roadmap repair verified — 11 October 2026
+
+After0d3a7ff, the isolated native journey again passed all production/workforce/salary/price/report saves, then the legacy breakeven-site roadmap returned UNKNOWN rather than PENDING. Root cause: that older page did not load BOBS_CONFIG; the new shared read helper was initialised with an empty endpoint. Roadmap now explicitly loads central configuration before the shared transport. Recipe-failure propagation has a new regression;7/7 roadmap model checks PASS. This is the legacy report step9 failure (earlier checkpoint described the tail too broadly as company progress). Partial/reversed breaks remain rejected. Shared positions now show their reviewed availability rather than an undefined shift number. Break-even has a visible pending explanation before costs are complete. Added a post-main read-only live workflow: compare served release files, real Google baseline/viewer/planner/item/roadmap reads, desktop/mobile snapshots; all writes blocked. Latest whole-browser/CI rerun and deployment remain pending. No live business writes. Next: publish this candidate, run exact-head CI, second four-view evidence review, merge and verify Pages/live before Owner UAT.
+
+
+
+### Release-candidate repair checkpoint — 11 October 2026
+
+PR70 https://github.com/jothish2000/BOBS-OUTLETS/pull/70 contains47bf29b and78d18bf. Recovery/pre-complete-flow-20261011 remains at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Hosted quantity, recipe-preservation and workload checks PASS. Hosted Vault model/editor checks PASS, but the Chrome roadmap fault-injection tail FAILED because the new capacity nodes did not propagate a failed recipe read to UNKNOWN. Repaired that source-status propagation; no relaxed completion assertion. Company-view pending assertion now includes fixture diagnostics if it fails. Latest20/20 production/roadmap unit/DOM checks PASS, including new rejected partial/reversed/out-of-availability staff breaks and revalidation of conflict-bearing accepted plans. An initial local run omitted JSDOM_PATH and failed to load one test file; rerun with the installed dependency is the20/20 pass. Quantity formatter repair retest PASS. Full browser and fresh hosted verification pending; not deployed; no live business writes. Next executable step: finish browser regression, publish this repair, inspect exact-head CI and resolve any failure before merge/Pages/read-only live checks. Owner UAT pending.
+
+
+
+### Final regression checkpoint — 11 October 2026
+
+Local broad model/DOM run116/116 PASS. Latest planning/ideal-price follow-up21/21 PASS, including explicit expected sales without writing Sold Today. Actual selector/list/gate integration PASS. Native Edge core capacity → time → staffing → salary → protected allocation/ideal/report journey PASS; an assertion initially expected290 sold although an earlier fixture step had saved287. Changed the assertion to compare the actual prior saved value; preservation then passed. The native roadmap tail returned UNKNOWN where PENDING was expected; this is not recorded as a full browser pass, and fresh hosted Chrome must verify it before merge. Quantity audit then found the replacement record viewer omitted the shared formatter include; restored it, retest pending.
+
+Initial publication checkpoint47bf29b on codex/complete-flow-20261011; source PR/CI pending. Timing now requires explicit review of known pre-preparation references and added preparation stages. Shared workforce stores compact task summaries plus the source fingerprint, keeping recomputable interval detail in the production planner. Both planned and actual pricing scenarios are explicit; actual sales are not invented. No live operational writes. Exact next: quantity/syntax/regression retest, hosted current-head browser/CI, repair any failures, then merge/Pages/live read-only verification and final dual handover.
+
+
+### Production-flow implementation checkpoint — 11 October 2026
+
+Additive OUTLET_PRODUCTION_PLAN now records reviewed capacity, process quantities/units, equipment unit IDs from ASSET_MASTER, active/passive/supervised minutes, deadlines and shared preparation groups. Existing METHOD2 stores intended item inputs through protected planning saves without inventing Sold Today; actual confirmation remains separate. Shared skilled staff require explicit competence, availability, protected breaks and work/span limits. OUTLET_STAFFING stores the production fingerprint and continues to existing Reverse THP. Section06 exposes production/labour/assets links and reviewed fixed/variable break-even units and sales, with cash/depreciation separation. Roadmap, funding and report readers are connected. Google transport has a bounded read queue, in-flight coalescing and write invalidation; baseline Retry and explanatory read-only viewer remain available on load failure.
+
+Tests: initial focused run31/32 PASS, shared-skill alias case FAILED; normalized shared skills and repaired. Next model/UI run64/64 PASS including planning save/backups/partial failure/stale inputs, sharing, deadlines, break-even, Google queue/write barrier and existing outlet/capital/roadmap cases. Subsequent menu-gate/forward-route and planning-input additions still require final regression and browser tests. Native fixtures updated to exercise actual capacity → quantity → time → workforce → salary → allocation/break-even saves. No live business writes. Implementation local, NOT DEPLOYED; Owner UAT NOT RUN. Exact next: copy current staged source, run full regression/native Chrome/Edge, repair findings, publish PR and live verification.
+
+
+### Approved complete production flow — 11 October 2026
+
+Owner approved the complete outlet-first live flow, timeout repair, clearer Google records link, and break-even sales value/units. Codex laptop confirmed. Branch codex/complete-flow-20261011; recovery/pre-complete-flow-20261011 at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Current/relevant handover and source inspected; historical ledger preserved, not claimed as freshly reread line by line. Seven owner files retained.
+
+One assistant, separated 111QS reviews: PRO—capacity before quantity, explicit time/staff assessment and shared resources make full pricing explainable. CON—no recipe-yield-as-machine-capacity, automatic multiskilling, duplicate assets/staff or missing-as-zero. COMPARE & CONNECTIONS—baseline → menu → capacity → quantity → recipe → timings → workforce → salary → assets/allocations → ideal price/break-even → working capital/outlet/company. Existing recipe, METHOD2, Staff/HR, ASSET_MASTER and verified-store owners retained. OBSERVER—current/next, sourced editable references and saved/stale/failed status must be visible. Owner has approved scope and normal live delivery.
+
+Break-even: allocated fixed daily costs / contribution per sold unit; salaries/overhead/depreciation counted once, separate from direct variable unit costs. Show assumptions, unit rounding, revenue and capacity comparison; no finite break-even when contribution is not positive. Depreciation remains pricing-only. Planning save does not invent Sold Today.
+
+No operational migration or live business writes for tests. Existing verified backups/stale/readback protect owner saves; code/data rollback separate. Status OWNER APPROVED; implementation/tests/deployment/live verification pending. Next: Google read queue/retry and explanatory records viewer; additive production/capacity/time, workforce/roadmap/pricing integration; tests/release/live evidence.
+
 
 ### LIVE VERIFIED — outlet Save and coverage help, 11 October 2026
 

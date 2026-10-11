@@ -23,7 +23,7 @@
       document.head.appendChild(s);
     });
   }
-  async function jsonp(params){
+  async function request(params){
     // Retry only idempotent reads, never JSONP actions that may write or restore.
     const readOnly=['moduleGet','moduleList','outletList'].includes(params&&params.action);
     const attempts=readOnly?2:1;
@@ -31,6 +31,19 @@
       try{return await jsonpAttempt(params,n===0?12000:24000)}
       catch(e){if(!e.retryable||n===attempts-1)throw e;await new Promise(r=>setTimeout(r,600));}
     }
+  }
+  // Share only requests still in flight; no saved-data cache. Limit concurrent
+  // Apps Script requests so a roadmap refresh cannot swamp the business form.
+  let activeReads=0, readGeneration=0;
+  const readQueue=[], inFlight=new Map();
+  function invalidateReads(){readGeneration++;inFlight.clear()}
+  function drain(){while(activeReads<3&&readQueue.length){const job=readQueue.shift();activeReads++;request(job.params).then(job.resolve,job.reject).finally(()=>{activeReads--;drain()})}}
+  function jsonp(params){
+    if(!['moduleGet','moduleList','outletList'].includes(params?.action)){invalidateReads();return request(params)}
+    const key=readGeneration+':'+JSON.stringify(Object.keys(params).sort().map(k=>[k,String(params[k]??'')]));
+    let promise=inFlight.get(key);
+    if(!promise){promise=new Promise((resolve,reject)=>{readQueue.push({params:{...params},resolve,reject});drain()});inFlight.set(key,promise);promise.finally(()=>{if(inFlight.get(key)===promise)inFlight.delete(key)}).catch(()=>{})}
+    return promise.then(value=>value==null?value:JSON.parse(JSON.stringify(value)));
   }
   function latestVersion(){return Date.now()*1000+Math.floor(Math.random()*1000)}
   async function saveModule(outletId,module,recordKey,data){
@@ -40,7 +53,8 @@
     const stateVersion=latestVersion();
     const payload=Object.assign({},d,{_bobsMeta:Object.assign({},d._bobsMeta||{}, {stateVersion:stateVersion,savedBy:'BOBS',savedAt:new Date().toISOString()})});
     const body={action:'moduleSave',outletId:String(outletId),module:String(module),recordKey:String(recordKey||'default'),data:payload,stateVersion:stateVersion,timestamp:new Date().toISOString()};
-    await fetch(VAULT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    invalidateReads();
+    try{await fetch(VAULT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});}finally{invalidateReads()}
     return {ok:true,saved:true,source:'GOOGLE_SHEETS',module:module,outletId:String(outletId),stateVersion:stateVersion};
   }
   async function getRawModule(outletId,module,recordKey){
@@ -82,5 +96,5 @@
       return Object.assign({},o,d,{id:String(o.outletId||o.id||i+1),name:String(o.outletName||d.name||o.name||''),shortCode:String(o.outletCode||d.shortCode||d.code||o.shortCode||'').toUpperCase(),numShifts:Number(d.numShifts||o.numShifts||2),shiftTimes:Array.isArray(d.shiftTimes)?d.shiftTimes:[]});
     });
   }
-  window.BOBS_DATA={jsonp:jsonp,saveModule:saveModule,getRawModule:getRawModule,getModule:getModule,listModule:listModule,listOutlets:listOutlets,VAULT_URL:VAULT_URL};
+  window.BOBS_DATA={jsonp:jsonp,invalidateReads:invalidateReads,saveModule:saveModule,getRawModule:getRawModule,getModule:getModule,listModule:listModule,listOutlets:listOutlets,VAULT_URL:VAULT_URL};
 })();
