@@ -3,6 +3,13 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Final regression checkpoint — 11 October 2026
+
+Local broad model/DOM run116/116 PASS. Latest planning/ideal-price follow-up21/21 PASS, including explicit expected sales without writing Sold Today. Actual selector/list/gate integration PASS. Native Edge core capacity → time → staffing → salary → protected allocation/ideal/report journey PASS; an assertion initially expected290 sold although an earlier fixture step had saved287. Changed the assertion to compare the actual prior saved value; preservation then passed. The native roadmap tail returned UNKNOWN where PENDING was expected; this is not recorded as a full browser pass, and fresh hosted Chrome must verify it before merge. Quantity audit then found the replacement record viewer omitted the shared formatter include; restored it, retest pending.
+
+Initial publication checkpoint47bf29b on codex/complete-flow-20261011; source PR/CI pending. Timing now requires explicit review of known pre-preparation references and added preparation stages. Shared workforce stores compact task summaries plus the source fingerprint, keeping recomputable interval detail in the production planner. Both planned and actual pricing scenarios are explicit; actual sales are not invented. No live operational writes. Exact next: quantity/syntax/regression retest, hosted current-head browser/CI, repair any failures, then merge/Pages/live read-only verification and final dual handover.
+
+
 ### Production-flow implementation checkpoint — 11 October 2026
 
 Additive OUTLET_PRODUCTION_PLAN now records reviewed capacity, process quantities/units, equipment unit IDs from ASSET_MASTER, active/passive/supervised minutes, deadlines and shared preparation groups. Existing METHOD2 stores intended item inputs through protected planning saves without inventing Sold Today; actual confirmation remains separate. Shared skilled staff require explicit competence, availability, protected breaks and work/span limits. OUTLET_STAFFING stores the production fingerprint and continues to existing Reverse THP. Section06 exposes production/labour/assets links and reviewed fixed/variable break-even units and sales, with cash/depreciation separation. Roadmap, funding and report readers are connected. Google transport has a bounded read queue, in-flight coalescing and write invalidation; baseline Retry and explanatory read-only viewer remain available on load failure.
@@ -295,6 +302,13 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Final regression checkpoint — 11 October 2026
+
+Local broad model/DOM run116/116 PASS. Latest planning/ideal-price follow-up21/21 PASS, including explicit expected sales without writing Sold Today. Actual selector/list/gate integration PASS. Native Edge core capacity → time → staffing → salary → protected allocation/ideal/report journey PASS; an assertion initially expected290 sold although an earlier fixture step had saved287. Changed the assertion to compare the actual prior saved value; preservation then passed. The native roadmap tail returned UNKNOWN where PENDING was expected; this is not recorded as a full browser pass, and fresh hosted Chrome must verify it before merge. Quantity audit then found the replacement record viewer omitted the shared formatter include; restored it, retest pending.
+
+Initial publication checkpoint47bf29b on codex/complete-flow-20261011; source PR/CI pending. Timing now requires explicit review of known pre-preparation references and added preparation stages. Shared workforce stores compact task summaries plus the source fingerprint, keeping recomputable interval detail in the production planner. Both planned and actual pricing scenarios are explicit; actual sales are not invented. No live operational writes. Exact next: quantity/syntax/regression retest, hosted current-head browser/CI, repair any failures, then merge/Pages/live read-only verification and final dual handover.
+
 
 ### Production-flow implementation checkpoint — 11 October 2026
 
