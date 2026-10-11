@@ -25,6 +25,7 @@ on:
       - 'tests/outlet*.cjs'
       - 'tests/transition-input-generation.cjs'
       - 'scripts/verify-outlet-first-browser.cjs'
+      - 'scripts/verify-outlet-save-help-browser.cjs'
       - 'tests/bobs-roadmap.cjs'
       - '*.html'
       - 'apps-script/04_ModuleData.gs'
@@ -57,6 +58,7 @@ on:
       - 'tests/outlet*.cjs'
       - 'tests/transition-input-generation.cjs'
       - 'scripts/verify-outlet-first-browser.cjs'
+      - 'scripts/verify-outlet-save-help-browser.cjs'
       - 'tests/bobs-roadmap.cjs'
       - '*.html'
       - 'apps-script/04_ModuleData.gs'
@@ -79,7 +81,7 @@ jobs:
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
         run: |
-          node --test tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
+          node --test tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs
@@ -92,6 +94,7 @@ jobs:
         run: |
           node scripts/verify-vault-browser.cjs
           node scripts/verify-salary-capital-browser.cjs
+          node scripts/verify-outlet-save-help-browser.cjs
       - name: Syntax and whitespace
         run: |
           node --check bobs-google-data.js
