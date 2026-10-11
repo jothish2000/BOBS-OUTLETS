@@ -1,5 +1,5 @@
 # Complete BOBS flow — approved 11 October 2026
-Status: implemented locally; final tests/publication/live verification pending. Owner accepted scope and normal live delivery. One assistant performs the four separate review passes; no independent agents claimed.
+Status: DEPLOYED / LIVE VERIFIED in PR70, runtime merge b8916bef177664153fa40134b49fd6bbdd8c3c65. Owner UAT pending. Owner accepted scope and normal live delivery. One assistant performs the four separate review passes; no independent agents claimed.
 
 Outlet setup and shifts → fixed expenses / minimum mandatory roles → company-norm salary packages → method choice → selected menu → per-item capacity and existing/proposed equipment → intended quantity and deadline → recipe/yield/portions/sides → production time assessment → combined shared-equipment and staff assessment → delivery/riders → Reverse THP → item allocations and asset depreciation in Section06 → ideal price and break-even → working capital and capital purchases → actual Sold Today / saved item → outlet analysis → next outlet / company review.
 
@@ -12,7 +12,7 @@ Outlet setup and shifts → fixed expenses / minimum mandatory roles → company
 | BOBS_STANDARD_RECIPE / audited references | Recipe yield, ingredients, starting timings and roles; recipe yield is not equipment capacity |
 | ASSET_MASTER | One asset/group ID, owned/proposed counts, reviewed valuation and product depreciation shares |
 | OUTLET_PRODUCTION_PLAN | New additive record: per-item reviewed quantities and recipe fingerprints; processes link exact equipment unit slots and shared preparation IDs; whole-menu source fingerprint |
-| OUTLET_STAFFING | Active task intervals, reviewed shared skill/availability, additional positions, rider choices; fingerprint of accepted production plan |
+| OUTLET_STAFFING | Compact task summaries plus production source fingerprint, reviewed shared skill/availability, additional positions, rider choices; fingerprint of accepted production plan |
 | THP_NORMS / STAFF_MASTER / HR allocations | Existing salary package rules and employee cost; one employee cannot fund duplicate positions |
 | OUTLET_COST_ALLOCATIONS | Existing item shares plus break-even fixed/variable behavior and explicit assumption review |
 | CAPITAL_EXPENDITURE / WORKING_CAPITAL | Existing purchase funding and daily cash planning; no depreciation in operating cash |
@@ -36,4 +36,4 @@ Contribution per sold unit = current price − reviewed direct variable food/pac
 
 Recovery code ref: recovery/pre-complete-flow-20261011 at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Existing protected saves back up/read back individual records; optimistic protection is not atomic server CAS. Multi-record plan saves report confirmed partial results and retain drafts on failure. No operational migration or real business writes during testing. Code rollback and Google record recovery are separate. Existing unknown fields and unrelated records are retained.
 
-Tests observed so far:64 model/DOM regressions passed after repairing initial shared-skill alias failure. Later integration changes, native browser and live verification pending. Both continuation handovers carry the same state.
+Final validation:144 hosted model/regression cases plus navigation integrations and three isolated Chrome journeys passed on c32ac74; quantity, recipe preservation and workload checks passed. Earlier skill-alias, formatter, recipe-error propagation and legacy configuration failures were repaired and rerun. Pages38134264719 and real-Google read-only live38134265291 passed;11 served runtime files matched, zero runtime errors or business write attempts. Captured desktop/mobile images inspected. Both continuation handovers carry the release/recovery evidence; Owner UAT remains pending.
