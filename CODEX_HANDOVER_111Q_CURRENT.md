@@ -1,3 +1,29 @@
+### 11 October 2026 — LIVE VERIFIED: recipe-driven quantities and process-specific equipment help
+
+**Current continuation point:** approved change implemented, tested, published and live verified. Owner UAT/acceptance is pending. Review the live page: https://jothish2000.github.io/BOBS-OUTLETS/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode=production . Preserve the original same-site returnTo parameter when opening it from an item.
+
+- Runtime source `593e68275d06f5138d05c09ebfd8e679d20f599c`; PR75 https://github.com/jothish2000/BOBS-OUTLETS/pull/75 merged as `de21f91d37b52ebbd4bef006f06af64788305f3c`.
+- Pages run38154743286 PASS. Main Vault38154743979, quantity38154744058, recipe safety38154743968, equipment38154743937, standards38154743914, migration38154743993 and workload38154743954 all PASS.
+- Real-Google read-only live run38154743935/job114515287566 PASS: eleven served files exactly match released source; current Google baseline/record viewer loaded; recipe-specific Idli planner loaded; Sambar has cooking-vessel help and no unrelated steamer/grinder; Ideal Price Builder and full roadmap loaded; desktop/mobile checks passed; zero runtime errors and zero attempted writes. Evidence and screenshots: https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/38154743935/artifacts/11707398669 .
+- **Actual saved live requirement:**360 Idlis; Sambar20ml per Idli →7.200L; Coconut Chutney8g per Idli →2.880kg. These are actual saved portions. The18L Sambar example in tests uses a50ml fixture and is not the owner's live portion. Main Idli uses its valid saved outlet recipe.
+- Hosted source tests:105+30+24=159 node:test cases plus four isolated Chrome journeys and ancillary checks passed. New journey proves automatic ingredients, process-specific help, trial-reviewed capacity, existing grinder reuse, protected saves/readback/reload and preserved actual sales. Local isolated Edge journeys passed; a separate laptop live Edge launch later timed out after its eleven served-source comparisons passed. That local launch is NOT counted as a live browser pass; hosted Chrome supplied the successful live-browser evidence.
+
+**Second four-view conclusion (one assistant, separated passes):** PRO—target, derived requirements and sizing are now adjacent; CON—missing/stale sources and dimensional mismatches remain explicit, nominal capacity is never certified yield; COMPARE—same operational recipes, METHOD2 quantities, asset IDs and protected Google writes feed existing timing/staffing/pricing; OBSERVER—actual saved side quantities and relevant help were verified live with no writes. Owner approved scope/release earlier; Owner acceptance remains separate.
+
+**Remaining limits:** published equipment specifications are sourced examples, not universal small-hotel standards. Actual working fill, grinder dry/soaked basis and process-specific timing still need review. Other saved recipes show their own equipment requirement; where no numeric verified reference exists, the planner requests equipment/trial data and does not invent a figure. No new general equipment catalogue or automatic per-item schedule was claimed.
+
+**Recovery / data:** code checkpoint `recovery/pre-process-guidance-20261011` at8ff637731eadd38f3ae3aedaad192df7b43d2026; interrupted notes preserved as819218b. No live business Google records changed by testing/deployment. Future user saves retain existing backup/readback/stale protections. Code rollback must be separate from Google-record restoration: older runtime cannot interpret new ingredient-mode processes, so prefer a forward fix or review preserved record backups before a coordinated rollback. Never automatically delete or replace recipes, assets, quantities, staffing or actual sales.
+
+**Next action:** Owner reviews the refreshed live production page, especially the Sambar capacity card and rice/dal grinding helper, and reports any remaining observations. Collect further changes under111QS before new material implementation. Continue from current main and these handovers; do not restart. Laptop was explicitly confirmed for this task. For an unrelated new request follow the current device-confirmation rule. These repository handovers are portable references; unrelated ChatGPT chats do not synchronize automatically.
+
+
+### 11 October 2026 — PR75 merged; live verification in progress
+
+Source commit `593e68275d06f5138d05c09ebfd8e679d20f599c`, PR https://github.com/jothish2000/BOBS-OUTLETS/pull/75, merged as `de21f91d37b52ebbd4bef006f06af64788305f3c` after all eight PR/push check runs passed on that exact source SHA. Hosted Vault run38154608454/job114514885603 reports105 +30 +24 =159 passing node:test cases, four browser scripts (vault/full flow, new production guidance, salary/capital, outlet save/help), ancillary checks and syntax/whitespace. Recipe safety, workload gate and quantity workflows also passed. Local existing full vault browser regression completed PASS including roadmap. No failed test is being counted as passed without its repair/retest above.
+
+Release is merged; Pages38154743286 and real-Google read-only live38154743935 were still running at this checkpoint. A laptop live run also started; its first comparison correctly found the prior served source and is waiting for Pages. No claim of live completion yet. Next executable action: inspect deployment/live results, confirm process-specific Sambar helper and requirement summary from actual Google reads, then publish final status in both handovers. Owner acceptance pending.
+
+
 ### 11 October 2026 — post-test four-view review / release preparation
 
 One assistant, separated dual-role review passes (no independent agents):
