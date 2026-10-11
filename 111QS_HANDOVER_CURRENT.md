@@ -3,6 +3,12 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Roadmap repair verified — 11 October 2026
+
+After0d3a7ff, the isolated native journey again passed all production/workforce/salary/price/report saves, then the legacy breakeven-site roadmap returned UNKNOWN rather than PENDING. Root cause: that older page did not load BOBS_CONFIG; the new shared read helper was initialised with an empty endpoint. Roadmap now explicitly loads central configuration before the shared transport. Recipe-failure propagation has a new regression;7/7 roadmap model checks PASS. This is the legacy report step9 failure (earlier checkpoint described the tail too broadly as company progress). Partial/reversed breaks remain rejected. Shared positions now show their reviewed availability rather than an undefined shift number. Break-even has a visible pending explanation before costs are complete. Added a post-main read-only live workflow: compare served release files, real Google baseline/viewer/planner/item/roadmap reads, desktop/mobile snapshots; all writes blocked. Latest whole-browser/CI rerun and deployment remain pending. No live business writes. Next: publish this candidate, run exact-head CI, second four-view evidence review, merge and verify Pages/live before Owner UAT.
+
+
+
 ### Release-candidate repair checkpoint — 11 October 2026
 
 PR70 https://github.com/jothish2000/BOBS-OUTLETS/pull/70 contains47bf29b and78d18bf. Recovery/pre-complete-flow-20261011 remains at0c89d1c1ba79eecca19667927f81f5c76e26eebd. Hosted quantity, recipe-preservation and workload checks PASS. Hosted Vault model/editor checks PASS, but the Chrome roadmap fault-injection tail FAILED because the new capacity nodes did not propagate a failed recipe read to UNKNOWN. Repaired that source-status propagation; no relaxed completion assertion. Company-view pending assertion now includes fixture diagnostics if it fails. Latest20/20 production/roadmap unit/DOM checks PASS, including new rejected partial/reversed/out-of-availability staff breaks and revalidation of conflict-bearing accepted plans. An initial local run omitted JSDOM_PATH and failed to load one test file; rerun with the installed dependency is the20/20 pass. Quantity formatter repair retest PASS. Full browser and fresh hosted verification pending; not deployed; no live business writes. Next executable step: finish browser regression, publish this repair, inspect exact-head CI and resolve any failure before merge/Pages/read-only live checks. Owner UAT pending.
@@ -308,6 +314,12 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Roadmap repair verified — 11 October 2026
+
+After0d3a7ff, the isolated native journey again passed all production/workforce/salary/price/report saves, then the legacy breakeven-site roadmap returned UNKNOWN rather than PENDING. Root cause: that older page did not load BOBS_CONFIG; the new shared read helper was initialised with an empty endpoint. Roadmap now explicitly loads central configuration before the shared transport. Recipe-failure propagation has a new regression;7/7 roadmap model checks PASS. This is the legacy report step9 failure (earlier checkpoint described the tail too broadly as company progress). Partial/reversed breaks remain rejected. Shared positions now show their reviewed availability rather than an undefined shift number. Break-even has a visible pending explanation before costs are complete. Added a post-main read-only live workflow: compare served release files, real Google baseline/viewer/planner/item/roadmap reads, desktop/mobile snapshots; all writes blocked. Latest whole-browser/CI rerun and deployment remain pending. No live business writes. Next: publish this candidate, run exact-head CI, second four-view evidence review, merge and verify Pages/live before Owner UAT.
+
+
 
 ### Release-candidate repair checkpoint — 11 October 2026
 

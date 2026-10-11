@@ -1,0 +1,32 @@
+name: Complete production flow live read-only
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'production-plan.html'
+      - 'bobs-production-plan*.js'
+      - 'scripts/verify-complete-flow-live.cjs'
+      - '.github/workflows/complete-flow-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --prefix "$RUNNER_TEMP/bobs-live-tests" playwright@1.58.2 --no-audit --no-fund
+      - name: Verify published flow with real Google reads and all writes blocked
+        env:
+          PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-live-tests/node_modules/playwright
+          BOBS_LIVE_REPORT_DIR: ${{ runner.temp }}/complete-flow-live-report
+        run: node scripts/verify-complete-flow-live.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-flow-live-report
+          path: ${{ runner.temp }}/complete-flow-live-report
