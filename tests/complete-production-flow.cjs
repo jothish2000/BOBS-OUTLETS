@@ -17,3 +17,29 @@ test('weight-based break-even keeps precision and does not round into false feas
 
 test('accepted plan with conflicting timings remains incomplete',()=>{const f=fixture();f.process.deadline='06:30';f.record.reviewed=true;f.record.date='2026-10-11';f.record.sourceStamp=P.source(f.items,f.recipes,f.assets,F,M);assert.throws(()=>P.reconcile(f.record,f.items,f.recipes,f.assets,F,M,'2026-10-11'),/deadline/)});
 test('staff breaks reject partial, reversed or unavailable intervals and prevent assignment during breaks',()=>{const f=fixture(),assessment=f.assess(),shifts=[{start:'05:00',end:'14:00'}],s={id:'Shared1',role:'Cook',skills:['Cook'],start:'05:00',end:'14:00',startDay:0,endDay:0,maxActive:480,maxSpan:540,breaks:[{start:'06:00',end:'',day:0}]};assert.throws(()=>P.propose(assessment,shifts,[],F,[s]),/complete time/);s.breaks[0].end='05:00';assert.throws(()=>P.propose(assessment,shifts,[],F,[s]),/complete break/);s.breaks=[{start:'04:00',end:'05:00',day:0}];assert.throws(()=>P.propose(assessment,shifts,[],F,[s]),/availability/);s.breaks=[{start:'06:00',end:'06:30',day:0}];assert.equal(P.propose(assessment,shifts,[],F,[s]).positions.some(x=>x.id==='Shared1'),false)});
+
+test('360 Idlis produce side requirements from saved portions and ingredients from effective yields',()=>{
+ const f=fixture();f.items[0].d.condiments=[{recipeName:'Idli Sambar',source:'production',portion:50,portionUnit:'ml'},{recipeName:'Coconut Chutney',source:'production',portion:20,portionUnit:'g'}];
+ f.recipes.push({name:'Idli Sambar',yieldQty:9,yieldUnit:'L',ingredients:[['Toor dal',1,'kg',100]]},{name:'Coconut Chutney',yieldQty:1,yieldUnit:'kg',ingredients:[['Coconut',500,'g',10]]});
+ const req=P.requirements(f.items,f.recipes,F,M);assert.deepEqual(Array.from(req,r=>r.qty),[360,18,7.2]);assert.equal(P.materials(req[1])[0].quantity,2);assert.equal(P.materials(req[2])[0].quantity,3600);
+ f.items[0].d.condiments[0].portion='';assert.match(P.requirements(f.items,f.recipes,F,M)[1].problem,/portion/);assert.equal(P.requirements(f.items,f.recipes,F,M)[1].qty,null);
+ f.items[0].d.condiments[0].portion=50;f.items[0].d.condiments[0].portionUnit='g';assert.match(P.requirements(f.items,f.recipes,F,M)[1].problem,/unit/);
+});
+test('outlet recipe overrides scale materials; stale reference blocks downstream timing',()=>{
+ const f=fixture(),original=f.recipes[0];f.items[0].d.recipeOverrides={idli:{referenceStamp:ctx.BOBS_COST_FLOW.recipeStamp(original),recipe:{...clone(original),yieldQty:120,ingredients:[['Rice',3,'kg',60]]}}};
+ let req=P.requirements(f.items,f.recipes,F,M)[0];assert.equal(P.materials(req)[0].quantity,9);assert.match(req.source,/outlet/);
+ original.ingredients[0][1]=2;req=P.requirements(f.items,f.recipes,F,M)[0];assert.equal(req.qty,null);assert.throws(f.assess,/Shared recipe changed/);
+});
+test('automatic ingredient quantities recompute without rounding and reject missing rows or mass/volume assumptions',()=>{
+ const f=fixture();f.recipes[0].ingredients=[['Rice',1,'kg',10],['Rice second lot',200,'g',10],['LPG',0.2,'kg',100]];
+ const req=P.requirements(f.items,f.recipes,F,M)[0],materials=P.materials(req);assert.equal(materials.length,2);
+ const p={name:'Grind rice',quantityMode:'ingredient',ingredientKeys:Array.from(materials,a=>a.key),unit:'kg'};assert.equal(P.processQuantity(p,req,M),7.2);
+ p.unit='L';assert.throws(()=>P.processQuantity(p,req,M),/No kg-to-litre/);p.unit='kg';p.ingredientKeys=['deleted'];assert.throws(()=>P.processQuantity(p,req,M),/changed/);
+ p.ingredientKeys=[];assert.throws(()=>P.processQuantity(p,req,M),/Select/);
+});
+test('ingredient-derived stages feed timing and cannot combine different materials into a shared batch',()=>{
+ const f=fixture();f.recipes[0].ingredients.push(['Urad dal',0.25,'kg',50]);const req=P.requirements(f.items,f.recipes,F,M)[0],m=P.materials(req);
+ Object.assign(f.process,{quantityMode:'ingredient',ingredientKeys:[m[0].key],unit:'kg',capacity:3,capacityBasisRequired:true,capacityBasisReviewed:false});
+ assert.throws(f.assess,/weighing basis/);f.process.capacityBasisReviewed=true;assert.equal(f.assess().tasks[0].cycles,2);
+ f.process.group='Grinding';f.process.sharedConfirmed=true;f.record.processes.push({...clone(f.process),id:'dal',primary:false,ingredientKeys:[m[1].key]});assert.throws(f.assess,/shared rows/);
+});
