@@ -3,6 +3,24 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### COMPLETE / LIVE VERIFIED — capacity help, 11 October 2026
+
+The network/session interruption happened after the final runtime was merged. On resumption, GitHub main was verified at23941076444122ccc4e117f923204eda72f87b09 (PR73), from tested0e1446cbf58dbcc3e136689a7dd512af7e4d219b. Main Pages38138736011, live read-only38138736282, Vault38138736306 and quantity38138736280 all completed successfully. Earlier implementation is PR72/5c44903e. Owner UAT acceptance remains pending.
+
+Delivered: equipment guidance opens at an unassigned process; source-linked Idli60/120 capacities require an explicit choice; the5 L grinder example distinguishes3 kg rice from1 kg dal and adds a separate named input stage. Existing physical assets remain reusable and proposals remain unsaved until explicit protected Google Save. Automatic recipe demand hides the unused manual quantity input; manual entry names material, item, process and unit, preserves exact values and shows per-item cycles. Purchased-only items get a supplier-route explanation. The real saved unit “pieces” is compatible with reference “piece” through the existing conversion engine. No new calculation/store owner, migration or business-data reset.
+
+Tester evidence: exact-head PR Vault38138650492 and quantity38138650521 PASS; logs confirm97+30+24=151 model/DOM cases and three Chrome journeys. Local final planner UI11/11 PASS. Final real-live log confirms11 served source files matched, actual Google menu/recipe loaded, named Idli context, visible help, compatible chooser opened/selected/cancelled without saving, unused manual quantity hidden, baseline/records/Ideal Price Builder/ten-stage roadmap checked, and390px layout checked. Zero JavaScript errors and zero attempted business writes. The prior mobile help and quantity screenshots were visually inspected; final live screenshots are retained by workflow38138736282. Protected real writes were tested only with intercepted Google fixtures.
+
+Post-test111QS review: one assistant's separated PRO/CON/COMPARE & CONNECTIONS/OBSERVER passes, not independent agents. PRO—help and named quantities verified; CON—references remain reviewable assumptions and unknown totals/timings stay incomplete; COMPARE—recipe/METHOD2/assets/production-plan/workforce/pricing ownership and protected saves preserved; OBSERVER—the live plural-unit gap was caught through screenshot inspection, fixed and interactively verified. Design, approval, implementation, automated/browser tests, deployment and live verification are COMPLETE. Owner acceptance is separate and pending.
+
+Current live page: https://jothish2000.github.io/BOBS-OUTLETS/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0
+Next Owner action: reopen this page, inspect the visible equipment help and quantity labels, then report further corrections. No unfinished runtime task remains in this approved scope. Next developer action for any further change: fetch current main, read both handovers and master, inspect actual source before editing.
+
+Recovery code branch recovery/pre-capacity-help-20261011 is pushed at787ea3a46627df84403e3091c09f09eba83d0d3e. Code rollback is separate from operational Google backup restoration; restoration requires its own approved scope. Seven existing owner files were preserved. The last verified local continuation branch was codex/capacity-help-live-record-20261011 at2394107; its interrupted final note may remain uncommitted. Local terminal inspection did not return promptly on resumption, so this final documentation was published through the connected GitHub tools from verified remote main. Inspect local status before syncing; never discard pending notes or reset owner files.
+
+Portable continuation: repository master OVERALL_DESIGN_MASTER_111Q.md, shared111QS_HANDOVER_CURRENT.md (both named sections), and detailed CODEX_HANDOVER_111Q_CURRENT.md. Final documentation branch codex/capacity-help-live-handover-recovered-20261011 contains this verified state. A separate phone Work chat must be given these links and its own repository/Google access; conversation or permissions do not transfer automatically.
+
+
 ### LIVE OBSERVATION / unit-alias repair — 11 October 2026
 
 Inspection of the real mobile screenshot revealed that the live Idli unit is "pieces", while the reference capacity uses "piece". The initial chooser filtered by literal string equality, so its compatible-process list could be empty despite mathematically equivalent units. Replaced that filter and default-target lookup with existing M2.convert unit compatibility. The reference then stores its explicit capacity unit; the unchanged calculation engine converts demand appropriately. This fixes a real live-data edge missed by the earlier singular-unit fixtures.
@@ -406,6 +424,24 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### COMPLETE / LIVE VERIFIED — capacity help, 11 October 2026
+
+The network/session interruption happened after the final runtime was merged. On resumption, GitHub main was verified at23941076444122ccc4e117f923204eda72f87b09 (PR73), from tested0e1446cbf58dbcc3e136689a7dd512af7e4d219b. Main Pages38138736011, live read-only38138736282, Vault38138736306 and quantity38138736280 all completed successfully. Earlier implementation is PR72/5c44903e. Owner UAT acceptance remains pending.
+
+Delivered: equipment guidance opens at an unassigned process; source-linked Idli60/120 capacities require an explicit choice; the5 L grinder example distinguishes3 kg rice from1 kg dal and adds a separate named input stage. Existing physical assets remain reusable and proposals remain unsaved until explicit protected Google Save. Automatic recipe demand hides the unused manual quantity input; manual entry names material, item, process and unit, preserves exact values and shows per-item cycles. Purchased-only items get a supplier-route explanation. The real saved unit “pieces” is compatible with reference “piece” through the existing conversion engine. No new calculation/store owner, migration or business-data reset.
+
+Tester evidence: exact-head PR Vault38138650492 and quantity38138650521 PASS; logs confirm97+30+24=151 model/DOM cases and three Chrome journeys. Local final planner UI11/11 PASS. Final real-live log confirms11 served source files matched, actual Google menu/recipe loaded, named Idli context, visible help, compatible chooser opened/selected/cancelled without saving, unused manual quantity hidden, baseline/records/Ideal Price Builder/ten-stage roadmap checked, and390px layout checked. Zero JavaScript errors and zero attempted business writes. The prior mobile help and quantity screenshots were visually inspected; final live screenshots are retained by workflow38138736282. Protected real writes were tested only with intercepted Google fixtures.
+
+Post-test111QS review: one assistant's separated PRO/CON/COMPARE & CONNECTIONS/OBSERVER passes, not independent agents. PRO—help and named quantities verified; CON—references remain reviewable assumptions and unknown totals/timings stay incomplete; COMPARE—recipe/METHOD2/assets/production-plan/workforce/pricing ownership and protected saves preserved; OBSERVER—the live plural-unit gap was caught through screenshot inspection, fixed and interactively verified. Design, approval, implementation, automated/browser tests, deployment and live verification are COMPLETE. Owner acceptance is separate and pending.
+
+Current live page: https://jothish2000.github.io/BOBS-OUTLETS/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0
+Next Owner action: reopen this page, inspect the visible equipment help and quantity labels, then report further corrections. No unfinished runtime task remains in this approved scope. Next developer action for any further change: fetch current main, read both handovers and master, inspect actual source before editing.
+
+Recovery code branch recovery/pre-capacity-help-20261011 is pushed at787ea3a46627df84403e3091c09f09eba83d0d3e. Code rollback is separate from operational Google backup restoration; restoration requires its own approved scope. Seven existing owner files were preserved. The last verified local continuation branch was codex/capacity-help-live-record-20261011 at2394107; its interrupted final note may remain uncommitted. Local terminal inspection did not return promptly on resumption, so this final documentation was published through the connected GitHub tools from verified remote main. Inspect local status before syncing; never discard pending notes or reset owner files.
+
+Portable continuation: repository master OVERALL_DESIGN_MASTER_111Q.md, shared111QS_HANDOVER_CURRENT.md (both named sections), and detailed CODEX_HANDOVER_111Q_CURRENT.md. Final documentation branch codex/capacity-help-live-handover-recovered-20261011 contains this verified state. A separate phone Work chat must be given these links and its own repository/Google access; conversation or permissions do not transfer automatically.
+
 
 ### LIVE OBSERVATION / unit-alias repair — 11 October 2026
 
