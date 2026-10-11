@@ -1,3 +1,10 @@
+### LIVE OBSERVATION / unit-alias repair — 11 October 2026
+
+Inspection of the real mobile screenshot revealed that the live Idli unit is "pieces", while the reference capacity uses "piece". The initial chooser filtered by literal string equality, so its compatible-process list could be empty despite mathematically equivalent units. Replaced that filter and default-target lookup with existing M2.convert unit compatibility. The reference then stores its explicit capacity unit; the unchanged calculation engine converts demand appropriately. This fixes a real live-data edge missed by the earlier singular-unit fixtures.
+
+Added a plural-unit regression that opens the chooser, chooses120, adds an unsaved steamer and verifies demand remains120 pieces without any Google write. Live verification now opens the chooser on the actual Idli record, confirms a compatible process and explicit empty initial capacity choice, selects120 and cancels; it never adds an asset or saves. This evidence distinction matters: earlier live verification covered loaded guidance and quantities, not this interactive chooser. Current follow-up PR73 must pass latest exact-head CI and fresh real live checks after merge. Code recovery787ea3a remains; Owner UAT pending.
+
+
 ### LIVE CHECK PASSED / purchased-item guard — 11 October 2026
 
 Runtime5c44903e (PR72) passed Pages38138132446 and live read-only38138132615. The live workflow checks11 served files, actual Google-backed baseline/record viewer/Idli planner/Ideal Price Builder/roadmap, visible named capacity guidance, hidden unused manual quantities and390px layout; write routes are blocked. Artifact11702246934 retains the report and screenshots; visual review in progress. This is real read-only verification, not a live operational save test.
