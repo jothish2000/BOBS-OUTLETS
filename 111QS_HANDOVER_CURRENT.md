@@ -3,6 +3,50 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### 11 October 2026 — post-test four-view review / release preparation
+
+One assistant, separated dual-role review passes (no independent agents):
+
+| View | Business finding | Software/data evidence |
+|---|---|---|
+| PRO | Intended quantity, side requirement, ingredients and sizing now appear together. | 18 core and 15 DOM cases passed; isolated browser saved and reloaded main/side/ingredient processes with reuse of the original grinder ID. |
+| CON | Nominal vessel/jar size and uncertain grinder weighing basis must not become certified yield. | Working-fill confirmation, missing portion/ingredient and stale-recipe guards tested; nominal volume cannot be accepted as brimful usable capacity in the helper; mass/volume is never assumed. |
+| COMPARE & CONNECTIONS | Existing quantity, timing, staff and price ownership remains intact. | Existing ASSET_MASTER/METHOD2 backups and protected plan saves exercised; Sold Today retained. Core imports and dynamic roadmap loader cache versions updated for all readers. |
+| OBSERVER | Help is visible when equipment is unassigned; the required total remains visible after choosing equipment. | 390px browser width check passed; mobile Sambar screenshot inspected. Recipe-specific help excludes steamers/grinders from Sambar cooking. Unknown equipment capacity still needs reviewed source/trial data. |
+
+Tester details: broader local pass covered core/DOM, outlet-first/staff sharing, roadmap and quantity-format checks; final DOM retest 15/15 passed after changing a legacy test to re-confirm capacity when the input material changes. New browser journey PASS including save and reload; earlier browser assertions were corrected to check backups only for existing records and locate the saved process by stable ID after regrouping. Existing full vault/browser regression is being completed; hosted complete regression, Pages deployment and real-Google live verification are next and remain NOT VERIFIED at this checkpoint. No live operational Google records were changed.
+
+Most HTML diffs only change cache-version query strings for the shared production core/roadmap loader. Functional changes remain in production-plan.html, bobs-production-plan.js and bobs-production-plan-core.js; regression scripts and both handovers accompany them. Owner approved publication already. Owner UAT remains pending after release. Recovery: code 8ff6377; user-saved Google records require their separate backup path, never automatic restoration alongside a code revert.
+
+
+
+
+### 11 October 2026 — process guidance implementation and first Tester findings
+
+Implemented shared demand/material calculation in bobs-production-plan-core.js and connected the existing planner. Intended quantity appears before sizing. Each process shows required recipe/side output, scaled ingredient list, one/two-cycle load explanation, source/review links and actual cycle preview. Sambar gets cooking-vessel references, chutney a mixer, Idli its steamer and separate ingredient-driven grinding. Additional stages can target a selected side. Existing asset reuse and reviewed capacity/source metadata stay within protected Google saves. No operational Google writes performed during development.
+
+Sources checked: Srihari 60/120 Idli steamers; Sowbaghya 5 L grinder (3 kg rice OR 1 kg dal; weighing basis requires review); Pujadas 21.2 L / 33.6 L stockpots (nominal, never automatically usable capacity); Sowbaghya 2 L chutney mixer (jar size never converted to kg). These are size examples, not mandatory industry standards or brand recommendations. The saved recipe supplies equipment guidance for other processes; an unavailable numeric benchmark is stated and requires reviewed equipment data, not a guessed capacity.
+
+Tester: 33 core/DOM tests PASS after updating old capacity-before-quantity gate expectations and preserving three-decimal kg/L display. New cases cover 360 Idli side demand, valid/stale outlet overrides, ingredient scaling, no mass-volume assumptions, absent ingredients, shared batch material mismatch, relevant process help, vessel fill review, asset reuse and side-specific preparation. Initial browser journey reached verified save; a test incorrectly required a backup for a previously absent production record. Corrected assertion to existing METHOD2 and ASSET_MASTER backups; full browser retest pending.
+
+Current next action: finish isolated browser/save/reload and regression checks, review actual results in the four views, publish approved scope, confirm Pages and real-Google read-only live checks, then record both handovers. Deployment/live status NOT YET VERIFIED; Owner UAT pending. Recovery remains 8ff6377; rollback code separately from Google records.
+
+
+
+
+### 11 October 2026 — OWNER APPROVED: process-specific production help
+
+Owner confirmed laptop Codex and explicitly said “go ahead and implement it” after the four-view proposal. Scope: show intended item quantity before equipment sizing; derive main, side and ingredient requirements from Google operational recipes and valid outlet overrides; offer relevant sourced equipment sizes per process; retain reviewed working capacity, shared asset IDs and protected saves. No recipe, sales or production data migration/seed is authorized or needed.
+
+Protection: code checkpoint `recovery/pre-process-guidance-20261011` at `8ff637731eadd38f3ae3aedaad192df7b43d2026`; interrupted local notes preserved in `recovery/local-notes-before-process-guidance-20261011` commit `819218b`. Owner's seven untracked reference files retained. Data rollback is separate: no live business writes by this work; existing V.save backup/readback/concurrency protection remains required for user saves.
+
+One assistant performed separate PRO/CON/COMPARE/OBSERVER passes; no independent agents. Benefit: source quantities and sizing together. Risks: missing portions, stale overrides, input/output or mass/volume mismatch, nominal vessel size mistaken for usable fill, duplicate equipment. Dependency map: METHOD2 target/portions + effective operational recipe → requirements/materials → process quantity and working capacity → cycles/time → existing workforce/price builder. Source references are equipment examples, not universal standards or brand recommendations.
+
+Implementation beginning on `codex/production-process-guidance-20261011`. Tests, deployment and live verification NOT RUN for this scope; Owner UAT pending. Current-source and relevant current handover sections inspected; the large historical ledger is preserved, not claimed as freshly reviewed line by line. Exact next action: implement shared demand/material helpers and process-specific planner help, then run regression and browser checks.
+
+
+
+
 ### COMPLETE / LIVE VERIFIED — capacity help, 11 October 2026
 
 The network/session interruption happened after the final runtime was merged. On resumption, GitHub main was verified at23941076444122ccc4e117f923204eda72f87b09 (PR73), from tested0e1446cbf58dbcc3e136689a7dd512af7e4d219b. Main Pages38138736011, live read-only38138736282, Vault38138736306 and quantity38138736280 all completed successfully. Earlier implementation is PR72/5c44903e. Owner UAT acceptance remains pending.
@@ -424,6 +468,50 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### 11 October 2026 — post-test four-view review / release preparation
+
+One assistant, separated dual-role review passes (no independent agents):
+
+| View | Business finding | Software/data evidence |
+|---|---|---|
+| PRO | Intended quantity, side requirement, ingredients and sizing now appear together. | 18 core and 15 DOM cases passed; isolated browser saved and reloaded main/side/ingredient processes with reuse of the original grinder ID. |
+| CON | Nominal vessel/jar size and uncertain grinder weighing basis must not become certified yield. | Working-fill confirmation, missing portion/ingredient and stale-recipe guards tested; nominal volume cannot be accepted as brimful usable capacity in the helper; mass/volume is never assumed. |
+| COMPARE & CONNECTIONS | Existing quantity, timing, staff and price ownership remains intact. | Existing ASSET_MASTER/METHOD2 backups and protected plan saves exercised; Sold Today retained. Core imports and dynamic roadmap loader cache versions updated for all readers. |
+| OBSERVER | Help is visible when equipment is unassigned; the required total remains visible after choosing equipment. | 390px browser width check passed; mobile Sambar screenshot inspected. Recipe-specific help excludes steamers/grinders from Sambar cooking. Unknown equipment capacity still needs reviewed source/trial data. |
+
+Tester details: broader local pass covered core/DOM, outlet-first/staff sharing, roadmap and quantity-format checks; final DOM retest 15/15 passed after changing a legacy test to re-confirm capacity when the input material changes. New browser journey PASS including save and reload; earlier browser assertions were corrected to check backups only for existing records and locate the saved process by stable ID after regrouping. Existing full vault/browser regression is being completed; hosted complete regression, Pages deployment and real-Google live verification are next and remain NOT VERIFIED at this checkpoint. No live operational Google records were changed.
+
+Most HTML diffs only change cache-version query strings for the shared production core/roadmap loader. Functional changes remain in production-plan.html, bobs-production-plan.js and bobs-production-plan-core.js; regression scripts and both handovers accompany them. Owner approved publication already. Owner UAT remains pending after release. Recovery: code 8ff6377; user-saved Google records require their separate backup path, never automatic restoration alongside a code revert.
+
+
+
+
+### 11 October 2026 — process guidance implementation and first Tester findings
+
+Implemented shared demand/material calculation in bobs-production-plan-core.js and connected the existing planner. Intended quantity appears before sizing. Each process shows required recipe/side output, scaled ingredient list, one/two-cycle load explanation, source/review links and actual cycle preview. Sambar gets cooking-vessel references, chutney a mixer, Idli its steamer and separate ingredient-driven grinding. Additional stages can target a selected side. Existing asset reuse and reviewed capacity/source metadata stay within protected Google saves. No operational Google writes performed during development.
+
+Sources checked: Srihari 60/120 Idli steamers; Sowbaghya 5 L grinder (3 kg rice OR 1 kg dal; weighing basis requires review); Pujadas 21.2 L / 33.6 L stockpots (nominal, never automatically usable capacity); Sowbaghya 2 L chutney mixer (jar size never converted to kg). These are size examples, not mandatory industry standards or brand recommendations. The saved recipe supplies equipment guidance for other processes; an unavailable numeric benchmark is stated and requires reviewed equipment data, not a guessed capacity.
+
+Tester: 33 core/DOM tests PASS after updating old capacity-before-quantity gate expectations and preserving three-decimal kg/L display. New cases cover 360 Idli side demand, valid/stale outlet overrides, ingredient scaling, no mass-volume assumptions, absent ingredients, shared batch material mismatch, relevant process help, vessel fill review, asset reuse and side-specific preparation. Initial browser journey reached verified save; a test incorrectly required a backup for a previously absent production record. Corrected assertion to existing METHOD2 and ASSET_MASTER backups; full browser retest pending.
+
+Current next action: finish isolated browser/save/reload and regression checks, review actual results in the four views, publish approved scope, confirm Pages and real-Google read-only live checks, then record both handovers. Deployment/live status NOT YET VERIFIED; Owner UAT pending. Recovery remains 8ff6377; rollback code separately from Google records.
+
+
+
+
+### 11 October 2026 — OWNER APPROVED: process-specific production help
+
+Owner confirmed laptop Codex and explicitly said “go ahead and implement it” after the four-view proposal. Scope: show intended item quantity before equipment sizing; derive main, side and ingredient requirements from Google operational recipes and valid outlet overrides; offer relevant sourced equipment sizes per process; retain reviewed working capacity, shared asset IDs and protected saves. No recipe, sales or production data migration/seed is authorized or needed.
+
+Protection: code checkpoint `recovery/pre-process-guidance-20261011` at `8ff637731eadd38f3ae3aedaad192df7b43d2026`; interrupted local notes preserved in `recovery/local-notes-before-process-guidance-20261011` commit `819218b`. Owner's seven untracked reference files retained. Data rollback is separate: no live business writes by this work; existing V.save backup/readback/concurrency protection remains required for user saves.
+
+One assistant performed separate PRO/CON/COMPARE/OBSERVER passes; no independent agents. Benefit: source quantities and sizing together. Risks: missing portions, stale overrides, input/output or mass/volume mismatch, nominal vessel size mistaken for usable fill, duplicate equipment. Dependency map: METHOD2 target/portions + effective operational recipe → requirements/materials → process quantity and working capacity → cycles/time → existing workforce/price builder. Source references are equipment examples, not universal standards or brand recommendations.
+
+Implementation beginning on `codex/production-process-guidance-20261011`. Tests, deployment and live verification NOT RUN for this scope; Owner UAT pending. Current-source and relevant current handover sections inspected; the large historical ledger is preserved, not claimed as freshly reviewed line by line. Exact next action: implement shared demand/material helpers and process-specific planner help, then run regression and browser checks.
+
+
+
 
 ### COMPLETE / LIVE VERIFIED — capacity help, 11 October 2026
 

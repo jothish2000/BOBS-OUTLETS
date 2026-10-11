@@ -36,6 +36,7 @@ on:
       - 'google-vault-apps-script.gs'
       - 'tests/*vault*.cjs'
       - 'scripts/verify-vault-browser.cjs'
+      - 'scripts/verify-production-guidance-browser.cjs'
       - '.github/workflows/vault-read-reliability.yml'
   pull_request:
     paths:
@@ -73,6 +74,7 @@ on:
       - 'google-vault-apps-script.gs'
       - 'tests/*vault*.cjs'
       - 'scripts/verify-vault-browser.cjs'
+      - 'scripts/verify-production-guidance-browser.cjs'
       - '.github/workflows/vault-read-reliability.yml'
 jobs:
   verify:
@@ -101,6 +103,7 @@ jobs:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
         run: |
           node scripts/verify-vault-browser.cjs
+          node scripts/verify-production-guidance-browser.cjs
           node scripts/verify-salary-capital-browser.cjs
           node scripts/verify-outlet-save-help-browser.cjs
       - name: Syntax and whitespace
