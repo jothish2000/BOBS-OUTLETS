@@ -3,6 +3,20 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Implemented checkpoint — outlet Save and coverage help
+
+Local implementation complete. Nearby Save status/focus, busy feedback and temporary input locking; local validation before Google reads; explicit expense-only partial-success wording; help dialogs for each owner shift, no-paid selection and final review; zero-paid applicability and visible all-shift coverage; owned-editor flag to prevent delayed restoration overriding review changes. Existing salary formulas, verified writer and navigation routes retained. New focused DOM tests8/8 PASS (conflict/no writes, correction and salary retention, owner-only save, help focus/no mutation, review/coverage gating, waiting/failure/duplicate clicks, stale baseline, partial save). Script syntax and whitespace passed. Connected regressions and native fixture in progress; publication/live verification pending. Earlier wildcard search syntax was corrected; no code/data change resulted.
+
+
+### Approved outlet Save feedback and coverage help — 11 October 2026
+
+Owner explicitly approved fixing Save and adding checkbox explanation popups on the live site; laptop Codex confirmed. Work remains in Codex. Inspected local/remote main4584120d8f9b1a8be3abaf83a226f1d7ecf841e3; no intervening source changes. Remote code recovery: recovery/pre-outlet-save-help-20261011 at the same commit; branch codex/outlet-save-help-20261011. Seven owner untracked files preserved. Full owner master v5.0 and project annex read; current/relevant handover entries inspected, not a fresh line-by-line reread of the entire historical ledger.
+
+Pre-implementation review (one assistant, separate passes): PRO—explain coverage and expose Save progress/errors where clicked. CON—preserve paid positions, salary packages and unsaved inputs; never silently remove staff or claim an unverified save. COMPARE & CONNECTIONS—coverage and reviewed inputs → existing validation → verified FIXED_EXPENSES/OUTLET_BASELINE saves → next outlet/menu or immediate parent → labour/Ideal Price Builder. No schema, salary formula, ownership or allocation rule changes. OBSERVER—optional owner choices must not look like mandatory acknowledgements; prevent contradictions, show local errors before network waits, make help accessible on laptop/phone.
+
+Confirmed source finding: noCounter plus paid baseline.positions rejects Save; status currently appears only at the page top. Approved implementation will add nearby status/progress, recovery after errors, per-choice help dialogs and clear zero-paid-position applicability. Reuse owned-editor state management so the generic delayed restoration cannot undo review invalidation; existing verified Google backups/stale/readback and beforeunload safeguards remain. Tests planned: exact conflict, correction with salary retained, owner-only save, paid/owner coverage, help/keyboard/mobile, failed/stale/partial save, retained parent and forward navigation; existing salary/outlet regressions. No real business writes during testing. Status: APPROVED, implementation next; tests/deployment/live verification pending.
+
+
 ### LIVE VERIFIED — salary summary replacement
 
 **Design approved; implemented; tested; deployed; live verified. Owner acceptance pending.** The previous THP form and parent collapsible breakdown have been replaced. Enter THP in the outlet position, choose **Review / edit salary package**, then review earnings, deductions, employer expenses and monthly CTC. Basic/DA/HRA/PF/ESI and company components open focused edit links. Save the reviewed package to Google, return to the original outlet draft, then save the outlet plan to apply its cost. Linked employees use the existing verified Staff Master update.
@@ -245,6 +259,20 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Implemented checkpoint — outlet Save and coverage help
+
+Local implementation complete. Nearby Save status/focus, busy feedback and temporary input locking; local validation before Google reads; explicit expense-only partial-success wording; help dialogs for each owner shift, no-paid selection and final review; zero-paid applicability and visible all-shift coverage; owned-editor flag to prevent delayed restoration overriding review changes. Existing salary formulas, verified writer and navigation routes retained. New focused DOM tests8/8 PASS (conflict/no writes, correction and salary retention, owner-only save, help focus/no mutation, review/coverage gating, waiting/failure/duplicate clicks, stale baseline, partial save). Script syntax and whitespace passed. Connected regressions and native fixture in progress; publication/live verification pending. Earlier wildcard search syntax was corrected; no code/data change resulted.
+
+
+### Approved outlet Save feedback and coverage help — 11 October 2026
+
+Owner explicitly approved fixing Save and adding checkbox explanation popups on the live site; laptop Codex confirmed. Work remains in Codex. Inspected local/remote main4584120d8f9b1a8be3abaf83a226f1d7ecf841e3; no intervening source changes. Remote code recovery: recovery/pre-outlet-save-help-20261011 at the same commit; branch codex/outlet-save-help-20261011. Seven owner untracked files preserved. Full owner master v5.0 and project annex read; current/relevant handover entries inspected, not a fresh line-by-line reread of the entire historical ledger.
+
+Pre-implementation review (one assistant, separate passes): PRO—explain coverage and expose Save progress/errors where clicked. CON—preserve paid positions, salary packages and unsaved inputs; never silently remove staff or claim an unverified save. COMPARE & CONNECTIONS—coverage and reviewed inputs → existing validation → verified FIXED_EXPENSES/OUTLET_BASELINE saves → next outlet/menu or immediate parent → labour/Ideal Price Builder. No schema, salary formula, ownership or allocation rule changes. OBSERVER—optional owner choices must not look like mandatory acknowledgements; prevent contradictions, show local errors before network waits, make help accessible on laptop/phone.
+
+Confirmed source finding: noCounter plus paid baseline.positions rejects Save; status currently appears only at the page top. Approved implementation will add nearby status/progress, recovery after errors, per-choice help dialogs and clear zero-paid-position applicability. Reuse owned-editor state management so the generic delayed restoration cannot undo review invalidation; existing verified Google backups/stale/readback and beforeunload safeguards remain. Tests planned: exact conflict, correction with salary retained, owner-only save, paid/owner coverage, help/keyboard/mobile, failed/stale/partial save, retained parent and forward navigation; existing salary/outlet regressions. No real business writes during testing. Status: APPROVED, implementation next; tests/deployment/live verification pending.
+
 
 ### LIVE VERIFIED — salary summary replacement
 
