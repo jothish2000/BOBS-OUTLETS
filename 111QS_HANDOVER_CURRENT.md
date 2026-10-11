@@ -3,6 +3,13 @@ Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution 
 
 ## Work mode handover
 
+### Tested and merged checkpoint — outlet Save and coverage help
+
+PR68 runtime merged as215e6b91071bcca23a1e32386716d3bcd430ba4a fromd92fe30. Local tests: focused8/8 and connected69/69 PASS; quantity/syntax/whitespace PASS. Native Edge fixture PASS including conflict focus at668x580, salary retained after correction, keyboard popup return, review stays cleared after1100ms, verified backups/save/next outlet, zero-paid second outlet and mobile help at390px. Screenshots inspected: correction and Save visible together, help readable with Close visible. Hosted Vault38119589821 PASS: groups70/27/24, three Chrome journeys and syntax; quantity38119589753 PASS. Tests intercept Google writes; no real operational data changed.
+
+Post-test four views (one assistant): PRO—reported conflicting choices now yield visible actionable feedback and corrected Save advances. CON—unverified/partial/stale failures keep the draft and explicitly state what was confirmed; real production writes are not used as tests. COMPARE—salary/capital, parent draft/return and outlet-to-outlet navigation regressions pass; existing storage/schema/calculation owners retained. OBSERVER—optional choices and final confirmation are distinguished, explanations work by keyboard/mobile, and review invalidation survives old timer delays. Deployment and live read-only verification are next; Owner UAT remains pending. Both handovers will record the live result.
+
+
 ### Implemented checkpoint — outlet Save and coverage help
 
 Local implementation complete. Nearby Save status/focus, busy feedback and temporary input locking; local validation before Google reads; explicit expense-only partial-success wording; help dialogs for each owner shift, no-paid selection and final review; zero-paid applicability and visible all-shift coverage; owned-editor flag to prevent delayed restoration overriding review changes. Existing salary formulas, verified writer and navigation routes retained. New focused DOM tests8/8 PASS (conflict/no writes, correction and salary retention, owner-only save, help focus/no mutation, review/coverage gating, waiting/failure/duplicate clicks, stale baseline, partial save). Script syntax and whitespace passed. Connected regressions and native fixture in progress; publication/live verification pending. Earlier wildcard search syntax was corrected; no code/data change resulted.
@@ -259,6 +266,13 @@ Exact next for Owner: refresh item page; save intended production quantity and s
 Continuation:[repository](https://github.com/jothish2000/BOBS-OUTLETS), [master](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/OVERALL_DESIGN_MASTER_111Q.md), [ledger](https://github.com/jothish2000/BOBS-OUTLETS/blob/main/CODEX_HANDOVER_111Q_CURRENT.md), [PR43](https://github.com/jothish2000/BOBS-OUTLETS/pull/43), [PR44](https://github.com/jothish2000/BOBS-OUTLETS/pull/44), [PR45](https://github.com/jothish2000/BOBS-OUTLETS/pull/45). Codex repo/Git/GitHub access verified; phone Work access not assumed/synchronized. No mode transfer; continue setup/UAT in current Codex/browser. Latest documentation-only commit follows functional release; retrieve current main.
 
 ## Codex handover
+
+### Tested and merged checkpoint — outlet Save and coverage help
+
+PR68 runtime merged as215e6b91071bcca23a1e32386716d3bcd430ba4a fromd92fe30. Local tests: focused8/8 and connected69/69 PASS; quantity/syntax/whitespace PASS. Native Edge fixture PASS including conflict focus at668x580, salary retained after correction, keyboard popup return, review stays cleared after1100ms, verified backups/save/next outlet, zero-paid second outlet and mobile help at390px. Screenshots inspected: correction and Save visible together, help readable with Close visible. Hosted Vault38119589821 PASS: groups70/27/24, three Chrome journeys and syntax; quantity38119589753 PASS. Tests intercept Google writes; no real operational data changed.
+
+Post-test four views (one assistant): PRO—reported conflicting choices now yield visible actionable feedback and corrected Save advances. CON—unverified/partial/stale failures keep the draft and explicitly state what was confirmed; real production writes are not used as tests. COMPARE—salary/capital, parent draft/return and outlet-to-outlet navigation regressions pass; existing storage/schema/calculation owners retained. OBSERVER—optional choices and final confirmation are distinguished, explanations work by keyboard/mobile, and review invalidation survives old timer delays. Deployment and live read-only verification are next; Owner UAT remains pending. Both handovers will record the live result.
+
 
 ### Implemented checkpoint — outlet Save and coverage help
 
