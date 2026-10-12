@@ -1,3 +1,12 @@
+### 12 October 2026 — source published for CI as PR77
+
+Implementation commit b403e46b912100290fc7d19a7b847bf67fcae35a is pushed on codex/shared-kitchen-flow-20261012. PR77: https://github.com/jothish2000/BOBS-OUTLETS/pull/77 . It is attached to this Codex chat. Repository handovers are now available remotely for continuation. Main/live remain13d1a216db497bfef79ec41636c9373843ca2512 until green checks and merge. Current PR workflows started: Vault38203947532, quantity38203947550, recipe safety38203947564, workload38203947622. No CI pass or deployment claimed yet.
+
+Next commit expands read-only live checks to compare all new kitchen/staff sources, load the real Google kitchen register and item source choices without creating records, and inspect desktop/mobile layout. The real live system need not contain Elimedu or180 Idlis yet; those are fixture scenarios until the Owner explicitly configures and saves them. Normal runtime publication does not seed operational records.
+
+Exact next actions: inspect PR CI results; repair any observed failure and rerun on its exact head; merge only after required checks pass; verify Pages and the expanded real-Google read-only workflow; update both handovers with merge/live evidence and leave Owner UAT pending. Recovery remains recovery/pre-shared-kitchen-flow-20261012; owner-untracked files remain excluded.
+
+
 ### 12 October 2026 — shared-kitchen tests and release preparation
 
 Local model/DOM evidence:116-test expanded group PASS;54 remaining regression tests PASS;four ancillary script groups PASS. After subsequent guards/repairs, affected30-test group PASS. Isolated Edge production-guidance, salary/capital and outlet-save/help journeys PASS. New shared-kitchen browser journey now PASS: real page scripts with intercepted Google fixtures, preserved360/180 orders,540 output/five cycles, one linked worker, shared asset/depreciation, protected readback, roadmap and mobile. No live business records were written.
