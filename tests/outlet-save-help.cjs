@@ -11,7 +11,7 @@ async function fixture({noCounter=false,positions=[{id:'Mandatory1',role:'Cashie
  w.BOBS_DATA={listOutlets:async()=>[{id:'1',name:'Fixture outlet',shiftTimes:shifts}]};w.BOBS_COST_FLOW={today:()=> '2026-10-11'};w.ITEM_DATA={};w.M2={read:async()=>({}),state:x=>x||{}};
  w.BOBS_VERIFIED={clone:copy,equal:(a,b)=>JSON.stringify(a)===JSON.stringify(b),read:async(o,m)=>{reads.push(m);if(m==='OUTLET_BASELINE'&&pause)await pause;return copy(db[m])},save:async(o,m,key,data)=>{if(failSave===m)throw Error('Fixture save not confirmed');writes.push(m);db[m]=copy(data);return copy(data)}};
  w.BOBS_WINDOW_RETURN={safe:()=>true,notify(){},returnToParent:(...args)=>returns.push(args)};
- for(const p of ['bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-salary-summary-core.js','bobs-outlet-plan.js'])w.eval(fs.readFileSync(p,'utf8'));
+ for(const p of ['bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-salary-summary-core.js','bobs-staff-table.js','bobs-outlet-plan.js'])w.eval(fs.readFileSync(p,'utf8'));
  await settle();const $=id=>w.document.getElementById(id);assert($('flowSave'),$('flowStatus').textContent);
  return {dom,w,$,db,reads,writes,returns,get scrolled(){return scrolled},hold(value){pause=value},fail(module){failSave=module},change(el,value){if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));},async save(){if(!$('flowReviewed').checked)$('flowReviewed').click();$('flowSave').click();await settle();}};
 }
