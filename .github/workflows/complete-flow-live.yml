@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'production-plan.html'
+      - 'kitchen-flow.html'
+      - 'bobs-kitchen*'
+      - 'bobs-staff-table*'
       - 'bobs-production-plan*.js'
       - 'scripts/verify-complete-flow-live.cjs'
       - '.github/workflows/complete-flow-live.yml'
