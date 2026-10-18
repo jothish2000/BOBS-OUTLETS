@@ -1,3 +1,15 @@
+### 18 October 2026 — approved kitchen setup link contrast fix
+
+Owner explicitly requested a light link colour on the green outlets header in laptop Codex. Scope: outlets.html kitchen setup link only; add color:var(--paper), retain underline, text, href and all scripts. Baseline/recovery: 3bc7cba120f67a2bc9203b80b0f1d57cca811d79, freshly fetched origin/main. Separate workspace copy; original checkout and owner untracked files preserved. No Google records read or written for this cosmetic change; data rollback not applicable. Dependency: outlets.html anchor -> style.css paper/ledger tokens -> kitchen-flow.html?stage=locations; no cost, payroll, demand or persistence changes. Pending redesign remains discussion-only and unapproved.
+
+One assistant separated four-view review: PRO—readable kitchen entry and reuse existing colour token; CON—check visited colour and avoid global link changes; COMPARE & CONNECTIONS—only anchor style changes, same route/scripts/data; OBSERVER—underline retained, cosmetic scope only. Owner approved this exact fix. Tester: static before/after check PASS (only one style attribute added); calculated #EDE4D3 on #1F3D2B contrast 9.45:1 PASS. Browser and live tests NOT RUN at this checkpoint. Source publication/deployment pending. Owner acceptance pending. Next: publish bounded fix, inspect CI, deploy and verify served colour.
+
+### Section 1 — Work mode handover
+Live URL: https://jothish2000.github.io/BOBS-OUTLETS/outlets.html . Colour fix locally implemented; not yet deployed. Existing flow remains baseline; resume outlet/kitchen walkthrough after the link is live.
+
+### Section 2 — Codex handover
+Workspace: work/bobs-link-colour; branch codex/kitchen-link-contrast-20261018; baseline 3bc7cba. Changed runtime file outlets.html only, plus both continuity documents. Exact next action: git diff --check, commit/push, PR, required CI, merge, Pages and served-source verification. Never seed illustrative demand or wages.
+
 # 111QS dual-mode handover — shared-kitchen production flow, 12 October 2026
 Canonical **111QS =111QS5PVDRT**; master v5.0. One project state, two execution views; four reviews are one assistant's separated passes.
 
