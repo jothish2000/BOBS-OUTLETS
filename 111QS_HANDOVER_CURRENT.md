@@ -1,3 +1,11 @@
+### 18 October 2026 — kitchen link colour DEPLOYED; served source verified
+
+PR79 merged as 62b40222263b82ced23e2d53d044b8248d8f449e; implementation 4f7e29db0dc33fc72461be93c3ab14aee6e67966. All four reported PR check runs passed on implementation head. Main Vault39081388025 and quantity39081387930 PASS. Pages39081387743 PASS. Live outlets.html fetched after deployment and matches local file after CRLF/LF normalization: true. Link now explicitly uses var(--paper), #EDE4D3 on #1F3D2B (9.45:1 calculated contrast), retaining underline/text/destination. No operational records changed.
+
+Browser check limitations: default Edge path unavailable; explicit installed Edge attempt timed out. Local browser rendering NOT VERIFIED, not counted as PASS. Hosted existing isolated browser regressions passed within Vault CI; they are not a specific visual colour assertion. Live verification here is served-source verification, not a live visual browser pass.
+
+Post-test four views, one assistant separated passes: PRO—high contrast styling deployed; CON—specific live visual render remains Owner check; COMPARE & CONNECTIONS—one style attribute only, same scripts/href, line-ending-normalized matching live source; OBSERVER—CI/deployment/source verified separately from unverified local visual test. Owner UAT pending. Both handovers updated. Exact next action: refresh outlets.html and confirm readable link, then resume existing kitchen walkthrough. Capacity/direct-wage redesign remains discussion-only. Recovery: revert only this style attribute through reviewed code change; no data rollback needed.
+
 ### 18 October 2026 — approved kitchen setup link contrast fix
 
 Owner explicitly requested a light link colour on the green outlets header in laptop Codex. Scope: outlets.html kitchen setup link only; add color:var(--paper), retain underline, text, href and all scripts. Baseline/recovery: 3bc7cba120f67a2bc9203b80b0f1d57cca811d79, freshly fetched origin/main. Separate workspace copy; original checkout and owner untracked files preserved. No Google records read or written for this cosmetic change; data rollback not applicable. Dependency: outlets.html anchor -> style.css paper/ledger tokens -> kitchen-flow.html?stage=locations; no cost, payroll, demand or persistence changes. Pending redesign remains discussion-only and unapproved.
