@@ -1,3 +1,21 @@
+### 18 October 2026 — ELIMEDU-SHIFTS-18OCT: DEPLOYED and LIVE VERIFIED
+
+This entry supersedes the implementation-pending statuses below. Approved dropdown change is delivered through PR80: https://github.com/jothish2000/BOBS-OUTLETS/pull/80 . Runtime merge: 7e2d40a4f40002423968ef2828922671bfc89f15; tested PR head: 1ff0d56755b3f6c2ecc700d4af1145c02acb9e13. Recovery baseline: 62b40222263b82ced23e2d53d044b8248d8f449e. Source selectors save the existing shiftTimes array with exact HH:MM values; no schema migration.
+
+Tester evidence:
+- PR Vault39083291891 PASS: 170 node tests (116+30+24), ancillary checks, syntax/whitespace and existing isolated browser journeys. New dropdown journey PASS: 04:30–13:30 plus 15:00–18:30 save/reload, backup/readback, non-round minutes, noon/midnight, retained shift metadata, missing-time write rejection, add/remove, retained unsaved identity fields and 390px fit.
+- Main Vault39083394448 and quantity39083394415 PASS.
+- Pages39083393802 PASS: https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/39083393802 .
+- Live read-only39083394442 PASS on this runtime: https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/39083394442 . All19 served source files matched after line-ending normalization; dropdowns visible; desktop/mobile checks passed; zero runtime errors and zero attempted writes. Because the live kitchen register had no shift rows, the test opened a blank browser-only unsaved preview to inspect controls, then discarded its isolated browser context. It did not create any Google kitchen/employee/order records.
+- Screenshots/result artifact12120126492: https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/39083394442/artifacts/12120126492 .
+- Local command stalled before any edit; implementation and CI continued through GitHub. Local checkout synchronization NOT RUN; future local work must fetch main. No local test pass is claimed.
+
+Second four-view review (one assistant's separated passes, no agents): PRO—selectable times and split-shift persistence passed browser tests; CON—Owner's previously unsaved draft is not durable and must be checked/re-entered, operating/proposed status remains undecided; COMPARE & CONNECTIONS—same storage/protected saves, unchanged capacity and wage logic, connected production/staff regression passed; OBSERVER—deployed controls and real read-only pages verified, no business-data mutation, Owner UAT still pending.
+
+Work mode continuation: return to https://jothish2000.github.io/BOBS-OUTLETS/kitchen-flow.html?stage=locations . Check saved kitchens first. If Elimedu is absent, re-enter Elimedu production kitchen attached to Elimedu shop; confirm Operating or Proposed, select kitchen shifts 04:30–13:30 and 15:00–18:30, review, and let the Owner perform the intended save. The individual Vada/Bonda master plan remains 04:30–10:30 and 15:00–18:30; one master, wages once. This field is whole-kitchen availability. Separate Idli worker and lunch staffing still require review. Resume this walkthrough here; larger sourcing/capacity/wage-payment redesign is still unapproved.
+
+Codex continuation: inspect current main, AGENTS and both handovers before any further edits. Runtime changed only bobs-kitchen-pages.js locations rendering/reader, bobs-kitchen.css and kitchen-flow.html cache versions; two existing browser verification scripts were extended. Tests do not write live Google data. Roll back only bounded source changes if authorized; never restore/delete operational records as part of code rollback. Final status: IMPLEMENTED / CODE CHECKED / AUTOMATED TESTED / BROWSER TESTED / DEPLOYED / LIVE VERIFIED. OWNER UAT ACCEPTED: pending for selectors. The prior cream kitchen-link fix was accepted by the Owner as visible.
+
 ### 18 October 2026 — kitchen shift selectors approved; resume point ELIMEDU-SHIFTS-18OCT
 
 Owner request: replace the kitchen working-shifts textarea with selectable times; implement while the Owner is away, and preserve a restart point. Confirmed laptop Codex. UI design: each shift has Start and End hour/minute/AM-PM dropdowns, Add shift and Remove shift. Exact minute selections preserve existing HH:MM values and split shifts. Do not default unknown times to zero or silently add the Owner's example records.
