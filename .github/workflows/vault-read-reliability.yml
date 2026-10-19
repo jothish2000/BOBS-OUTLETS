@@ -134,6 +134,8 @@ jobs:
           node --check bobs-equipment-references.js
           node --check bobs-kitchen-equipment-core.js
           node --check bobs-kitchen-equipment.js
+          node --check bobs-kitchen-equipment-menu-core.js
+          node --check bobs-kitchen-equipment-menu.js
           node --check bobs-kitchen-core.js
           node --check bobs-kitchen-store.js
           node --check bobs-kitchen-pages.js
