@@ -91,8 +91,8 @@ function showResults(){
  focus('equipmentResultTitle');
 }
 async function open(rowId=''){
- openingRow=rowId;opener=document.activeElement;
- if(!dialog.open)dialog.showModal();
+ openingRow=rowId;
+ if(!dialog.open){opener=document.activeElement;dialog.showModal();}
  $('equipmentItemStep').hidden=false;$('equipmentResultStep').hidden=true;
  if(loaded){categoryList();itemList();count();say('Selections guide this visit only. No menu quantities or inventory are saved by ticking items.');focus('equipmentMenuTitle');return;}
  if(loading)return;loading=true;say('Loading recipe equipment references…');$('equipmentHelpRetry').hidden=true;$('showEquipmentSuggestions').disabled=true;
@@ -112,7 +112,7 @@ $('equipmentBackToItems').onclick=()=>{$('equipmentItemStep').hidden=false;$('eq
 $('equipmentHelpRetry').onclick=()=>open(openingRow);
 $('equipmentHelpClose').onclick=()=>dialog.close();
 $('equipmentReviewInventory').onclick=()=>{returnRow=[...assignments.values()].find(id=>inventory.list().some(e=>e.id===id))||'';dialog.close();};
-dialog.addEventListener('close',()=>{if(returnRow!==null){inventory.focus(returnRow);returnRow=null;}else if(opener?.isConnected)opener.focus({preventScroll:true});});
+dialog.addEventListener('close',()=>{if(returnRow!==null){inventory.focus(returnRow);returnRow=null;}else if(opener?.isConnected)opener.focus({preventScroll:true});else inventory.focus(openingRow);});
 dialog.addEventListener('input',e=>e.stopPropagation());
 dialog.addEventListener('change',e=>e.stopPropagation());
 })();
