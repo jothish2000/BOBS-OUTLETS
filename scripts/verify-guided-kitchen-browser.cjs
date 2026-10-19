@@ -77,7 +77,10 @@ assert.equal(await p.locator('header a').evaluate(el=>getComputedStyle(el).color
 
 // Food categories lead the help, with no menu or Google writes from ticking items.
 assert(await p.locator('#openEquipmentHelp').isVisible());assert.equal(await p.locator('.referenceType').count(),0);
-await p.click('#openEquipmentHelp');await p.waitForSelector('#equipmentCategories button');
+await p.evaluate(()=>{window.recipeLoaderForTest=BOBS_OPERATIONAL_RECIPES.load;BOBS_OPERATIONAL_RECIPES.load=async()=>{throw Error('fixture recipes unavailable');};});
+await p.click('#openEquipmentHelp');await p.waitForSelector('#equipmentHelpRetry:not([hidden])');
+assert.match(await p.locator('#equipmentMenuStatus').innerText(),/fixture recipes unavailable/);assert(await p.locator('#saveEquipment').isEnabled());assert.equal(writes.length,0);
+await p.evaluate(()=>{BOBS_OPERATIONAL_RECIPES.load=window.recipeLoaderForTest;});await p.click('#equipmentHelpRetry');await p.waitForSelector('#equipmentCategories button');
 assert.equal(await p.locator('#equipmentMenuDialog').evaluate(el=>el.open),true);
 assert.match(await p.locator('#equipmentMenuIntro').innerText(),/actual outlet menu and quantities later/);
 await p.getByRole('button',{name:/^Breakfast /}).click();await p.getByLabel('Idli',{exact:true}).check();
@@ -110,6 +113,19 @@ failAssetSave=false;await p.click('#saveEquipment');await p.waitForSelector('#eq
 assert.deepEqual(db['COMPANY/KITCHEN_MASTER/default'],register);assert.equal(await p.evaluate(()=>document.activeElement.id),'equipmentContinue');assert.match(await p.locator('#equipmentNext').innerText(),/Next: outlet expenses/);assert.equal(new URL(await p.locator('#equipmentContinue').getAttribute('href'),p.url()).searchParams.get('outlets'),'3,1,2');assert.equal(await p.locator('#equipmentNext a').last().getAttribute('href'),kitchenUrl);
 await p.reload();await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);assert.equal(await p.locator('[data-field=value]').inputValue(),'120');assert.equal(await p.locator('[data-field=status]').inputValue(),'estimate');
 const writesBeforeConflict=writes.length;db[id+'/ASSET_MASTER/default'].assets[0].unitCost=31000;await p.fill('[data-field=value]','180');await p.check('#equipmentReviewed');await p.click('#saveEquipment');await p.waitForFunction(()=>document.getElementById('equipmentStatus').textContent.includes('changed elsewhere'));assert.equal(writes.length,writesBeforeConflict);assert.equal(await p.locator('#equipmentNext a').count(),0);assert.equal(await p.locator('[data-field=value]').inputValue(),'180');assert.equal(db[id+'/ASSET_MASTER/default'].assets[0].capacityFacts.value,'120');await p.reload();await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
+
+// Newly owned equipment from the helper survives the same protected save and reload.
+await p.click('#openEquipmentHelp');await p.waitForSelector('#equipmentCategories button');assert.match(await p.locator('#equipmentMenuCount').innerText(),/^0 items/);
+await p.getByRole('button',{name:/^Snacks /}).click();await p.getByLabel('Vada',{exact:true}).check();await p.click('#showEquipmentSuggestions');
+const grinder=p.locator('[data-suggestion]').filter({has:p.getByRole('heading',{name:'Wet grinder',exact:true})});
+await grinder.locator('[data-decision]').selectOption('new');await grinder.locator('[data-units]').fill('1');await grinder.locator('[data-use]').click();
+await p.click('#equipmentReviewInventory');await p.waitForFunction(()=>!document.getElementById('equipmentMenuDialog').open&&document.activeElement?.getAttribute('data-field')==='name');
+assert.equal(await p.evaluate(()=>document.activeElement.value),'Wet grinder');assert.equal(await p.locator('[data-equipment]').count(),2);
+await p.check('#equipmentReviewed');await p.click('#saveEquipment');await p.waitForSelector('#equipmentContinue');
+assert.equal(db[id+'/ASSET_MASTER/default'].assets.length,2);assert.equal(db[id+'/ASSET_MASTER/default'].assets[1].ownedQty,1);assert.equal(db[id+'/ASSET_MASTER/default'].assets[1].capacityFacts.status,'unknown');
+assert(!writes.includes('METHOD2'));assert(!writes.includes('BOBS_STANDARD_RECIPE'));assert(!writes.includes('RECIPE_MASTER'));
+await p.reload();await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
+assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p.locator('[data-field=name]').last().inputValue(),'Wet grinder');assert.equal(await p.locator('[data-field=status]').last().inputValue(),'unknown');
 await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isVisible());
 await p.locator('#bobsFlowGuide button').first().click();assert.equal(await p.evaluate(()=>document.activeElement.id),'equipmentReviewed');
 await p.evaluate(()=>scrollTo(0,0));console.log('BOBS_FLOW_PREVIEW:'+(await p.screenshot({type:'jpeg',quality:65})).toString('base64'));
