@@ -74,7 +74,35 @@ db['COMPANY/KITCHEN_MASTER/default']=clone(register);
 const old={reviewed:true,assets:[{id:'S',name:'Old steamer',quantity:2,ownedQty:1,unitCost:30000,residual:1000,usefulYears:10,annualDays:300,costConfirmed:true,uses:{Idli:100},custom:'preserve'}]};db[id+'/ASSET_MASTER/default']=clone(old);writes.length=0;
 await p.goto('https://bobs.test/kitchen-equipment.html?'+new URLSearchParams({outlet:id,returnTo:kitchenUrl}));await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
 assert.equal(await p.locator('header a').evaluate(el=>getComputedStyle(el).color),'rgb(255, 243, 208)');assert.equal(writes.length,0);assert.equal(await p.locator('[data-field=status]').inputValue(),'unknown');assert.equal(await p.locator('[data-field=value]').inputValue(),'');
-await p.locator('summary').filter({hasText:'I need help'}).click();await p.selectOption('.referenceType','0');await p.selectOption('.referenceChoice','1');await p.click('.applyReference');
+
+// Food categories lead the help, with no menu or Google writes from ticking items.
+assert(await p.locator('#openEquipmentHelp').isVisible());assert.equal(await p.locator('.referenceType').count(),0);
+await p.click('#openEquipmentHelp');await p.waitForSelector('#equipmentCategories button');
+assert.equal(await p.locator('#equipmentMenuDialog').evaluate(el=>el.open),true);
+assert.match(await p.locator('#equipmentMenuIntro').innerText(),/actual outlet menu and quantities later/);
+await p.getByRole('button',{name:/^Breakfast /}).click();await p.getByLabel('Idli',{exact:true}).check();
+await p.getByRole('button',{name:/^Snacks /}).click();await p.getByLabel('Vada',{exact:true}).check();await p.getByLabel('Bonda',{exact:true}).check();
+assert.match(await p.locator('#equipmentMenuCount').innerText(),/3 items/);assert.equal(writes.length,0);
+await p.click('#showEquipmentSuggestions');
+const frying=p.locator('[data-suggestion]').filter({has:p.getByRole('heading',{name:'Frying kadai',exact:true})});
+assert.equal(await frying.count(),1);assert.match(await frying.innerText(),/Vada/);assert.match(await frying.innerText(),/Bonda/);
+await frying.locator('[data-decision]').selectOption('new');await frying.locator('[data-use]').click();assert.match(await frying.locator('[data-result]').innerText(),/whole number/);
+await frying.locator('[data-units]').fill('1');await frying.locator('[data-use]').click();assert.equal(await p.locator('[data-equipment]').count(),2);
+await frying.locator('[data-use]').click();assert.match(await frying.locator('[data-result]').innerText(),/already uses/);assert.equal(await p.locator('[data-equipment]').count(),2);
+const steamer=p.locator('[data-suggestion]').filter({has:p.getByRole('heading',{name:'Idli steamer',exact:true})});
+await steamer.locator('[data-decision]').selectOption('reuse');await steamer.locator('[data-existing]').selectOption('S');await steamer.locator('[data-example]').selectOption('1');await steamer.locator('[data-use]').click();
+assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(writes.length,0);
+assert.match(await p.locator('#equipmentSuggestions').innerText(),/Audited small-hotel reference/);
+console.log('BOBS_MENU_EQUIPMENT_DESKTOP:'+(await p.screenshot({type:'jpeg',quality:70})).toString('base64'));
+await p.setViewportSize({width:390,height:844});
+assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+assert(await p.locator('#equipmentMenuDialog').evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+await p.click('#equipmentBackToItems');assert.equal(await p.getByLabel('Vada',{exact:true}).isChecked(),true);
+console.log('BOBS_MENU_EQUIPMENT_MOBILE:'+(await p.screenshot({type:'jpeg',quality:70})).toString('base64'));
+await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.getElementById('equipmentMenuDialog').open);assert.equal(await p.evaluate(()=>document.activeElement.id),'openEquipmentHelp');
+await p.setViewportSize({width:1071,height:580});
+await p.locator('[data-discard]').click();assert.equal(await p.locator('[data-equipment]').count(),1);
+
 assert.equal(await p.locator('[data-field=value]').inputValue(),'120');assert.equal(await p.locator('[data-field=status]').inputValue(),'estimate');assert.equal(await p.locator('#equipmentReviewed').isChecked(),false);
 await p.selectOption('[data-field=status]','confirmed');await p.check('#equipmentReviewed');await p.click('#saveEquipment');assert.match(await p.locator('#equipmentStatus').innerText(),/specification or trial/);assert.equal(writes.length,0);
 await p.selectOption('[data-field=status]','estimate');await p.check('#equipmentReviewed');failAssetSave=true;await p.click('#saveEquipment');await p.waitForFunction(()=>document.getElementById('equipmentStatus').textContent.startsWith('Not saved:'));assert.equal(await p.locator('#equipmentNext a').count(),0);assert.equal(await p.locator('[data-field=value]').inputValue(),'120');assert.equal(await p.evaluate(()=>document.activeElement.id),'equipmentStatus');
