@@ -57,8 +57,7 @@
     const start=f.st.value;
     const hours=Number(f.duration?.value);
     const end=calcEnd(start,hours);
-    if(!end)return;
-    f.en.value=end;
+    if(end)f.en.value=end;
     if(changeName && f.sn && !f.sn.value.trim())f.sn.value=nameForStart(start);
     [f.st,f.en,f.sn].forEach(el=>el&&el.dispatchEvent(new Event('input',{bubbles:true})));
     syncSelector(row);
