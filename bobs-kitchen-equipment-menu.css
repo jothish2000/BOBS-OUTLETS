@@ -24,3 +24,7 @@
 .equipment-reference-warning,#equipmentMissing{background:#fff0b5;padding:10px;border-radius:5px}
 #equipmentMenuDialog :focus-visible{outline:3px solid #226bb0;outline-offset:2px}
 @media(max-width:500px){#equipmentMenuDialog{padding:12px}.equipment-dialog-heading{display:block}#equipmentCategories{grid-template-columns:repeat(2,minmax(0,1fr))}#equipmentMenuItems{grid-template-columns:minmax(0,1fr)}#equipmentMenuDialog article{padding:12px}#equipmentMenuDialog button{white-space:normal;overflow-wrap:anywhere}}
+
+#equipmentMissing:empty{display:none}
+.equipment-dialog-actions,#equipmentReviewInventory{position:sticky;bottom:0;z-index:1;box-shadow:0 -3px 8px #193e301a}
+#equipmentReviewInventory{display:block;width:100%;margin-bottom:0}
