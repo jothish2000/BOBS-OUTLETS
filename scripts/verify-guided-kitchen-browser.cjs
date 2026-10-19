@@ -25,6 +25,16 @@ const kitchenUrl='https://bobs.test/kitchen-flow.html?stage=locations&outlet=3&o
 await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');
 assert.equal(writes.length,0);assert(await p.locator('.kitchen-saved-check').isVisible());
 assert(await p.locator('#kitchenNextGo').isDisabled());assert.equal(await p.locator('.kitchen-choice-selected:visible').count(),0);
+assert.equal(await p.locator('#kitchenReviewed').isChecked(),false);
+await p.click('#saveKitchen');
+await p.waitForTimeout(1200);
+assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-equipment','Reopened verified setup must focus next choices, not the top status');
+assert.equal(writes.length,0,'Continuing unchanged verified setup must not write again');
+const choiceBounds=await p.locator('.kitchen-next-choices').boundingBox();
+assert(choiceBounds.y>=50&&choiceBounds.y<160,'Next choices must settle below the fixed progress control');
+assert(choiceBounds.y+choiceBounds.height<=580,'Both laptop choice cards must be in the viewport');
+console.log('PASS reopened verified setup keeps next choices in view without another save');
+
 assert.match(await p.locator('.kitchen-next-choice.equipment').innerText(),/OPTIONAL NOW[\s\S]*reference help[\s\S]*later/);
 await p.check('#kitchenReviewed');await p.click('#saveKitchen');await p.waitForFunction(()=>document.activeElement.id==='kitchenNext-equipment');
 const afterSaveWrites=writes.length;
