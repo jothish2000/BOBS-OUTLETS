@@ -2,11 +2,47 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_PATH||'C:/Users/HP/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const root=path.resolve(__dirname,'..'),shifts=[{start:'04:30',end:'13:30'},{start:'13:30',end:'22:30'}];
+const originalOutlets=['1','2'].map(id=>({outletId:id,outletName:'Fixture outlet '+id,data:{id,name:'Fixture outlet '+id,shortCode:'F'+id,numShifts:2,shiftTimes:id==='1'?shifts:[{start:'06:00',end:'12:00'},{start:'16:00',end:'20:30'}],keep:'outlet metadata'}}));
+let outletRows=JSON.parse(JSON.stringify(originalOutlets)),legacyReads=0,failOutletRead=false;
+const vaultPath=new URL(fs.readFileSync(path.join(root,'bobs-config.js'),'utf8').match(/DATA_VAULT_WEB_APP_URL: '([^']+)'/)[1]).pathname;
 const db={'COMPANY/THP_NORMS/default':require('../tests/fixtures/thp-norms.json'),'1/OUTLET_BASELINE/default':{schema:1,reviewed:true,workingDays:30,mandatoryCount:1,noCounter:true,ownerCounterShifts:[0,1],positions:[{id:'Mandatory1',role:'Cashier',shift:0,takeHome:15000}],expenseSelections:[]},'1/FIXED_EXPENSES/default':{expenses:[]}};
 (async()=>{const browser=await chromium.launch({channel:process.env.BOBS_BROWSER_CHANNEL||'chrome',headless:true,timeout:30000});try{
  const ctx=await browser.newContext({viewport:{width:668,height:580}}),errors=[],writes=[];ctx.setDefaultTimeout(30000);ctx.on('page',p=>{p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept())});
- await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(u.hostname==='bobs.test'){const f=path.join(root,decodeURIComponent(u.pathname.slice(1)));return fs.existsSync(f)?route.fulfill({path:f}):route.fulfill({status:404,body:'missing'})}if(u.hostname!=='script.google.com')return route.abort();if(req.method()==='POST'){const b=JSON.parse(req.postData());assert(b.module,'Unexpected automatic write');writes.push(b.module);db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return route.fulfill({body:'ok'})}let response;if(u.searchParams.get('action')==='outletList')response={ok:true,outlets:['1','2'].map(id=>({outletId:id,outletName:'Fixture outlet '+id,data:{shiftTimes:shifts}}))};else{const k=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey');response={ok:true,found:!!db[k],data:db[k]??null}}return route.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(response)+')'})});
- const p=await ctx.newPage();await p.goto('https://bobs.test/outlet-plan.html?stage=baseline&outlet=1&from=outlet-setup&outlets=1%2C2');await p.waitForSelector('#flowSave');
+ await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(u.hostname==='bobs.test'){const f=path.join(root,decodeURIComponent(u.pathname.slice(1)));return fs.existsSync(f)?route.fulfill({path:f}):route.fulfill({status:404,body:'missing'})}if(u.hostname!=='script.google.com')return route.abort();if(req.method()==='POST'){const b=JSON.parse(req.postData());if(b.action==='snapshot'){assert.equal(b.source,'BOBS-TRANSITION-GUARD');return route.fulfill({body:'ok'});}if(b.action==='outletSave'){writes.push('outletSave');const row=outletRows.find(o=>o.outletId===b.outletId);assert(row);row.data=b.data;row.outletName=b.outletName;row.outletCode=b.outletCode;return route.fulfill({body:'ok'});}assert(b.module,'Unexpected automatic write');writes.push(b.module);db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return route.fulfill({body:'ok'})}let response;if(u.searchParams.get('action')==='outletList'){if(u.pathname!==vaultPath)legacyReads++;response=failOutletRead?{ok:false,error:'fixture unavailable'}:{ok:true,outlets:u.pathname===vaultPath?outletRows:originalOutlets.map(o=>({...o,data:{...o.data,shiftTimes:[shifts[1],shifts[1]]}}))};}else{const k=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey');response={ok:true,found:!!db[k],data:db[k]??null}}return route.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(response)+')'})});
+ const p=await ctx.newPage();
+ // Setup and staff use Vault even when the legacy endpoint has different times.
+ await p.goto('https://bobs.test/outlets.html');await p.click('#keep');
+ await p.waitForSelector('.bobs-shift-start');
+ assert.equal(legacyReads,0);
+ const controlIds=await p.locator('.bobs-shift-start,.bobs-shift-duration').evaluateAll(nodes=>nodes.map(n=>n.id));
+ assert(controlIds.every(Boolean));assert.equal(new Set(controlIds).size,controlIds.length);
+ assert.equal(await p.locator('.st[data-i="0"][data-j="0"]').inputValue(),'04:30');
+ assert.equal(await p.locator('.st[data-i="0"][data-j="1"]').inputValue(),'13:30');
+ assert.equal(writes.length,0);
+ const row=p.locator('#cards .shift').first(),other=JSON.stringify(outletRows[1].data);
+ await row.locator('.bobs-shift-start').selectOption('05:00');
+ await row.locator('.bobs-shift-duration').fill('7.5');await row.locator('.bobs-shift-duration').press('Tab');
+ await p.waitForTimeout(1100); // Include every legacy delayed restore, not only the immediate DOM result.
+ assert.equal(await row.locator('.en').inputValue(),'12:30');
+ assert.equal(await p.locator('#cards .shift').nth(1).locator('.bobs-shift-start').inputValue(),'13:30');
+ assert.equal(await p.locator('#cards .shift').nth(2).locator('.bobs-shift-duration').inputValue(),'6');
+ assert.equal(await p.locator('.st[data-i="0"][data-j="1"]').inputValue(),'13:30');
+ assert.equal(await p.locator('.st[data-i="1"][data-j="0"]').inputValue(),'06:00');
+ await p.click('#save');await p.waitForURL('**/kitchen-flow.html?**');
+ assert(writes.includes('OUTLET_SETUP_BACKUPS'));
+ assert.deepEqual(outletRows[0].data.shiftTimes,[{start:'05:00',end:'12:30',name:'Early Morning'},{start:'13:30',end:'22:30'}]);
+ const savedOther={...outletRows[1].data};delete savedOther._bobsMeta;assert.deepEqual(savedOther,JSON.parse(other));
+ assert.equal(legacyReads,0);
+ await p.goto('https://bobs.test/outlets.html');await p.click('#keep');
+ assert.equal(await p.locator('.st').first().inputValue(),'05:00');
+ await p.goto('https://bobs.test/outlet-plan.html?stage=baseline&outlet=1');await p.waitForSelector('#plan-Mandatory1-shift');
+ assert.deepEqual(await p.locator('#plan-Mandatory1-shift option').allTextContents(),['Shift 1 · 05:00–12:30','Shift 2 · 13:30–22:30']);
+ // A failed authoritative read must not fall back to stale records or permit a fresh setup.
+ failOutletRead=true;await p.goto('https://bobs.test/outlets.html');await p.waitForFunction(()=>document.querySelector('#modalTitle').textContent==='Unable to verify saved outlet records');
+ assert.equal(await p.locator('#freshEmpty').count(),0);assert.equal(await p.locator('#cards .shift').count(),0);assert.equal(legacyReads,0);
+ failOutletRead=false;outletRows=JSON.parse(JSON.stringify(originalOutlets));writes.length=0;
+ console.log('PASS outlet times: authoritative-source agreement, independent editable rows, protected save/reopen and staff propagation; failed read never substitutes stale times. No live writes.');
+ await p.goto('https://bobs.test/outlet-plan.html?stage=baseline&outlet=1&from=outlet-setup&outlets=1%2C2');await p.waitForSelector('#flowSave');
  assert.equal(await p.evaluate(()=>window.BOBS_OWNED_EDITOR),true);assert.equal(await p.evaluate(()=>!!window.__BOBS_TRANSITION_GUARD__),false);assert.equal(writes.length,0);
  await p.check('#flowReviewed');await p.click('#flowSave');assert.match(await p.locator('#flowActionStatus').innerText(),/Untick.*No paid mandatory staff/);assert.equal(await p.evaluate(()=>document.activeElement.id),'flowActionStatus');assert.equal(writes.length,0);assert.equal(await p.inputValue('[data-field=takeHome]'),'15000');assert.equal(await p.locator('#mandatoryPositions [data-position]').count(),1);
  const box=await p.locator('#flowActionStatus').boundingBox();assert(box.y>=0&&box.y+box.height<=580,'Save error must be visible in the user viewport');

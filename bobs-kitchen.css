@@ -3,10 +3,7 @@
 .kitchen-shift-editor{margin-top:18px}
 .kitchen-shift-row{border:1px solid #aac1b5;border-radius:8px;padding:12px;margin:12px 0;min-width:0}
 .kitchen-shift-row>legend{font-weight:700;padding:0 6px}
-.kitchen-shift-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.kitchen-shift-times fieldset{min-width:0}
-.kitchen-shift-times legend{font-weight:600}
-.kitchen-time-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#kitchenBody .kitchen-time-parts label{min-width:0;margin:6px 0}
-.kitchen-time-parts select{min-height:44px}
+.kitchen-shift-times{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px}
+.kitchen-shift-times label{min-width:0}
+#kitchenBody .kitchen-shift-times input,#kitchenBody .kitchen-shift-times select{min-height:44px;width:100%}
 @media(max-width:600px){.kitchen-shift-times{grid-template-columns:minmax(0,1fr);gap:10px}.kitchen-shift-row{padding:10px}}

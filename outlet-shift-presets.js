@@ -1,20 +1,17 @@
-/* 111Q: Hour-based Outlet Shift Selector.
-   Additive only. Does not replace or delete saved outlet data.
-   Select a start time -> default 9-hour end time is calculated automatically.
-   End time remains editable. Duration is also editable when a different shift length is required.
-*/
+/* Shared outlet/kitchen shift entry. Only explicit edits calculate an end time.
+   Saved exact times and independent shift rows are never changed on render. */
 (function(){
   'use strict';
-  if((location.pathname.split('/').pop()||'').toLowerCase()!=='outlets.html') return;
+  if(window.BOBS_SHIFT_TIMES)return;
 
   const DEFAULT_HOURS=9;
   const START_TIMES=[];
-  for(let h=4;h<=18;h++){
+  for(let h=0;h<24;h++){
     for(let m=0;m<60;m+=30) START_TIMES.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
   }
 
   function toMinutes(t){
-    const m=String(t||'').match(/^(\d{1,2}):(\d{2})$/); if(!m)return null;
+    const m=String(t||'').match(/^([01]\d|2[0-3]):([0-5]\d)$/); if(!m)return null;
     return Number(m[1])*60+Number(m[2]);
   }
   function toTime(mins){
@@ -23,7 +20,7 @@
   }
   function calcEnd(start,hours){
     const s=toMinutes(start); if(s==null)return '';
-    const hrs=Number(hours); if(!Number.isFinite(hrs)||hrs<=0)return '';
+    const hrs=Number(hours); if(!Number.isFinite(hrs)||hrs<=0||hrs>24)return '';
     return toTime(s+Math.round(hrs*60));
   }
   function durationBetween(start,end){
@@ -52,13 +49,13 @@
     const f=rowFields(row); if(!f.selector||!f.st||!f.en)return;
     const start=f.st.value||'';
     const end=f.en.value||'';
-    f.selector.value=START_TIMES.includes(start)?start:'custom';
+    f.selector.value=start?(START_TIMES.includes(start)?start:'custom'):'';
     if(f.duration && start && end)f.duration.value=durationBetween(start,end);
   }
   function autoFill(row,changeName){
     const f=rowFields(row); if(!f.st||!f.en)return;
     const start=f.st.value;
-    const hours=Number(f.duration?.value)||DEFAULT_HOURS;
+    const hours=Number(f.duration?.value);
     const end=calcEnd(start,hours);
     if(end)f.en.value=end;
     if(changeName && f.sn && !f.sn.value.trim())f.sn.value=nameForStart(start);
@@ -72,7 +69,8 @@
 
     if(f.selector){
       f.selector.addEventListener('change',function(){
-        if(f.selector.value==='custom'||!f.selector.value)return;
+        if(f.selector.value==='custom'){f.st.focus();return;}
+        if(!f.selector.value)return;
         f.st.value=f.selector.value;
         autoFill(row,true);
       });
@@ -84,11 +82,12 @@
     f.en.addEventListener('input',function(){syncSelector(row);});
     syncSelector(row);
   }
-  function enhance(){
-    const cards=document.getElementById('cards'); if(!cards)return;
-    cards.querySelectorAll('.shift').forEach(row=>{
+  function enhance(cards){
+    cards=cards||document.getElementById('cards'); if(!cards)return;
+    addStyle();
+    cards.querySelectorAll('.shift, [data-kitchen-shift]').forEach((row,index)=>{
       if(!row.querySelector('.bobs-hour-shift-controls')){
-        const grid=row.querySelector('.grid'); if(!grid)return;
+        const grid=row.querySelector('.grid, .kitchen-shift-times'); if(!grid)return;
         const label=document.createElement('label');
         label.className='bobs-hour-shift-controls';
         let options='<option value="">Select start time…</option>';
@@ -99,18 +98,15 @@
 
         const durationLabel=document.createElement('label');
         durationLabel.className='bobs-hour-shift-controls';
-        durationLabel.innerHTML='<span>Shift duration (hours)</span><input class="bobs-shift-duration" type="number" min="1" max="24" step="0.5" value="'+DEFAULT_HOURS+'">';
+        durationLabel.innerHTML='<span>Shift duration (hours)</span><input class="bobs-shift-duration" type="number" min="0.01" max="24" step="any" value="'+DEFAULT_HOURS+'">';
         grid.insertBefore(durationLabel,grid.children[1]||null);
       }
+      // The legacy transition guard keys controls by id. Every shift must have its own key.
+      const f=rowFields(row),key=f.st.id||('kitchen-shift-'+index);
+      f.selector.id=key+'-recommended';
+      f.duration.id=key+'-duration';
       bindRow(row);
-      const f=rowFields(row);
-      if(f.st.value && !f.en.value){
-        f.duration.value=DEFAULT_HOURS;
-        autoFill(row,!f.sn.value.trim());
-      }else if(f.st.value){
-        f.duration.value=durationBetween(f.st.value,f.en.value);
-        syncSelector(row);
-      }
+      syncSelector(row);
     });
   }
   function addStyle(){
@@ -128,6 +124,8 @@
       new MutationObserver(()=>enhance()).observe(cards,{childList:true,subtree:true});
     }
   }
+  window.BOBS_SHIFT_TIMES={enhance};
+  if((location.pathname.split('/').pop()||'').toLowerCase()!=='outlets.html')return;
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
 })();

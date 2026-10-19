@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'outlets.html'
+      - 'outlet-shift-presets.js'
+      - 'bobs-config.js'
       - 'production-plan.html'
       - 'kitchen-flow.html'
       - 'bobs-kitchen*'
