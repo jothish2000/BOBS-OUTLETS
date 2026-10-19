@@ -1,7 +1,16 @@
 (function(){'use strict';const K=BOBS_KITCHEN_CORE,S=BOBS_KITCHENS,F=BOBS_OUTLET_FLOW,V=BOBS_VERIFIED,C=BOBS_COST_FLOW,P=BOBS_PRODUCTION_PLAN,q=new URLSearchParams(location.search),stage=q.get('stage')||'locations',outlet=q.get('outlet'),$=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let dirty=false,busy=false,loaded,saveAction;
 const link=(page,args={})=>page+'?'+new URLSearchParams({...args,returnTo:location.href}),input=(key,label,value,type='text')=>'<label>'+esc(label)+'<input data-field="'+key+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'min="0" step="any"':'')+'></label>',check=(key,label,value)=>'<label><input data-field="'+key+'" type="checkbox" '+(value?'checked':'')+'> '+esc(label)+'</label>',fields=el=>Object.fromEntries([...el.querySelectorAll('[data-field]')].map(x=>[x.dataset.field,x.type==='checkbox'?x.checked:x.value]));
 function status(text,focus=false){const el=$('kitchenStatus');el.textContent=text;if(focus){el.tabIndex=-1;el.focus();el.scrollIntoView({block:'center'});}}
-function nextFocus(){const panel=$('nextAction'),el=panel.querySelector('input[name="kitchenNextChoice"],a,button');if(!el)return;el.focus({preventScroll:true});(panel.querySelector('.kitchen-next-panel')||el).scrollIntoView({block:'start'});}
+function nextFocus(){
+ const panel=$('nextAction'),el=panel.querySelector('input[name="kitchenNextChoice"],a,button');if(!el)return;
+ const target=panel.querySelector('.kitchen-next-choices')||el;
+ el.focus({preventScroll:true});
+ const align=()=>{if(el.isConnected&&document.activeElement===el)target.scrollIntoView({behavior:'instant',block:'start'});};
+ align();
+ // Align once after the save layout settles; never keep reclaiming the user's focus.
+ requestAnimationFrame(align);
+}
+function reviewFocus(){const hint=$('kitchenSaveHint');hint.textContent='Tick the review checkbox above before saving your changes. Then choose your next step.';$('kitchenReviewed').focus({preventScroll:true});$('kitchenReviewed').closest('label').scrollIntoView({behavior:'instant',block:'center'});}
 function clearNext(){ $('nextAction').replaceChildren();if(stage==='locations'&&$('kitchenNextPreview'))$('kitchenNextPreview').hidden=false; }
 function locationNext(record){
  K.requireRegistration(record,loaded.outlets);
@@ -53,6 +62,21 @@ async function cost(){loaded=await S.costData(outlet);const data=loaded,{context
  const preview=()=>{read();const result=S.calculate(data,{...choices,reviewed:true});$('costPreview').innerHTML='<table><thead><tr><th>Requirement</th><th>Labour</th><th>Expenses</th><th>Trip share</th><th>Pricing depreciation</th></tr></thead><tbody>'+Object.values(result.deliveries).map(r=>'<tr><td>'+esc(r.outlet+' / '+r.name)+'</td>'+['labour','overhead','transport','depreciation'].map(k=>'<td>₹'+r[k].toFixed(2)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';return result};$('previewKitchen').onclick=()=>{try{preview()}catch(e){$('costPreview').textContent=e.message}};
  saveAction=async()=>{read();const result=S.calculate(data,choices),fresh=await S.costData(outlet);if(S.costSnapshot(fresh)!==S.costSnapshot(data))throw Error('Kitchen orders, staff or costs changed. Reload and review.');data.costs=await V.save(outlet,'KITCHEN_COST_PLAN',C.today(),{schema:1,date:C.today(),choices,result,sourceStamp:result.sourceStamp,savedAt:new Date().toISOString()},data.costs);preview();status('Shared kitchen costs saved and verified in Google. Each receiving item can now load its share in the Ideal Price Builder.');$('nextAction').innerHTML='<a href="'+esc(BOBS_WINDOW_RETURN.safe(q.get('returnTo'))||'outlet-method-flow.html')+'">Continue to the opening flow →</a>';};
 }
-$('saveKitchen').onclick=async()=>{if(busy||!saveAction)return;if(!$('kitchenReviewed').checked){status('Review the entries and tick the confirmation before saving.',true);return;}busy=true;clearNext();const controls=[...$('kitchenBody').querySelectorAll('input,select,button')].map(el=>({el,disabled:el.disabled}));controls.forEach(x=>x.el.disabled=true);$('saveKitchen').disabled=true;try{await saveAction();dirty=false;window.dispatchEvent(new Event('bobs-flow-saved'));nextFocus();}catch(e){status('Not saved: '+e.message,true);}finally{busy=false;controls.forEach(x=>{if(x.el.isConnected)x.el.disabled=x.disabled});$('saveKitchen').disabled=false;}};
+$('saveKitchen').onclick=async()=>{
+ if(busy||!saveAction)return;
+ $('kitchenSaveHint').textContent='';
+ if(!$('kitchenReviewed').checked){
+  // A fresh validated read already offers these actions. Reuse it without a duplicate write.
+  if(stage==='locations'&&!dirty&&$('nextAction').querySelector('input[name="kitchenNextChoice"]')){status('Using Kitchen Setup already verified in Google. Choose your next action below.');nextFocus();return;}
+  reviewFocus();return;
+ }
+ busy=true;clearNext();const controls=[...$('kitchenBody').querySelectorAll('input,select,button')].map(el=>({el,disabled:el.disabled}));
+ controls.forEach(x=>x.el.disabled=true);$('saveKitchen').disabled=true;let saved=false;
+ try{await saveAction();dirty=false;window.dispatchEvent(new Event('bobs-flow-saved'));saved=true;}
+ catch(e){status('Not saved: '+e.message,true);}
+ finally{busy=false;controls.forEach(x=>{if(x.el.isConnected)x.el.disabled=x.disabled});$('saveKitchen').disabled=false;}
+ if(saved)nextFocus();
+};
+$('kitchenReviewed').addEventListener('change',()=>{$('kitchenSaveHint').textContent='';});
 $('kitchenBody').addEventListener('input',()=>{clearNext();dirty=true;$('kitchenReviewed').checked=false;status('Unsaved changes. Review before saving to Google.');});window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
 async function load(){const record=stage==='demand'?['METHOD2','View this outlet’s saved production locations and quantities in Google']:stage==='cost'?['KITCHEN_COST_PLAN','View this kitchen’s saved batch costs and journey shares in Google']:['KITCHEN_MASTER','View the saved kitchen identity register in Google'];$('kitchenRecords').textContent=record[1]+' — read-only ↗';$('kitchenRecords').href='google-records.html?'+new URLSearchParams({outlet:stage==='locations'?'COMPANY':outlet,module:record[0],...(stage==='cost'?{key:C.today()}:{})});try{$('kitchenRetry').hidden=true;$('saveKitchen').disabled=true;await(stage==='demand'?demand():stage==='cost'?cost():locations());$('saveKitchen').disabled=false;status('Saved Google records loaded. Opening this page saves nothing.');}catch(e){if(loaded?.context)$('kitchenBody').innerHTML=navigation(loaded.context.kitchen);status('Could not load: '+e.message);$('kitchenRetry').hidden=false;}}$('kitchenRetry').onclick=load;load();})();
