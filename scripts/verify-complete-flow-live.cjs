@@ -23,7 +23,14 @@ const savedRegister=await kitchens.evaluate(()=>BOBS_VERIFIED.read('COMPANY','KI
 const registrationValid=await kitchens.evaluate(async()=>{try{BOBS_KITCHEN_CORE.requireRegistration(await BOBS_VERIFIED.read('COMPANY','KITCHEN_MASTER'),await BOBS_DATA.listOutlets());return true;}catch(e){return false;}});
 if(registrationValid){
  await kitchens.setViewportSize({width:1071,height:580});assert(await kitchens.locator('#kitchenNextGo').isDisabled());assert(await kitchens.locator('.kitchen-saved-check').isVisible());
- const choice=kitchens.locator('input[name="kitchenNextChoice"]').first();await choice.check();assert.equal(await kitchens.locator('.kitchen-choice-selected:visible').count(),1);assert(await kitchens.locator('#kitchenNextGo').isEnabled());
+ assert.equal(await kitchens.locator('#kitchenReviewed').isChecked(),false);
+ await kitchens.click('#saveKitchen');await kitchens.waitForTimeout(1500);
+ const choice=kitchens.locator('input[name="kitchenNextChoice"]').first();
+ assert.equal(await kitchens.evaluate(()=>document.activeElement.id),await choice.getAttribute('id'));
+ const focusBounds=await kitchens.locator('.kitchen-next-choices').boundingBox();assert(focusBounds.y>=50&&focusBounds.y<160);assert(focusBounds.y+focusBounds.height<=580);assert.equal(result.blockedWrites,0,'Unchanged verified continuation must not write');
+ await kitchens.screenshot({path:path.join(out,'kitchen-save-focus-desktop.png')});console.log('BOBS_LIVE_SAVE_FOCUS:'+(await kitchens.screenshot({type:'jpeg',quality:70})).toString('base64'));
+ result.checks.push('Clicking Save on reopened verified Kitchen Setup focuses the actual next choice and keeps both cards in the laptop viewport after settling, with no write');
+ await choice.check();assert.equal(await kitchens.locator('.kitchen-choice-selected:visible').count(),1);assert(await kitchens.locator('#kitchenNextGo').isEnabled());
  assert.equal(await choice.evaluate(el=>getComputedStyle(el.closest('label')).outlineWidth),'4px');
  await kitchens.locator('.kitchen-next-panel').scrollIntoViewIfNeeded();await kitchens.screenshot({path:path.join(out,'kitchen-next-actions-desktop.png')});
  console.log('BOBS_LIVE_NEXT_PANEL:'+(await kitchens.locator('.kitchen-next-panel').screenshot({type:'jpeg',quality:70})).toString('base64'));
