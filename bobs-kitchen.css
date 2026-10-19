@@ -7,3 +7,5 @@
 .kitchen-shift-times label{min-width:0}
 #kitchenBody .kitchen-shift-times input,#kitchenBody .kitchen-shift-times select{min-height:44px;width:100%}
 @media(max-width:600px){.kitchen-shift-times{grid-template-columns:minmax(0,1fr);gap:10px}.kitchen-shift-row{padding:10px}}
+
+header a,header a:visited{color:#fff3d0;text-decoration:underline;text-underline-offset:3px}
