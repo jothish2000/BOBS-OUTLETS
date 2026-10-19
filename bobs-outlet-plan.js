@@ -57,6 +57,7 @@ F.fund(baseline,staff,hr,outlet,norms).positions.forEach(F.salary);
 const lines=baseline.expenseSelections.filter(e=>e.selected).map(e=>{try{return {id:e.id||e.name,name:e.name,type:e.type||'Fixed',amount:F.daily(e.inputAmount,e.basis,31),inputAmount:e.inputAmount,basis:e.basis}}catch(err){throw Error(e.name+': '+err.message)}});
 const old=await V.read(outlet,'OUTLET_BASELINE');if(!V.equal(old,baselineOriginal))throw Error('Baseline changed elsewhere. Your entries are still here; reload before saving the latest plan.');
 const latestOuts=await BOBS_DATA.listOutlets();if(BOBS_KITCHENS.isKitchen(outlet))latestOuts.push(await BOBS_KITCHENS.owner(outlet));if(F.stamp(latestOuts.find(x=>String(x.id)===outlet)?.shiftTimes)!==F.stamp(shifts))throw Error('Outlet shifts changed. Reload baseline.');
+BOBS_KITCHEN_CORE.requireRegistration(await V.read('COMPANY','KITCHEN_MASTER'),latestOuts.filter(o=>!BOBS_KITCHENS.isKitchen(o.id)));
 await verifyNorms(baseline);
 if(!V.equal(await V.read('COMPANY','STAFF_MASTER'),staff)||!V.equal(await V.read('COMPANY','HR_OUTLET_ALLOCATION'),hr))throw Error('Employee salary or allocation changed. Reload.');
 const currentExpense=await V.read(outlet,'FIXED_EXPENSES');if(!V.equal(currentExpense,expense))throw Error('Expenses changed elsewhere. Reload.');
