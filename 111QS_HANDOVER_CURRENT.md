@@ -1,3 +1,19 @@
+# 19 October 2026 — guided flow and existing kitchen equipment: implementation checkpoint
+
+Owner authorized small-hotel reference help and a whole-flow guidance audit. Explicit current walkthrough remains Laptop Codex. Four views are separate passes by one assistant, not delegated reviews. Current source inspected: main fa3388d24c2053bd5067082b2bafae109358ae9a; runtime recovery b5ceec4136029c0a0402752dd629a9dc65234ed1. Branch codex/guided-kitchen-capacity-20261019. No operational Google writes performed.
+
+PRO: expose current/next action and kitchen registration so users can follow the product without chat. CON: optional equipment inventory and reference estimates cannot masquerade as confirmed capacity or completed cost review. COMPARE & CONNECTIONS: reuse ASSET_MASTER and verified saves, existing item/recipe/staffing/salary gates, and read-only roadmap; preserve Method1, purchased-only and local-production routes. OBSERVER: test unsaved edits, failed/changed Google reads, empty-register explicit choice, independent hours, equipment financial-field preservation and mobile/keyboard focus.
+
+Dependency map: outlet identity/hours -> reviewed kitchen register (or explicit no separate register) -> outlet baseline -> method/menu and quantity -> capacity/recipe/time and shared-machine constraints -> workforce -> salary -> allocations/pricing -> outlet/capital/company review. Existing equipment can be recorded optionally after kitchen identity, in the same kitchen ASSET_MASTER used later by production and depreciation. Capacity examples remain estimates until specification/trial confirmation. No payroll changes, schedule assignment, recipe migrations or automatic equipment purchases.
+
+## Section 1 — Work mode handover
+Live entry https://jothish2000.github.io/BOBS-OUTLETS/outlets.html . Planned changes: visible current/next guide across roadmap-enabled planning pages; outlet review and focus; kitchen checkpoint, explicit empty-register choice, safe forward links after verified save; optional existing-equipment editor with reference help preserving one Asset Master; audit matrix and proportionate tests. Implementation/tests/deployment for this batch NOT RUN. Owner acceptance pending. GitHub connector works; local Windows command/kernel unavailable. Continue via repository/CI, not stale local clone. Current saved outlet/kitchen timings must not be changed by the agent.
+
+## Section 2 — Codex handover
+Base fa3388d24c2053bd5067082b2bafae109358ae9a; branch codex/guided-kitchen-capacity-20261019; store owners COMPANY/KITCHEN_MASTER and owner ASSET_MASTER, no new database. Preserve backup -> reread -> write -> readback protocol in BOBS_VERIFIED; no production-data tests. Code rollback is release revert; data rollback is separate owner-controlled recovery and is not authorized. Next action: implement bounded approved UX/help and test in isolated fixtures using GitHub Actions. Publish only after required checks pass; verify Pages and read-only live behavior; update both handovers with actual results. Existing later-stage gates are inspected, not assumed universally complete. Whole-software audit results will distinguish covered main flow from unrelated utilities.
+
+---
+
 ### 19 October 2026 — SHARED-SHIFT-ENTRY-19OCT: DEPLOYED and LIVE VERIFIED
 
 PR82 https://github.com/jothish2000/BOBS-OUTLETS/pull/82 delivered runtime b5ceec4136029c0a0402752dd629a9dc65234ed1; tested PR head 4fd19ba8776e2913b2e990f67bbac439ba1b9c52. This supersedes pending statuses below. Owner approved shared timing controls and corrected timing selection behavior, explicitly clarifying that no particular hours are to be assigned to any outlet or kitchen. No operational records were changed by this release.
