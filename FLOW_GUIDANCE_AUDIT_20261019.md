@@ -33,6 +33,12 @@ This is a guided-flow audit, not a claim that every historical report formula, m
 
 PRO: next step is visible without opening the side panel; kitchen and outlet review are explicit. CON: avoid checkbox-only completion, auto-filled output rates, forced kitchens, or silent source fallback. COMPARE & CONNECTIONS: reuse canonical modules and verified writer; preserve saved hours, salaries and financial fields. OBSERVER: require tests for skipped steps, read/write failure, stale data, unknown/estimated capacity, keyboard focus and narrow screens. Owner acceptance remains separate from automated testing.
 
-## Test / release checkpoint
+## Verified delivery —19 October2026
 
-Implementation prepared; syntax checked in the tool JavaScript runtime. GitHub Actions browser/node checks and live deployment verification are pending. Local shell and browser kernel unavailable; local tests are NOT RUN. See both current handovers for subsequent actual results and release refs. Code rollback: revert the release. Operational-data recovery is separate and is not performed by code rollback.
+Published runtime 5e570723aab880922cfaa9455b227bfb9b587282. PR84 delivers guidance/help; PR85 fixes a live-test assertion that needed to expand a collapsed roadmap section; PR86 removes four guide ordinals that conflicted with the detailed roadmap grouping. No operational Google records were changed by the agent.
+
+Final automated verification:176 node tests (122+30+24), ancillary checks, six isolated Chrome journeys, syntax/whitespace PASS (Vault39243228183 / main39243449368). Quantity checks PASS; implementation recipe/workload checks PASS. Pages39243448241 PASS. Final read-only live run39243449405 PASS:27 served runtime files matched, current Google records loaded, saved outlet/kitchen times matched, desktop/mobile and roadmap verified,0 runtime errors and0 attempted business-data writes. [Screenshots and result JSON](https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/39243449405/artifacts/12181989384). Local tests NOT RUN because Windows execution was unavailable.
+
+Actual failures were diagnosed and repaired: assertion wording, collapsed roadmap visibility, fieldset test semantics, a salary fixture missing the new explicit kitchen decision, and low-contrast header text found in the browser preview. No failed or skipped stage was counted as passed. The second four-view review confirms preservation of existing equipment/cost/shift data and truthful pending/estimate states. Owner UAT remains pending; later business-planning stages are not automatically complete.
+
+Resume at Outlet Setup: review existing outlets -> confirmation -> Save outlets & go to Kitchen Setup -> review/save identities -> optional existing equipment -> outlet baseline -> chosen method/menu. Code rollback: revert runtime PRs; operational-data recovery is separate and has not been performed. Both current handovers hold exact references and resume instructions.
