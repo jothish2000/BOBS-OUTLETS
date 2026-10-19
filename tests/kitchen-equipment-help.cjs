@@ -20,7 +20,7 @@ test('unknown stays pending; estimates require basis; confirmation requires actu
  assert.throws(()=>E.merge(null,[{...a,capacityFacts:{status:'estimate',value:3,unit:'kg'}}]),/basis/);
  const estimate={status:'estimate',value:3,unit:'kg',basis:'Rice input, separate cycle — dry/soaked basis pending',referenceUrl:'https://example.test/model'};
  const x=E.merge(null,[{...a,capacityFacts:estimate}]).assets[0];assert.equal(x.capacityFacts.status,'estimate');assert.equal(x.costConfirmed,false);assert.equal(x.unitCost,'');assert.equal(x.quantity,1);
- assert.throws(()=>E.merge(null,[{...a,capacityFacts:{...estimate,status:'confirmed'}}]),/evidence/);
+ assert.throws(()=>E.merge(null,[{...a,capacityFacts:{...estimate,status:'confirmed'}}]),/nameplate, specification or trial/);
  assert.doesNotThrow(()=>E.merge(null,[{...a,capacityFacts:{...estimate,status:'confirmed',evidence:'Owner checked model and trial input weight'}}]));
 });
 test('invalid unit counts and duplicate identities cannot enter saved inventory',()=>{
