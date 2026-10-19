@@ -1,3 +1,15 @@
+# 19 October 2026 — Menu-led equipment helper: implementation and first test checkpoint
+
+## Section 1 — Work mode handover
+Approved food-category/item helper implemented on PR92 https://github.com/jothish2000/BOBS-OUTLETS/pull/92 . Shared catalogue and recipe equipment drive explicit owned/reuse/not-needed choices. Existing capacity examples remain estimates, missing metadata stays visible, no early menu/quantity save. First hosted pass completed successfully:181 Node tests plus ancillary checks, all six browser journeys and syntax/whitespace. Laptop/mobile screenshots inspected; source labels, estimate status and category tiles visible. New helper not deployed; Owner UAT pending.
+Review by one assistant: PRO—food-first choices and reused assets observed; CON—recipe descriptions can be incomplete, so manual entry/preparation review remains; CONNECTIONS—protected Asset Master save and financial fields retained; OBSERVER—extend failure/retry and new-owned-asset save/reopen coverage, keep review action reachable in long dialogs. Final release will follow those checks.
+
+## Section 2 — Codex handover
+Base/recovery f5632636c837072c16dffd1ba58aea1fb24e37c0; branch codex/menu-equipment-help-20261019; first tested head0a7c5c0921e7128580fe4259098403545b69a094; Vault39301500428/job118227577897 PASS (127+30+24 Node tests, ancillary checks, six Chrome scripts, syntax/whitespace). Quantity39301433791 PASS; PR quantity still to verify. Files: kitchen-equipment.html, bobs-kitchen-equipment.js, new bobs-kitchen-equipment-menu-core.js/.js/.css, extended tests/kitchen-equipment-help.cjs, isolated guided browser, live read-only checker and workflow syntax list. No operational writes or data migration.
+Inspection found retry should retain the original popup opener and a rebuilt inventory row needs a focus fallback. Tightening that handling; adding failure/retry and helper-created unknown-capacity asset save/reopen assertions. Long-dialog review controls will stay visible and empty warning area hidden. Next: commit these bounded refinements, run final exact-head checks, merge only after green, verify Pages/30 served files and real read-only helper, record final handovers. Code rollback separate from data restoration; local tests NOT RUN.
+
+---
+
 # 19 October 2026 — APPROVED: menu-led existing-equipment help (inspection checkpoint)
 
 ## Section 1 — Work mode handover
