@@ -2,11 +2,11 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright'),root=path.resolve(__dirname,'..');
 const clone=x=>JSON.parse(JSON.stringify(x)),id='Kitchen-Elimedu',db={},writes=[],errors=[],shifts=[{start:'04:30',end:'13:30'},{start:'15:00',end:'18:30'}];
 const register={reviewed:true,kitchens:[{id,name:'Elimedu kitchen',status:'operating',outletId:'3',shiftTimes:shifts}]};
-let failAssetSave=false,failRegisterRead=false;
+let failAssetSave=false,failRegisterRead=false,slowKitchenSave=false,failKitchenSave=false;
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
 const ctx=await browser.newContext({viewport:{width:1071,height:580}});ctx.setDefaultTimeout(30000);ctx.on('page',p=>{p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());});
 await ctx.route('**/*',async r=>{const req=r.request(),u=new URL(req.url());if(u.hostname==='bobs.test'){const f=path.join(root,decodeURIComponent(u.pathname.slice(1)));return fs.existsSync(f)?r.fulfill({path:f}):r.fulfill({status:404,body:'missing'});}if(u.hostname!=='script.google.com')return r.abort();
-if(req.method()==='POST'){const b=JSON.parse(req.postData());if(b.action==='snapshot')return r.fulfill({body:'ok'});writes.push(b.module);if(b.module==='ASSET_MASTER'&&failAssetSave)return r.abort();db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return r.fulfill({body:'ok'});}
+if(req.method()==='POST'){const b=JSON.parse(req.postData());if(b.action==='snapshot')return r.fulfill({body:'ok'});writes.push(b.module);if(b.module==='KITCHEN_MASTER'){if(slowKitchenSave)await new Promise(resolve=>setTimeout(resolve,600));if(failKitchenSave)return r.abort();}if(b.module==='ASSET_MASTER'&&failAssetSave)return r.abort();db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return r.fulfill({body:'ok'});}
 const key=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey'),data=u.searchParams.get('action')==='outletList'?{ok:true,outlets:['1','2','3'].map(outletId=>({outletId,outletName:'Shop '+outletId,data:{shiftTimes:shifts}}))}:failRegisterRead&&u.searchParams.get('module')==='KITCHEN_MASTER'?{ok:false,error:'fixture register unavailable'}:{ok:true,found:key in db,data:db[key]??null};return r.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(data)+')'});});
 const p=await ctx.newPage();
 await p.goto('https://bobs.test/kitchen-flow.html?stage=locations&outlets=1,2,3');await p.waitForFunction(()=>!document.getElementById('saveKitchen').disabled);
@@ -25,16 +25,39 @@ const kitchenUrl='https://bobs.test/kitchen-flow.html?stage=locations&outlet=3&o
 await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');
 assert.equal(writes.length,0);assert(await p.locator('.kitchen-saved-check').isVisible());
 assert(await p.locator('#kitchenNextGo').isDisabled());assert.equal(await p.locator('.kitchen-choice-selected:visible').count(),0);
+assert.equal(await p.locator('#kitchenReviewed').isChecked(),false);
+await p.click('#saveKitchen');
+await p.waitForTimeout(1200);
+assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-equipment','Reopened verified setup must focus next choices, not the top status');
+assert.equal(writes.length,0,'Continuing unchanged verified setup must not write again');
+const choiceBounds=await p.locator('.kitchen-next-choices').boundingBox();
+assert(choiceBounds.y>=50&&choiceBounds.y<160,'Next choices must settle below the fixed progress control');
+assert(choiceBounds.y+choiceBounds.height<=580,'Both laptop choice cards must be in the viewport');
+console.log('PASS reopened verified setup keeps next choices in view without another save');
+
 assert.match(await p.locator('.kitchen-next-choice.equipment').innerText(),/OPTIONAL NOW[\s\S]*reference help[\s\S]*later/);
-await p.check('#kitchenReviewed');await p.click('#saveKitchen');await p.waitForFunction(()=>document.activeElement.id==='kitchenNext-equipment');
+// Edited forms still require review; the reminder must stay beside Save, not at the page top.
+await p.fill('[data-field=name]','Elimedu kitchen reviewed');await p.click('#saveKitchen');
+assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenReviewed');
+assert.match(await p.locator('#kitchenSaveHint').innerText(),/Tick the review checkbox/);assert.equal(writes.length,0);assert.equal(await p.locator('#kitchenNextGo').count(),0);
+await p.check('#kitchenReviewed');failKitchenSave=true;await p.click('#saveKitchen');await p.waitForFunction(()=>document.getElementById('kitchenStatus').textContent.startsWith('Not saved:'));
+assert.equal(await p.locator('#kitchenNextGo').count(),0);assert.equal(db['COMPANY/KITCHEN_MASTER/default'].kitchens[0].name,'Elimedu kitchen');failKitchenSave=false;slowKitchenSave=true;
+await p.click('#saveKitchen');await p.waitForFunction(()=>document.activeElement.id==='kitchenNext-equipment');slowKitchenSave=false;
+await p.waitForTimeout(1500);
+assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-equipment','Delayed save completion must not reclaim focus at the top');
+const settled=await p.locator('.kitchen-next-choices').boundingBox();assert(settled.y>=50&&settled.y<160);assert(settled.y+settled.height<=580);assert(await p.locator('#saveKitchen').isEnabled());
+console.log('BOBS_KITCHEN_SAVE_FOCUS:'+(await p.screenshot({type:'jpeg',quality:75})).toString('base64'));
 const afterSaveWrites=writes.length;
+// A later user choice is respected; there is no ongoing focus/scroll lock.
+await p.check('#kitchenNext-baseline');await p.waitForTimeout(1200);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-baseline');
+await p.locator('#kitchenNext-equipment').focus();
 assert.equal(await p.locator('.kitchen-next-choice.equipment').evaluate(el=>getComputedStyle(el).outlineWidth),'4px');
 assert.equal(await p.locator('.kitchen-next-choice.equipment').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 240, 181)');
 await p.check('#kitchenNext-equipment');assert.equal(await p.locator('.kitchen-choice-selected:visible').count(),1);
 await p.click('#bobsRoadmapToggle');assert(await p.getByText('This page has unsaved edits. Ticks below describe the saved version.',{exact:true}).isHidden());await p.getByRole('button',{name:'Close BOBS roadmap',exact:true}).click();
 assert(await p.locator('#kitchenNextEquipment').isVisible());assert.match(await p.locator('#kitchenNextGo').innerText(),/Open existing equipment/);
 await p.locator('.kitchen-next-panel').scrollIntoViewIfNeeded();console.log('BOBS_KITCHEN_NEXT_DESKTOP:'+(await p.screenshot({type:'jpeg',quality:75})).toString('base64'));
-await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+await p.setViewportSize({width:390,height:844});await p.uncheck('#kitchenReviewed');await p.click('#saveKitchen');await p.waitForTimeout(1200);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-equipment');assert.equal(writes.length,afterSaveWrites);const mobileChoice=await p.locator('.kitchen-next-choice.equipment').boundingBox();assert(mobileChoice.y>=50&&mobileChoice.y<160);assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
 console.log('BOBS_KITCHEN_NEXT_MOBILE:'+(await p.locator('.kitchen-next-panel').screenshot({type:'jpeg',quality:70})).toString('base64'));
 await p.setViewportSize({width:1071,height:580});
 await p.check('#kitchenNext-baseline');assert.equal(await p.locator('.kitchen-choice-selected:visible').count(),1);assert(await p.locator('#kitchenNextEquipment').isHidden());

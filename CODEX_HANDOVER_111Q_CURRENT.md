@@ -1,3 +1,17 @@
+# 19 October 2026 — Kitchen Save focus correction: inspection checkpoint
+
+Owner explicitly confirmed Laptop Codex and requested Save Kitchen Setup take focus directly to OPTIONAL NOW / NEXT REQUIRED STEP and stay there. Inspected main/recovery66d08106e5f136f3929ca19e853139e7ce427a8c; current source/handovers match the preceding release. Current full owner master/AGENTS hashes unchanged from already-read versions. One assistant performs the separated four-view passes.
+
+## Section 1 — Work mode handover
+Source shows a concrete competing path: reopening a valid saved register displays next choices but leaves kitchenReviewed unchecked; clicking Save then focuses kitchenStatus above the form. Prior test only covered checked-save and immediately asserted activeElement; its later screenshots manually scrolled and did not prove settled post-save viewport. Correction scope: unchanged verified setup can continue directly to existing choices without a redundant write; changed setup still needs explicit review, with its reminder at the review/Save area. Successful save should focus/scroll the choice cards after controls are restored and allow normal user navigation. No repeated focus trap, no new schedules or business writes by the agent. Live UAT remains pending.
+
+PRO: direct next action and meaningful visible focus. CON: no false save/completion for edited or failed state, no stealing focus after the user moves. COMPARE & CONNECTIONS: Save -> existing verified register or protected save/readback -> restored controls -> next choices; preserve Google writers and review gates. OBSERVER: reproduce unchecked re-entry, inspect immediate and settled card bounds, slow save, repeated save, error/dirty states, keyboard navigation and laptop/mobile screenshots without test-driven scrolling.
+
+## Section 2 — Codex handover
+Branch codex/kitchen-save-focus-20261019; base66d08106e5f136f3929ca19e853139e7ce427a8c; current runtime3fec7951396b75c9788ab3cc21755fac9672b0fd. Files inspected: bobs-kitchen-pages.js/.css, kitchen-flow.html, bobs-roadmap.js, bobs-config.js, verified-store/Google/window-return helpers, transition guard and guided browser suite. No external focus-to-guide handler found; confirmed validation focus path is sufficient to explain report, other layout/late focus behavior still to test. Local command/kernel unavailable; use hosted tests. Before fix, add regression for saved reload with unticked review and for delayed settled viewport. Next: reproduce failure, implement bounded correction, run tests and normal publication/live checks, update both handovers. Deployment and new browser checks NOT RUN. Code rollback separate from operational-data restoration; no migration/restoration authorized.
+
+---
+
 # 19 October 2026 — DELIVERED: visible Kitchen Setup choices and equipment entry
 
 **IMPLEMENTED, TESTED, DEPLOYED and LIVE VERIFIED:** PR88 merged runtime3fec7951396b75c9788ab3cc21755fac9672b0fd, tested head367c85ea8db432a1b063cba735cb7c277e4ebd40. **Owner UAT:** pending. The access concern was resolved: repository publication/merge and Pages deployment worked with existing authorization. GitHub's confirmed Actions/Pages service incident delayed test scheduling and aggregate status updates; no new Owner access was required.

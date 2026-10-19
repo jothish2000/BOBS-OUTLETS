@@ -37,3 +37,7 @@ a.kitchen-primary-action{display:inline-block;text-decoration:none;color:white;m
 #kitchenNextEquipment{background:#fff0b5;padding:12px;margin-top:14px;border-radius:6px;font-weight:700}
 #kitchenNextGo{width:100%;margin:0}
 @media(max-width:650px){.kitchen-next-choices{grid-template-columns:minmax(0,1fr)}.kitchen-next-panel{padding:14px}.kitchen-primary-action{white-space:normal;overflow-wrap:anywhere}}
+
+.kitchen-next-choices{scroll-margin-top:72px}
+#kitchenSaveHint:empty{display:none}
+#kitchenSaveHint:not(:empty){background:#fff0b5;border-left:4px solid #b47a00;padding:12px;font-weight:700}
