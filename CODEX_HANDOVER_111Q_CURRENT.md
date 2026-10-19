@@ -1,3 +1,12 @@
+### 19 October 2026 — implementation prepared for isolated CI
+
+Approved controls/source correction implemented on codex/shared-shift-entry-20261019 at 6eeb6d11e53c27c03fa8b0deb7c988a3d88c3c96. Shared outlet-shift-presets.js now enhances both pages, offers full-day half-hour start choices plus exact custom inputs, retains an editable initial 9-hour duration for a newly chosen start, and never fills or rewrites saved times on render. Kitchen rows preserve shift metadata and drafts through Add/Remove. outlets.html now reads BOBS_DATA.listOutlets, matching downstream staff/capacity readers and the existing Vault write destination. No hard-coded outlet schedule or live Google mutation.
+
+Files: outlet-shift-presets.js, bobs-kitchen-pages.js, bobs-kitchen.css, kitchen-flow.html, outlets.html, bobs-config.js, scripts/verify-shared-kitchen-browser.cjs, scripts/verify-outlet-save-help-browser.cjs, scripts/verify-complete-flow-live.cjs, .github/workflows/vault-read-reliability.yml, .github/workflows/complete-flow-live.yml. Automated browser scenarios added for independent row/outlet edits, divergent legacy endpoint, failed read, backup/save/reopen/staff propagation, short and overnight kitchen shifts, arbitrary minutes, incomplete-save guard, metadata, review invalidation and mobile fit. Live verifier now compares setup/staff/kitchen display against real saved records and blocks every write.
+
+Code parse checks PASS in available JS runtime for changed JS/CJS and inline HTML scripts. Browser/CI tests pending; local runtime unavailable (missing kernel-assets path), no local test pass claimed. Deployment/live/Owner acceptance pending. Recovery remains 4a3469e4729a43770b8781c0fad69963d991a316. Next: create PR, inspect required checks, repair failures before merge; run Pages/live verification and record actual evidence. Both Work and Codex sections in the preceding checkpoint remain authoritative; the Owner's clarification forbids assigning fixed business hours.
+
+
 ### 19 October 2026 — approved shared shift-entry correction (implementation checkpoint)
 
 Owner explicitly approved the two timing corrections, then clarified: do not assign a fixed schedule to any outlet or kitchen. The earlier Rasipuram 04:30–13:30 example is not authorization to overwrite operational times. Implement the same recommended-start / editable-duration / calculated-end pattern for kitchens as outlets; every row remains independent and exact start/end stay editable. Keep Add shift for additional dayparts. No new number-of-shifts selector is included.
