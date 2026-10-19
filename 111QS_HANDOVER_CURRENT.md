@@ -1,3 +1,23 @@
+# 19 October 2026 — DELIVERED: stable Kitchen Save focus on next-action cards
+
+Runtime5715e88ac9d3ac119d2be15f8a53177ae2964478 (PR90) is tested, published and live verified. Owner UAT pending. Recovery66d08106e5f136f3929ca19e853139e7ce427a8c. No operational Google changes, schedules, wages or migrations performed by the agent.
+
+## Section 1 — Work mode handover
+Owner confirmed Laptop Codex and requested Save focus go directly to OPTIONAL NOW / NEXT REQUIRED STEP and stay there. This is now verified on the live page. The previous jump was reproduced when reopening a saved register with an unticked review checkbox: Save focused the message above the form. An unchanged verified setup now goes directly to existing choices without a duplicate write. Edited forms still require review, with the reminder beside Save. After actual protected saves, controls are restored before focusing the choice and scrolling the cards into view. A single guarded frame adjustment settles layout; the user's later choice/focus is respected.
+
+Live start: https://jothish2000.github.io/BOBS-OUTLETS/kitchen-flow.html?stage=locations&outlet=1&from=outlet-setup&outlets=1%2C2%2C3 . Exact Owner next step: preserve/save any current edits, refresh once to load this release, click Save Kitchen Setup & choose next step. Both choice cards should remain visible. Choose equipment/capacity or outlet expenses/staff to continue. Owner acceptance remains pending; later business stages are not marked complete.
+
+## Section 2 — Codex handover
+PR https://github.com/jothish2000/BOBS-OUTLETS/pull/90 merged from tested headae8286512132e5d645847dd8d1b0fcff8f803a0f. Runtime5715e88ac9d3ac119d2be15f8a53177ae2964478. Evidence branch codex/kitchen-save-focus-evidence-20261019. Main/runtime and handovers must be inspected before subsequent changes; local kernel unavailable, local tests NOT RUN.
+
+Evidence: red regression Vault39291295221 failed exactly kitchenStatus vs kitchenNext-equipment on old runtime; preserved as failure. Green Vault39291667120/39291625627 passed176 node tests, ancillary checks, all six browser journeys and syntax/whitespace. Quantity39291667351/39291625691 PASS. Deployed-main Vault39292300224 and quantity39292300125/39292372617 PASS. Pages39292300378 build/deploy/report all SUCCESS. Live39292300245/job118195801867 SUCCESS:27 served runtime files matched, actual Save click on reopened real Google register retained next-choice focus and both laptop card bounds after1500ms, existing routes/mobile/data displays passed, runtime errors0, attempted business-data writes0. Live and isolated screenshots were visually inspected without manually scrolling before the focus capture. Artifact: https://github.com/jothish2000/BOBS-OUTLETS/actions/runs/39292300245/artifacts/12206451540 .
+
+Changed bobs-kitchen-pages.js, bobs-kitchen.css, kitchen-flow.html, scripts/verify-guided-kitchen-browser.cjs, scripts/verify-complete-flow-live.cjs. Tests cover clean re-entry, slow protected save, failed save, local review reminder, settled1200–1500ms focus/viewport, mobile and later user choice. Existing Google backup/stale/readback gates and independent schedules retained. Code rollback: revert PR90; data recovery is separate and unauthorized.
+
+Final four-view review by one assistant: PRO—requested stable card focus observed in actual live screenshot; CON—no ongoing focus trap or false saved completion, invalid/failed states still gated; COMPARE & CONNECTIONS—verified storage and all connected journeys preserved; OBSERVER—root cause reproduced before fix and delayed geometry/focus checked after fix, closing the earlier immediate-focus/manual-scroll test gap. Implementation, tests, deployment and live verification complete; Owner UAT pending. Exact next action: publish documentation-only evidence after checks, then continue Owner testing. No automation or background monitor created.
+
+---
+
 # 19 October 2026 — Kitchen Save focus: reproduced, corrected and tested
 
 PR90 https://github.com/jothish2000/BOBS-OUTLETS/pull/90 merged as5715e88ac9d3ac119d2be15f8a53177ae2964478; tested headae8286512132e5d645847dd8d1b0fcff8f803a0f. Recovery66d08106e5f136f3929ca19e853139e7ce427a8c. Owner explicitly authorized stable focus on OPTIONAL NOW / NEXT REQUIRED STEP. No operational Google writes/schedule changes.
