@@ -1,3 +1,19 @@
+# 19 October 2026 — Kitchen Save focus: reproduced, corrected and tested
+
+PR90 https://github.com/jothish2000/BOBS-OUTLETS/pull/90 merged as5715e88ac9d3ac119d2be15f8a53177ae2964478; tested headae8286512132e5d645847dd8d1b0fcff8f803a0f. Recovery66d08106e5f136f3929ca19e853139e7ce427a8c. Owner explicitly authorized stable focus on OPTIONAL NOW / NEXT REQUIRED STEP. No operational Google writes/schedule changes.
+
+## Section 1 — Work mode handover
+Root cause reproduced: a valid saved register restores next-action cards but review checkbox is unticked; clicking Save used the review-error path and focused kitchenStatus near the page top. Regression Vault39291295221 failed exactly with actual kitchenStatus, expected kitchenNext-equipment. Corrected flow: unchanged verified data continues to next cards without writing again; changed/unreviewed forms keep the review requirement with a reminder beside Save; successful verified saves restore controls then focus the actual next choice and scroll to the cards. One animation-frame alignment handles layout; no repeating focus lock. Owner UAT and deployment/live verification pending.
+
+## Section 2 — Codex handover
+Vault39291667120 and39291625627 PASS:176 node tests, ancillary checks, six Chrome journeys, syntax/whitespace. Quantity39291667351 and39291625691 PASS. Extended browser tests pass after1200–1500ms: actual focus and card bounds at1071x580, unchanged re-entry writes0, edited review reminder local, failed save no continuation, slow-save restoration, mobile focus/bounds, later user choice retained. BOBS_KITCHEN_SAVE_FOCUS screenshot captured without manually moving scroll and visually inspected: both cards and their action area visible, focus outlined. Prior screenshot tests had manually scrolled and did not establish this outcome; failure was preserved, not counted as a pass.
+
+Changes: bobs-kitchen-pages.js (clean verified continuation, local reviewFocus, post-finally nextFocus and guarded one-frame alignment); bobs-kitchen.css (choice scroll margin/hint); kitchen-flow.html (hint accessibility/cache tokens); isolated guided browser and read-only live scripts. Existing verified saves/financial/independent-shift rules untouched. Local tests NOT RUN (runtime unavailable).
+
+Post-test four-view review by one assistant: PRO—direct/settled focus observed; CON—dirty/failed state still gated, no false completion or focus trap; COMPARE & CONNECTIONS—unchanged verified writer and six connected journeys pass; OBSERVER—actual red/green reproduction and delayed viewport assertions cover previous gap. Exact next step: verify Pages and main live run, including real reopened-save continuation with all writes blocked; record27 matches/zero errors/write attempts and actual live screenshot. Then publish final dual-handover evidence on codex/kitchen-save-focus-evidence-20261019. Code rollback by reverting PR90; operational-data rollback separate and unauthorized.
+
+---
+
 # 19 October 2026 — Kitchen Save focus correction: inspection checkpoint
 
 Owner explicitly confirmed Laptop Codex and requested Save Kitchen Setup take focus directly to OPTIONAL NOW / NEXT REQUIRED STEP and stay there. Inspected main/recovery66d08106e5f136f3929ca19e853139e7ce427a8c; current source/handovers match the preceding release. Current full owner master/AGENTS hashes unchanged from already-read versions. One assistant performs the separated four-view passes.
