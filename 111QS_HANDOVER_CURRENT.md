@@ -1,3 +1,17 @@
+# 19 October 2026 — Kitchen Setup next-action clarity: implementation checkpoint
+
+Owner laptop UAT reports the verified-save next links and optional equipment entry are too easy to miss. Continuing the approved flow-guidance correction. Inspection confirmed focus went to an unstyled container, while the browser test only checked that container's focus; this did not establish perceptible guidance. Base/recovery main: 3ee13a914bec3dc55f6452ee42532a7416082a73, runtime 5e570723aab880922cfaa9455b227bfb9b587282. Current source and latest handover match this checkpoint. Local kernel remains unavailable; use GitHub source and hosted tests.
+
+Four views are one assistant's separated passes. PRO: saved confirmation plus bright choice cards make next actions explicit. CON: choice/visited is not completion; no operational progress writes or automatic capacity assumptions. COMPARE & CONNECTIONS: verified KITCHEN_MASTER -> read-only next-action chooser -> existing ASSET_MASTER inventory (optional) or outlet baseline -> later menu/capacity/workforce; preserve existing verified saves and independent shifts. OBSERVER: test real radio/button focus, selection marks, reload/return, error/dirty clearing and laptop/mobile presentation, not just container focus.
+
+## Section 1 — Work mode handover
+Approved correction is being implemented on branch codex/kitchen-next-action-20261019. After verified save/read, show Kitchen Setup saved checkmark and explicit next-action choices. Optional existing-equipment card explains what can be entered and reference help; required outlet-expense/staff card explains the next planning step. A choice tick means selected action only. Save failures/unsaved edits hide onward choices. Continue testing from https://jothish2000.github.io/BOBS-OUTLETS/kitchen-flow.html?stage=locations&outlet=1&from=outlet-setup&outlets=1%2C2%2C3 after deployment. No Google business writes, schedules, payroll or formulas changed. Owner UAT pending.
+
+## Section 2 — Codex handover
+Implement surgical edits in bobs-kitchen-pages.js, bobs-kitchen.css and page cache tokens; preserve equipment return context and visible verified-save continuation. Update isolated guided-kitchen browser coverage and read-only live assertions. Saved valid register may reveal choices on reload without requiring another write, but never on invalid/unreadable state. Code rollback: revert this bounded PR against recovery SHA above; data restoration is separate and unauthorized. Tests for this correction NOT RUN, deployment NOT RUN. Exact next action: implement, run GitHub Actions, visually inspect the after-save panel, repair/retest, publish under standing live-delivery scope, then update both handovers with actual evidence.
+
+---
+
 # 19 October 2026 — DELIVERED: guided kitchen flow and equipment-capacity help
 
 **Runtime published and live verified:** 5e570723aab880922cfaa9455b227bfb9b587282 (PR84 implementation, PR85 live-check correction, PR86 consistent guide headings). **Owner UAT:** pending; this confirms the software change, not completion of the Owner's business assessment. No operational Google writes or schedule assignments were performed by the agent.
