@@ -1,3 +1,15 @@
+# 19 October 2026 — live-check correction checkpoint
+
+Runtime PR84 deployed successfully (Pages39242229859), and all main regression checks passed. Live run39242230520 matched27 served runtime files and completed the Google-backed page checks, then FAILED its new assertion for Kitchen identities because the parent roadmap details section was collapsed. The visible stage1 correctly reported kitchen registration verified. The checker is corrected to expand stage1 using its summary and assert the kitchen substep is visible; no runtime behavior changes. Failure artifact12181183482 is diagnostic evidence, not a passed live run. Full zero-write/error conclusion remains pending a successful rerun.
+
+## Section 1 — Work mode handover
+Site is published. Continue read-only live verification after merging this checker correction; do not write Owner records to test. Resume live testing from https://jothish2000.github.io/BOBS-OUTLETS/outlets.html after checks pass. Owner UAT pending.
+
+## Section 2 — Codex handover
+Runtime commit0f9865f8de9e8b30d79692c61114dc76ef7604bf unchanged. Current documentation branch codex/guided-kitchen-release-evidence-20261019 also changes scripts/verify-complete-flow-live.cjs only to expand the existing roadmap section before asserting its child. Tool-runtime JS syntax check passed; next merge this bounded checker/docs PR after CI, inspect the triggered main live run, then append actual live evidence to both handovers and audit. Recovery/data restrictions remain as below.
+
+---
+
 # 19 October 2026 — guided kitchen flow tested and merged; live verification pending
 
 PR84 merged as 0f9865f8de9e8b30d79692c61114dc76ef7604bf; tested head 0e8b12f0605d1582430ee310cb342903f71207cf. Vault run39242045279 PASS:176 node tests (122+30+24), ancillary tests, all six Chrome journeys, syntax/whitespace. Quantity, recipe-preservation and workload checks all PASS before merge. No production-data writes. Pages deployment and read-only live verification pending; Owner UAT pending. Recovery: pre-release main fa3388d24c2053bd5067082b2bafae109358ae9a. Code rollback is revert PR84; operational-data recovery is separate and not authorized.
