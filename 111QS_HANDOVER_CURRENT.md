@@ -1,3 +1,15 @@
+# 19 October 2026 — APPROVED: menu-led existing-equipment help (inspection checkpoint)
+
+## Section 1 — Work mode handover
+Owner confirmed Laptop Codex and explicitly approved the proposed flow: in existing production facilities, choose Method 2 food categories/items first, then identify equipment already owned from recipe descriptions and existing small-kitchen references. Early item ticks are help-only; actual outlet menu/quantities remain later in Method 2. Current live focus correction remains delivered; new equipment helper is NOT IMPLEMENTED / NOT TESTED / NOT DEPLOYED yet. Entry: https://jothish2000.github.io/BOBS-OUTLETS/kitchen-flow.html?stage=locations . Choose existing equipment for a saved kitchen.
+One assistant's separated review: PRO—food-first identification with recipe context; CON—no automatic ownership, purchases or confirmed capacity; COMPARE & CONNECTIONS—same category catalogue -> Google standard recipes / labelled audited fallback -> suggestions -> existing kitchen ASSET_MASTER -> later production assessment; OBSERVER—unknown equipment/capacity visible, alternatives explicit, shared machines reused. Scope approved; normal tested release included. No operational data changes authorized/performed by agent.
+
+## Section 2 — Codex handover
+Inspected main/recovery f5632636c837072c16dffd1ba58aea1fb24e37c0; no intervening changes since PR91. AGENTS/master and handovers match previously read hashes; current source read afresh. Branch codex/menu-equipment-help-20261019. Existing source: shared_data.js/CAT_ORDER/ITEM_DATA, M2.recipe/sideCatalogue, BOBS_OPERATIONAL_RECIPES.load, productionTiming.equipment/prePreparationNote, bobs-equipment-references.js, kitchen-equipment.html, bobs-kitchen-equipment.js/core. Existing V.save reread/backup/readback remains the only inventory writer. Preserve asset IDs, financials, allocations, planned quantities and independent shifts. No METHOD2/recipe writer from helper; no migration or data restore.
+Next: add category/item dialog and pure recipe-equipment mapping with evidence/missing states; remove the generic machine-first help, retain manual entry; add meaningful fixture browser/unit tests and read-only deployed verification. Local kernel unavailable per preceding task; use hosted Chrome/Node checks, mark local tests NOT RUN. Code recovery is this base; data recovery separate. Update both ledgers after implementation/tests/release. Owner UAT pending.
+
+---
+
 # 19 October 2026 — DELIVERED: stable Kitchen Save focus on next-action cards
 
 Runtime5715e88ac9d3ac119d2be15f8a53177ae2964478 (PR90) is tested, published and live verified. Owner UAT pending. Recovery66d08106e5f136f3929ca19e853139e7ce427a8c. No operational Google changes, schedules, wages or migrations performed by the agent.
