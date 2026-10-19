@@ -1,3 +1,15 @@
+# 19 October 2026 — implementation prepared; Tester checkpoint
+
+The approved guidance/help changes are implemented on codex/guided-kitchen-capacity-20261019, not yet merged/deployed. Main remains fa3388d24c2053bd5067082b2bafae109358ae9a. See FLOW_GUIDANCE_AUDIT_20261019.md for the route-by-route audit and bounded coverage. New early editor kitchen-equipment.html reuses ASSET_MASTER, shared bobs-equipment-references.js, and validated bobs-kitchen-equipment-core.js. Unknown/estimate/confirmed are explicit; financial fields and planned quantities are preserved; asset costing review is invalidated on inventory change. Current/next guidance is visible on roadmap-enabled pages without automatic business writes or expensive automatic progress reads. Kitchen registration is now checked before baseline save/method entry, with explicit no-separate-register choice. Verified next actions receive focus and disappear on edits. Existing independent shift values are preserved.
+
+## Section 1 — Work mode handover
+Implementation and tool-runtime JS syntax checks complete. GitHub Actions tests running / pending review branch; live site unchanged by this batch. Local Windows shell/kernel tests NOT RUN (unavailable). No real Google records written. Owner UAT pending. Next action: inspect automated outcomes, repair failures, then publish/live-verify under standing delivery approval. Live start remains https://jothish2000.github.io/BOBS-OUTLETS/outlets.html .
+
+## Section 2 — Codex handover
+Branch codex/guided-kitchen-capacity-20261019; protected baseline fa3388d24c2053bd5067082b2bafae109358ae9a. Changed main UI helpers, kitchen register gates, optional inventory, shared reference catalogue, route guidance, cache tokens, regression fixtures and workflows. Tests include tests/kitchen-equipment-help.cjs and scripts/verify-guided-kitchen-browser.cjs; existing outlet-save/roadmap/production tests updated for legitimate kitchen setup. No migration or backend change. Latest implementation includes draft-state clearing only after verified saves and discard of unsaved equipment rows only. Reuse current branch content (not earlier in-memory drafts) for subsequent fixes. Data rollback remains separate from code revert. Next executable action: create/review PR, await full CI, inspect failures without calling them passes, update this ledger with test/deployment evidence.
+
+---
+
 # 19 October 2026 — guided flow and existing kitchen equipment: implementation checkpoint
 
 Owner authorized small-hotel reference help and a whole-flow guidance audit. Explicit current walkthrough remains Laptop Codex. Four views are separate passes by one assistant, not delegated reviews. Current source inspected: main fa3388d24c2053bd5067082b2bafae109358ae9a; runtime recovery b5ceec4136029c0a0402752dd629a9dc65234ed1. Branch codex/guided-kitchen-capacity-20261019. No operational Google writes performed.
