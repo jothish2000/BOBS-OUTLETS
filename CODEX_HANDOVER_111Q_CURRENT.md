@@ -1,3 +1,16 @@
+# 19 October 2026 — Menu-led equipment help: tested and merged; live verification pending
+
+## Section 1 — Work mode handover
+Owner-approved category/item-first equipment helper implemented and merged in PR92 https://github.com/jothish2000/BOBS-OUTLETS/pull/92 . Runtime 86f57ee8ca5556f36ebf9c33fdba44628b199eb5. Food ticks are temporary guidance; actual menu/quantities remain Method 2. Existing assets may be reused, owned machines explicitly added, capacity left unknown or explicitly estimated. No operational Google records edited by agent. Pages publication and live read-only checks pending; Owner UAT pending. Entry https://jothish2000.github.io/BOBS-OUTLETS/kitchen-flow.html?stage=locations -> existing equipment for saved kitchen -> Help me identify my existing equipment.
+Post-test four-view review by one assistant: PRO—food-first selection and owned-equipment save/reopen observed; CON—missing recipe equipment is disclosed, alternatives explicit, reference capacity never confirmed automatically; CONNECTIONS—same catalogue/recipe sources/ASSET_MASTER, protected writes and financial fields retained, connected regressions pass; OBSERVER—retry focus, unknown capacity, repeated add/reuse, stale and failed saves, laptop/mobile screenshots checked. Final live results remain separate.
+
+## Section 2 — Codex handover
+Tested head962f9eac6c95984ee44ee81d1c1dcc147ea750d5; runtime 86f57ee8ca5556f36ebf9c33fdba44628b199eb5; recovery f5632636c837072c16dffd1ba58aea1fb24e37c0. Vault39302025559/job118229393666 and39302016446 PASS:181 tests (127+30+24), ancillary checks, six browser journeys, syntax/whitespace. Quantity39302025557/39302016460 PASS. Earlier refinement pass39301907863 also passed. No failed test result suppressed. Local tests NOT RUN due runtime unavailable.
+New files bobs-kitchen-equipment-menu-core.js/.js/.css; modified kitchen-equipment.html, bobs-kitchen-equipment.js, tests/kitchen-equipment-help.cjs, scripts/verify-guided-kitchen-browser.cjs, scripts/verify-complete-flow-live.cjs and workflow syntax list. Source-based pure mapping, explicit ownership and bounded ASSET_MASTER integration; change event reflects programmatic inventory edits in review indicator. Recovery: revert PR92 for code only; operational-data rollback is separate and unauthorized.
+Next: verify Pages and main tests, 30 served sources plus real category/Idli equipment dialog at laptop/mobile widths with all writes blocked. Inspect screenshots and record final evidence in both handovers on codex/menu-equipment-evidence-20261019; then publish docs PR and provide Owner testing steps.
+
+---
+
 # 19 October 2026 — Menu-led equipment helper: implementation and first test checkpoint
 
 ## Section 1 — Work mode handover
