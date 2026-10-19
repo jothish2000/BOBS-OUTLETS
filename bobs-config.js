@@ -47,7 +47,7 @@ document.addEventListener('click',function(e){const btn=e.target&&e.target.close
 (function installGlobalGuard(){if(window.BOBS_OWNED_EDITOR)return;function add(){if(window.__BOBS_TRANSITION_GUARD__)return;const guard=document.createElement('script');guard.src='bobs-transition-guard.js?v=20261010-input-generation';document.head.appendChild(guard)}if(document.readyState==='loading')add();else add()})();
 document.addEventListener('DOMContentLoaded',function(){const btn=document.getElementById('nextOutletBtn');if(btn){btn.textContent='Continue to COGS Outlet Analysis →';btn.setAttribute('aria-label','Continue to COGS Outlet Analysis')}const analysis=document.querySelector('#finishPanel a[href="outlet-analysis.html"]');if(analysis)analysis.style.display='none';
   if((location.pathname.split('/').pop()||'').toLowerCase()==='outlets.html'){
-    const s=document.createElement('script');s.src='outlet-shift-presets.js?v=2026-09-12-111Q-hour-based-shifts-2';document.head.appendChild(s);
+    const s=document.createElement('script');s.src='outlet-shift-presets.js?v=shared-shifts-20261019';document.head.appendChild(s);
   }
   if((location.pathname.split('/').pop()||'').toLowerCase()==='outlet-method-flow.html'){
     const review=document.createElement('script');review.src='method2-flow-review.js?v=setup-first-v2';document.head.appendChild(review);
