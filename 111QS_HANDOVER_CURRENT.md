@@ -1,3 +1,31 @@
+# 19 October 2026 — live-check correction checkpoint
+
+Runtime PR84 deployed successfully (Pages39242229859), and all main regression checks passed. Live run39242230520 matched27 served runtime files and completed the Google-backed page checks, then FAILED its new assertion for Kitchen identities because the parent roadmap details section was collapsed. The visible stage1 correctly reported kitchen registration verified. The checker is corrected to expand stage1 using its summary and assert the kitchen substep is visible; no runtime behavior changes. Failure artifact12181183482 is diagnostic evidence, not a passed live run. Full zero-write/error conclusion remains pending a successful rerun.
+
+## Section 1 — Work mode handover
+Site is published. Continue read-only live verification after merging this checker correction; do not write Owner records to test. Resume live testing from https://jothish2000.github.io/BOBS-OUTLETS/outlets.html after checks pass. Owner UAT pending.
+
+## Section 2 — Codex handover
+Runtime commit0f9865f8de9e8b30d79692c61114dc76ef7604bf unchanged. Current documentation branch codex/guided-kitchen-release-evidence-20261019 also changes scripts/verify-complete-flow-live.cjs only to expand the existing roadmap section before asserting its child. Tool-runtime JS syntax check passed; next merge this bounded checker/docs PR after CI, inspect the triggered main live run, then append actual live evidence to both handovers and audit. Recovery/data restrictions remain as below.
+
+---
+
+# 19 October 2026 — guided kitchen flow tested and merged; live verification pending
+
+PR84 merged as 0f9865f8de9e8b30d79692c61114dc76ef7604bf; tested head 0e8b12f0605d1582430ee310cb342903f71207cf. Vault run39242045279 PASS:176 node tests (122+30+24), ancillary tests, all six Chrome journeys, syntax/whitespace. Quantity, recipe-preservation and workload checks all PASS before merge. No production-data writes. Pages deployment and read-only live verification pending; Owner UAT pending. Recovery: pre-release main fa3388d24c2053bd5067082b2bafae109358ae9a. Code rollback is revert PR84; operational-data recovery is separate and not authorized.
+
+Actual test findings: initial run39241138885 found a new assertion expecting the word evidence while the valid rejection named specification/trial; corrected. Run39241251680 exposed missing next-action wording/link in the blocked method gate; fixed. Run39241508920 found a fixture assertion on fieldset disabled semantics; changed to actual Save/Add controls. Mobile preview exposed low header-link contrast; fixed and visually rechecked. Run39241732032 passed new/recipe/production/shared-kitchen journeys but found the salary fixture lacked the newly required kitchen decision; added the explicit local-production fixture. Final run39242045279 passed all checks. NOT RUN earlier browser/syntax stages were never counted as passes. Local shell/browser kernel unavailable; local tests NOT RUN.
+
+Second four-view review (one assistant's separated passes): PRO—tests confirm visible next action and keyboard focus, explicit kitchen prerequisite and protected continuation. CON—capacity remains unknown/estimate/confirmed, costing review invalidates after inventory changes, and failed/stale saves retain edits without success navigation. COMPARE & CONNECTIONS—same Asset Master/IDs/financial values, preserved independent schedules, shared-worker/depreciation and recipe/price paths pass. OBSERVER—176 tests plus six isolated browser journeys pass; reviewed mobile screenshot; deployment/live and Owner acceptance remain separate. Historical reports/migrations were inventoried, not exhaustively recalculated or executed.
+
+## Section 1 — Work mode handover
+Live entry https://jothish2000.github.io/BOBS-OUTLETS/outlets.html . Owner approved help and flow audit/improvements; source merged, deployment/live checks pending. Next: verify Pages and real Google reads with writes blocked; then Owner resumes Outlet Setup, checks review checkbox, saves to Kitchen Setup, reviews identities/hours and optionally opens Existing equipment and capacity help after verified save. Do not assign saved timings or create employees/assets on the Owner's behalf. All runtime additions are on PR84; full audit at FLOW_GUIDANCE_AUDIT_20261019.md.
+
+## Section 2 — Codex handover
+Main 0f9865f8de9e8b30d79692c61114dc76ef7604bf; PR https://github.com/jothish2000/BOBS-OUTLETS/pull/84 . Documentation continuation branch codex/guided-kitchen-release-evidence-20261019. Changed43 files incl cache tokens, guided roadmap and gates, optional kitchen-equipment editor/core, shared reference catalogue, protected save/focus, regression fixtures, workflows and handovers. ASSET_MASTER additions capacityFacts/inventoryReviewed are backward-compatible metadata; existing valuation/allocation fields preserved, reviewed=false after inventory changes. No backend/migration changes. Exact next action: read Actions runs for 0f9865f8de9e8b30d79692c61114dc76ef7604bf; verify Pages success and Complete production flow live read-only result; record source-match count, real-data shift comparison, zero write attempts, screenshots/artifact and Owner UAT status; finalize both handovers and audit, then publish documentation PR. Main source baseline is current, do not use stale local clone.
+
+---
+
 # 19 October 2026 — implementation prepared; Tester checkpoint
 
 The approved guidance/help changes are implemented on codex/guided-kitchen-capacity-20261019, not yet merged/deployed. Main remains fa3388d24c2053bd5067082b2bafae109358ae9a. See FLOW_GUIDANCE_AUDIT_20261019.md for the route-by-route audit and bounded coverage. New early editor kitchen-equipment.html reuses ASSET_MASTER, shared bobs-equipment-references.js, and validated bobs-kitchen-equipment-core.js. Unknown/estimate/confirmed are explicit; financial fields and planned quantities are preserved; asset costing review is invalidated on inventory change. Current/next guidance is visible on roadmap-enabled pages without automatic business writes or expensive automatic progress reads. Kitchen registration is now checked before baseline save/method entry, with explicit no-separate-register choice. Verified next actions receive focus and disappear on edits. Existing independent shift values are preserved.
