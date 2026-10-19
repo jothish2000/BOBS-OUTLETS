@@ -9,3 +9,31 @@
 @media(max-width:600px){.kitchen-shift-times{grid-template-columns:minmax(0,1fr);gap:10px}.kitchen-shift-row{padding:10px}}
 
 header a,header a:visited{color:#fff3d0;text-decoration:underline;text-underline-offset:3px}
+
+/* Keep next actions visible and distinct from saved-completion evidence. */
+.kitchen-next-preview{background:#fff1bb;border:2px solid #b47a00;padding:16px;border-radius:10px;margin:18px 0}
+.kitchen-next-preview h2{font-size:1.2rem;margin:0 0 8px}
+.kitchen-next-preview p{margin:6px 0}
+#saveKitchen,.kitchen-primary-action{background:#1d513b;color:#fff;font-weight:750;border:2px solid #1d513b;border-radius:8px;padding:14px 20px;min-height:48px;cursor:pointer}
+#saveKitchen:disabled,.kitchen-primary-action:disabled{background:#e2e8e3;color:#46544a;border-color:#85988b;cursor:default}
+.kitchen-next-panel{background:#f9fff9;border:3px solid #34774e;box-shadow:0 4px 14px #193e301a;padding:20px;margin:22px 0;scroll-margin-top:65px}
+.kitchen-next-panel h2{margin:8px 0;font-size:1.5rem}
+.kitchen-saved-check{background:#d8f0d9;color:#174e2f;font-weight:750;padding:10px 14px;border-radius:6px;margin:0 0 12px}
+.kitchen-next-panel legend{font-weight:750;margin-bottom:8px}
+.kitchen-next-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.kitchen-next-choice{display:flex;align-items:flex-start;gap:12px;background:#e3f1e8;border:2px solid #6b9279;border-radius:8px;padding:16px;cursor:pointer;min-width:0;margin:0}
+.kitchen-next-choice.equipment{background:#fff0b5;border-color:#b47a00}
+.kitchen-next-choice input[type=radio]{width:22px;height:22px;padding:0;flex:0 0 22px;margin:3px 0;accent-color:#1d513b}
+.kitchen-next-choice>span{min-width:0}
+.kitchen-next-choice strong,.kitchen-next-choice span>span{display:block}
+.kitchen-next-choice strong{font-size:1.14rem;margin:6px 0 10px}
+.kitchen-next-badge{font-size:.8rem;font-weight:800;letter-spacing:.04em}
+.kitchen-choice-selected{font-weight:750;margin-top:12px}
+.kitchen-next-choice.selected{border:3px solid #195f36;padding:15px;box-shadow:inset 0 0 0 1px #195f36}
+.kitchen-next-choice:focus-within{outline:4px solid #2369b3;outline-offset:4px}
+.kitchen-primary-action:focus,#saveKitchen:focus{outline:4px solid #2369b3;outline-offset:4px}
+a.kitchen-primary-action{display:inline-block;text-decoration:none;color:white;margin:8px 0}
+#kitchenNextSelection{margin:14px 0;font-size:.95rem}
+#kitchenNextEquipment{background:#fff0b5;padding:12px;margin-top:14px;border-radius:6px;font-weight:700}
+#kitchenNextGo{width:100%;margin:0}
+@media(max-width:650px){.kitchen-next-choices{grid-template-columns:minmax(0,1fr)}.kitchen-next-panel{padding:14px}.kitchen-primary-action{white-space:normal;overflow-wrap:anywhere}}
