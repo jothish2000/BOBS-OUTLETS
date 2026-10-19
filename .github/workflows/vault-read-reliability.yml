@@ -6,6 +6,9 @@ on:
       - 'outlet-shift-presets.js'
       - 'bobs-config.js'
       - 'bobs-kitchen*'
+      - 'bobs-equipment-references.js'
+      - 'tests/kitchen-equipment-help.cjs'
+      - 'scripts/verify-guided-kitchen-browser.cjs'
       - 'bobs-staff-table*'
       - 'tests/shared-kitchen*.cjs'
       - 'tests/staff-table.cjs'
@@ -51,6 +54,9 @@ on:
       - 'outlet-shift-presets.js'
       - 'bobs-config.js'
       - 'bobs-kitchen*'
+      - 'bobs-equipment-references.js'
+      - 'tests/kitchen-equipment-help.cjs'
+      - 'scripts/verify-guided-kitchen-browser.cjs'
       - 'bobs-staff-table*'
       - 'tests/shared-kitchen*.cjs'
       - 'tests/staff-table.cjs'
@@ -105,7 +111,7 @@ jobs:
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
         run: |
-          node --test tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
+          node --test tests/kitchen-equipment-help.cjs tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs
@@ -116,6 +122,7 @@ jobs:
         env:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
         run: |
+          node scripts/verify-guided-kitchen-browser.cjs
           node scripts/verify-vault-browser.cjs
           node scripts/verify-production-guidance-browser.cjs
           node scripts/verify-shared-kitchen-browser.cjs
@@ -124,6 +131,9 @@ jobs:
       - name: Syntax and whitespace
         run: |
           node --check outlet-shift-presets.js
+          node --check bobs-equipment-references.js
+          node --check bobs-kitchen-equipment-core.js
+          node --check bobs-kitchen-equipment.js
           node --check bobs-kitchen-core.js
           node --check bobs-kitchen-store.js
           node --check bobs-kitchen-pages.js
