@@ -1,3 +1,19 @@
+# 19 October 2026 — Kitchen next-action correction tested and merged; publication pending
+
+PR88 merged as 3fec7951396b75c9788ab3cc21755fac9672b0fd from tested head367c85ea8db432a1b063cba735cb7c277e4ebd40. GitHub accepted the normal merge with expected_head_sha; no protection override. Runtime source is fb67fd200ea341cf2837ded6ae563caec1439a5c plus documentation-only commits. Recovery3ee13a914bec3dc55f6452ee42532a7416082a73. Owner asked whether access was missing: no; repository writes/PR/merge worked. Confirmed GitHub Actions/Pages incident delayed execution and aggregate status updates. At16:30 UTC GitHub reported recovery with remaining status/deployment delays. No new user access is needed.
+
+## Section 1 — Work mode handover
+The correction is implemented and hosted-browser tested; website publication and live checks remain pending. Laptop/mobile screenshots now show a green saved banner, a gold optional existing-equipment/capacity card, a green required outlet-expenses/staff card, a selection tick and a clearly named action button. After verified save the panel scrolls into view and an actual control receives focus; valid saved data can show choices again without resaving. Selecting is not business completion and performs no business write. Continue from the same Kitchen Setup URL only after deployment/live verification. Owner UAT pending.
+
+## Section 2 — Codex handover
+Vault39286063370/job118172317022: every step completed successfully; logs confirm176 node tests, ancillary checks, six Chrome journeys, syntax/whitespace. Quantity39286062771/job118172314654: every step completed successfully, quantity/business/portion/historical-read-only checks passed. Aggregate run/check statuses remained in_progress during the GitHub incident despite successful completed steps; results are based on explicit step conclusions and full logs. Both BOBS_KITCHEN_NEXT_DESKTOP and MOBILE JPEG previews were emitted and visually inspected. All newly added focus/selection/reload/route/dirty/read-failure and inventory regressions passed; no failed test was bypassed. Local tests NOT RUN (command runtime unavailable). Deployment/live checks pending on merged main.
+
+Post-test four-view review (one assistant's separated passes): PRO—choices and selected checkmarks visible in real browser images; CON—ticks mean selected action, reviewed save remains completion; COMPARE & CONNECTIONS—existing records, financial fields, independent shifts and return context retained, six connected browser journeys pass; OBSERVER—control focus/outline and laptop/mobile layout now checked instead of only container focus. Owner acceptance remains pending.
+
+Exact next step: read main3fec7951396b75c9788ab3cc21755fac9672b0fd Actions runs; verify Pages build/deploy and Complete production flow live read-only, inspect27 served-source matches, new live next-action screenshot and zero runtime errors/business-write attempts. Update both handovers with actual final evidence on codex/kitchen-next-action-evidence-20261019, publish documentation PR after checks. Code rollback: revert PR88; data restoration is separate and unauthorized. Do not change operational records to perform live testing.
+
+---
+
 # 19 October 2026 — Kitchen next-action correction implemented; external test/deploy blocker
 
 **IMPLEMENTED / CODE CHECKED:** PR88 https://github.com/jothish2000/BOBS-OUTLETS/pull/88 , branch codex/kitchen-next-action-20261019, runtime source head fb67fd200ea341cf2837ded6ae563caec1439a5c. Tool-runtime parsing of changed JavaScript and browser scripts passed; source diff reviewed. **AUTOMATED / BROWSER TESTED:** NOT RUN for this correction; GitHub Actions jobs remain queued. **DEPLOYED / LIVE VERIFIED:** NOT RUN. Live runtime remains 5e570723aab880922cfaa9455b227bfb9b587282, main before this PR 3ee13a914bec3dc55f6452ee42532a7416082a73. Owner UAT pending.
