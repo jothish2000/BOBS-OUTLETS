@@ -4,7 +4,7 @@ let saved,register,outs,kitchen,entries=[],dirty=false,busy=false;
 const returnTarget=BOBS_WINDOW_RETURN.safe(q.get('returnTo'))||'kitchen-flow.html?stage=locations';
 document.querySelector('header a').href=returnTarget;
 function status(message,focus=false){$('equipmentStatus').textContent=message;if(focus){$('equipmentStatus').focus();$('equipmentStatus').scrollIntoView({block:'center'});}}
-function changed() {dirty=true;$('equipmentReviewed').checked=false;$('equipmentNext').replaceChildren();status('Unsaved inventory changes. Review the capacity status before saving.');}
+function changed() {dirty=true;$('equipmentReviewed').checked=false;$('equipmentNext').replaceChildren();status('Unsaved inventory changes. Review the capacity status before saving.');$('equipmentReviewed').dispatchEvent(new Event('change',{bubbles:true}));}
 function read(){entries=[...document.querySelectorAll('[data-equipment]')].map(el=>{const value=k=>el.querySelector('[data-field="'+k+'"]').value;return {id:el.dataset.equipment,name:value('name'),ownedQty:value('ownedQty'),capacityFacts:{status:value('status'),value:value('value'),unit:value('unit'),basis:value('basis'),evidence:value('evidence'),referenceUrl:el.dataset.reference||''}};});}
 function field(key,label,value,type='text'){return '<label>'+label+'<input data-field="'+key+'" type="'+type+'" '+(type==='number'?'min="0" step="any"':'')+' value="'+esc(value)+'"></label>';}
 function render(){
