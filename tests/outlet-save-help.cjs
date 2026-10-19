@@ -4,14 +4,14 @@ const norms=require('./fixtures/thp-norms.json');
 async function settle(){for(let i=0;i<25;i++)await new Promise(r=>setImmediate(r));}
 async function fixture({noCounter=false,positions=[{id:'Mandatory1',role:'Cashier',shift:0,takeHome:15000}]}={}){
  const dom=new JSDOM(fs.readFileSync('outlet-plan.html','utf8'),{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?stage=baseline&outlet=1&returnTo=https%3A%2F%2Fbobs.test%2Fmethod2-item.html%3Foutlet%3D1'}),w=dom.window,reads=[],writes=[],returns=[],shifts=[{start:'04:30',end:'13:30'},{start:'13:30',end:'22:30'}];
- const db={OUTLET_BASELINE:{schema:1,reviewed:true,workingDays:30,mandatoryCount:positions.length,positions,expenseSelections:[],noCounter,ownerCounterShifts:[1]},FIXED_EXPENSES:{expenses:[]},THP_NORMS:norms};
+ const db={KITCHEN_MASTER:{reviewed:true,kitchens:[],noSeparateKitchens:true},OUTLET_BASELINE:{schema:1,reviewed:true,workingDays:30,mandatoryCount:positions.length,positions,expenseSelections:[],noCounter,ownerCounterShifts:[1]},FIXED_EXPENSES:{expenses:[]},THP_NORMS:norms};
  let pause=null,failSave=null,scrolled;
  const copy=x=>x==null?null:JSON.parse(JSON.stringify(x));
  w.HTMLElement.prototype.scrollIntoView=function(){scrolled=this.id};w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};w.confirm=()=>true;
  w.BOBS_DATA={listOutlets:async()=>[{id:'1',name:'Fixture outlet',shiftTimes:shifts}]};w.BOBS_COST_FLOW={today:()=> '2026-10-11'};w.ITEM_DATA={};w.M2={read:async()=>({}),state:x=>x||{}};
  w.BOBS_VERIFIED={clone:copy,equal:(a,b)=>JSON.stringify(a)===JSON.stringify(b),read:async(o,m)=>{reads.push(m);if(m==='OUTLET_BASELINE'&&pause)await pause;return copy(db[m])},save:async(o,m,key,data)=>{if(failSave===m)throw Error('Fixture save not confirmed');writes.push(m);db[m]=copy(data);return copy(data)}};
  w.BOBS_WINDOW_RETURN={safe:()=>true,notify(){},returnToParent:(...args)=>returns.push(args)};
- for(const p of ['bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-salary-summary-core.js','bobs-staff-table.js','bobs-outlet-plan.js'])w.eval(fs.readFileSync(p,'utf8'));
+ for(const p of ['bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-salary-summary-core.js','bobs-staff-table.js','bobs-kitchen-core.js','bobs-outlet-plan.js'])w.eval(fs.readFileSync(p,'utf8'));
  await settle();const $=id=>w.document.getElementById(id);assert($('flowSave'),$('flowStatus').textContent);
  return {dom,w,$,db,reads,writes,returns,get scrolled(){return scrolled},hold(value){pause=value},fail(module){failSave=module},change(el,value){if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}));},async save(){if(!$('flowReviewed').checked)$('flowReviewed').click();$('flowSave').click();await settle();}};
 }
@@ -39,3 +39,5 @@ test('stale saved baseline blocks all writes with a visible recovery message',as
 test('expense-only success is reported honestly when the baseline write cannot be confirmed',async()=>{
  const f=await fixture();try{f.fail('OUTLET_BASELINE');await f.save();assert.deepEqual(f.writes,['FIXED_EXPENSES']);assert.match(f.$('flowActionStatus').textContent,/Expenses were verified.*baseline could not be confirmed/);assert.equal(f.returns.length,0);assert.equal(f.$('flowSave').disabled,false);assert.equal(f.w.document.querySelector('[data-field=takeHome]').value,'15000');}finally{f.dom.window.close()}
 });
+
+test('a direct baseline save cannot bypass kitchen registration or write partial expenses',async()=>{const f=await fixture();try{delete f.db.KITCHEN_MASTER;await f.save();assert.match(f.$('flowActionStatus').textContent,/Kitchen Setup/);assert.equal(f.writes.length,0);assert.equal(f.returns.length,0);assert.equal(f.w.document.activeElement.id,'flowActionStatus');}finally{f.dom.window.close()}});

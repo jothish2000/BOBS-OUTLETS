@@ -12,6 +12,14 @@ K.validateLocations=(record,outlets)=>{
  }
  return record;
 };
+// A reviewed empty register is an explicit local/purchased-only choice, never an assumed zero.
+K.requireRegistration=(record,outlets)=>{
+ if(!record?.reviewed||!Array.isArray(record.kitchens))throw Error('Review and save Kitchen Setup before continuing.');
+ K.validateLocations(record,outlets);
+ if(!record.kitchens.length&&!record.noSeparateKitchens)throw Error('In Kitchen Setup, add a kitchen or confirm that a separate kitchen register is not needed.');
+ if(record.reviewedOutletIds&&JSON.stringify([...record.reviewedOutletIds].map(String).sort())!==JSON.stringify(outlets.map(o=>String(o.id)).sort()))throw Error('The outlet list changed. Review Kitchen Setup again.');
+ return record;
+};
 K.sourceFor=(item,requirementKey)=>item.d.kitchenSources?.[requirementKey];
 K.demands=(outlet,items,recipes,P,F,M2,date)=>items.flatMap(item=>{
  const unassigned={...item,d:{...item.d}};delete unassigned.d.kitchenSources;
