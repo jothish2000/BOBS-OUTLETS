@@ -23,7 +23,7 @@ assert(await p.locator('#method1Btn').isDisabled());assert(await p.locator('#met
 db['COMPANY/KITCHEN_MASTER/default']=clone(register);
 const old={reviewed:true,assets:[{id:'S',name:'Old steamer',quantity:2,ownedQty:1,unitCost:30000,residual:1000,usefulYears:10,annualDays:300,costConfirmed:true,uses:{Idli:100},custom:'preserve'}]};db[id+'/ASSET_MASTER/default']=clone(old);writes.length=0;
 await p.goto('https://bobs.test/kitchen-equipment.html?outlet='+id);await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
-assert.equal(writes.length,0);assert.equal(await p.locator('[data-field=status]').inputValue(),'unknown');assert.equal(await p.locator('[data-field=value]').inputValue(),'');
+assert.equal(await p.locator('header a').evaluate(el=>getComputedStyle(el).color),'rgb(255, 243, 208)');assert.equal(writes.length,0);assert.equal(await p.locator('[data-field=status]').inputValue(),'unknown');assert.equal(await p.locator('[data-field=value]').inputValue(),'');
 await p.locator('summary').filter({hasText:'I need help'}).click();await p.selectOption('.referenceType','0');await p.selectOption('.referenceChoice','1');await p.click('.applyReference');
 assert.equal(await p.locator('[data-field=value]').inputValue(),'120');assert.equal(await p.locator('[data-field=status]').inputValue(),'estimate');assert.equal(await p.locator('#equipmentReviewed').isChecked(),false);
 await p.selectOption('[data-field=status]','confirmed');await p.check('#equipmentReviewed');await p.click('#saveEquipment');assert.match(await p.locator('#equipmentStatus').innerText(),/specification or trial/);assert.equal(writes.length,0);
