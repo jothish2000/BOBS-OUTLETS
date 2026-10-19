@@ -85,7 +85,7 @@
   function enhance(cards){
     cards=cards||document.getElementById('cards'); if(!cards)return;
     addStyle();
-    cards.querySelectorAll('.shift, [data-kitchen-shift]').forEach(row=>{
+    cards.querySelectorAll('.shift, [data-kitchen-shift]').forEach((row,index)=>{
       if(!row.querySelector('.bobs-hour-shift-controls')){
         const grid=row.querySelector('.grid, .kitchen-shift-times'); if(!grid)return;
         const label=document.createElement('label');
@@ -101,6 +101,10 @@
         durationLabel.innerHTML='<span>Shift duration (hours)</span><input class="bobs-shift-duration" type="number" min="0.01" max="24" step="any" value="'+DEFAULT_HOURS+'">';
         grid.insertBefore(durationLabel,grid.children[1]||null);
       }
+      // The legacy transition guard keys controls by id. Every shift must have its own key.
+      const f=rowFields(row),key=f.st.id||('kitchen-shift-'+index);
+      f.selector.id=key+'-recommended';
+      f.duration.id=key+'-duration';
       bindRow(row);
       syncSelector(row);
     });
