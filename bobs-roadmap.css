@@ -11,3 +11,9 @@
 #bobsFlowGuide .flow-guide-note{font-size:12px;color:#455d4e}
 @media(max-width:600px){#bobsFlowGuide{margin:8px;padding:12px;max-width:calc(100% - 16px)}}
 @media print{#bobsFlowGuide{display:none!important}}
+
+/* Persistent companion stays below the work area on narrow screens. */
+#bobsCompanionToggle{position:fixed;right:16px;bottom:max(12px,env(safe-area-inset-bottom));z-index:8998;border:1px solid #fff;background:#214b35;color:#fff;padding:12px 16px;border-radius:24px;font:600 14px system-ui;box-shadow:0 3px 12px #0003;cursor:pointer;max-width:calc(100vw - 32px)}
+#bobsCompanion{position:fixed;right:16px;bottom:68px;width:360px;max-width:calc(100vw - 32px);max-height:65dvh;overflow:auto;background:#fffdf7;color:#193e30;border:2px solid #ab8227;border-radius:12px;z-index:8999;padding:14px;box-sizing:border-box;box-shadow:0 4px 24px #0003;font:14px/1.5 system-ui;text-align:left;overflow-wrap:anywhere}
+#bobsCompanion[hidden]{display:none!important}#bobsCompanion *{box-sizing:border-box}#bobsCompanion h2{font:700 18px system-ui;margin:0}#bobsCompanion .companion-head{display:flex;justify-content:space-between;align-items:center;gap:12px}#bobsCompanion p{margin:8px 0}#bobsCompanion button{font:inherit;padding:8px;background:#214b35;color:#fff;border:0;border-radius:6px;cursor:pointer}#bobsCompanion a{display:block;color:#075846;margin:8px 0;text-decoration:underline}#bobsCompanion ol{padding-left:22px}#bobsCompanion li{padding:10px 0;border-top:1px solid #d6e1da}#bobsCompanion summary{cursor:pointer;font-weight:700;margin:14px 0 6px}#bobsCompanion small{display:block}#bobsCompanion :focus-visible,#bobsCompanionToggle:focus-visible{outline:3px solid #1762af;outline-offset:3px}body{padding-bottom:76px!important}.bobs-roadmap-overlay #bobsCompanion,.bobs-roadmap-overlay #bobsCompanionToggle{visibility:hidden}
+@media print{#bobsCompanion,#bobsCompanionToggle{display:none!important}body{padding-bottom:0!important}}

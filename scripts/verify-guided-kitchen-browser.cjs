@@ -128,6 +128,14 @@ await p.reload();await p.waitForFunction(()=>!document.getElementById('equipment
 assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p.locator('[data-field=name]').last().inputValue(),'Wet grinder');assert.equal(await p.locator('[data-field=status]').last().inputValue(),'unknown');
 await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isVisible());
 await p.locator('#bobsFlowGuide button').first().click();assert.equal(await p.evaluate(()=>document.activeElement.id),'equipmentReviewed');
+const companionWrites=writes.length;
+await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
+assert.match(await p.locator('#bobsCompanion').innerText(),/Connected planning board/);
+assert.match(await p.locator('#bobsCompanion').innerText(),/Workforce selection/);
+assert.equal(new URL(await p.getByRole('link',{name:'Open Asset Master →',exact:true}).getAttribute('href')).searchParams.get('outlet'),id);
+assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight}));
+await p.locator('#bobsCompanion').screenshot({path:path.join(require('os').tmpdir(),'bobs-connected-guide-mobile.png')});
+await p.getByRole('button',{name:'Minimise',exact:true}).click();assert(!(await p.locator('#bobsCompanion').isVisible()));assert.equal(writes.length,companionWrites);
 await p.evaluate(()=>scrollTo(0,0));console.log('BOBS_FLOW_PREVIEW:'+(await p.screenshot({type:'jpeg',quality:65})).toString('base64'));
 const before=writes.length;failRegisterRead=true;await p.reload();await p.waitForFunction(()=>!document.getElementById('equipmentRetry').hidden);assert(await p.locator('#saveEquipment').isDisabled());assert(await p.locator('#addEquipment').isDisabled());assert.equal(writes.length,before);assert.equal(await p.locator('[data-equipment]').count(),0);
 assert.deepEqual(errors,[]);console.log('PASS guided kitchen: visible next action, keyboard focus, explicit empty register, skipped-step gate, estimate/confirmation validation, protected inventory save/reload, failure retention, preserved financials and independent timings, mobile overflow, zero live writes.');
