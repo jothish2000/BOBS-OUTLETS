@@ -56,6 +56,15 @@ S.progress=async id=>{
  add('Production staff and individual salary packages','outlet-plan.html',{stage:'workforce'},()=>{if(!staffing?.reviewed||!staffing.salaryReviewed||staffing.date!==C.today()||staffing.menuStamp!==F.menuStamp(context.items)||staffing.productionStamp!==F.stamp(production)||!F.baselineMatches(staffing,baseline))throw Error('Assess current production tasks and save salaries.');F.fund(staffing,data.staff,data.hr,id,data.norms);});
  add('Shared equipment depreciation','asset-master.html',{},()=>BOBS_CAPITAL.depreciation(assets,context.items,context.recipes,F,M2,context.items[0]?.key));
  add('Shared batch labour, expenses and journeys','kitchen-flow.html',{stage:'cost'},()=>{if(!data.costs||data.costs.sourceStamp!==S.costSnapshot(data))throw Error('Review and save costs for current orders and sources.');S.calculate(data,data.costs.choices);});
+ // Funding plans share the same kitchen owner and recipes; they are verified separately from batch prices.
+ for(const [module,title,page] of [['CAPITAL_EXPENDITURE','Kitchen capital expenditure','capital-expenditure.html'],['WORKING_CAPITAL','Kitchen working capital','working-capital.html']]){
+  let saved;try{saved=await V.read(id,module)}catch(e){steps.push({title,status:'unknown',reason:e.message,href:page+'?'+new URLSearchParams({outlet:id})});continue}
+  add(title,page,{},()=>{if(module==='CAPITAL_EXPENDITURE'){BOBS_CAPITAL.savedCapital(saved,assets,context.items,context.recipes,F,M2);return}
+   const op=BOBS_CAPITAL.operating({...data,state:M2.state(context.raw),items:context.items,recipes:context.recipes},id,F,M2,C);
+   if(!saved?.reviewed||saved.date!==C.today()||saved.sourceStamp!==op.sourceStamp)throw Error('Review and save working capital for current kitchen orders and staffing.');
+   BOBS_CAPITAL.workingCapital(op,saved.inputs);
+  });
+ }
  return {name:context.kitchen.name,steps,completed:steps.filter(s=>s.status==='done').length,next:steps.find(s=>s.status!=='done')};
 };
 window.BOBS_KITCHENS=S;
