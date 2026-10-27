@@ -19,7 +19,7 @@ function mount(host,options){
  function persist(){try{sessionStorage.setItem(scope,JSON.stringify({step:state.step,itemKey:state.itemKey,task:state.task,kitchen:state.kitchen,history:state.history.slice(-8)}));}catch(_){} }
  function go(step,answer){error='';if(answer)state.history.push({step:state.step,answer});state.step=step;persist();render();host.querySelector('h3')?.focus({preventScroll:true});host.parentElement?.scrollTo?.({top:0});}
  function button(label,id,action){const b=el('button',label);b.type='button';b.dataset.guideChoice=id;b.onclick=()=>{try{action();}catch(e){error=e.message;render();}};return b;}
- function route(page,label,extra={}){const s=snapshot(),u=new URL(page,location.href);if(s.ctx.outlet)u.searchParams.set('outlet',s.ctx.outlet);for(const [k,v]of Object.entries(extra))if(v!==''&&v!=null)u.searchParams.set(k,v);u.searchParams.set('returnTo',location.href);if(options.journey)u.searchParams.set('guide','continue');const a=el('a',label,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';return a;}
+ function route(page,label,extra={}){const s=snapshot(),u=new URL(page,location.href);if(s.ctx.outlet)u.searchParams.set('outlet',s.ctx.outlet);for(const [k,v]of Object.entries(extra))if(v!==''&&v!=null)u.searchParams.set(k,v);u.searchParams.set('returnTo',location.href);if(options.journey&&!u.searchParams.has('guide'))u.searchParams.set('guide','continue');const a=el('a',label,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';return a;}
  function item(s){return s.items?.find(x=>x.key===state.itemKey)||s.items?.find(x=>x.cat===s.ctx.cat&&String(x.i)===String(s.ctx.index))||s.items?.[0];}
  function productionRoute(s,label){const x=item(s);return route('production-plan.html',label,x?{cat:x.cat,i:x.i}:{});}
  function input(label,name,type,value){const l=el('label',label),i=el('input');i.id='bobsGuide-'+name;i.type=type;i.value=draft[name]??value??'';if(type==='number'){i.min='0.001';i.step='any';}i.oninput=()=>{draft[name]=i.value;};l.append(i);return l;}
@@ -78,6 +78,10 @@ function mount(host,options){
    case 'start':
     ask('What are you trying to do?');
     host.append(el('p','Tell me your goal. I’ll ask one question at a time and take you to the matching controls.'));
+    if(s.ctx.page==='index.html'){
+     host.append(el('p','Welcome to BOBS. Start with your outlets: I’ll check saved details and ask whether you want to continue them or begin a new assessment.'));
+     choices(route('outlets.html','Start guided outlet setup →',{guide:'start'}),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Check saved progress','resume','resume'));break;
+    }
     choices(choose('Set up an outlet','setup','setup',()=>state.task='setup'),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Continue my saved work','resume','resume'));
     break;
    case 'setup':

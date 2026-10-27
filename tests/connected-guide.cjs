@@ -1,6 +1,12 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const source=p=>fs.readFileSync(p,'utf8');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r))};
+test('opening the index itself welcomes the user automatically with the real setup entry',async()=>{
+ const dom=new JSDOM('<main>BOBS</main>',{runScripts:'outside-only',url:'https://bobs.test/index.html'}),w=dom.window;
+ try{w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  assert.equal(w.document.getElementById('bobsCompanion').hidden,false);assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Welcome to BOBS/);const a=[...w.document.querySelectorAll('#bobsGuideDialogue a')].find(a=>a.textContent==='Start guided outlet setup →');assert.equal(new URL(a.href).pathname,'/outlets.html');assert.equal(new URL(a.href).searchParams.get('guide'),'start');
+ }finally{w.close()}
+});
 test('index starts the guided journey; outlet choice hands off once and minimising survives page edits',async()=>{
  assert.match(source('index.html'),/href="outlets.html\?guide=start"/);
  const dom=new JSDOM('<div id="savedModal"><button>Choose saved work</button></div><input id="count" value="2"><div id="cards"><input class="name"></div><input type="checkbox" id="outletsReviewed">',{runScripts:'outside-only',url:'https://bobs.test/outlets.html?guide=start'}),w=dom.window;

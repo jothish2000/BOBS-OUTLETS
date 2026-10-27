@@ -103,7 +103,7 @@ function companionRender(){
  list.append(li)}board.append(list);companionBody.append(board);
 }
 function companionBoot(){
- const journeyKey='bobs-guide-journey-v1',entry=new URLSearchParams(location.search).get('guide');let journey=entry==='start'||entry==='continue';
+ const journeyKey='bobs-guide-journey-v1',entry=new URLSearchParams(location.search).get('guide');let journey=context().page==='index.html'||entry==='start'||entry==='continue';
  try{journey=journey||sessionStorage.getItem(journeyKey)==='active';if(journey)sessionStorage.setItem(journeyKey,'active');}catch(_){}
  // Follow real page navigation, including child editors. This flag stores guidance only.
  document.addEventListener('click',e=>{const a=e.target.closest?.('a[href]');if(!journey||!a||a.download||a.getAttribute('href').startsWith('#'))return;const u=new URL(a.href,location.href);if(u.origin===location.origin&&u.pathname.startsWith(new URL('.',location.href).pathname)&&u.pathname.endsWith('.html')&&!u.searchParams.has('guide')){u.searchParams.set('guide','continue');a.href=u.href;}});
