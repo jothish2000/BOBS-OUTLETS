@@ -41,3 +41,13 @@ a.kitchen-primary-action{display:inline-block;text-decoration:none;color:white;m
 .kitchen-next-choices{scroll-margin-top:72px}
 #kitchenSaveHint:empty{display:none}
 #kitchenSaveHint:not(:empty){background:#fff0b5;border-left:4px solid #b47a00;padding:12px;font-weight:700}
+
+/* The save handoff shares the choices' flow position, never covers the cards. */
+#kitchenNextGuide{scroll-margin-top:64px}
+#kitchenNextGuide:empty{display:none}
+#bobsCompanion.kitchen-next-inline{position:static;width:100%;max-width:100%;max-height:none;margin:0 0 12px;padding:10px 14px;overflow:visible;box-shadow:none;font-size:14px}
+#bobsCompanion.kitchen-next-inline .companion-head{position:static;padding:0 0 6px}
+#bobsCompanion.kitchen-next-inline>details{display:none}
+#bobsCompanion.kitchen-next-inline .bobs-guide-dialogue{padding:4px 0 0}
+#bobsCompanion.kitchen-next-inline p{margin:4px 0}
+#bobsCompanion.kitchen-next-inline .guide-question{font-size:15px}
