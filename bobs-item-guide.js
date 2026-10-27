@@ -3,7 +3,7 @@
  const $=id=>document.getElementById(id);
  function snapshot(){
   const name=$('title')?.textContent||'This item',status=$('status')?.textContent||'Loading item…';
-  const result=(title,instruction,selector,action)=>({name,title,instruction,selector,action});
+  const result=(title,instruction,selector,action)=>({name,title,instruction,selector,action,notice:$('itemCompanionGuide')?.dataset.returnMessage||'',...(selector==='#productionEntry a'?{href:document.querySelector(selector)?.href,action:'Open '+name+' production planner →'}:{})});
   if(!$('controls')||$('controls').disabled||$('editor').hidden)return result(name+' — checking item records',status,$('retryGoogle')&&!$('retryGoogle').hidden?'#retryGoogle':'#status','Show item status / Retry');
   if($('guideStep3')?.getAttribute('aria-current')==='step')return result(name+' — save the reviewed item','Click SAVE THIS ITEM only after reviewing the actual quantities, sides, packing and costs. Wait for Verified in Google or the return to your opening Method 2 window.','#save','Show SAVE THIS ITEM');
   if($('guideStep2')?.getAttribute('aria-current')==='step')return result(name+' — review actual quantities','Review the quantity produced or purchased, Sold Today, sides and packing. Use actual figures; do not enter intended sales as Sold Today. Then use Continue to Save This Item in the page steps.','#continueItemDetails','Show Continue to item quantities');
@@ -26,6 +26,7 @@
   el.scrollIntoView({block:'center',inline:'nearest'});el.focus({preventScroll:true});
  }
  root.BOBS_ITEM_GUIDE={snapshot,focus};
+ document.querySelector('#editor')?.addEventListener('input',()=>{const slot=$('itemCompanionGuide');if(slot)delete slot.dataset.returnMessage;});
  const main=document.querySelector('main');
  if(main)new MutationObserver(()=>root.dispatchEvent(new Event('bobs-guide-context'))).observe(main,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','disabled','aria-current','data-production-ready','data-guide-state','data-delivery-saved']});
  root.dispatchEvent(new Event('bobs-guide-context'));
