@@ -2,7 +2,7 @@
 const link=(page,args={})=>page+'?'+new URLSearchParams({...args,returnTo:location.href}),input=(key,label,value,type='text')=>'<label>'+esc(label)+'<input data-field="'+key+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'min="0" step="any"':'')+'></label>',check=(key,label,value)=>'<label><input data-field="'+key+'" type="checkbox" '+(value?'checked':'')+'> '+esc(label)+'</label>',fields=el=>Object.fromEntries([...el.querySelectorAll('[data-field]')].map(x=>[x.dataset.field,x.type==='checkbox'?x.checked:x.value]));
 function status(text,focus=false){const el=$('kitchenStatus');el.textContent=text;if(focus){el.tabIndex=-1;el.focus();el.scrollIntoView({block:'center'});}}
 function nextFocus(){
- const panel=$('nextAction'),el=panel.querySelector('input[name="kitchenNextChoice"],a,button');if(!el)return;
+ const panel=$('nextAction'),el=panel.querySelector('input[name="kitchenNextChoice"]')||panel.querySelector('a,button');if(!el)return;
  if(stage==='locations'){panel.dataset.guideRequested='true';window.dispatchEvent(new Event('bobs-kitchen-next-ready'));}
  const target=panel.querySelector('#kitchenNextGuide:not(:empty)')||panel.querySelector('.kitchen-next-choices')||el;
  el.focus({preventScroll:true});
