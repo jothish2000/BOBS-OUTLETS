@@ -2,8 +2,9 @@
 const link=(page,args={})=>page+'?'+new URLSearchParams({...args,returnTo:location.href}),input=(key,label,value,type='text')=>'<label>'+esc(label)+'<input data-field="'+key+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'min="0" step="any"':'')+'></label>',check=(key,label,value)=>'<label><input data-field="'+key+'" type="checkbox" '+(value?'checked':'')+'> '+esc(label)+'</label>',fields=el=>Object.fromEntries([...el.querySelectorAll('[data-field]')].map(x=>[x.dataset.field,x.type==='checkbox'?x.checked:x.value]));
 function status(text,focus=false){const el=$('kitchenStatus');el.textContent=text;if(focus){el.tabIndex=-1;el.focus();el.scrollIntoView({block:'center'});}}
 function nextFocus(){
- const panel=$('nextAction'),el=panel.querySelector('input[name="kitchenNextChoice"],a,button');if(!el)return;
- const target=panel.querySelector('.kitchen-next-choices')||el;
+ const panel=$('nextAction'),el=panel.querySelector('input[name="kitchenNextChoice"]')||panel.querySelector('a,button');if(!el)return;
+ if(stage==='locations'){panel.dataset.guideRequested='true';window.dispatchEvent(new Event('bobs-kitchen-next-ready'));}
+ const target=panel.querySelector('#kitchenNextGuide:not(:empty)')||panel.querySelector('.kitchen-next-choices')||el;
  el.focus({preventScroll:true});
  const align=()=>{if(el.isConnected&&document.activeElement===el)target.scrollIntoView({behavior:'instant',block:'start'});};
  align();
@@ -11,12 +12,13 @@ function nextFocus(){
  requestAnimationFrame(align);
 }
 function reviewFocus(){const hint=$('kitchenSaveHint');hint.textContent='Tick the review checkbox above before saving your changes. Then choose your next step.';$('kitchenReviewed').focus({preventScroll:true});$('kitchenReviewed').closest('label').scrollIntoView({behavior:'instant',block:'center'});}
-function clearNext(){ $('nextAction').replaceChildren();if(stage==='locations'&&$('kitchenNextPreview'))$('kitchenNextPreview').hidden=false; }
+window.addEventListener('bobs-kitchen-guide-shown',()=>{const panel=$('nextAction'),first=panel.querySelector('input[name="kitchenNextChoice"]');if(first&&document.activeElement===first&&!panel.querySelector('input[name="kitchenNextChoice"]:checked'))$('kitchenNextGuide')?.scrollIntoView({behavior:'instant',block:'start'});});
+function clearNext(){ window.dispatchEvent(new Event('bobs-kitchen-next-cleared'));delete $('nextAction').dataset.guideRequested;$('nextAction').replaceChildren();if(stage==='locations'&&$('kitchenNextPreview'))$('kitchenNextPreview').hidden=false; }
 function locationNext(record){
  K.requireRegistration(record,loaded.outlets);
  const ids=q.get('outlets')||loaded.outlets.map(o=>o.id).join(','),baseline='outlet-plan.html?'+new URLSearchParams({outlet:ids.split(',')[0]||'',outlets:ids,stage:'baseline'});
  const choice=(value,title,badge,description)=>'<label class="kitchen-next-choice '+value+'"><input type="radio" name="kitchenNextChoice" id="kitchenNext-'+value+'" value="'+value+'"><span><span class="kitchen-next-badge">'+badge+'</span><strong>'+title+'</strong><span>'+description+'</span><span class="kitchen-choice-selected" hidden>✓ Selected next action</span></span></label>';
- $('nextAction').innerHTML='<section class="kitchen-next-panel" aria-labelledby="kitchenNextTitle"><p class="kitchen-saved-check">✓ Kitchen Setup saved and verified in Google</p><h2 id="kitchenNextTitle">What to do next</h2><p>Choose one option below, then use the highlighted button. You can return here at any time.</p><fieldset><legend>Choose your next action</legend><div class="kitchen-next-choices">'+(record.kitchens.length?choice('equipment','Enter existing equipment and capacity','OPTIONAL NOW','Record your machines, number of units and known capacity. Small-kitchen reference help is available; unknown capacity can stay pending. You can also do this later.'):'')+choice('baseline','Continue to outlet expenses and mandatory staff','NEXT REQUIRED STEP','Review each shop’s regular expenses and essential counter staff. Menu quantities will guide production capacity and kitchen workforce later.')+'</div></fieldset>'+(record.kitchens.length?'<label id="kitchenNextEquipment" hidden>Choose the kitchen<select id="kitchenNextOwner">'+record.kitchens.map(k=>'<option value="'+esc(k.id)+'">'+esc(k.name)+'</option>').join('')+'</select></label>':'')+'<p id="kitchenNextSelection" role="status">No next action selected yet. A selection tick shows your choice; the next step is complete only after its own review and save.</p><button id="kitchenNextGo" class="kitchen-primary-action" type="button" disabled>Select an option above to continue</button></section>';
+ $('nextAction').innerHTML='<section class="kitchen-next-panel" aria-labelledby="kitchenNextTitle"><p class="kitchen-saved-check">✓ Kitchen Setup saved and verified in Google</p><h2 id="kitchenNextTitle">What to do next</h2><p>Choose one option below, then use the highlighted button. You can return here at any time.</p><div id="kitchenNextGuide"></div><fieldset><legend>Choose your next action</legend><div class="kitchen-next-choices">'+(record.kitchens.length?choice('equipment','Enter existing equipment and capacity','OPTIONAL NOW','Record your machines, number of units and known capacity. Small-kitchen reference help is available; unknown capacity can stay pending. You can also do this later.'):'')+choice('baseline','Continue to outlet expenses and mandatory staff','NEXT REQUIRED STEP','Review each shop’s regular expenses and essential counter staff. Menu quantities will guide production capacity and kitchen workforce later.')+'</div></fieldset>'+(record.kitchens.length?'<label id="kitchenNextEquipment" hidden>Choose the kitchen<select id="kitchenNextOwner">'+record.kitchens.map(k=>'<option value="'+esc(k.id)+'">'+esc(k.name)+'</option>').join('')+'</select></label>':'')+'<p id="kitchenNextSelection" role="status">No next action selected yet. A selection tick shows your choice; the next step is complete only after its own review and save.</p><button id="kitchenNextGo" class="kitchen-primary-action" type="button" disabled>Select an option above to continue</button></section>';
  if($('kitchenNextPreview'))$('kitchenNextPreview').hidden=true;
  // Navigation choices must not trigger document-level unsaved-business-input indicators.
  $('nextAction').oninput=e=>e.stopPropagation();$('nextAction').onchange=e=>e.stopPropagation();
@@ -71,12 +73,13 @@ $('saveKitchen').onclick=async()=>{
   if(stage==='locations'&&!dirty&&$('nextAction').querySelector('input[name="kitchenNextChoice"]')){status('Using Kitchen Setup already verified in Google. Choose your next action below.');nextFocus();return;}
   reviewFocus();return;
  }
- busy=true;clearNext();const controls=[...$('kitchenBody').querySelectorAll('input,select,button')].map(el=>({el,disabled:el.disabled}));
- controls.forEach(x=>x.el.disabled=true);$('saveKitchen').disabled=true;let saved=false;
+ busy=true;clearNext();const controls=[...$('kitchenBody').querySelectorAll('input,select,button'),$('kitchenReviewed')].map(el=>({el,disabled:el.disabled}));
+ controls.forEach(x=>x.el.disabled=true);const saveLabel=$('saveKitchen').textContent;$('saveKitchen').disabled=true;$('saveKitchen').setAttribute('aria-busy','true');let saved=false;
+ if(stage==='locations'){const message='Saving and verifying with Google… Please wait.';status(message);$('kitchenSaveHint').textContent=message;$('saveKitchen').textContent='Saving and verifying…';}
  try{await saveAction();dirty=false;window.dispatchEvent(new Event('bobs-flow-saved'));saved=true;}
- catch(e){status('Not saved: '+e.message,true);}
- finally{busy=false;controls.forEach(x=>{if(x.el.isConnected)x.el.disabled=x.disabled});$('saveKitchen').disabled=false;}
- if(saved)nextFocus();
+ catch(e){status('Not saved: '+e.message,true);if(stage==='locations')$('kitchenSaveHint').textContent='Not saved: '+e.message;}
+ finally{busy=false;controls.forEach(x=>{if(x.el.isConnected)x.el.disabled=x.disabled});$('saveKitchen').disabled=false;$('saveKitchen').removeAttribute('aria-busy');$('saveKitchen').textContent=saveLabel;}
+ if(saved){if(stage==='locations')$('kitchenSaveHint').textContent='Kitchen Setup saved and verified. Choose your next action below.';nextFocus();}
 };
 $('kitchenReviewed').addEventListener('change',()=>{$('kitchenSaveHint').textContent='';});
 $('kitchenBody').addEventListener('input',()=>{clearNext();dirty=true;$('kitchenReviewed').checked=false;status('Unsaved changes. Review before saving to Google.');});window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});

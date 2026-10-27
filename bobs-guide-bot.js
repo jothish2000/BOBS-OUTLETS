@@ -1,6 +1,6 @@
 /* Question-led companion. Session state is navigation only, never business data or completion. */
 (function(root){'use strict';
-const steps=new Set(['start','setup','outlet-details','locations','location-details','outlet-kitchen-existing','outlet-kitchen-details','outlet-kitchen-summary','page-task','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
+const steps=new Set(['start','setup','outlet-details','locations','location-details','outlet-kitchen-existing','outlet-kitchen-details','outlet-kitchen-summary','kitchen-next','page-task','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
 function mount(host,options){
  let state,scope='',draft={},error='';
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -43,6 +43,15 @@ function mount(host,options){
   if(p?.ready&&state.itemKey&&state.itemKey!==p.itemKey){state.step='quantity';state.history=[];draft={};}
   if(p?.ready)state.itemKey=p.itemKey;
   host.replaceChildren();host.className='bobs-guide-dialogue';
+  if(state.step==='kitchen-next'){
+   if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
+    host.append(el('p','Kitchen Setup saved and verified. Choose your next step.','guide-question'));
+    if(document.getElementById('kitchenNext-equipment'))host.append(el('p','Optional now: record existing equipment and capacity.'));
+    host.append(el('p','Next required: review outlet expenses and mandatory staff.'),el('p','Choose a card below, then use the highlighted button.'));
+    return;
+   }
+   state.step=s.ctx.page==='kitchen-flow.html'?'outlet-kitchen-summary':'page-task';
+  }
   const h=el('h3','Let’s plan your next step');h.tabIndex=-1;host.append(h);
   if(state.history.length){const transcript=el('details'),summary=el('summary','Your answers so far');transcript.append(summary);for(const x of state.history.slice(-6))transcript.append(el('p','You: '+x.answer));host.append(transcript);}
   const ask=text=>{const q=el('p',text,'guide-question');host.append(q);};
@@ -69,7 +78,7 @@ function mount(host,options){
      ask('Review the kitchen decision for every outlet, then save.');
      for(const o of setup.outlets){host.append(el('p',o.name+': '+(o.error?'Pending — '+o.error:o.choice.hasKitchen?'Kitchen: '+o.kitchen.name:'No kitchen at this outlet')));choices(button('Review '+o.name,'review-outlet-'+o.id,()=>{state.setupOutletId=o.id;go('locations');}));}
      host.append(el('p',setup.verified?'These outlet choices are saved and verified. Continue to outlet expenses and menu quantities; required equipment will follow the intended items and production quantities.':'These answers are drafts until you tick the final review and Save Kitchen Setup. Continue to outlet expenses and menu quantities after the verified save. We will gather required equipment from the intended items and production quantities.'));
-     if(setup.verified)choices(button('Show the next step','kitchen-next',()=>pageFocus('#kitchenNextGo')));
+     if(setup.verified)choices(button('Show the next step','kitchen-next',()=>pageFocus('input[name="kitchenNextChoice"]')));
      choices(button('Show final review and Save','kitchen-review',()=>pageFocus('#kitchenReviewed')));break;
     }
     host.append(el('p','Outlet '+(index+1)+' of '+setup.outlets.length+' · '+selected.name,'guide-outlet-name'));
@@ -96,7 +105,7 @@ function mount(host,options){
    case 'page-task':{
     const help=s.pageHelp;
     ask(help?'Shall we work through '+help.title.toLowerCase()+'?':'What would you like to complete on this page?');
-    if(help){host.append(el('p',help.instruction),el('p',help.next));choices(button('Show me where to work on this step','page-work',()=>pageFocus(help.anchor||'main, #flowApp, #itemEditor, form, section:not(#bobsFlowGuide)')));}
+    if(help){host.append(el('p',help.instruction));if(help.steps?.length){const list=el('ol');for(const text of help.steps)list.append(el('li',text));host.append(list);}else if(help.next)host.append(el('p',help.next));choices(button('Show me where to work on this step','page-work',()=>pageFocus(help.anchor||'main, #flowApp, #itemEditor, form, section:not(#bobsFlowGuide)')));}
     if(['asset-master.html','working-capital.html'].includes(s.ctx.page))needProduction(s);
     choices(choose('Find my next saved requirement','page-progress','resume'),choose('Help me plan quantities and equipment','page-production','kitchen'));
     break;
@@ -212,7 +221,8 @@ function mount(host,options){
   persist();
  }
  function update(){if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
- render();return {update};
+ function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
+ render();return {update,kitchenNext};
 }
 root.BOBS_GUIDE_BOT={mount};
 })(window);
