@@ -1663,3 +1663,40 @@ Changed bobs-guide-bot.js (question state, session navigation, scoped child help
 Tester: initial95 focused cases PASS; latest23 UI cases PASS (22 prior plus child-page regression). Latest PR checks all PASS: workload40444099049, quantity40444098952, preservation40444098911, vault/browser40444099106. Native Chrome includes loaded questions, target input retention, time, all-three recipe gate, page focus, mobile bounds, protected equipment/plan saving, reload and existing connected modules. Initial native failure40443617577 was an old always-expanded-board assertion; repaired by asserting question-first entry and explicit expansion, then retested. Local Chrome installation failed due truncated ZIP; no local native browser pass claimed.
 Postmerge all9 checks SUCCESS: Pages40444282515, vault40444282240, production-live-readonly40444282278, quantity40444282203, workload40444282221, recipe-preservation40444282258, equipment40444282213, standards40444282204, market-migration40444282247. Served bobs-guide-bot.js, bobs-roadmap.js/css, bobs-production-plan.js and production-plan.html all byte-match tested source after newline normalisation. Live cloud UI confirmed actual saved data and unsaved07:00 guidance.
 Post-test 5PV-DR by one assistant: PRO actionable questions and all-recipe instructions observed; CON operational recipe reviews/assets/timings/UAT still belong to Owner, bot is a structured question flow rather than arbitrary free-text reasoning; CONNECTIONS source reads and draft actions reuse existing item/recipe/asset/capacity pathways; OBSERVER failed test repaired, no click-as-complete or false saved state, tests/live/UAT separated. Exact next technical step: publish this documentation-only checkpoint on current main with expected-head protection; for further changes fetch main and reread latest ledger, then respond to Owner UAT without reconstructing architecture.
+
+
+## WACP 2026-10-27 — Guide starts with Outlet Setup (intent)
+### Section 1 — Work mode handover
+Owner requests automatic, continuous BOBS guidance from the index Outlet Setup entry. Current main59d8e7d4cd02089a53b3c01d41bd518197e3bdfb fetched and matches local; prior full startup reads remain applicable with no intervening runtime change. Work/Codex coding, testing, release and implementation documentation categories apply; already in Work. Approved bounded rule: entry begins the question flow, existing saved-data choice remains mandatory, and each following page opens its relevant question. Minimise remains available; opening guidance never changes operational records.
+### Section 2 — Codex handover
+Inspected index.html, outlets.html savedModal/init/verified save, bobs-guide-bot.js, bobs-roadmap.js, kitchen locations/next actions, connected tests and native kitchen fixture. Recovery main59d8e7d4 available before edits. Existing authoritative owners/writers unchanged: listOutlets/outletSave with backup/readback; KITCHEN_MASTER; METHOD2; production/assets protected stores. DESIGNED / OWNER APPROVED; implementation/tests/release NOT RUN for this extension. PRO begins at actual entry; CON avoid covering saved-data modal; CONNECTIONS use existing page controls and verified next actions; OBSERVER session navigation must not imply saved completion; YOU/OWNER explicit request defines scope. Next implement entry signal, modal handoff, stage questions and zero-write/minimise regression coverage, then test and publish.
+
+
+## WACP 2026-10-27 — Entry guide implemented and local regressions passed
+### Section 1 — Work mode handover
+IMPLEMENTED / CODE CHECKED / AUTOMATED TESTED: index Outlet Setup now starts guidance. The existing saved/new-data modal is the first guide question; companion opens only after the user chooses, preserving failed-read blocking. Guidance follows page navigation and opens outlet, kitchen, baseline/menu/cost or production questions as applicable. Minimise stays respected on the current page; subsequent pages continue the guide. No automatic operational saves, confirmations or inventory changes.
+### Section 2 — Codex handover
+Changed index.html entry URL, outlets.html guide introduction and choice event, bobs-roadmap.js session/navigation handoff and existing page instruction adapter, bobs-guide-bot.js page-specific entry questions/focus controls, existing HTML JS cache tags, tests/connected-guide.cjs and scripts/verify-outlet-save-help-browser.cjs. No schema/data migration. Main rechecked59d8e7d4 unchanged. Local 25 focused cases and full138 existing vault/connected/production/regression cases PASS, syntax and git diff --check PASS. Browser tests added for real index click → saved/fresh choice → kitchen continuation, baseline,390px bounds, minimise and failed-read blocking, zero automatic writes; native CI NOT RUN yet. PRO asks initial setup choices; CON native/live/UAT pending; CONNECTIONS existing saves and static stage descriptions reused; OBSERVER navigation flag is session UI only, not saved completion. Next publish source branch, run latest-head native and required PR checks, merge/deploy/live verify, then append release evidence to both ledgers.
+
+
+## WACP 2026-10-27 — Index welcome included before the first click
+### Section 1 — Work mode handover
+Extended the entry rule to the moment index.html opens, covering the Owner’s earliest requested starting point. The automatically opened welcome asks the goal and provides Start guided outlet setup, which leads to the real saved/new assessment choice. The ordinary index Outlet Setup link also retains the start signal.
+### Section 2 — Codex handover
+Prior source d2eedb0f86104f5a837a59bdcded2585d8e82926 published in PR97; added initial-index detection and welcome route in the same existing companion, plus focused/native regression assertions. Latest26 focused UI cases PASS; previous full138 cases PASS. No persistence change beyond existing session guidance flag. Native/browser/latest-head checks and live publication still pending for this final extension. Next publish the small delta to PR97 and require fresh latest-head checks before merge.
+
+
+## WACP 2026-10-27 — Home URL compatibility
+### Section 1 — Work mode handover
+The index welcome also applies to the project’s directory/home URL, which serves index.html without its filename. Both home address forms are covered by the focused welcome regression.
+### Section 2 — Codex handover
+Normalised an empty current page name to index.html in bobs-roadmap.js; no change to query ownership, frames or Google stores. Initial PR97 native run40446065044 and all four initial-head checks passed. Latest home/welcome head remains subject to fresh CI and live verification.
+
+
+## WACP 2026-10-27 — Native index navigation repair
+### Section 1 — Work mode handover
+Latest-head native run40446466282 FAILED: welcome setup action opened a child tab, leaving the original index behind; the test waited there for the saved-data choice. Existing non-index guided journey and all earlier browser modules passed. Repaired the first setup action to navigate in the same tab, matching the ordinary index Setup link and continuous-journey intent.
+### Section 2 — Codex handover
+Failure at scripts/verify-outlet-save-help-browser.cjs:14 waiting for #keep after the welcome click. bobs-guide-bot.js route uses _self only for explicit guide=start actions; recipe/supporting editors retain their established child windows. Added target assertion to welcome regression. Focused26 cases and syntax/diff checks must pass, followed by fresh final-head native CI. Prior source c572444db9c3a469238cb4267f297000e2e4e149 not merged/deployed. Next publish bounded fix and rerun latest-head checks; no operational data touched.
+
+Repair retest:26 focused cases PASS; node syntax and git diff --check PASS. Native latest-head CI pending.

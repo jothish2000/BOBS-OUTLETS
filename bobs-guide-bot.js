@@ -1,6 +1,6 @@
 /* Question-led companion. Session state is navigation only, never business data or completion. */
 (function(root){'use strict';
-const steps=new Set(['start','setup','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
+const steps=new Set(['start','setup','outlet-details','locations','location-details','page-task','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
 function mount(host,options){
  let state,scope='',draft={},error='';
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -10,15 +10,21 @@ function mount(host,options){
   const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
   if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
   try{const saved=JSON.parse(sessionStorage.getItem(key));if(saved&&steps.has(saved.step))state={...state,...saved,history:Array.isArray(saved.history)?saved.history.slice(-8):[]};}catch(_){}
+  if(options.journey){
+   const page=s.ctx.page,stage=new URLSearchParams(location.search).get('stage');
+   state.step=page==='outlets.html'?'outlet-details':page==='kitchen-flow.html'&&(!stage||stage==='locations')?'locations':page==='production-plan.html'?'quantity':page==='recipe-cost-editor.html'?'recipes':page==='index.html'?'start':'page-task';
+   state.history=[];
+  }
  }
  function persist(){try{sessionStorage.setItem(scope,JSON.stringify({step:state.step,itemKey:state.itemKey,task:state.task,kitchen:state.kitchen,history:state.history.slice(-8)}));}catch(_){} }
  function go(step,answer){error='';if(answer)state.history.push({step:state.step,answer});state.step=step;persist();render();host.querySelector('h3')?.focus({preventScroll:true});host.parentElement?.scrollTo?.({top:0});}
  function button(label,id,action){const b=el('button',label);b.type='button';b.dataset.guideChoice=id;b.onclick=()=>{try{action();}catch(e){error=e.message;render();}};return b;}
- function route(page,label,extra={}){const s=snapshot(),u=new URL(page,location.href);if(s.ctx.outlet)u.searchParams.set('outlet',s.ctx.outlet);for(const [k,v]of Object.entries(extra))if(v!==''&&v!=null)u.searchParams.set(k,v);u.searchParams.set('returnTo',location.href);const a=el('a',label,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';return a;}
+ function route(page,label,extra={}){const s=snapshot(),u=new URL(page,location.href);if(s.ctx.outlet)u.searchParams.set('outlet',s.ctx.outlet);for(const [k,v]of Object.entries(extra))if(v!==''&&v!=null)u.searchParams.set(k,v);u.searchParams.set('returnTo',location.href);if(options.journey&&!u.searchParams.has('guide'))u.searchParams.set('guide','continue');const a=el('a',label,'guide-action');a.href=u.href;a.target=extra.guide==='start'?'_self':'_blank';a.rel='opener';return a;}
  function item(s){return s.items?.find(x=>x.key===state.itemKey)||s.items?.find(x=>x.cat===s.ctx.cat&&String(x.i)===String(s.ctx.index))||s.items?.[0];}
  function productionRoute(s,label){const x=item(s);return route('production-plan.html',label,x?{cat:x.cat,i:x.i}:{});}
  function input(label,name,type,value){const l=el('label',label),i=el('input');i.id='bobsGuide-'+name;i.type=type;i.value=draft[name]??value??'';if(type==='number'){i.min='0.001';i.step='any';}i.oninput=()=>{draft[name]=i.value;};l.append(i);return l;}
  function focus(id){options.minimise();adapter()?.focus(id);}
+ function pageFocus(selector){const target=document.querySelector(selector);if(!target)throw Error('This control is not ready yet. Wait for the page to load, or use its Retry button.');options.minimise();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
  function needProduction(s){
   if(s.production?.ready)return false;
   const help={
@@ -43,9 +49,39 @@ function mount(host,options){
   const choices=(...buttons)=>{const box=el('div',undefined,'guide-choices');box.append(...buttons);host.append(box);};
   const choose=(text,id,next,action)=>button(text,id,()=>{action?.();go(next,text);});
   switch(state.step){
+   case 'outlet-details':
+    ask('How many outlets are you setting up, and what are their working shifts?');
+    host.append(el('p','Review the outlet count, names and codes, then each outlet’s independent shift start and end times. Existing details are available on this page.'));
+    choices(button('Help me set the outlet count','outlet-count',()=>pageFocus('#count')),button('Show outlet names and shifts','outlet-fields',()=>pageFocus('#cards .name')),button('Show the final review and Save','outlet-review',()=>pageFocus('#outletsReviewed')));
+    host.append(el('p','When the details are correct, tick the page confirmation and Save outlets & go to Kitchen Setup. I’ll meet you there to ask where the food will be prepared.'));
+    break;
+   case 'locations':
+    ask('Does this outlet have a kitchen, or will another kitchen supply it?');
+    host.append(el('p','Keep selling outlets separate from production kitchens. Review any saved kitchens before adding another. Equipment can be recorded now or planned later from your menu quantities.'));
+    choices(choose('Yes — an attached outlet kitchen','attached-kitchen','location-details',()=>state.kitchen='attached'),choose('A shared / separate kitchen supplies it','shared-kitchen','location-details',()=>state.kitchen='shared'),choose('I am planning a new kitchen','proposed-kitchen','location-details',()=>state.kitchen='proposed'),choose('No separate kitchen register needed','local-kitchen','location-details',()=>state.kitchen='local'));
+    break;
+   case 'location-details':
+    ask(state.kitchen==='local'?'Will you use local outlet plans or purchased items?':state.kitchen==='shared'?'Which kitchen will supply the outlets?':state.kitchen==='proposed'?'What kitchen are you planning to open?':'Which outlet does this kitchen belong to?');
+    host.append(el('p',state.kitchen==='local'?'Review the “No separate kitchen register” choice on this page. Purchased items still need their supplier route; anything made locally needs its production plan.':'Review the kitchen name, attached outlet (or separate/common kitchen), operating/proposed status and working shifts. Add an identity only if the kitchen is not already listed.'));
+    choices(button(state.kitchen==='local'?'Show the local-production choice':'Show existing kitchen details','kitchen-details',()=>pageFocus(state.kitchen==='local'?'#noSeparateKitchens':'#locationRows')),button('Show Add kitchen identity','kitchen-add',()=>pageFocus('#addKitchen')),button('Show review and Save','kitchen-review',()=>pageFocus('#kitchenReviewed')));
+    host.append(el('p','After saving and Google verification, choose optional existing equipment or continue to outlet expenses and mandatory staff. Later I’ll ask whether to use saved category quantities or a new production target.'));
+    choices(button('Show choices after the verified save','kitchen-next',()=>pageFocus('#kitchenNextGo')));
+    break;
+   case 'page-task':{
+    const help=s.pageHelp;
+    ask(help?'Shall we work through '+help.title.toLowerCase()+'?':'What would you like to complete on this page?');
+    if(help){host.append(el('p',help.instruction),el('p',help.next));choices(button('Show me where to work on this step','page-work',()=>pageFocus(help.anchor||'main, #flowApp, #itemEditor, form, section:not(#bobsFlowGuide)')));}
+    if(['asset-master.html','working-capital.html'].includes(s.ctx.page))needProduction(s);
+    choices(choose('Find my next saved requirement','page-progress','resume'),choose('Help me plan quantities and equipment','page-production','kitchen'));
+    break;
+   }
    case 'start':
     ask('What are you trying to do?');
     host.append(el('p','Tell me your goal. I’ll ask one question at a time and take you to the matching controls.'));
+    if(s.ctx.page==='index.html'){
+     host.append(el('p','Welcome to BOBS. Start with your outlets: I’ll check saved details and ask whether you want to continue them or begin a new assessment.'));
+     choices(route('outlets.html','Start guided outlet setup →',{guide:'start'}),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Check saved progress','resume','resume'));break;
+    }
     choices(choose('Set up an outlet','setup','setup',()=>state.task='setup'),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Continue my saved work','resume','resume'));
     break;
    case 'setup':
