@@ -46,6 +46,56 @@ await p.click('#addKitchen');assert.equal(await p.locator('#kitchenNextGo').coun
 // Direct method entry cannot skip an unreviewed/missing kitchen register.
 delete db['COMPANY/KITCHEN_MASTER/default'];await p.goto('https://bobs.test/outlet-method-flow.html?outlet=0&outlets=1,2,3');await p.waitForFunction(()=>document.getElementById('baselineGate').textContent.includes('Cannot continue'));
 assert(await p.locator('#method1Btn').isDisabled());assert(await p.locator('#method2Btn').isDisabled());assert.match(await p.locator('#baselineGate').innerText(),/Kitchen Setup/);
+
+// Active Method2 guidance uses the actual item-list adapter. Only backend reads are fixtures.
+const flowTest=await ctx.newPage();const flowWrites=writes.length;
+let workspaceHTML=fs.readFileSync(path.join(root,'method2.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+workspaceHTML=workspaceHTML.replace('</body>','<script src="bobs-number-format.js"></script><script src="shared_data.js"></script><script src="method2-core.js"></script><script>window.__state={selection:{"Breakfast Catalogue":{indices:[0,1]}}};window.__fail=false;window.__delay=0;M2.read=async()=>{if(window.__delay)await new Promise(r=>setTimeout(r,window.__delay));if(window.__fail)throw Error("Fixture Google unavailable");return window.__state};window.BOBS_OPERATIONAL_RECIPES={load:async()=>({recipes:[]})};</script><script src="method2-list.js"></script></body>');
+await ctx.route('**/method2.html?flow=1*',r=>r.fulfill({contentType:'text/html',body:workspaceHTML}));
+await flowTest.goto('https://bobs.test/outlet-method-flow.html?outlets=1,2,3&guide=continue');
+await flowTest.waitForFunction(()=>document.getElementById('baselineGate').textContent.includes('Cannot continue'));
+await flowTest.waitForFunction(()=>document.getElementById('outletHeading').textContent.includes('Shop 1'));
+// Baseline failure is tested above. Isolate the already-approved active-workspace UI here.
+await flowTest.evaluate(()=>{window.BOBS_BASELINE_READY=true;loadMethod('method2')});
+const frame=flowTest.frameLocator('#methodFrame');
+await frame.locator('[data-edit-item]').first().waitFor();
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Idli is selected'));
+assert.doesNotMatch(await flowTest.locator('#bobsGuideDialogue').innerText(),/Complete the saved outlet baseline|Shall we work through method selection/);
+assert.equal(await flowTest.locator('#bobsCompanion').evaluate(el=>getComputedStyle(el).position),'static');
+const panelBox=await flowTest.locator('#bobsCompanion').boundingBox(),frameBox=await flowTest.locator('#methodFrame').boundingBox();
+assert(panelBox.y+panelBox.height<=frameBox.y,'Inline guide cannot overlap iframe');
+const pagesBefore=ctx.pages().length;
+await flowTest.locator('[data-guide-choice=method-flow-work]').click();
+assert(await flowTest.locator('#bobsCompanion').isHidden());
+assert.equal(await frame.locator('[data-edit-item]').first().evaluate(el=>document.activeElement===el),true);
+assert.equal(ctx.pages().length,pagesBefore,'Show action only focuses, never opens editor');
+const edit=frame.locator('[data-edit-item]').first();assert(await edit.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}));
+console.log('BOBS_METHOD_GUIDE_FOCUS:'+(await flowTest.screenshot({type:'jpeg',quality:60})).toString('base64'));
+await flowTest.locator('#bobsCompanionToggle').click();
+await frame.locator('select').first().selectOption('purchased');
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('current Mode is Purchase'));
+const fw=flowTest.frames().find(f=>f.url().includes('method2.html'));
+await fw.evaluate(()=>{window.__state={selection:{'Breakfast Catalogue':{indices:[1]}}};document.getElementById('refresh').click()});
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Mini Idli is selected'));
+await fw.evaluate(()=>{window.__fail=true;document.getElementById('refresh').click()});
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('could not check your saved Method 2'));
+assert.doesNotMatch(await flowTest.locator('#bobsGuideDialogue').innerText(),/Mini Idli is selected/);
+await fw.evaluate(()=>{window.__fail=false;window.__state={};document.getElementById('refresh').click()});
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Choose the categories'));
+await fw.evaluate(()=>{window.__state={selection:{'Breakfast Catalogue':{indices:[0]}}};window.__delay=400;document.getElementById('refresh').click()});
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Reading the saved Method 2'));
+await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Idli is selected'));
+await flowTest.setViewportSize({width:390,height:844});
+await flowTest.locator('[data-guide-choice=method-flow-work]').click();
+assert(await edit.evaluate(el=>document.activeElement===el));
+assert(await edit.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth}));
+assert(await flowTest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+await flowTest.evaluate(()=>loadMethod('method1'));
+await flowTest.locator('#bobsCompanionToggle').click();assert.match(await flowTest.locator('#bobsGuideDialogue').innerText(),/Continue Method 1/);
+await flowTest.evaluate(()=>choice());assert.match(await flowTest.locator('#bobsGuideDialogue').innerText(),/Choose an analysis method/);
+assert.equal(writes.length,flowWrites);await flowTest.close();await ctx.unroute('**/method2.html?flow=1*');
+console.log('PASS active Method2 guide: named item, modes, changed selection, loading/read failure, empty menu, Method1/back, laptop/mobile real Edit focus, no overlay and no writes.');
+
 // Saved-register reload exposes the choices without another write; choosing is not a save.
 db['COMPANY/KITCHEN_MASTER/default']=clone(register);writes.length=0;
 const kitchenUrl='https://bobs.test/kitchen-flow.html?stage=locations&outlet=3&outlets=3%2C1%2C2';
