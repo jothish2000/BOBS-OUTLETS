@@ -5,28 +5,36 @@ const timing={role:'Cook',equipment:'Steamer',setupMin:0,activeMinPerCycle:1,mac
 const recipes=[{name:'Idli',yieldQty:60,yieldUnit:'piece',ingredients:[['Rice',1,'kg',60],['Urad dal',0.25,'kg',100]],productionTiming:timing},{name:'Idli Sambar',yieldQty:9,yieldUnit:'L',ingredients:[['Toor dal',1,'kg',100]],productionTiming:{...timing,equipment:'Stock pot and stove'}},{name:'Coconut Chutney',yieldQty:1,yieldUnit:'kg',ingredients:[['Coconut',500,'g',20]],productionTiming:{...timing,equipment:'Mixer'}}];
 const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{mode:'production',unit:'piece',batchSize:120,batches:1,sold:80,soldConfirmed:true,price:10,condiments:[{recipeName:'Idli Sambar',source:'production',portion:50,portionUnit:'ml'},{recipeName:'Coconut Chutney',source:'production',portion:20,portionUnit:'g'}]}}},'1/ASSET_MASTER/default':{assets:[{id:'G',name:'Existing grinder',quantity:1,ownedQty:1}]},'COMPANY/BOBS_STANDARD_RECIPE/ACTIVE_V1':K.manifest('standard',['test-chunk'],'guidance',3),'COMPANY/BOBS_STANDARD_RECIPE/test-chunk':K.chunkData('standard',recipes,'guidance',0,1)};
 (async()=>{const browser=await chromium.launch({channel:process.env.BOBS_BROWSER_CHANNEL||'chrome',headless:true});try{
- const ctx=await browser.newContext({viewport:{width:1280,height:900}}),errors=[],writes=[];ctx.setDefaultTimeout(60000);
+ const ctx=await browser.newContext({viewport:{width:1280,height:900}}),errors=[],writes=[];let failPlanSave=false;ctx.setDefaultTimeout(60000);
  await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(u.hostname==='bobs.test'){const f=path.join(root,decodeURIComponent(u.pathname.slice(1)));return fs.existsSync(f)?route.fulfill({path:f}):route.fulfill({status:404,body:'missing'});}
   if(u.hostname!=='script.google.com')return route.abort();
-  if(req.method()==='POST'){const b=JSON.parse(req.postData());writes.push(b.module);db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return route.fulfill({body:'ok'});}
+  if(req.method()==='POST'){const b=JSON.parse(req.postData());writes.push(b.module);if(b.module==='OUTLET_PRODUCTION_PLAN'){await new Promise(r=>setTimeout(r,500));if(failPlanSave)return route.abort();}db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return route.fulfill({body:'ok'});}
   const data=u.searchParams.get('action')==='outletList'?{ok:true,outlets:[{outletId:'1',outletName:'Rasipuram',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}:{ok:true,found:!!db[u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey')],data:db[u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey')]??null};
   return route.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(data)+')'});
  });
- const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());const url='https://bobs.test/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0&returnTo=https%3A%2F%2Fbobs.test%2Fmethod2.html%3Foutlet%3D1';
- await p.goto(url);await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);assert(await p.locator('#intendedQuantity').isEnabled());await p.fill('#intendedQuantity','360');
- // Exercise the loaded companion, not a stub: target input must survive its input event and background reads.
- await p.click('#bobsCompanionToggle');await p.locator('[data-guide-choice=production]').click();await p.locator('[data-guide-choice=own]').click();
- assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Saved category quantity: 120 piece/);
- await p.locator('[data-guide-choice=new-target]').click();await p.fill('#bobsGuide-quantity','360');assert.equal(await p.inputValue('#bobsGuide-quantity'),'360');
- await p.locator('[data-guide-choice=apply-target]').click();await p.fill('#bobsGuide-time','07:00');await p.locator('[data-guide-choice=apply-time]').click();
- assert.match(await p.locator('#recipeReviewIntro').innerText(),/360 piece ready by 7:00 AM today/);assert.equal(await p.locator('#bobsGuideDialogue ol a').count(),3);
- await p.locator('[data-guide-choice=recipe-next]').click();assert.match(await p.locator('.guide-error').innerText(),/tick the page confirmation first/);
- await p.locator('[data-guide-choice=show-recipes]').click();assert(await p.locator('#bobsCompanion').isHidden());assert.equal(await p.evaluate(()=>document.activeElement.id),'recipeReviewHeading');
- await p.check('#recipeReviewed');await p.click('#bobsCompanionToggle');await p.locator('[data-guide-choice=recipe-next]').click();await p.locator('[data-guide-choice=some]').click();
- assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Recipe equipment: Stock pot/);assert.equal(writes.length,0);
+
+ const owner=await ctx.newPage();owner.on('pageerror',e=>errors.push(e.message));owner.on('dialog',d=>d.accept());
+ await owner.goto('https://bobs.test/method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode=production');
+ await owner.waitForFunction(()=>document.getElementById('controls')?.disabled===false);
+ await owner.locator('[data-guide-choice=item-open-production]').waitFor();
+ const parentURL=owner.url(),opening=owner.waitForEvent('popup');await owner.locator('[data-guide-choice=item-open-production]').click();
+ const p=await opening;p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());
+ const url=p.url();assert.equal(new URL(url).searchParams.get('returnTo'),parentURL);assert.equal(new URL(url).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(url).searchParams.get('i'),'0');
+ await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);
+ await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
+ assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
+ await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
+ await p.fill('#intendedQuantity','360');await p.fill('#readyBy','07:00');
+ await p.locator('[data-guide-choice=plan-quantity-next]').click();
+ assert.match(await p.locator('#recipeReviewIntro').innerText(),/360 piece ready by 7:00 AM today/);assert.equal(await p.locator('#bobsGuideDialogue a[href*="recipe-cost-editor"]').count(),3);
+ await p.locator('[data-guide-choice=plan-recipeReviewed]').click();assert(await p.locator('#bobsCompanion').isVisible());assert.equal(await p.evaluate(()=>document.activeElement.id),'recipeReviewed');
+ const pane=await p.locator('#bobsCompanion').boundingBox(),field=await p.locator('#recipeReviewed').boundingBox();assert(field.x+field.width<pane.x,'Guide reserves space instead of covering focused control');
+ await p.check('#recipeReviewed');assert.match(await p.locator('#bobsGuideDialogue').innerText(),/choose equipment/);
+ assert.equal(writes.length,0);
+ await p.locator('#bobsCompanion .companion-head button').click();await p.fill('#readyBy','08:00');assert(await p.locator('#bobsCompanion').isHidden(),'Typing does not reopen a minimised guide');
+ await p.click('#bobsCompanionToggle');await p.locator('[data-guide-choice=plan-quantity-next]').click();
  await p.setViewportSize({width:390,height:844});const bounds=await p.locator('#bobsCompanion').boundingBox();assert(bounds.x>=0&&bounds.x+bounds.width<=391);assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
- if(process.env.BOBS_CAPACITY_SCREENSHOT_DIR){fs.mkdirSync(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,'interactive-guide-mobile.png')});}
- await p.locator('#bobsCompanion .companion-head button').click();await p.setViewportSize({width:1280,height:900});
+ await p.setViewportSize({width:1071,height:580});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));console.log('BOBS_INTERACTIVE_PLAN:'+(await p.screenshot({type:'jpeg',quality:60})).toString('base64'));
  const cards=p.locator('[data-capacity]');assert.match(await cards.nth(1).innerText(),/18\.000 L/);assert.equal(await cards.nth(1).locator('[data-help-reference="1"]').count(),0);assert.match(await cards.nth(2).innerText(),/7\.200 kg/);assert.equal(writes.length,0);
  const choose=async(index,capacity,working)=>{await p.locator('[data-help-reference="'+index+'"]').first().locator('xpath=ancestor::details').evaluate(el=>el.open=true);await p.locator('[data-help-reference="'+index+'"]').first().click();await p.selectOption('#machineCapacity',capacity);if(working)await p.fill('#machineWorking',working);if(await p.locator('#machineBasis').count())await p.check('#machineBasis');await p.locator('dialog button[type=submit]').click();await p.waitForSelector('dialog',{state:'detached'});};
  await choose(0,'1');await choose(2,'0','9');await choose(3,'0','1');
@@ -34,6 +42,15 @@ const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{
  await p.fill('#readyBy','10:00');for(const el of await p.locator('[data-process]').all()){await el.locator('[data-field=role]').fill('Cook');await el.locator('[data-field=start]').fill('06:00');await el.locator('[data-field=deadline]').fill('10:00');for(const f of ['setup','active','machine','supervision','finish','clean','passive'])await el.locator('[data-field='+f+']').fill(f==='machine'?'10':f==='supervision'||f==='passive'?'0':'1');await el.locator('[data-field=reviewed]').check();}
  await p.check('#capacityReviewed');await p.check('#recipeReviewed');await p.click('#assessTime');assert.match(await p.locator('#timeAssessment').innerText(),/Active staff/);
  await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await p.locator('[data-capacity]').nth(1).scrollIntoViewIfNeeded();if(process.env.BOBS_CAPACITY_SCREENSHOT_DIR){fs.mkdirSync(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,'sambar-guidance-mobile.png')});}
- await p.click('#saveProductionPlan');await p.waitForURL('**/method2.html?outlet=1');assert(db['1/OUTLET_PRODUCTION_PLAN/default'].reviewed);assert.equal(db['1/ASSET_MASTER/default'].assets.length,4);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert(writes.includes('METHOD2_BACKUPS'));assert(writes.includes('ASSET_MASTER_BACKUPS'));const grind=db['1/OUTLET_PRODUCTION_PLAN/default'].processes.find(x=>x.quantityMode==='ingredient');assert.deepEqual(grind.assetSlots,['G#1']);assert.equal(grind.ingredientKeys.length,1);assert(grind.capacityBasisReviewed);assert.match(grind.capacityReference.url,/sowbaghya/);
- await p.goto(url);await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);assert.equal(await p.locator('[data-process]').count(),4);assert.match(await p.locator('[data-process="'+grind.id+'"] .automatic-quantity').innerText(),/6\.000 kg/);assert.match(await p.locator('[data-capacity]').filter({has:p.getByRole('heading',{name:'Idli Sambar',exact:true})}).innerText(),/2 cycles/);assert.deepEqual(errors,[]);console.log('PASS production guidance: automatic main/side/ingredient loads, specific help, reviewed working capacities, shared asset reuse, mobile, protected save and reload; no live writes.');
+
+ await p.setViewportSize({width:1071,height:580});await p.locator('[data-guide-choice=plan-quantity-next]').click();
+ await p.locator('[data-guide-choice=plan-delivery-next]').waitFor();await p.locator('[data-guide-choice=plan-delivery-next]').click();
+ failPlanSave=true;await p.locator('[data-guide-choice=plan-save]').click();
+ await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='saving');assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Saving and verifying/);
+ await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='error');assert(!p.isClosed());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/not fully saved/);assert.equal(await p.inputValue('#intendedQuantity'),'360');
+ failPlanSave=false;await p.locator('[data-guide-choice=plan-retry-step]').click();await p.locator('[data-guide-choice=plan-save]').click();await p.waitForEvent('close');
+ await owner.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Production plan saved and verified. Let’s continue'));
+ assert(await owner.locator('#bobsCompanion').isVisible());assert.equal(owner.url(),parentURL);
+assert(db['1/OUTLET_PRODUCTION_PLAN/default'].reviewed);assert.equal(db['1/ASSET_MASTER/default'].assets.length,4);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert(writes.includes('METHOD2_BACKUPS'));assert(writes.includes('ASSET_MASTER_BACKUPS'));const grind=db['1/OUTLET_PRODUCTION_PLAN/default'].processes.find(x=>x.quantityMode==='ingredient');assert.deepEqual(grind.assetSlots,['G#1']);assert.equal(grind.ingredientKeys.length,1);assert(grind.capacityBasisReviewed);assert.match(grind.capacityReference.url,/sowbaghya/);
+ const reopened=await ctx.newPage();await reopened.goto(url);await reopened.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);assert.equal(await reopened.locator('[data-process]').count(),4);assert.match(await reopened.locator('[data-process="'+grind.id+'"] .automatic-quantity').innerText(),/6\.000 kg/);assert.match(await reopened.locator('[data-capacity]').filter({has:reopened.getByRole('heading',{name:'Idli Sambar',exact:true})}).innerText(),/2 cycles/);assert.deepEqual(errors,[]);console.log('PASS production guidance: automatic main/side/ingredient loads, specific help, reviewed working capacities, shared asset reuse, mobile, protected save and reload; no live writes.');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
