@@ -1,6 +1,27 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const source=p=>fs.readFileSync(p,'utf8');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r))};
+test('index starts the guided journey; outlet choice hands off once and minimising survives page edits',async()=>{
+ assert.match(source('index.html'),/href="outlets.html\?guide=start"/);
+ const dom=new JSDOM('<div id="savedModal"><button>Choose saved work</button></div><input id="count" value="2"><div id="cards"><input class="name"></div><input type="checkbox" id="outletsReviewed">',{runScripts:'outside-only',url:'https://bobs.test/outlets.html?guide=start'}),w=dom.window;
+ try{
+ w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+ const panel=w.document.getElementById('bobsCompanion');assert(panel.hidden,'Saved-data choice stays foremost');assert.equal(w.sessionStorage.getItem('bobs-guide-journey-v1'),'active');
+ w.document.getElementById('savedModal').classList.add('hidden');w.dispatchEvent(new w.Event('bobs-outlet-choice'));await settle();
+ assert(!panel.hidden);assert.match(panel.textContent,/How many outlets/);w.document.querySelector('[data-guide-choice=outlet-count]').click();assert(panel.hidden);assert.equal(w.document.activeElement.id,'count');
+ w.document.getElementById('count').value='3';w.document.getElementById('count').dispatchEvent(new w.Event('input',{bubbles:true}));w.dispatchEvent(new w.Event('bobs-outlet-choice'));assert(panel.hidden);assert.equal(w.document.getElementById('count').value,'3');assert.equal(w.document.getElementById('outletsReviewed').checked,false);
+ }finally{w.close()}
+});
+test('guided navigation adapts to the page instead of resuming a stale production question',()=>{
+ for(const [page,expected]of [['kitchen-flow.html?stage=locations','Does this outlet have a kitchen'],['outlet-plan.html?stage=baseline','outlet expenses and mandatory staff'],['recipe-cost-editor.html','You are reviewing a recipe']]){
+  const dom=new JSDOM('<div id="host"></div><div id="locationRows"></div><button id="addKitchen"></button><input type="checkbox" id="kitchenReviewed">',{runScripts:'outside-only',url:'https://bobs.test/'+page}),w=dom.window;
+  try{w.sessionStorage.setItem('bobs-guide-conversation-v1:1',JSON.stringify({step:'equipment',history:[]}));w.eval(source('bobs-guide-bot.js'));
+   const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{journey:true,snapshot:()=>({ctx:{outlet:'1',page:page.split('?')[0]},pageHelp:{title:'Outlet expenses and mandatory staff',instruction:'Review expenses and coverage.',next:'After this: menu quantities'}}),minimise(){},refresh(){}});
+   assert.match(w.document.getElementById('host').textContent,new RegExp(expected));
+   if(page.startsWith('kitchen-flow')){w.document.querySelector('[data-guide-choice=shared-kitchen]').click();bot.update();assert.match(w.document.getElementById('host').textContent,/Which kitchen will supply/);w.document.querySelector('[data-guide-choice=kitchen-review]').click();assert.equal(w.document.activeElement.id,'kitchenReviewed');assert.equal(w.document.getElementById('kitchenReviewed').checked,false);}
+  }finally{w.close()}
+ }
+});
 test('companion follows the owner, displays real pending requirements, and never treats a draft as verified',async()=>{
  const dom=new JSDOM('<main><input id="quantity" value="540"></main>',{runScripts:'outside-only',url:'https://bobs.test/production-plan.html?outlet=1'}),w=dom.window;let writes=0;
  try{
