@@ -14,6 +14,19 @@ const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{
  });
  const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());const url='https://bobs.test/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0&returnTo=https%3A%2F%2Fbobs.test%2Fmethod2.html%3Foutlet%3D1';
  await p.goto(url);await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);assert(await p.locator('#intendedQuantity').isEnabled());await p.fill('#intendedQuantity','360');
+ // Exercise the loaded companion, not a stub: target input must survive its input event and background reads.
+ await p.click('#bobsCompanionToggle');await p.locator('[data-guide-choice=production]').click();await p.locator('[data-guide-choice=own]').click();
+ assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Saved category quantity: 120 piece/);
+ await p.locator('[data-guide-choice=new-target]').click();await p.fill('#bobsGuide-quantity','360');assert.equal(await p.inputValue('#bobsGuide-quantity'),'360');
+ await p.locator('[data-guide-choice=apply-target]').click();await p.fill('#bobsGuide-time','07:00');await p.locator('[data-guide-choice=apply-time]').click();
+ assert.match(await p.locator('#recipeReviewIntro').innerText(),/360 piece ready by 7:00 AM today/);assert.equal(await p.locator('#bobsGuideDialogue ol a').count(),3);
+ await p.locator('[data-guide-choice=recipe-next]').click();assert.match(await p.locator('.guide-error').innerText(),/tick the page confirmation first/);
+ await p.locator('[data-guide-choice=show-recipes]').click();assert(await p.locator('#bobsCompanion').isHidden());assert.equal(await p.evaluate(()=>document.activeElement.id),'recipeReviewHeading');
+ await p.check('#recipeReviewed');await p.click('#bobsCompanionToggle');await p.locator('[data-guide-choice=recipe-next]').click();await p.locator('[data-guide-choice=some]').click();
+ assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Recipe equipment: Stock pot/);assert.equal(writes.length,0);
+ await p.setViewportSize({width:390,height:844});const bounds=await p.locator('#bobsCompanion').boundingBox();assert(bounds.x>=0&&bounds.x+bounds.width<=391);assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+ if(process.env.BOBS_CAPACITY_SCREENSHOT_DIR){fs.mkdirSync(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,'interactive-guide-mobile.png')});}
+ await p.locator('#bobsCompanion .companion-head button').click();await p.setViewportSize({width:1280,height:900});
  const cards=p.locator('[data-capacity]');assert.match(await cards.nth(1).innerText(),/18\.000 L/);assert.equal(await cards.nth(1).locator('[data-help-reference="1"]').count(),0);assert.match(await cards.nth(2).innerText(),/7\.200 kg/);assert.equal(writes.length,0);
  const choose=async(index,capacity,working)=>{await p.locator('[data-help-reference="'+index+'"]').first().locator('xpath=ancestor::details').evaluate(el=>el.open=true);await p.locator('[data-help-reference="'+index+'"]').first().click();await p.selectOption('#machineCapacity',capacity);if(working)await p.fill('#machineWorking',working);if(await p.locator('#machineBasis').count())await p.check('#machineBasis');await p.locator('dialog button[type=submit]').click();await p.waitForSelector('dialog',{state:'detached'});};
  await choose(0,'1');await choose(2,'0','9');await choose(3,'0','1');

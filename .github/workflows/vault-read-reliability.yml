@@ -21,6 +21,7 @@ on:
       - 'method2-packing-ui.js'
       - 'method2-item.js'
       - 'method2-item.html'
+      - 'bobs-guide-bot.js'
       - 'bobs-roadmap*'
       - 'bobs-outlet*'
       - 'bobs-item-full-cost.js'
@@ -69,6 +70,7 @@ on:
       - 'method2-packing-ui.js'
       - 'method2-item.js'
       - 'method2-item.html'
+      - 'bobs-guide-bot.js'
       - 'bobs-roadmap*'
       - 'bobs-outlet*'
       - 'bobs-item-full-cost.js'
@@ -149,6 +151,7 @@ jobs:
           node --check method2-item.js
           node --check bobs-roadmap-core.js
           node --check bobs-roadmap.js
+          node --check bobs-guide-bot.js
           node --check bobs-outlet-flow-core.js
           node --check bobs-outlet-plan.js
           node --check bobs-item-full-cost.js

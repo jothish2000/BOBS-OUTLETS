@@ -35,3 +35,53 @@ test('rice grinding autofills from the recipe and can reuse an asset without add
 test('a new preparation stage is attached to the selected side rather than always the main dish',async()=>{
  const f=await fixture('piece',sideOptions),d=f.w.document;f.$('processRequirement').value=f.key+':Idli Sambar';f.$('addProcess').click();assert.match(d.querySelectorAll('[data-process]')[3].textContent,/Idli \/ Idli Sambar/);assert.equal(f.writes.length,0);f.dom.window.close();
 });
+
+function guideFixture(f){
+ const host=f.w.document.createElement('div');f.w.document.body.append(host);let minimised=0;
+ f.w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));
+ const ui=f.w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{outlet:'1',page:'production-plan.html'}}),minimise:()=>minimised++,refresh:()=>{}});
+ const click=id=>{const b=host.querySelector('[data-guide-choice="'+id+'"]');assert(b,'Missing guide choice: '+id);b.click();};
+ const type=(id,value)=>{const i=host.querySelector('#bobsGuide-'+id);i.value=value;i.dispatchEvent(new f.w.Event('input',{bubbles:true}));};
+ return {host,ui,click,type,minimised:()=>minimised};
+}
+test('readiness instructions explicitly cover every selected recipe, with exact links and no visit completion',async()=>{
+ const f=await fixture('piece',sideOptions);f.input('#intendedQuantity','360');f.input('#readyBy','07:00');
+ assert.match(f.$('recipeReviewIntro').textContent,/360 piece ready by 7:00 AM today/);
+ assert.match(f.$('recipeReviewIntro').textContent,/review all 3 recipes/);
+ assert.match(f.$('recipeReviewGuide').textContent,/Calculate quantities from reference/);
+ assert.equal(f.$('recipePlanLinks').querySelectorAll('li').length,3);
+ const urls=[...f.$('recipePlanLinks').querySelectorAll('a')].map(a=>new URL(a.href));
+ assert.deepEqual(urls.map(u=>u.searchParams.get('qty')),['360','18','7.2']);
+ assert(urls.every(u=>u.searchParams.get('returnTo')===f.w.location.href));
+ assert.match(f.$('recipePlanLinks').textContent,/Recipe review required/);
+ assert.equal(f.$('recipeReviewed').checked,false);assert.equal(f.writes.length,0);
+ f.dom.window.close();
+});
+test('conversational target and time update only the draft, recipe gate prevents pretend completion',async()=>{
+ const f=await fixture('piece',sideOptions),g=guideFixture(f);g.click('production');g.click('own');
+ assert.match(g.host.textContent,/Saved category quantity: 120 piece/);g.click('new-target');g.type('quantity','1200');g.click('apply-target');
+ assert.equal(f.$('intendedQuantity').value,'1200');assert.equal(f.db['1/METHOD2/default'].itemEditors[f.key].batchSize,120);assert.equal(f.db['1/METHOD2/default'].itemEditors[f.key].sold,80);
+ g.type('time','07:00');g.click('apply-time');assert.equal(f.$('readyBy').value,'07:00');assert.equal(g.host.querySelectorAll('ol a').length,3);
+ g.click('recipe-next');assert.match(g.host.textContent,/tick the page confirmation first/);assert.equal(f.$('recipeReviewed').checked,false);
+ f.input('#recipeReviewed',true);g.click('recipe-next');assert.match(g.host.textContent,/already own the equipment/);g.click('some');
+ assert.match(g.host.textContent,/Recipe equipment: Steamer/);assert.match(g.host.textContent,/Asset Master/);assert.equal(f.writes.length,0);
+ f.dom.window.close();
+});
+test('saved quantity choice is distinct from the draft; invalid target and time never apply',async()=>{
+ const f=await fixture(),g=guideFixture(f);f.input('#intendedQuantity','360');g.click('production');g.click('own');
+ assert.match(g.host.textContent,/Current plan: 360 piece/);g.click('saved-quantity');assert.equal(f.$('intendedQuantity').value,'120');
+ g.click('apply-time');assert.match(g.host.textContent,/valid ready-by time/);g.click('back');g.click('new-target');g.type('quantity','-1');g.click('apply-target');assert.match(g.host.textContent,/positive intended/);assert.equal(f.$('intendedQuantity').value,'120');assert.equal(f.writes.length,0);f.dom.window.close();
+});
+test('guide equipment action opens the real process dialog and adds inventory only as a draft',async()=>{
+ const f=await fixture(),g=guideFixture(f);g.click('production');g.click('own');g.click('keep-quantity');g.type('time','07:00');g.click('apply-time');f.input('#recipeReviewed',true);g.click('recipe-next');g.click('none');
+ const b=[...g.host.querySelectorAll('button')].find(b=>b.textContent.startsWith('Compare / add')&&b.textContent.includes('steamer'));assert(b);b.click();
+ assert(f.w.document.querySelector('dialog'));assert.equal(g.minimised(),1);f.$('machineCapacity').value='1';f.$('machineOwned').value='1';f.w.document.querySelector('dialog form').dispatchEvent(new f.w.Event('submit',{cancelable:true}));
+ assert.equal(f.w.document.querySelector('dialog'),null);assert.equal(f.w.BOBS_PRODUCTION_GUIDE.snapshot().assets.length,2);assert.equal(f.db['1/ASSET_MASTER/default'].assets.length,1);assert.equal(f.writes.length,0);
+ f.dom.window.close();
+});
+test('conversation survives minimising/remounting but never confirms business data or mixes owners',async()=>{
+ const f=await fixture(),g=guideFixture(f);g.click('setup');g.click('existing');
+ const second=guideFixture(f);assert.match(second.host.textContent,/Where will this outlet/);assert.equal(f.$('recipeReviewed').checked,false);assert.equal(f.writes.length,0);
+ const host=f.w.document.createElement('div');f.w.document.body.append(host);f.w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{outlet:'2',page:'method2.html'}}),minimise(){},refresh(){}});
+ assert.match(host.textContent,/What are you trying to do/);assert.doesNotMatch(host.textContent,/Your answers so far/);f.dom.window.close();
+});
