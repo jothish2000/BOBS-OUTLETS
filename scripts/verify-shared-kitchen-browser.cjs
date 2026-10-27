@@ -1,7 +1,7 @@
 /* Real page scripts against an isolated Google fixture; never writes live business records. */
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright'),G=require('../recipe-market-google-store.js'),root=path.resolve(__dirname,'..');
 const date=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}),id='Kitchen-Elimedu',key='Breakfast Catalogue::0',shiftTimes=[{start:'04:30',end:'13:30'}],recipe={name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',1,'kg',60]],productionTiming:{role:'Cook',equipment:'Steamer',setupMin:10,activeMinPerCycle:5,machineMinPerCycle:15,finishMinPerCycle:5,cleanupMin:10}},norms={...require('../tests/fixtures/thp-norms.json'),payrollRules:require('../tests/fixtures/payroll-rules.json')},db={
- 'COMPANY/KITCHEN_MASTER/default':{schema:1,reviewed:true,kitchens:[{id,name:'Elimedu shop kitchen',outletId:'3',status:'operating',shiftTimes}]},
+ 'COMPANY/KITCHEN_MASTER/default':{schema:2,reviewed:true,outletDecisions:{'1':{hasKitchen:false},'2':{hasKitchen:false},'3':{hasKitchen:true,kitchenId:id}},kitchens:[{id,name:'Elimedu shop kitchen',outletId:'3',status:'operating',shiftTimes}]},
  'COMPANY/BOBS_STANDARD_RECIPE/ACTIVE_V1':G.manifest('standard',['test-chunk'],'kitchen',1),
  'COMPANY/BOBS_STANDARD_RECIPE/test-chunk':G.chunkData('standard',[recipe],'kitchen',0,1),
  'COMPANY/STAFF_MASTER/default':{staff:[{staffId:'E1',name:'Kitchen cook',monthlyCtc:31000}]},

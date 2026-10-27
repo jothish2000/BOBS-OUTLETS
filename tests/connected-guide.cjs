@@ -21,12 +21,12 @@ test('index starts the guided journey; outlet choice hands off once and minimisi
  }finally{w.close()}
 });
 test('guided navigation adapts to the page instead of resuming a stale production question',()=>{
- for(const [page,expected]of [['kitchen-flow.html?stage=locations','Does this outlet have a kitchen'],['outlet-plan.html?stage=baseline','outlet expenses and mandatory staff'],['recipe-cost-editor.html','You are reviewing a recipe']]){
+ for(const [page,expected]of [['kitchen-flow.html?stage=locations','checking the saved outlets and kitchens'],['outlet-plan.html?stage=baseline','outlet expenses and mandatory staff'],['recipe-cost-editor.html','You are reviewing a recipe']]){
   const dom=new JSDOM('<div id="host"></div><div id="locationRows"></div><button id="addKitchen"></button><input type="checkbox" id="kitchenReviewed">',{runScripts:'outside-only',url:'https://bobs.test/'+page}),w=dom.window;
   try{w.sessionStorage.setItem('bobs-guide-conversation-v1:1',JSON.stringify({step:'equipment',history:[]}));w.eval(source('bobs-guide-bot.js'));
    const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{journey:true,snapshot:()=>({ctx:{outlet:'1',page:page.split('?')[0]},pageHelp:{title:'Outlet expenses and mandatory staff',instruction:'Review expenses and coverage.',next:'After this: menu quantities'}}),minimise(){},refresh(){}});
    assert.match(w.document.getElementById('host').textContent,new RegExp(expected));
-   if(page.startsWith('kitchen-flow')){w.document.querySelector('[data-guide-choice=shared-kitchen]').click();bot.update();assert.match(w.document.getElementById('host').textContent,/Which kitchen will supply/);w.document.querySelector('[data-guide-choice=kitchen-review]').click();assert.equal(w.document.activeElement.id,'kitchenReviewed');assert.equal(w.document.getElementById('kitchenReviewed').checked,false);}
+   if(page.startsWith('kitchen-flow')){bot.update();assert.equal(w.document.querySelector('[data-guide-choice=outlet-kitchen-no]'),null);assert.equal(w.document.getElementById('kitchenReviewed').checked,false);}
   }finally{w.close()}
  }
 });

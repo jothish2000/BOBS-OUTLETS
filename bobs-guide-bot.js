@@ -1,11 +1,11 @@
 /* Question-led companion. Session state is navigation only, never business data or completion. */
 (function(root){'use strict';
-const steps=new Set(['start','setup','outlet-details','locations','location-details','page-task','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
+const steps=new Set(['start','setup','outlet-details','locations','location-details','outlet-kitchen-existing','outlet-kitchen-details','outlet-kitchen-summary','page-task','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
 function mount(host,options){
  let state,scope='',draft={},error='';
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
- function snapshot(){const s=options.snapshot();return {...s,production:adapter()?.snapshot()};}
+ function snapshot(){const s=options.snapshot();return {...s,production:adapter()?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
  function restore(s){
   const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
   if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
@@ -13,10 +13,10 @@ function mount(host,options){
   if(options.journey){
    const page=s.ctx.page,stage=new URLSearchParams(location.search).get('stage');
    state.step=page==='outlets.html'?'outlet-details':page==='kitchen-flow.html'&&(!stage||stage==='locations')?'locations':page==='production-plan.html'?'quantity':page==='recipe-cost-editor.html'?'recipes':page==='index.html'?'start':'page-task';
-   state.history=[];
+   state.history=[];if(state.step==='locations')state.setupOutletId='';
   }
  }
- function persist(){try{sessionStorage.setItem(scope,JSON.stringify({step:state.step,itemKey:state.itemKey,task:state.task,kitchen:state.kitchen,history:state.history.slice(-8)}));}catch(_){} }
+ function persist(){try{sessionStorage.setItem(scope,JSON.stringify({step:state.step,setupOutletId:state.setupOutletId,itemKey:state.itemKey,task:state.task,kitchen:state.kitchen,history:state.history.slice(-8)}));}catch(_){} }
  function go(step,answer){error='';if(answer)state.history.push({step:state.step,answer});state.step=step;persist();render();host.querySelector('h3')?.focus({preventScroll:true});host.parentElement?.scrollTo?.({top:0});}
  function button(label,id,action){const b=el('button',label);b.type='button';b.dataset.guideChoice=id;b.onclick=()=>{try{action();}catch(e){error=e.message;render();}};return b;}
  function route(page,label,extra={}){const s=snapshot(),u=new URL(page,location.href);if(s.ctx.outlet)u.searchParams.set('outlet',s.ctx.outlet);for(const [k,v]of Object.entries(extra))if(v!==''&&v!=null)u.searchParams.set(k,v);u.searchParams.set('returnTo',location.href);if(options.journey&&!u.searchParams.has('guide'))u.searchParams.set('guide','continue');const a=el('a',label,'guide-action');a.href=u.href;a.target=extra.guide==='start'?'_self':'_blank';a.rel='opener';return a;}
@@ -56,17 +56,43 @@ function mount(host,options){
     host.append(el('p','When the details are correct, tick the page confirmation and Save outlets & go to Kitchen Setup. I’ll meet you there to ask where the food will be prepared.'));
     break;
    case 'locations':
-    ask('Does this outlet have a kitchen, or will another kitchen supply it?');
-    host.append(el('p','Keep selling outlets separate from production kitchens. Review any saved kitchens before adding another. Equipment can be recorded now or planned later from your menu quantities.'));
-    choices(choose('Yes — an attached outlet kitchen','attached-kitchen','location-details',()=>state.kitchen='attached'),choose('A shared / separate kitchen supplies it','shared-kitchen','location-details',()=>state.kitchen='shared'),choose('I am planning a new kitchen','proposed-kitchen','location-details',()=>state.kitchen='proposed'),choose('No separate kitchen register needed','local-kitchen','location-details',()=>state.kitchen='local'));
-    break;
    case 'location-details':
-    ask(state.kitchen==='local'?'Will you use local outlet plans or purchased items?':state.kitchen==='shared'?'Which kitchen will supply the outlets?':state.kitchen==='proposed'?'What kitchen are you planning to open?':'Which outlet does this kitchen belong to?');
-    host.append(el('p',state.kitchen==='local'?'Review the “No separate kitchen register” choice on this page. Purchased items still need their supplier route; anything made locally needs its production plan.':'Review the kitchen name, attached outlet (or separate/common kitchen), operating/proposed status and working shifts. Add an identity only if the kitchen is not already listed.'));
-    choices(button(state.kitchen==='local'?'Show the local-production choice':'Show existing kitchen details','kitchen-details',()=>pageFocus(state.kitchen==='local'?'#noSeparateKitchens':'#locationRows')),button('Show Add kitchen identity','kitchen-add',()=>pageFocus('#addKitchen')),button('Show review and Save','kitchen-review',()=>pageFocus('#kitchenReviewed')));
-    host.append(el('p','After saving and Google verification, choose optional existing equipment or continue to outlet expenses and mandatory staff. Later I’ll ask whether to use saved category quantities or a new production target.'));
-    choices(button('Show choices after the verified save','kitchen-next',()=>pageFocus('#kitchenNextGo')));
+   case 'outlet-kitchen-existing':
+   case 'outlet-kitchen-details':
+   case 'outlet-kitchen-summary':{
+    const setup=s.kitchenSetup,a=root.BOBS_KITCHEN_GUIDE;
+    if(!setup?.ready){ask('I’m checking the saved outlets and kitchens before asking about each outlet.');host.append(el('p','If loading fails, use Retry on this page. I will not assume that an outlet has no kitchen.'));break;}
+    if(!setup.outlets.length){ask('Save at least one outlet first.');host.append(route('outlets.html','Open Outlet Setup →',{guide:'start'}));break;}
+    const selected=setup.outlets.find(o=>o.id===state.setupOutletId)||setup.outlets.find(o=>o.error)||setup.outlets[0];state.setupOutletId=selected.id;
+    const index=setup.outlets.indexOf(selected),next=()=>{a.validate(selected.id);const following=setup.outlets[index+1];state.setupOutletId=following?.id||selected.id;go(following?'locations':'outlet-kitchen-summary','Kitchen choice reviewed for '+selected.name);};
+    if(state.step==='outlet-kitchen-summary'){
+     ask('Review the kitchen decision for every outlet, then save.');
+     for(const o of setup.outlets){host.append(el('p',o.name+': '+(o.error?'Pending — '+o.error:o.choice.hasKitchen?'Kitchen: '+o.kitchen.name:'No kitchen at this outlet')));choices(button('Review '+o.name,'review-outlet-'+o.id,()=>{state.setupOutletId=o.id;go('locations');}));}
+     host.append(el('p',setup.verified?'These outlet choices are saved and verified. Continue to outlet expenses and menu quantities; required equipment will follow the intended items and production quantities.':'These answers are drafts until you tick the final review and Save Kitchen Setup. Continue to outlet expenses and menu quantities after the verified save. We will gather required equipment from the intended items and production quantities.'));
+     if(setup.verified)choices(button('Show the next step','kitchen-next',()=>pageFocus('#kitchenNextGo')));
+     choices(button('Show final review and Save','kitchen-review',()=>pageFocus('#kitchenReviewed')));break;
+    }
+    host.append(el('p','Outlet '+(index+1)+' of '+setup.outlets.length+' · '+selected.name,'guide-outlet-name'));
+    if(['locations','location-details'].includes(state.step)){
+     ask('Do you want a kitchen at '+selected.name+'?');
+     host.append(el('p','Yes means food is prepared at this outlet. No means it receives food from another kitchen or a supplier; we will choose that source after the menu.'));
+     if(selected.savedKitchen)host.append(el('p','Saved kitchen found for this outlet: '+selected.savedKitchen.name+'.'));
+     if(selected.choice)host.append(el('p','Current choice: '+(selected.choice.hasKitchen?'Yes — kitchen at this outlet.':'No kitchen at this outlet.')+' Review before saving.'));
+     choices(button('Yes — kitchen at '+selected.name,'outlet-kitchen-yes',()=>{a.answer(selected.id,true);if(selected.savedKitchen)go('outlet-kitchen-existing','Yes — '+selected.name);else{a.fresh(selected.id);go('outlet-kitchen-details','Yes — '+selected.name);}}),button('No — no kitchen at '+selected.name,'outlet-kitchen-no',()=>{a.answer(selected.id,false);next();}));
+    }else if(state.step==='outlet-kitchen-existing'){
+     ask('A saved kitchen already exists for '+selected.name+'. Would you like to review and use it, or set it up again?');
+     host.append(el('p',selected.savedKitchen?.name||'Review this outlet’s saved kitchen on the page.'));
+     choices(button('Review and use the saved kitchen','use-saved-kitchen',()=>{a.reuse(selected.id);go('outlet-kitchen-details','Use saved kitchen for '+selected.name);}),button('Set up this kitchen again','new-kitchen-setup',()=>{a.fresh(selected.id);go('outlet-kitchen-details','New kitchen details for '+selected.name);}));
+     host.append(el('p','Starting again creates a fresh details draft for this outlet. The saved setup remains available until you review and save the replacement details.'));
+    }else{
+     ask('Review the kitchen name, status and working shifts for '+selected.name+'.');
+     host.append(el('p','Equipment comes later, from the items and quantities you intend to produce. Complete the kitchen details below before moving to the next outlet.'));
+     if(selected.error)host.append(el('p',selected.error));
+     choices(button('Show '+selected.name+' kitchen details','show-outlet-kitchen',()=>{if(!selected.kitchen)throw Error('Choose Yes and set up this kitchen first.');options.minimise();a.focus(selected.kitchen.id);}),button(index+1<setup.outlets.length?'Next outlet →':'Review all outlet decisions →','next-outlet',next));
+    }
+    if(index>0)choices(button('Previous outlet','previous-outlet',()=>{state.setupOutletId=setup.outlets[index-1].id;go('locations');}));
     break;
+   }
    case 'page-task':{
     const help=s.pageHelp;
     ask(help?'Shall we work through '+help.title.toLowerCase()+'?':'What would you like to complete on this page?');
