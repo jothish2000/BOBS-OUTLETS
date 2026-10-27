@@ -1,0 +1,147 @@
+/* Question-led companion. Session state is navigation only, never business data or completion. */
+(function(root){'use strict';
+const steps=new Set(['start','setup','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
+function mount(host,options){
+ let state,scope='',draft={},error='';
+ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
+ const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
+ function snapshot(){const s=options.snapshot();return {...s,production:adapter()?.snapshot()};}
+ function restore(s){
+  const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
+  if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
+  try{const saved=JSON.parse(sessionStorage.getItem(key));if(saved&&steps.has(saved.step))state={...state,...saved,history:Array.isArray(saved.history)?saved.history.slice(-8):[]};}catch(_){}
+ }
+ function persist(){try{sessionStorage.setItem(scope,JSON.stringify({step:state.step,itemKey:state.itemKey,task:state.task,kitchen:state.kitchen,history:state.history.slice(-8)}));}catch(_){} }
+ function go(step,answer){error='';if(answer)state.history.push({step:state.step,answer});state.step=step;persist();render();host.querySelector('h3')?.focus({preventScroll:true});host.parentElement?.scrollTo?.({top:0});}
+ function button(label,id,action){const b=el('button',label);b.type='button';b.dataset.guideChoice=id;b.onclick=()=>{try{action();}catch(e){error=e.message;render();}};return b;}
+ function route(page,label,extra={}){const s=snapshot(),u=new URL(page,location.href);if(s.ctx.outlet)u.searchParams.set('outlet',s.ctx.outlet);for(const [k,v]of Object.entries(extra))if(v!==''&&v!=null)u.searchParams.set(k,v);u.searchParams.set('returnTo',location.href);const a=el('a',label,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';return a;}
+ function item(s){return s.items?.find(x=>x.key===state.itemKey)||s.items?.find(x=>x.cat===s.ctx.cat&&String(x.i)===String(s.ctx.index))||s.items?.[0];}
+ function productionRoute(s,label){const x=item(s);return route('production-plan.html',label,x?{cat:x.cat,i:x.i}:{});}
+ function input(label,name,type,value){const l=el('label',label),i=el('input');i.id='bobsGuide-'+name;i.type=type;i.value=draft[name]??value??'';if(type==='number'){i.min='0.001';i.step='any';}i.oninput=()=>{draft[name]=i.value;};l.append(i);return l;}
+ function focus(id){options.minimise();adapter()?.focus(id);}
+ function needProduction(s){
+  if(s.production?.ready)return false;
+  host.append(el('p',s.ctx.page==='production-plan.html'?'Planning records are not ready yet. Use Retry on the page if loading failed; I will not assume a quantity.':'Open the selected item’s production plan so I can use its recipe, quantity and equipment.'));
+  host.append(productionRoute(s,'Open this production plan →'));
+  return true;
+ }
+ function render(){
+  const s=snapshot();restore(s);const p=s.production;
+  if(p?.ready&&state.itemKey&&state.itemKey!==p.itemKey){state.step='quantity';state.history=[];draft={};}
+  if(p?.ready)state.itemKey=p.itemKey;
+  host.replaceChildren();host.className='bobs-guide-dialogue';
+  const h=el('h3','Let’s plan your next step');h.tabIndex=-1;host.append(h);
+  if(state.history.length){const transcript=el('details'),summary=el('summary','Your answers so far');transcript.append(summary);for(const x of state.history.slice(-6))transcript.append(el('p','You: '+x.answer));host.append(transcript);}
+  const ask=text=>{const q=el('p',text,'guide-question');host.append(q);};
+  const choices=(...buttons)=>{const box=el('div',undefined,'guide-choices');box.append(...buttons);host.append(box);};
+  const choose=(text,id,next,action)=>button(text,id,()=>{action?.();go(next,text);});
+  switch(state.step){
+   case 'start':
+    ask('What are you trying to do?');
+    host.append(el('p','Tell me your goal. I’ll ask one question at a time and take you to the matching controls.'));
+    choices(choose('Set up an outlet','setup','setup',()=>state.task='setup'),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Continue my saved work','resume','resume'));
+    break;
+   case 'setup':
+    ask('Are you setting up a new outlet or using your existing details?');
+    choices(choose('Use existing outlet details','existing','kitchen'),choose('Add a new outlet','fresh','route',()=>state.task='new-outlet'));
+    host.append(el('p','A new setup starts with adding an outlet. Your existing outlets and assets remain available.'));
+    break;
+   case 'kitchen':{
+    const owner=s.kitchens?.find(k=>String(k.id)===String(s.ctx.outlet)||String(k.outletId)===String(s.ctx.outlet));
+    if(owner)host.append(el('p','Saved kitchen: '+owner.name+' ('+owner.status+').'));
+    ask('Where will this outlet’s food be prepared?');
+    choices(choose('In this outlet’s kitchen','own','quantity',()=>state.kitchen='own'),choose('In another / shared kitchen','shared','route',()=>{state.kitchen='shared';state.task='shared';}),choose('I need to set up a kitchen','new-kitchen','route',()=>{state.kitchen='proposed';state.task='kitchen';}),choose('No cooking — purchased items','purchase','route',()=>{state.kitchen='none';state.task='purchase';}));
+    break;
+   }
+   case 'quantity':{
+    if(!p?.ready){
+     if(s.loading)host.append(el('p','Reading saved category quantities…'));
+     else if(s.items?.length){
+      ask('Which saved item do you want to plan?');const l=el('label','Production item'),select=el('select');select.id='bobsGuide-item';
+      for(const x of s.items){const o=el('option',x.item.name);o.value=x.key;o.selected=x.key===item(s)?.key;select.append(o);}select.onchange=()=>{state.itemKey=select.value;persist();};l.append(select);host.append(l,productionRoute(s,'Open the selected item’s production plan →'));
+      select.addEventListener('change',()=>render());
+     }else{ask('Save your menu first, so I can read the intended quantities from the category section.');host.append(route('method2.html','Open menu and item quantities →'));}
+     if(s.readError)host.append(el('p','Saved data could not be verified. Retry progress reads before choosing a saved quantity.'));
+     break;
+    }
+    ask('How many '+p.name+' do you intend to produce?');
+    if(p.kitchen){host.append(el('p','This kitchen’s target comes from the receiving outlet orders. Change those orders to change the combined quantity.'),route('kitchen-flow.html','Review receiving outlet quantities →',{stage:'demand'}));choices(choose('Use the combined saved orders','combined','time'));break;}
+    host.append(el('p','Current plan: '+p.quantity+' '+p.unit+'. '+(p.savedQuantity!=null?'Saved category quantity: '+p.savedQuantity+' '+p.unit+'.':'No positive saved category quantity is available.')));
+    const b=[];if(p.savedQuantity!=null)b.push(choose('Use saved category quantity ('+p.savedQuantity+' '+p.unit+')','saved-quantity','time',()=>{adapter().quantity(String(p.savedQuantity));draft={};}));
+    b.push(choose('Set a new production target here','new-target','target'),choose('Keep the quantity already on this page','keep-quantity','time',()=>{if(!(Number(p.quantity)>0))throw Error('Enter a positive quantity first.');}));choices(...b);
+    break;
+   }
+   case 'target':
+    if(needProduction(s))break;
+    ask('What production quantity should the equipment handle?');
+    host.append(input('Intended '+p.name+' ('+p.unit+')','quantity','number',p.quantity));
+    choices(button('Apply target to this plan','apply-target',()=>{adapter().quantity(draft.quantity??p.quantity);draft={};go('time','Set a new production target');}));
+    host.append(el('p','This changes the planning draft. Review and save the plan to update the category quantity; actual sales are kept separately.'));
+    break;
+   case 'time':{
+    if(needProduction(s))break;
+    ask('When should '+p.quantity+' '+p.unit+' of '+p.name+' be ready?');
+    host.append(input('Ready by','time','time',p.readyBy));const l=el('label','Deadline day'),select=el('select');select.id='bobsGuide-day';
+    for(const [v,t]of [['0','Today'],['1','Tomorrow']]){const o=el('option',t);o.value=v;o.selected=v===String(draft.day??p.readyDay);select.append(o);}select.onchange=()=>draft.day=select.value;l.append(select);host.append(l);
+    choices(button('Use this ready-by time','apply-time',()=>{adapter().ready(draft.time??p.readyBy,draft.day??p.readyDay);draft={};go('recipes','Ready-by time selected');}));
+    break;
+   }
+   case 'recipes':
+    if(needProduction(s))break;
+    ask(p.recipes.length?'Next, have you reviewed every recipe and selected side?':'This item has no in-house recipe requirements.');
+    if(p.recipes.length){host.append(el('p','Yes — complete each link below, one at a time. Check portions → Calculate quantities from reference → review ingredients and rates → Save → return here. Reuse an unchanged saved recipe only after checking it still applies.'));
+     const list=el('ol');for(const r of p.recipes){const li=el('li'),a=el('a',r.name);const url=new URL(r.href,location.href);if(url.origin!==location.origin)continue;a.href=url.href;a.target='_blank';a.rel='opener';li.append(a,el('small',r.status));list.append(li);}host.append(list);
+     host.append(el('p',p.recipeReviewed?'The page confirmation is ticked. The plan still needs its verified Save.':'After completing the reviews, tick the confirmation below the recipe links on the page.'));
+     choices(button('Show recipe instructions on the page','show-recipes',()=>focus('recipeReviewHeading')),button('Continue to equipment questions','recipe-next',()=>{if(!adapter().snapshot().recipeReviewed)throw Error('Complete the recipe reviews and tick the page confirmation first. Opening links alone does not finish the review.');go('assets','Recipe review confirmed on the page');}));
+    }else host.append(route('kitchen-flow.html','Review production sources →',{stage:'demand'}));
+    break;
+   case 'assets':
+    if(needProduction(s))break;
+    ask('Do you already own the equipment needed for '+p.name+' and its sides?');
+    host.append(el('p',p.assets.length?'Current inventory: '+p.assets.map(a=>a.name+' — '+a.ownedQty+' owned / '+a.quantity+' required').join('; ')+'.':'No equipment is recorded in this plan yet.'));
+    choices(choose('Yes — use my existing machines','owned','equipment'),choose('Some — add the missing machines','some','equipment'),choose('No — help me choose equipment','none','equipment'));
+    break;
+   case 'equipment':{
+    if(needProduction(s))break;
+    ask('Choose a process. Shall we reuse a machine or add suitable equipment now?');
+    host.append(el('p','Required loads come from your quantity and recipes. Equipment options are capacity references; check the usable capacity and cycle time. Set “Already owned units” accurately.'));
+    for(const process of p.processes){const box=el('div',undefined,'guide-process');box.append(el('strong',process.name),el('p','Recipe equipment: '+process.equipment));
+     box.append(button('Use / review existing equipment for '+process.name,'reuse-'+process.id,()=>{const card=[...document.querySelectorAll('[data-capacity]')].find(x=>x.dataset.capacity===process.id);if(!card)throw Error('This process changed. Refresh the guide.');options.minimise();card.scrollIntoView?.({block:'center'});card.querySelector('[data-slot],.process-capacity')?.focus();}));
+     for(const r of process.references)box.append(button('Compare / add '+r.name,'equipment-'+process.id+'-'+r.index,()=>{options.minimise();adapter().equipment(process.id,r.index);}));
+     box.append(button('Add / name another machine','custom-'+process.id,()=>{options.minimise();adapter().equipment(process.id,null);}));host.append(box);
+    }
+    host.append(el('p','Additions remain in the draft until you save the reviewed production plan. That save adds them to Asset Master; then review their price, useful life and product shares there. Reuse the same asset for a shared machine.'));
+    choices(choose('What should I do after equipment?','after-equipment','next'));break;
+   }
+   case 'next':
+    ask('Next, check whether the production can finish on time.');
+    host.append(el('p','Review every process’s capacity, start/finish time and active staff work. Calculate time and equipment usage. Resolve conflicts, confirm the required reviews, then Save reviewed plan to Google & continue.'));
+    if(p?.ready)choices(button('Take me to the time assessment','assess',()=>focus('assessTime')));
+    host.append(route('outlet-plan.html','After saving: assess workforce →',{stage:'workforce'}),route('asset-master.html','Review Asset Master values →'),route('capital-expenditure.html','Review equipment purchase budget →'),route('working-capital.html','Review working capital →'));
+    choices(choose('Check my next saved requirement','next-saved','resume'));break;
+   case 'resume':
+    ask('Let’s continue from your saved work.');
+    if(s.loading)host.append(el('p','Checking saved requirements…'));
+    else if(s.next){host.append(el('p',s.next.title+' — '+s.next.reason));const a=route(s.next.href,'Open the next required step →');host.append(a);}
+    else host.append(el('p',s.readError?'Saved progress could not be verified. Retry the read.':'Use Check saved progress below to find the next missing requirement.'));
+    choices(button('Refresh saved progress','refresh',()=>options.refresh()),choose('Help me plan production','resume-production','kitchen'));
+    break;
+   case 'route':{
+    if(state.task==='new-outlet'){ask('Add the outlet’s details, then I’ll guide its kitchen and production setup.');host.append(route('outlets.html','Open Outlet Setup →'));}
+    else if(state.task==='shared'){ask('Which kitchen will supply this outlet?');host.append(el('p','Choose the supplying kitchen for each item and side, then enter the receiving outlets’ quantities and ready-by times. The kitchen’s total comes from those orders.'),route('kitchen-flow.html','Choose supplying kitchen and outlet quantities →',{stage:'demand'}));}
+    else if(state.task==='purchase'){ask('Choose purchased supply for the relevant items.');host.append(el('p','Purchased-only items use supplier quantities and costs. Any side made here still needs its own production review.'),route('method2.html','Review item production / purchase choices →'));}
+    else {ask('Register the kitchen and its working shifts first.');host.append(route('kitchen-flow.html','Open Kitchen Setup →',{stage:'locations'}));}
+    choices(choose('Continue with production questions','continue-production','quantity'),choose('Check what is saved','route-resume','resume'));break;
+   }
+  }
+  if(error){const notice=el('p',error,'guide-error');notice.setAttribute('role','alert');host.append(notice);}
+  const nav=el('div',undefined,'guide-nav');
+  if(state.history.length)nav.append(button('Back one question','back',()=>{const previous=state.history.pop();state.step=steps.has(previous.step)?previous.step:'start';draft={};error='';persist();render();}));
+  if(state.step!=='start')nav.append(button('Choose a different task','restart',()=>{state={step:'start',history:[]};draft={};persist();render();}));host.append(nav);
+  persist();
+ }
+ function update(){if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
+ render();return {update};
+}
+root.BOBS_GUIDE_BOT={mount};
+})(window);
