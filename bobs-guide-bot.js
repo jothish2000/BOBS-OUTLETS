@@ -11,7 +11,7 @@ function mount(host,options){
   const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
   if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
   try{const saved=JSON.parse(sessionStorage.getItem(key));if(saved&&steps.has(saved.step))state={...state,...saved,history:Array.isArray(saved.history)?saved.history.slice(-8):[]};}catch(_){}
-  if(options.journey||s.methodFlow||s.itemHelp||(s.production?.journey&&state.step==='start')){
+  if(options.journey||s.methodFlow||s.itemHelp||(s.ctx.page==='production-plan.html'&&s.production?.journey&&state.step==='start')){
    const page=s.ctx.page,stage=new URLSearchParams(location.search).get('stage');
    state.step=page==='outlets.html'?'outlet-details':page==='kitchen-flow.html'&&(!stage||stage==='locations')?'locations':page==='production-plan.html'?'production-flow':page==='recipe-cost-editor.html'?'recipes':page==='index.html'?'start':'page-task';
    state.history=[];if(state.step==='locations')state.setupOutletId='';
