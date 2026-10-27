@@ -1636,3 +1636,17 @@ Command: JSDOM_PATH=/workspace/scratch/2d8aa1cf1400/test-deps/node_modules/jsdom
 Source 4db43068 published in PR96. Workload, quantity and preservation CI PASS; vault native browser run40443617577/job121989523549 FAILED at the old expectation that Connected planning board is immediately visible. New intended UI starts with questions and keeps saved progress collapsed. This failed run is not a browser pass. No production data writes.
 ### Section 2 — Codex handover
 Failure scripts/verify-guided-kitchen-browser.cjs:133, before the new production journey ran. Repair intent: assert question-led opening, wait for existing progress read, explicitly expand Saved progress and connected modules and Connected planning board, retain all asset/workforce/owner/mobile/no-write assertions. Then rerun latest-head CI, including the new production journey. Runtime remains unchanged at this checkpoint.
+
+
+## WACP 2026-10-27 — Connected subwindow review intent
+### Section 1 — Work mode handover
+Review identified a usability gap before release: a recipe/asset child window can inherit the conversation position but has no production-page adapter. It should guide the controls on that child rather than send the user straight back to production.
+### Section 2 — Codex handover
+Bounded repair in bobs-guide-bot.js needProduction: recognise recipe/Asset Master/working-capital/outlet-plan child pages and offer focus-only help for their existing review controls. Never calculate, tick reviews or save automatically. Add a DOM regression verifying a recipe child focuses its own controls without writes. Latest CI at776caf980 remains in progress; do not merge that head after this extension.
+
+
+## WACP 2026-10-27 — Native retest and child guidance result
+### Section 1 — Work mode handover
+PR96 head776caf980 native browser suite40443836677/job121990243801 PASS, including the new production question flow, 390px bounds, page focus, protected save/reload and connected kitchen/asset/staff workflows. Earlier failure retained above. Child-window focus guidance now added; 23 focused UI cases PASS including its new regression. New head requires fresh CI before release.
+### Section 2 — Codex handover
+Child helpers only focus existing controls; no auto-calculation/confirmation/save. Updated bobs-guide-bot.js, tests/connected-guide.cjs and both ledgers. Syntax/diff PASS. Post-test PRO questions and saved-board navigation work in native Chrome; CON final child helper head/live/UAT pending; CONNECTIONS existing protected save/reload retained; OBSERVER no automatic completion or operational writes. Next publish this bounded extension, verify all latest-head checks, merge expected head and verify Pages/live.

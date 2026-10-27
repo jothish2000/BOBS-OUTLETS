@@ -23,3 +23,12 @@ test('asset capacity reference remains estimated, validates evidence, and price 
  row.querySelector('[data-capacity-field="status"]').value='confirmed';row.querySelector('[data-capacity-field="evidence"]').value='';w.BOBS_ASSET_GUIDANCE.read(row,a);assert.throws(()=>w.BOBS_ASSET_GUIDANCE.validate(a),/confirming capacity/);
  }finally{w.close()}
 });
+
+
+test('a recipe child resumes with its own controls, without returning to production or confirming anything',()=>{
+ const dom=new JSDOM('<div id="host"></div><section id="referenceSection"></section><button id="scale">Calculate</button><input type="checkbox" id="confirmed">',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1'}),w=dom.window;let clicks=0;
+ try{w.sessionStorage.setItem('bobs-guide-conversation-v1:1',JSON.stringify({step:'recipes',history:[]}));w.document.getElementById('scale').onclick=()=>clicks++;w.eval(source('bobs-guide-bot.js'));
+ w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{outlet:'1',page:'recipe-cost-editor.html'}}),minimise(){},refresh(){}});
+ assert.match(w.document.getElementById('host').textContent,/You are reviewing a recipe/);w.document.querySelector('[data-guide-choice=page-scale]').click();assert.equal(w.document.activeElement.id,'scale');assert.equal(clicks,0);assert.equal(w.document.getElementById('confirmed').checked,false);
+ }finally{w.close()}
+});

@@ -21,6 +21,13 @@ function mount(host,options){
  function focus(id){options.minimise();adapter()?.focus(id);}
  function needProduction(s){
   if(s.production?.ready)return false;
+  const help={
+   'recipe-cost-editor.html':['You are reviewing a recipe. Check reference and intended portions, Calculate quantities from reference, review ingredients and rates, then Save. After verification, return to the production plan and review the next recipe.',[['Show portion sizes','referenceSection'],['Show Calculate quantities','scale'],['Show final recipe confirmation','confirmed']]],
+   'asset-master.html':['Review each machine’s capacity, required and owned units, price, useful life and product shares. Your production-plan additions use this same Asset Master. Save after reviewing the values.',[['Show equipment details','planningBody'],['Show final asset review','planningReviewed']]],
+   'working-capital.html':['Review ingredient, wage and operating-cash requirements against the saved menu and costs, then confirm and save.',[['Show cash requirements','planningBody'],['Show final cash review','planningReviewed']]],
+   'outlet-plan.html':['Review this stage’s staffing, coverage and salary inputs. Confirm and save before proceeding to the next stage.',[['Show stage review','flowReviewed']]]
+  }[s.ctx.page];
+  if(help){host.append(el('p',help[0],'guide-question'));for(const [label,id]of help[1])host.append(button(label,'page-'+id,()=>{const target=document.getElementById(id);if(!target)throw Error('Wait for this page to load its review controls.');options.minimise();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}));return true;}
   host.append(el('p',s.ctx.page==='production-plan.html'?'Planning records are not ready yet. Use Retry on the page if loading failed; I will not assume a quantity.':'Open the selected item’s production plan so I can use its recipe, quantity and equipment.'));
   host.append(productionRoute(s,'Open this production plan →'));
   return true;
