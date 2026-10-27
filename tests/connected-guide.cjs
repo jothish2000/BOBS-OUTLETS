@@ -89,3 +89,14 @@ test('handoff requested before guide loads is retained, and zero kitchens offers
   w.document.getElementById('bobsCompanionToggle').click();assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
  }finally{w.close();}
 });
+
+test('menu selection guide names the real save, mode and item-editor controls without changing a selection',async()=>{
+ const dom=new JSDOM('<main><input type="checkbox" id="selectedItem" checked><button id="saveReturn">Save selection & return to Method 2</button></main>',{runScripts:'outside-only',url:'https://bobs.test/method2-select.html?outlet=1&cat=Breakfast+Catalogue&guide=continue'}),w=dom.window;let saves=0;
+ try{
+  w.document.getElementById('saveReturn').onclick=()=>saves++;
+  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  const steps=[...w.document.querySelectorAll('#bobsGuideDialogue ol li')].map(el=>el.textContent);
+  assert.equal(steps.length,4);assert.match(steps[1],/bottom.*Save selection & return to Method 2/);assert.match(steps[2],/Mode column/);assert.match(steps[3],/Edit item ↗/);
+  assert.equal(w.document.getElementById('selectedItem').checked,true);assert.equal(saves,0);assert.doesNotMatch(w.document.getElementById('bobsGuideDialogue').textContent,/After this: Item quantities/);
+ }finally{w.close();}
+});
