@@ -42,7 +42,7 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  await show(retry,'Failed read then Retry then Continue existing');
  console.log('OBSERVATION recovered read status: '+await retry.locator('#sync').innerText());
  // Previous working-state storage must not replace verified Google-backed outlets.
- await ctx.addInitScript(()=>localStorage.setItem('outlets-master',JSON.stringify([{id:'4',name:'Stale local draft',numShifts:2,shiftTimes:[]}])));
+ await ctx.addInitScript(()=>{if(location.hostname==='bobs.test')localStorage.setItem('outlets-master',JSON.stringify([{id:'4',name:'Stale local draft',numShifts:2,shiftTimes:[]}]))});
  const stale=await ctx.newPage();await stale.goto(url);await stale.click('#keep');await show(stale,'Stale local Outlet 4 ignored');
  // Control cases distinguish a new draft from a record that was already saved.
  const fresh=await ctx.newPage();await fresh.goto(url);await fresh.click('#fresh');await show(fresh,'Explicit Start New control',['4']);
