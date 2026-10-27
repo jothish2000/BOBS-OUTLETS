@@ -104,7 +104,7 @@ function mount(host,options){
     if(index>0)choices(button('Previous outlet','previous-outlet',()=>{state.setupOutletId=setup.outlets[index-1].id;go('locations');}));
     break;
    }
-   
+
    case 'production-flow':{
     const stage=p?.journey?.stage||'loading',name=p?.name||'Production plan',j=p?.journey||{};
     const work=(label,id)=>button(label,'plan-'+id,()=>{options.work();adapter().focus(id);});
