@@ -42,7 +42,7 @@ const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{
  await p.fill('#readyBy','10:00');for(const el of await p.locator('[data-process]').all()){await el.locator('[data-field=role]').fill('Cook');await el.locator('[data-field=start]').fill('06:00');await el.locator('[data-field=deadline]').fill('10:00');for(const f of ['setup','active','machine','supervision','finish','clean','passive'])await el.locator('[data-field='+f+']').fill(f==='machine'?'10':f==='supervision'||f==='passive'?'0':'1');await el.locator('[data-field=reviewed]').check();}
  await p.check('#capacityReviewed');await p.check('#recipeReviewed');await p.click('#assessTime');assert.match(await p.locator('#timeAssessment').innerText(),/Active staff/);
  await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await p.locator('[data-capacity]').nth(1).scrollIntoViewIfNeeded();if(process.env.BOBS_CAPACITY_SCREENSHOT_DIR){fs.mkdirSync(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.BOBS_CAPACITY_SCREENSHOT_DIR,'sambar-guidance-mobile.png')});}
- 
+
  await p.setViewportSize({width:1071,height:580});await p.locator('[data-guide-choice=plan-quantity-next]').click();
  await p.locator('[data-guide-choice=plan-delivery-next]').waitFor();await p.locator('[data-guide-choice=plan-delivery-next]').click();
  failPlanSave=true;await p.locator('[data-guide-choice=plan-save]').click();
