@@ -14,7 +14,7 @@ function render(){
 }
 async function load(){if(busy)return;busy=true;$('equipmentEditor').disabled=true;$('equipmentRetry').hidden=true;try{
  if(!K.isKitchen(owner))throw Error('Open existing equipment from a saved kitchen identity.');
- [register,outs,saved]=await Promise.all([V.read('COMPANY','KITCHEN_MASTER'),BOBS_DATA.listOutlets(),V.read(owner,'ASSET_MASTER')]);K.requireRegistration(register,outs);kitchen=register.kitchens.find(k=>k.id===owner);if(!kitchen)throw Error('Kitchen identity is no longer in the saved register.');
+ [register,outs,saved]=await Promise.all([V.read('COMPANY','KITCHEN_MASTER'),BOBS_DATA.listOutlets(),V.read(owner,'ASSET_MASTER')]);K.validateLocations(register||{kitchens:[]},outs);kitchen=register.kitchens.find(k=>k.id===owner);if(!kitchen)throw Error('Kitchen identity is no longer in the saved register.');
  $('equipmentTitle').textContent=kitchen.name+' — existing equipment';$('equipmentRecords').href='google-records.html?'+new URLSearchParams({outlet:owner,module:'ASSET_MASTER'});
  entries=(saved?.assets||[]).map(a=>({id:a.id,name:a.name,ownedQty:a.ownedQty??'',capacityFacts:V.clone(a.capacityFacts||{status:'unknown',evidence:a.capacityNote||''})}));render();dirty=false;$('equipmentReviewed').checked=false;$('equipmentEditor').disabled=false;status('Saved inventory loaded. Opening this page changes nothing. Unknown capacity can stay pending.');
  }catch(e){status('Could not load: '+e.message,true);$('equipmentRetry').hidden=false;}finally{busy=false;}}

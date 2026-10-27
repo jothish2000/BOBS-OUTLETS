@@ -8,6 +8,7 @@ on:
       - 'bobs-kitchen*'
       - 'bobs-equipment-references.js'
       - 'tests/kitchen-equipment-help.cjs'
+      - 'tests/kitchen-outlet-guide.cjs'
       - 'scripts/verify-guided-kitchen-browser.cjs'
       - 'bobs-staff-table*'
       - 'tests/shared-kitchen*.cjs'
@@ -57,6 +58,7 @@ on:
       - 'bobs-kitchen*'
       - 'bobs-equipment-references.js'
       - 'tests/kitchen-equipment-help.cjs'
+      - 'tests/kitchen-outlet-guide.cjs'
       - 'scripts/verify-guided-kitchen-browser.cjs'
       - 'bobs-staff-table*'
       - 'tests/shared-kitchen*.cjs'
@@ -113,7 +115,7 @@ jobs:
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
         run: |
-          node --test tests/connected-guide.cjs tests/kitchen-equipment-help.cjs tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
+          node --test tests/kitchen-outlet-guide.cjs tests/connected-guide.cjs tests/kitchen-equipment-help.cjs tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs
@@ -152,6 +154,7 @@ jobs:
           node --check bobs-roadmap-core.js
           node --check bobs-roadmap.js
           node --check bobs-guide-bot.js
+          node --check bobs-kitchen-setup.js
           node --check bobs-outlet-flow-core.js
           node --check bobs-outlet-plan.js
           node --check bobs-item-full-cost.js

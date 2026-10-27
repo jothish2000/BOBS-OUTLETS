@@ -12,12 +12,22 @@ K.validateLocations=(record,outlets)=>{
  }
  return record;
 };
-// A reviewed empty register is an explicit local/purchased-only choice, never an assumed zero.
+K.outletDecisionError=(record,outlet,outlets)=>{
+ const id=String(outlet.id),choice=record.outletDecisions?.[id],name=outlet.name||'Outlet '+id;
+ if(typeof choice?.hasKitchen!=='boolean')return name+': answer whether this outlet needs a kitchen.';
+ const attached=(record.kitchens||[]).filter(k=>String(k.outletId)===id);
+ if(!choice.hasKitchen)return attached.length?name+': a kitchen is still attached here. Review or reassign that saved kitchen before choosing No.':'';
+ const kitchen=attached.find(k=>k.id===choice.kitchenId);
+ if(!kitchen)return name+': review and use the saved kitchen, or enter a new kitchen setup.';
+ try{K.validateLocations({kitchens:[kitchen]},outlets);}catch(e){return e.message;}
+ return '';
+};
+// Every outlet needs its own explicit answer. A saved kitchen never answers for other outlets.
 K.requireRegistration=(record,outlets)=>{
  if(!record?.reviewed||!Array.isArray(record.kitchens))throw Error('Review and save Kitchen Setup before continuing.');
  K.validateLocations(record,outlets);
- if(!record.kitchens.length&&!record.noSeparateKitchens)throw Error('In Kitchen Setup, add a kitchen or confirm that a separate kitchen register is not needed.');
  if(record.reviewedOutletIds&&JSON.stringify([...record.reviewedOutletIds].map(String).sort())!==JSON.stringify(outlets.map(o=>String(o.id)).sort()))throw Error('The outlet list changed. Review Kitchen Setup again.');
+ for(const outlet of outlets){const error=K.outletDecisionError(record,outlet,outlets);if(error)throw Error('Kitchen Setup — '+error);}
  return record;
 };
 K.sourceFor=(item,requirementKey)=>item.d.kitchenSources?.[requirementKey];

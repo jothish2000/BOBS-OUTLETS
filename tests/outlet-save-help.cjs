@@ -4,7 +4,7 @@ const norms=require('./fixtures/thp-norms.json');
 async function settle(){for(let i=0;i<25;i++)await new Promise(r=>setImmediate(r));}
 async function fixture({noCounter=false,positions=[{id:'Mandatory1',role:'Cashier',shift:0,takeHome:15000}]}={}){
  const dom=new JSDOM(fs.readFileSync('outlet-plan.html','utf8'),{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?stage=baseline&outlet=1&returnTo=https%3A%2F%2Fbobs.test%2Fmethod2-item.html%3Foutlet%3D1'}),w=dom.window,reads=[],writes=[],returns=[],shifts=[{start:'04:30',end:'13:30'},{start:'13:30',end:'22:30'}];
- const db={KITCHEN_MASTER:{reviewed:true,kitchens:[],noSeparateKitchens:true},OUTLET_BASELINE:{schema:1,reviewed:true,workingDays:30,mandatoryCount:positions.length,positions,expenseSelections:[],noCounter,ownerCounterShifts:[1]},FIXED_EXPENSES:{expenses:[]},THP_NORMS:norms};
+ const db={KITCHEN_MASTER:{reviewed:true,kitchens:[],noSeparateKitchens:true,outletDecisions:{'1':{hasKitchen:false}}},OUTLET_BASELINE:{schema:1,reviewed:true,workingDays:30,mandatoryCount:positions.length,positions,expenseSelections:[],noCounter,ownerCounterShifts:[1]},FIXED_EXPENSES:{expenses:[]},THP_NORMS:norms};
  let pause=null,failSave=null,scrolled;
  const copy=x=>x==null?null:JSON.parse(JSON.stringify(x));
  w.HTMLElement.prototype.scrollIntoView=function(){scrolled=this.id};w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};w.confirm=()=>true;

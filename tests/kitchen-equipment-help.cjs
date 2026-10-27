@@ -2,10 +2,19 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),E=require
 const outs=[{id:'1',name:'Rasipuram'}],k={id:'Kitchen-E',name:'Elimedu',status:'operating',shiftTimes:[{start:'04:30',end:'13:30'},{start:'15:00',end:'18:30'}]};
 test('registration is explicit; absence and old empty registers never become completion',()=>{
  for(const r of [null,{}, {reviewed:true,kitchens:[]}])assert.throws(()=>K.requireRegistration(r,outs));
- assert.doesNotThrow(()=>K.requireRegistration({reviewed:true,kitchens:[],noSeparateKitchens:true},outs));
- assert.doesNotThrow(()=>K.requireRegistration({reviewed:true,kitchens:[k]},outs));
+ assert.doesNotThrow(()=>K.requireRegistration({reviewed:true,kitchens:[],noSeparateKitchens:true,outletDecisions:{'1':{hasKitchen:false}}},outs));
+ assert.doesNotThrow(()=>K.requireRegistration({reviewed:true,kitchens:[k],outletDecisions:{'1':{hasKitchen:false}}},outs));
  assert.throws(()=>K.requireRegistration({reviewed:true,kitchens:[k],reviewedOutletIds:['1','2']},outs),/outlet list changed/);
  assert.throws(()=>K.requireRegistration({reviewed:true,kitchens:[{...k,shiftTimes:[{start:'',end:''}]}]},outs),/shift/);
+});
+test('one saved attached kitchen cannot answer for the other outlets or complete their setup',()=>{
+ const shops=[{id:'1',name:'Rasipuram'},{id:'2',name:'Gurusamypalayam'},{id:'3',name:'Elimedu'}],record={reviewed:true,kitchens:[{...k,outletId:'3'}]};
+ assert.throws(()=>K.requireRegistration(record,shops),/Rasipuram.*answer whether/);
+ record.outletDecisions={'1':{hasKitchen:false},'2':{hasKitchen:false}};assert.throws(()=>K.requireRegistration(record,shops),/Elimedu.*answer whether/);
+ record.outletDecisions['3']={hasKitchen:true,kitchenId:'other'};assert.throws(()=>K.requireRegistration(record,shops),/review and use/);
+ record.outletDecisions['3']={hasKitchen:true,kitchenId:k.id};assert.doesNotThrow(()=>K.requireRegistration(record,shops));
+ record.outletDecisions['3']={hasKitchen:false};assert.throws(()=>K.requireRegistration(record,shops),/still attached/);
+ record.outletDecisions['1']={hasKitchen:'false'};assert.throws(()=>K.requireRegistration(record,shops),/Rasipuram.*answer whether/);
 });
 test('early inventory reuses IDs and preserves financial fields, allocation and planned quantity',()=>{
  const old={reviewed:true,sourceStamp:'old',assets:[{id:'A',name:'Steamer',quantity:3,ownedQty:1,unitCost:50000,residual:1000,usefulYears:10,annualDays:300,costConfirmed:true,uses:{Idli:100},custom:'keep'}]};
