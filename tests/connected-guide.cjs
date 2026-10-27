@@ -37,8 +37,8 @@ test('companion follows the owner, displays real pending requirements, and never
  w.BOBS_CONFIG={DATA_VAULT_WEB_APP_URL:'https://fixture.invalid'};w.BOBS_VERIFIED={save(){writes++}};w.BOBS_RECIPE_KNOWLEDGE={};w.BOBS_OPERATIONAL_RECIPES={};w.BOBS_KITCHENS={isKitchen:()=>false};
  w.BOBS_DATA={jsonp:async p=>p.action==='outletList'?{ok:true,outlets:[{outletId:'1',outletName:'Trial',data:{shiftTimes:[{start:'06:00',end:'14:00'}]}}]}:{ok:true,found:false}};
  w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
- const button=w.document.getElementById('bobsCompanionToggle'),panel=w.document.getElementById('bobsCompanion');assert(panel.hidden);button.click();await settle();assert(!panel.hidden);assert.match(panel.textContent,/Next: Outlet count/);assert.match(panel.textContent,/Working capital/);assert.match(panel.textContent,/Ideal Price Builder/);
- assert.match(panel.textContent,/What are you trying to do/);
+ const button=w.document.getElementById('bobsCompanionToggle'),panel=w.document.getElementById('bobsCompanion');assert(!panel.hidden,'Planner guide opens on entry');await settle();assert.match(panel.textContent,/Next: Outlet count/);assert.match(panel.textContent,/Working capital/);assert.match(panel.textContent,/Ideal Price Builder/);
+ assert.match(panel.textContent,/Loading your production plan/);
  const assets=[...panel.querySelectorAll('a')].find(a=>a.textContent==='Open Asset Master →');assert.equal(new URL(assets.href).searchParams.get('outlet'),'1');
  const quantity=w.document.getElementById('quantity');quantity.value='1200';quantity.dispatchEvent(new w.Event('input',{bubbles:true}));assert.match(panel.textContent,/Unsaved changes/);assert.equal(quantity.value,'1200');assert.equal(writes,0);
  panel.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(panel.hidden);assert.equal(w.document.activeElement,button);
@@ -127,7 +127,7 @@ test('item guide follows capacity, saved next requirement, verified recipe retur
  w.eval(source('bobs-item-guide.js'));w.eval(source('bobs-guide-bot.js'));
  const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'method2-item.html',outlet:'1'},itemHelp:w.BOBS_ITEM_GUIDE.snapshot()}),minimise(){},refresh(){}});
  let state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/Idli.*production capacity/);
- w.document.querySelector('[data-guide-choice=item-next-control]').click();assert.equal(w.document.activeElement,w.document.querySelector('#productionEntry a'));assert.equal(clicks,0);
+ const direct=w.document.querySelector('[data-guide-choice=item-open-production]');assert.equal(direct.tagName,'A');assert.match(direct.textContent,/Open Idli production planner/);assert.equal(new URL(direct.href).pathname,'/production-plan.html');assert.equal(new URL(direct.href).searchParams.get('guide'),'continue');assert.equal(direct.target,'_blank');assert.equal(clicks,0);
  const full=w.document.getElementById('idliLabourCost');
  full.dataset.productionReady='true';full.innerHTML='<p class="flow-current"><a href="outlet-plan.html?stage=workforce">Next: review combined menu workforce and riders →</a></p>';await settle();bot.update();
  assert.match(w.document.getElementById('host').textContent,/review combined menu workforce/);assert.doesNotMatch(w.document.getElementById('host').textContent,/first, review production capacity/);w.BOBS_ITEM_GUIDE.focus();assert.equal(w.document.activeElement,full.querySelector('a'));
@@ -136,5 +136,16 @@ test('item guide follows capacity, saved next requirement, verified recipe retur
  w.document.getElementById('guideStep3').setAttribute('aria-current','step');state=w.BOBS_ITEM_GUIDE.snapshot();assert.equal(state.selector,'#save');assert.equal(clicks,0);
  w.document.getElementById('guideStep2').setAttribute('aria-current','false');w.document.getElementById('guideStep3').setAttribute('aria-current','false');w.document.getElementById('productionEntry').hidden=true;w.document.getElementById('mode').value='purchased';assert.match(w.BOBS_ITEM_GUIDE.snapshot().title,/supplier quantity/);
  w.document.getElementById('controls').disabled=true;w.document.getElementById('retryGoogle').hidden=false;assert.equal(w.BOBS_ITEM_GUIDE.snapshot().selector,'#retryGoogle');await settle();assert(events>1);
+ }finally{w.close()}
+});
+
+test('production bot follows current step and never confirms reviews or saves on its own',()=>{
+ const dom=new JSDOM('<div id="host"></div>',{runScripts:'outside-only',url:'https://bobs.test/production-plan.html?outlet=1'}),w=dom.window;let calls=[],p={ready:true,itemKey:'Breakfast::0',name:'Idli',recipes:[],journey:{stage:'quantity'}};
+ try{w.BOBS_PRODUCTION_GUIDE={snapshot:()=>p,continueQuantity(){calls.push('quantity');},continueDelivery(){calls.push('delivery')},calculate(){calls.push('calculate')},save(){calls.push('save')},retryStep(){calls.push('retry')},focus(){},focusProcess(){}};
+ w.eval(source('bobs-guide-bot.js'));const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'production-plan.html',outlet:'1'}}),minimise(){},work(){},refresh(){}});
+ const text=()=>w.document.getElementById('host').textContent;
+ assert.match(text(),/how much, and ready by when/);assert.deepEqual(calls,[]);
+ for(const [stage,match]of [['recipes',/main recipe/],['equipment',/usable capacity/],['timing',/Review timing/],['assessment',/check whether production fits/],['delivery',/review delivery/],['save',/ready to save/],['saving',/Saving and verifying/],['error',/not fully saved/]]){p.journey={stage,process:'Idli',message:'fixture status'};bot.update();assert.match(text(),match);}
+ assert.deepEqual(calls,[]);p.journey={stage:'save'};bot.update();w.document.querySelector('[data-guide-choice=plan-save]').click();assert.deepEqual(calls,['save']);
  }finally{w.close()}
 });
