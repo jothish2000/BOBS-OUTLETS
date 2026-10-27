@@ -1,6 +1,6 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id),q=new URLSearchParams(location.search);
-let outlet=q.get('outlet')||JSON.parse(localStorage.getItem('outlet-selection')||'{}').id||'',s=M2.state(),recipes=[],ready=false,generation=0,refreshTimer;
+let outlet=q.get('outlet')||JSON.parse(localStorage.getItem('outlet-selection')||'{}').id||'',s=M2.state(),recipes=[],ready=false,generation=0,refreshTimer,nextItemKey='';
 const embedded=q.get('flow')==='1';
 const setupKey='method2-setup-review-'+outlet;let setupReview=q.get('setup')==='1'||sessionStorage.getItem(setupKey)==='1';
 function requestSetupReview(value){setupReview=value;if(value)sessionStorage.setItem(setupKey,'1');else sessionStorage.removeItem(setupKey)}
@@ -23,18 +23,18 @@ function open(cat,i,mode){
 }
 function filterRows(){const filter=$('search').value.trim().toLowerCase();for(const row of $('catList').children)row.hidden=!row.dataset.search.includes(filter)}
 function render(){
- const y=window.scrollY,rows=entries();$('catList').replaceChildren();let sales=0,cost=0,unknown=false,incomplete=0,firstIncomplete='';
+ const y=window.scrollY,rows=entries();nextItemKey='';$('catList').replaceChildren();let sales=0,cost=0,unknown=false,incomplete=0,firstIncomplete='';
  for(const {cat,i,item} of rows){
   const d=M2.draft(s,cat,i,item),k=M2.keys(cat,i).k,c=M2.calculate(d,item,recipes);
   sales+=c.revenue||0;if(c.missing.length)unknown=true;else cost+=c.soldCost||0;
-  if(setupReview||pending[k]||M2.number(d.sold)===null||!d.soldConfirmed||c.missing.length){incomplete++;if(!firstIncomplete)firstIncomplete=item.name}
+  if(setupReview||pending[k]||M2.number(d.sold)===null||!d.soldConfirmed||c.missing.length){incomplete++;if(!firstIncomplete){firstIncomplete=item.name;nextItemKey=k}}
   const row=document.createElement('tr');row.className='item selected-row';row.dataset.search=(cat+' '+item.name).toLowerCase();row.dataset.key=k;
   const name=document.createElement('td'),strong=document.createElement('strong');strong.textContent=item.name;name.append(strong);const category=document.createElement('p');category.className='muted';category.textContent=cat.replace(' Catalogue','');name.append(category);
   const mode=document.createElement('td'),select=document.createElement('select');select.setAttribute('aria-label',item.name+' mode');['purchased','production'].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m==='purchased'?'Purchase':'Production';select.append(o)});select.value=d.mode;
   // Mode selection is local UI only. The explicit Edit button opens the editor once.
   mode.append(select);const sold=document.createElement('td');sold.textContent=d.sold===''?'Not entered':BOBS_NUMBERS.quantity(d.sold,d.unit);
   const status=document.createElement('td');status.className='muted';status.textContent=setupReview?'Review Purchase/Production and today’s quantities':pending[k]?'Editor opened — save required':!d.soldConfirmed?'Needs Sold Today / item setup':c.missing.length?'Cost inputs incomplete — edit item':'Saved to Google';
-  const actions=document.createElement('td'),button=document.createElement('button');button.textContent='Edit item ↗';button.onclick=()=>open(cat,i,select.value);button.disabled=!ready;actions.append(button);
+  const actions=document.createElement('td'),button=document.createElement('button');button.dataset.editItem='true';button.textContent='Edit item ↗';button.onclick=()=>open(cat,i,select.value);button.disabled=!ready;actions.append(button);
   const cancel=document.createElement('button');cancel.className='secondary cancel-edit';cancel.textContent='Keep saved version';cancel.hidden=!pending[k]&&!setupReview;cancel.onclick=()=>{if(!confirm('Keep the saved mode, quantities and Sold Today for '+item.name+'? Close any unfinished editor without saving.'))return;delete pending[k];requestSetupReview(false);sessionStorage.setItem(pendingKey,JSON.stringify(pending));render()};actions.append(cancel);
   row.append(name,mode,sold,status,actions);$('catList').append(row);
  }
@@ -56,7 +56,32 @@ function render(){
 }
 function itemsComplete(){return ready&&!setupReview&&entries().length>0&&!M2.orderPackingCost(s).missing.length&&entries().every(({cat,i,item})=>{const d=M2.draft(s,cat,i,item);return !pending[M2.keys(cat,i).k]&&M2.number(d.sold)!==null&&d.soldConfirmed&&!M2.calculate(d,item,recipes).missing.length})}
 window.BOBS_METHOD2_ITEMS_COMPLETE=itemsComplete;
-function rootRenderEvent(){window.dispatchEvent(new Event('bobs-method2-items-rendered'))}
+function rootRenderEvent(){window.dispatchEvent(new Event('bobs-method2-items-rendered'));notifyGuide()}
+function notifyGuide(){window.dispatchEvent(new Event('bobs-guide-context'));try{if(embedded&&parent!==window&&parent.location.origin===location.origin)parent.dispatchEvent(new parent.Event('bobs-guide-context'));}catch(_){}}
+window.BOBS_METHOD2_GUIDE={
+ snapshot(){
+  const items=ready?[...$('catList').children].map(row=>({key:row.dataset.key,name:row.querySelector('strong').textContent,mode:row.querySelector('select').value})):[];
+  const item=items.find(x=>x.key===nextItemKey),action=$('guideAction');
+  return {ready,stage:$('guideStage').textContent,instruction:$('guideText').textContent,items,item,
+   action:item?'Show '+item.name+' — Edit item ↗':!ready?'Show Reload Google records':!action.hidden?action.textContent:embedded?'Show Save & Continue':'Show Review Sold Today'};
+ },
+ focus(){
+  if(!ready){$('refresh').scrollIntoView({block:'center'});$('refresh').focus();return;}
+  if(nextItemKey){
+   const row=[...$('catList').children].find(x=>x.dataset.key===nextItemKey);
+   if(!row)throw Error('The selected item changed. Review the refreshed list.');
+   $('search').value='';filterRows();const button=row.querySelector('[data-edit-item]');button.scrollIntoView({block:'center',inline:'center'});button.focus();return;
+  }
+  const action=$('guideAction');
+  if(!action.hidden){action.scrollIntoView({block:'center'});action.focus();return;}
+  if(embedded){parent.BOBS_METHOD_FLOW_GUIDE.focusContinue();return;}
+  $('review').scrollIntoView({block:'center'});$('review').focus();
+ }
+};
+// Observe existing page guidance, including workload-gate updates, without additional reads.
+new MutationObserver(notifyGuide).observe($('pageGuide'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','href']});
+$('catList').addEventListener('change',notifyGuide);
+
 async function reload(){
  const refresh=$('refresh'),status=$('status');if(!refresh||!status)return;
  const request=++generation;ready=false;status.textContent='Checking Google…';refresh.disabled=true;setGuide('CHECKING GOOGLE','Reading the saved Method 2 items for this outlet.','BOBS will show the next action when Google confirms the record.');
