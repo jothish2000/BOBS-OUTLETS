@@ -32,3 +32,12 @@
 #bobsCompanion .guide-secondary-actions p{font-size:13px;color:#455d4e;margin:0}
 #bobsCompanion .guide-secondary-actions button{min-height:44px;text-align:left;background:#f3f5f1;color:#214b35;border:1px solid #bccdbf}
 @media(max-width:600px){#bobsCompanion{right:8px;bottom:68px;max-width:calc(100vw - 16px);max-height:74dvh}#bobsCompanionToggle{right:8px}}
+
+/* The outlet-method guide occupies page space and cannot cover the embedded Edit action. */
+#bobsCompanion.method-flow-inline{position:static;width:100%;max-width:100%;max-height:none;overflow:visible;box-shadow:none;margin:12px 0}
+#bobsCompanion.method-flow-inline .companion-head{position:static}
+#bobsCompanion.method-flow-inline>details{display:none}
+#methodFlowGuide:empty{display:none}
+
+#itemCompanionGuide{max-width:1100px;margin:12px auto;padding:0 16px;box-sizing:border-box}
+#itemCompanionGuide:empty{display:none}
