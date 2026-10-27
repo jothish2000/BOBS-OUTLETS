@@ -2,10 +2,12 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const source=p=>fs.readFileSync(p,'utf8');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r))};
 test('opening the index itself welcomes the user automatically with the real setup entry',async()=>{
- const dom=new JSDOM('<main>BOBS</main>',{runScripts:'outside-only',url:'https://bobs.test/index.html'}),w=dom.window;
+ for(const url of ['https://bobs.test/index.html','https://bobs.test/']){
+ const dom=new JSDOM('<main>BOBS</main>',{runScripts:'outside-only',url}),w=dom.window;
  try{w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
   assert.equal(w.document.getElementById('bobsCompanion').hidden,false);assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Welcome to BOBS/);const a=[...w.document.querySelectorAll('#bobsGuideDialogue a')].find(a=>a.textContent==='Start guided outlet setup →');assert.equal(new URL(a.href).pathname,'/outlets.html');assert.equal(new URL(a.href).searchParams.get('guide'),'start');
  }finally{w.close()}
+ }
 });
 test('index starts the guided journey; outlet choice hands off once and minimising survives page edits',async()=>{
  assert.match(source('index.html'),/href="outlets.html\?guide=start"/);

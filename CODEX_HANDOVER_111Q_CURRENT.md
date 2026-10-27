@@ -2517,3 +2517,10 @@ Changed index.html entry URL, outlets.html guide introduction and choice event, 
 Extended the entry rule to the moment index.html opens, covering the Owner’s earliest requested starting point. The automatically opened welcome asks the goal and provides Start guided outlet setup, which leads to the real saved/new assessment choice. The ordinary index Outlet Setup link also retains the start signal.
 ### Section 2 — Codex handover
 Prior source d2eedb0f86104f5a837a59bdcded2585d8e82926 published in PR97; added initial-index detection and welcome route in the same existing companion, plus focused/native regression assertions. Latest26 focused UI cases PASS; previous full138 cases PASS. No persistence change beyond existing session guidance flag. Native/browser/latest-head checks and live publication still pending for this final extension. Next publish the small delta to PR97 and require fresh latest-head checks before merge.
+
+
+## WACP 2026-10-27 — Home URL compatibility
+### Section 1 — Work mode handover
+The index welcome also applies to the project’s directory/home URL, which serves index.html without its filename. Both home address forms are covered by the focused welcome regression.
+### Section 2 — Codex handover
+Normalised an empty current page name to index.html in bobs-roadmap.js; no change to query ownership, frames or Google stores. Initial PR97 native run40446065044 and all four initial-head checks passed. Latest home/welcome head remains subject to fresh CI and live verification.
