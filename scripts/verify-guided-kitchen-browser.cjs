@@ -130,6 +130,10 @@ await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>docu
 await p.locator('#bobsFlowGuide button').first().click();assert.equal(await p.evaluate(()=>document.activeElement.id),'equipmentReviewed');
 const companionWrites=writes.length;
 await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
+await p.getByText('What are you trying to do?',{exact:true}).waitFor();
+await p.waitForFunction(()=>!window.BOBS_ROADMAP.getState().busy);
+await p.getByText('Saved progress and connected modules',{exact:true}).click();
+await p.getByText('Connected planning board',{exact:true}).click();
 assert.match(await p.locator('#bobsCompanion').innerText(),/Connected planning board/);
 assert.match(await p.locator('#bobsCompanion').innerText(),/Workforce selection/);
 assert.equal(new URL(await p.getByRole('link',{name:'Open Asset Master →',exact:true}).getAttribute('href')).searchParams.get('outlet'),id);
