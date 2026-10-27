@@ -92,7 +92,7 @@ const itemHelp=await item.evaluate(()=>BOBS_ITEM_GUIDE.snapshot());assert((await
 assert.equal(await item.locator('#bobsCompanion').evaluate(el=>getComputedStyle(el).position),'fixed');
 const guideBounds=await item.locator('#bobsCompanion').boundingBox(),mainBounds=await item.locator('main').boundingBox();assert(mainBounds.x+mainBounds.width<=guideBounds.x,'Laptop work area is outside guide column');
 if(itemHelp.href){
- const nextPage=item.waitForEvent('popup');await item.click('[data-guide-choice=item-open-production]');const planner=await nextPage;
+ const nextPage=item.waitForEvent('popup');await item.click('[data-guide-choice=item-open-production]');const planner=await nextPage;await planner.waitForURL(u=>u.pathname.endsWith('/production-plan.html'),{waitUntil:'domcontentloaded'});
  assert.equal(new URL(planner.url()).searchParams.get('returnTo'),item.url());await planner.waitForFunction(()=>window.BOBS_PRODUCTION_GUIDE?.snapshot().ready);await planner.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert.match(await planner.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await planner.screenshot({path:path.join(out,'interactive-planner-live.png')});result.checks.push('Live Idli: direct planner popup preserves immediate parent and automatically asks quantity/time; no edits or saves');await planner.close();
