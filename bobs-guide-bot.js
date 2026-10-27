@@ -102,12 +102,14 @@ function mount(host,options){
     break;
    }
    case 'start':
+    if(s.ctx.page==='index.html'){
+     ask('Welcome to BOBS');
+     host.append(el('p','Begin with your outlets and kitchens. I’ll check saved details and ask whether you want to continue them or start a new assessment.'));
+     const start=route('outlets.html','Start here — guided outlet setup →',{guide:'start'});start.classList.add('guide-primary');host.append(start);
+     const other=el('div',undefined,'guide-secondary-actions');other.append(el('p','Other tasks'),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Check saved progress','resume','resume'));host.append(other);break;
+    }
     ask('What are you trying to do?');
     host.append(el('p','Tell me your goal. I’ll ask one question at a time and take you to the matching controls.'));
-    if(s.ctx.page==='index.html'){
-     host.append(el('p','Welcome to BOBS. Start with your outlets: I’ll check saved details and ask whether you want to continue them or begin a new assessment.'));
-     choices(route('outlets.html','Start guided outlet setup →',{guide:'start'}),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Check saved progress','resume','resume'));break;
-    }
     choices(choose('Set up an outlet','setup','setup',()=>state.task='setup'),choose('Plan production and equipment','production','kitchen',()=>state.task='production'),choose('Continue my saved work','resume','resume'));
     break;
    case 'setup':

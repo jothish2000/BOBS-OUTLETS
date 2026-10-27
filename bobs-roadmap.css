@@ -26,4 +26,9 @@
 #bobsCompanion .guide-nav{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid #ddd;padding-top:12px;margin-top:14px}#bobsCompanion .guide-nav button{background:#edf2ed;color:#193e30;font-size:13px}
 #bobsCompanion .guide-process{border:1px solid #bdcdc1;border-radius:8px;padding:12px;margin:10px 0}#bobsCompanion .guide-process button{display:block;margin:8px 0;width:100%;white-space:normal;text-align:left}
 #bobsCompanion .guide-error{border-left:4px solid #9b3417;padding:10px;background:#fff0e8;color:#7b260c}#bobsCompanion .guide-action{padding:10px;background:#edf2ed;border-radius:6px}
+#bobsCompanion a.guide-primary{display:flex;align-items:center;width:100%;min-height:64px;padding:16px;margin:18px 0;background:#214b35;color:#fff;border:2px solid #ab8227;border-radius:8px;font-size:18px;font-weight:750;line-height:1.4;text-decoration:none;box-shadow:0 3px 8px #214b3526}
+#bobsCompanion a.guide-primary:hover{background:#173b29;border-color:#c29a42}
+#bobsCompanion .guide-secondary-actions{display:grid;gap:8px;border-top:1px solid #dfdfce;padding-top:12px;margin-top:18px}
+#bobsCompanion .guide-secondary-actions p{font-size:13px;color:#455d4e;margin:0}
+#bobsCompanion .guide-secondary-actions button{min-height:44px;text-align:left;background:#f3f5f1;color:#214b35;border:1px solid #bccdbf}
 @media(max-width:600px){#bobsCompanion{right:8px;bottom:68px;max-width:calc(100vw - 16px);max-height:74dvh}#bobsCompanionToggle{right:8px}}
