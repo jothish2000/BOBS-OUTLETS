@@ -1691,3 +1691,12 @@ Prior source d2eedb0f86104f5a837a59bdcded2585d8e82926 published in PR97; added i
 The index welcome also applies to the project’s directory/home URL, which serves index.html without its filename. Both home address forms are covered by the focused welcome regression.
 ### Section 2 — Codex handover
 Normalised an empty current page name to index.html in bobs-roadmap.js; no change to query ownership, frames or Google stores. Initial PR97 native run40446065044 and all four initial-head checks passed. Latest home/welcome head remains subject to fresh CI and live verification.
+
+
+## WACP 2026-10-27 — Native index navigation repair
+### Section 1 — Work mode handover
+Latest-head native run40446466282 FAILED: welcome setup action opened a child tab, leaving the original index behind; the test waited there for the saved-data choice. Existing non-index guided journey and all earlier browser modules passed. Repaired the first setup action to navigate in the same tab, matching the ordinary index Setup link and continuous-journey intent.
+### Section 2 — Codex handover
+Failure at scripts/verify-outlet-save-help-browser.cjs:14 waiting for #keep after the welcome click. bobs-guide-bot.js route uses _self only for explicit guide=start actions; recipe/supporting editors retain their established child windows. Added target assertion to welcome regression. Focused26 cases and syntax/diff checks must pass, followed by fresh final-head native CI. Prior source c572444db9c3a469238cb4267f297000e2e4e149 not merged/deployed. Next publish bounded fix and rerun latest-head checks; no operational data touched.
+
+Repair retest:26 focused cases PASS; node syntax and git diff --check PASS. Native latest-head CI pending.

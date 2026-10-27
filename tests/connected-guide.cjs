@@ -5,7 +5,7 @@ test('opening the index itself welcomes the user automatically with the real set
  for(const url of ['https://bobs.test/index.html','https://bobs.test/']){
  const dom=new JSDOM('<main>BOBS</main>',{runScripts:'outside-only',url}),w=dom.window;
  try{w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
-  assert.equal(w.document.getElementById('bobsCompanion').hidden,false);assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Welcome to BOBS/);const a=[...w.document.querySelectorAll('#bobsGuideDialogue a')].find(a=>a.textContent==='Start guided outlet setup →');assert.equal(new URL(a.href).pathname,'/outlets.html');assert.equal(new URL(a.href).searchParams.get('guide'),'start');
+  assert.equal(w.document.getElementById('bobsCompanion').hidden,false);assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Welcome to BOBS/);const a=[...w.document.querySelectorAll('#bobsGuideDialogue a')].find(a=>a.textContent==='Start guided outlet setup →');assert.equal(new URL(a.href).pathname,'/outlets.html');assert.equal(new URL(a.href).searchParams.get('guide'),'start');assert.equal(a.target,'_self');
  }finally{w.close()}
  }
 });
