@@ -105,7 +105,7 @@ function mount(host,options){
    case 'page-task':{
     const help=s.pageHelp;
     ask(help?'Shall we work through '+help.title.toLowerCase()+'?':'What would you like to complete on this page?');
-    if(help){host.append(el('p',help.instruction),el('p',help.next));choices(button('Show me where to work on this step','page-work',()=>pageFocus(help.anchor||'main, #flowApp, #itemEditor, form, section:not(#bobsFlowGuide)')));}
+    if(help){host.append(el('p',help.instruction));if(help.steps?.length){const list=el('ol');for(const text of help.steps)list.append(el('li',text));host.append(list);}else if(help.next)host.append(el('p',help.next));choices(button('Show me where to work on this step','page-work',()=>pageFocus(help.anchor||'main, #flowApp, #itemEditor, form, section:not(#bobsFlowGuide)')));}
     if(['asset-master.html','working-capital.html'].includes(s.ctx.page))needProduction(s);
     choices(choose('Find my next saved requirement','page-progress','resume'),choose('Help me plan quantities and equipment','page-production','kitchen'));
     break;
