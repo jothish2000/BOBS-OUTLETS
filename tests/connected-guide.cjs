@@ -61,3 +61,31 @@ test('a recipe child resumes with its own controls, without returning to product
  assert.match(w.document.getElementById('host').textContent,/You are reviewing a recipe/);w.document.querySelector('[data-guide-choice=page-scale]').click();assert.equal(w.document.activeElement.id,'scale');assert.equal(clicks,0);assert.equal(w.document.getElementById('confirmed').checked,false);
  }finally{w.close()}
 });
+
+test('verified kitchen handoff opens inline, explains actual options, and clears without a write or lost companion',async()=>{
+ const dom=new JSDOM('<div id="nextAction"><div id="kitchenNextGuide"></div><input id="kitchenNext-equipment" type="radio" name="kitchenNextChoice"><input id="kitchenNext-baseline" type="radio" name="kitchenNextChoice"><button id="kitchenNextGo" disabled>Choose first</button></div>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations&outlet=1'}),w=dom.window;let verified=false;
+ try{
+  w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified,outlets:[]})};
+  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  const next=w.document.getElementById('nextAction'),guide=w.document.getElementById('bobsCompanion'),first=w.document.getElementById('kitchenNext-equipment');
+  next.dataset.guideRequested='true';w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));assert(guide.hidden,'Unverified state cannot announce success');
+  verified=true;first.focus();w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));
+  assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');assert(guide.classList.contains('kitchen-next-inline'));
+  assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/saved and verified.*Optional now:.*Next required:/s);
+  assert.equal(w.document.activeElement,first,'Opening guide must not steal choice focus');assert.equal(first.checked,false);assert(w.document.getElementById('kitchenNextGo').disabled);
+  w.dispatchEvent(new w.Event('bobs-flow-saved'));await settle();assert.equal(w.document.activeElement,first);
+  w.dispatchEvent(new w.Event('bobs-kitchen-next-cleared'));delete next.dataset.guideRequested;next.replaceChildren();verified=false;
+  assert(guide.isConnected);assert(guide.hidden);assert(!guide.classList.contains('kitchen-next-inline'));assert.equal(w.document.querySelectorAll('#bobsCompanion').length,1);
+ }finally{w.close();}
+});
+test('handoff requested before guide loads is retained, and zero kitchens offers required expenses only',async()=>{
+ const dom=new JSDOM('<div id="nextAction" data-guide-requested="true"><div id="kitchenNextGuide"></div><input id="kitchenNext-baseline" type="radio" name="kitchenNextChoice"><button id="kitchenNextGo" disabled></button></div>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations'}),w=dom.window;
+ try{
+  w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified:true,outlets:[]})};
+  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  const guide=w.document.getElementById('bobsCompanion');assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
+  const text=w.document.getElementById('bobsGuideDialogue').textContent;assert.match(text,/Next required: review outlet expenses/);assert.doesNotMatch(text,/Optional now/);
+  guide.querySelector('button').click();assert(guide.hidden);assert(!w.document.getElementById('bobsCompanionToggle').hidden);
+  w.document.getElementById('bobsCompanionToggle').click();assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
+ }finally{w.close();}
+});
