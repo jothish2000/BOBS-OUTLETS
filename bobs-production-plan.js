@@ -61,7 +61,7 @@ $('recipePlanLinks').addEventListener('click',e=>{if(e.target.closest('a')&&extr
 function recipeLinks(){
  if(!selected)return;
  const reqs=requirementsFor(currentItem()),list=$('recipePlanLinks');
- const rows=selected.job?selected.job.orders.map(o=>({name:o.outlet+' / '+o.itemName,href:'recipe-cost-editor.html?'+new URLSearchParams({outlet:o.outlet,cat:o.cat,i:o.i,item:o.recipe.name,qty:o.quantity,returnTo:location.href}),status:'Review this supplying recipe and return here.'})):reqs.map(r=>{
+ const rows=selected.job?selected.job.orders.map(o=>({name:o.outlet+' / '+o.itemName,reviewKey:JSON.stringify([selected.key,o.outlet,o.itemKey,o.quantity,C.recipeStamp(o.recipe)]),current:true,reviewed:recipeChecks.has(JSON.stringify([selected.key,o.outlet,o.itemKey,o.quantity,C.recipeStamp(o.recipe)])),href:'recipe-cost-editor.html?'+new URLSearchParams({outlet:o.outlet,cat:o.cat,i:o.i,item:o.recipe.name,qty:o.quantity,returnTo:location.href}),status:'Review this supplying recipe and return here.'})):reqs.map(r=>{
   const name=r.recipe?.kitchenOriginalName||r.recipe?.name||r.name,original=M2.recipe(data.recipes,name),saved=data.raw?.recipeOverrides?.[C.norm(name)];
   const current=saved&&original&&saved.referenceStamp===C.recipeStamp(original);
   const reviewKey=JSON.stringify([selected.key,name,r.qty,original&&C.recipeStamp(original),saved?.savedAt]);
