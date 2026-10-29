@@ -228,7 +228,7 @@ async function loadEditor(){if(loading||busy)return;loading=true;ready=false;con
  $('condimentChoice').replaceChildren();choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
  supportRecord=null;supportError='';fullCostData={pending:true};
  show();servingStart=M2.clone(d);ready=true;$('controls').disabled=false;status('Loaded from Google — your outlet information is ready to review.');$('itemGuide').hidden=false;dirty=false;
- if(servingRecipe)setTimeout(()=>{try{focusServing();window.dispatchEvent(new Event('bobs-guide-resume'));}catch(e){status(e.message)}},0);
+ if(servingRecipe)setTimeout(()=>{try{window.dispatchEvent(new Event('bobs-guide-resume'));focusServing();}catch(e){status(e.message)}},0);
  loadOptionalCosts(epoch);
  }catch(e){status('Could not load and verify this item: '+e.message+'. Click “Retry Google read” below. No item was saved by this attempt.');$('retryGoogle').hidden=false}
  finally{loading=false}}
