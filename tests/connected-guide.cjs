@@ -179,3 +179,38 @@ test('saved-progress scan times out, retries, rejects late results and preserves
  w.document.querySelector('[data-guide-choice=resume-edit]').click();assert(w.document.getElementById('bobsCompanion').hidden);assert.equal(draft.value,'17000');
  }finally{w.close()}
 });
+
+test('guide checklist never promotes visits, stale reads or unknown status to green completion',()=>{
+ const dom=new JSDOM('<div id="guide"></div>',{runScripts:'outside-only',url:'https://bobs.test/method2.html?outlet=1'}),w=dom.window;
+ try{w.eval(source('bobs-guide-bot.js'));const model=w.BOBS_GUIDE_BOT.checklistModel;
+ const s={ctx:{page:'method2.html',outlet:'1'},progress:{status:'ready'},savedChecklist:{owner:'1',name:'Rasipuram',stages:[{title:'Outlet setup',status:'done'},{title:'Menu review',status:'review'},{title:'Method 1',status:'na'}]}};
+ assert.equal(model(s).done,1);assert.equal(model({...s,dirty:true}).dirty,true);
+ for(const overrides of [{loading:true},{readError:true},{progress:{status:'idle'}}]){const x=model({...s,...overrides});assert.equal(x.done,0);assert(x.rows.every(r=>r.status==='unknown'));}
+ assert.equal(model({...s,savedChecklist:{owner:'2',name:'Elimedu',stages:[]}}).done,0);
+ }finally{w.close()}
+});
+test('shared checklist keeps saved ticks separate from draft and leaves action buttons attached',async()=>{
+ const dom=new JSDOM('<input id="amount"><div id="guide"></div>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1'}),w=dom.window;
+ try{w.HTMLElement.prototype.scrollIntoView=function(){};w.eval(source('bobs-guide-bot.js'));
+ const state={ctx:{page:'outlet-plan.html',outlet:'1'},progress:{status:'ready'},pageHelp:{title:'Review expenses',instruction:'Review then save.'},savedChecklist:{owner:'1',name:'Rasipuram',stages:[{title:'Outlet setup',status:'done',children:[{title:'Kitchen registration',status:'done'}]},{title:'Expenses',status:'review',reason:'Review expenses.'}]}};
+ const host=w.document.getElementById('guide');const bot=w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>state,minimise(){},refresh(){},journey:true});
+ assert.match(host.textContent,/✓ Saved and verified: Outlet setup/);
+ assert.match(host.textContent,/Next incomplete saved stage: Expenses/);
+ assert.equal(host.querySelectorAll('.guide-checklist').length,1);
+ const action=host.querySelector('button');state.dirty=true;
+ w.document.getElementById('amount').dispatchEvent(new w.Event('input',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
+ assert.equal(host.querySelector('button'),action);assert(action.isConnected);assert.match(host.textContent,/Save pending: your current changes/);
+ state.readError=true;bot.update();assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);assert.match(host.textContent,/could not be verified/);
+ }finally{w.close()}
+});
+test('recipe review ticks are draft checkpoints and update without claiming a saved recipe',async()=>{
+ const dom=new JSDOM('<section id="productionEditor"><input id="referenceWeightReviewed" type="checkbox"><input id="intendedWeightReviewed" type="checkbox"><input id="confirmed" type="checkbox" aria-disabled="true"></section><div id="guide"></div>',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1&item=Idli'}),w=dom.window;
+ try{w.HTMLElement.prototype.scrollIntoView=function(){};w.eval(source('bobs-guide-bot.js'));
+ const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{page:'recipe-cost-editor.html',outlet:'1'},progress:{status:'idle'},pageHelp:{}}),minimise(){},refresh(){},journey:true});
+ assert.match(host.textContent,/Next: Review reference portion weight/);
+ w.document.getElementById('referenceWeightReviewed').checked=true;
+ w.document.getElementById('referenceWeightReviewed').dispatchEvent(new w.Event('change',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
+ assert.match(host.textContent,/Reviewed — save pending: Review reference portion weight/);assert.match(host.textContent,/Next: Review intended portion weight/);
+ assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);
+ }finally{w.close()}
+});
