@@ -63,3 +63,7 @@
 .guide-checklist-done{color:#155a2d;font-weight:600}
 .guide-checklist-draft{color:#795000}
 .guide-checklist-next{background:#fff0b5;color:#263d2b;border-left:4px solid #ae7800;padding:7px;font-weight:700}
+
+#recipeCompanionGuide{max-width:1100px;margin:12px auto;padding:0 16px;box-sizing:border-box}
+#recipeCompanionGuide:empty{display:none}
+@media(min-width:900px){body.bobs-guided-dock .recipe-columns{grid-template-columns:minmax(0,1fr)}}
