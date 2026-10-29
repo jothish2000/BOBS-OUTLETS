@@ -149,3 +149,33 @@ test('production bot follows current step and never confirms reviews or saves on
  assert.deepEqual(calls,[]);p.journey={stage:'save'};bot.update();w.document.querySelector('[data-guide-choice=plan-save]').click();assert.deepEqual(calls,['save']);
  }finally{w.close()}
 });
+
+test('saved-progress bot explains its purpose, explicitly checks, preserves drafts and exposes truthful retry',()=>{
+ const dom=new JSDOM('<input id="draft" value="unsaved"><div id="host"></div>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&stage=baseline'}),w=dom.window;let checks=0,closed=0;
+ let snapshot={ctx:{outlet:'1',page:'outlet-plan.html'},dirty:true,progress:{status:'idle'}};
+ try{w.eval(source('bobs-guide-bot.js'));const host=w.document.getElementById('host'),ui=w.BOBS_GUIDE_BOT.mount(host,{journey:true,snapshot:()=>snapshot,minimise(){closed++},refresh(){checks++}});
+ const choose=host.querySelector('[data-guide-choice=page-progress]');assert.equal(choose.textContent,'Check saved progress & show what’s incomplete');assert.match(host.textContent,/does not save your current entries/);choose.click();assert.equal(checks,1);assert.match(host.textContent,/You have unsaved changes/);assert.equal(w.document.getElementById('draft').value,'unsaved');
+ snapshot={...snapshot,loading:true,progress:{status:'loading',message:'Reading saved Google records.'}};ui.update();assert(host.querySelector('[data-guide-choice=refresh]').disabled);assert.equal(host.querySelector('a'),null);
+ snapshot={...snapshot,loading:false,readError:true,next:{title:'STALE',href:'outlets.html'},progress:{status:'error',message:'The check did not finish within 45 seconds.'}};ui.update();assert.match(host.textContent,/45 seconds/);assert.equal(host.querySelector('a'),null,'Failed check must not offer a stale recommendation');assert.equal(host.querySelector('[data-guide-choice=refresh]').textContent,'Retry saved-progress check');host.querySelector('[data-guide-choice=refresh]').click();assert.equal(checks,2);
+ snapshot={...snapshot,readError:false,progress:{status:'ready'},next:{title:'Outlet expenses',reason:'Review saved coverage.',href:'outlet-plan.html?outlet=1&stage=baseline'}};ui.update();assert.match(host.textContent,/Next incomplete step: Outlet expenses/);assert.equal(new URL(host.querySelector('a').href).searchParams.get('outlet'),'1');host.querySelector('[data-guide-choice=resume-edit]').click();assert.equal(closed,1);assert.equal(w.document.getElementById('draft').value,'unsaved');assert.equal(w.location.pathname,'/outlet-plan.html');
+ }finally{w.close()}
+});
+
+test('saved-progress scan times out, retries, rejects late results and preserves unsaved input without writes',async()=>{
+ const dom=new JSDOM('<main><input id="draft" value="15000"></main>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&stage=baseline&guide=continue'}),w=dom.window;
+ const timers=new Map(),realSet=w.setTimeout.bind(w),realClear=w.clearTimeout.bind(w);let timerId=100000;w.setTimeout=(fn,ms,...args)=>{if(ms===45000||ms===12000){const id=++timerId;timers.set(id,{fn,ms});return id}return realSet(fn,ms,...args)};w.clearTimeout=id=>{timers.delete(id);realClear(id)};
+ let release,mode='hang',writes=0;const blocked=new Promise(resolve=>release=resolve);
+ try{
+ for(const p of ['shared_data.js','method2-core.js','bobs-cost-flow.js','idli-support-core.js','bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-production-plan-core.js','bobs-capital-core.js','bobs-outlet-report.js','bobs-roadmap-core.js','bobs-kitchen-core.js','bobs-roadmap-outlet-flow.js'])w.eval(source(p));
+ w.BOBS_CONFIG={DATA_VAULT_WEB_APP_URL:'https://fixture.invalid'};w.BOBS_VERIFIED={save(){writes++}};w.BOBS_RECIPE_KNOWLEDGE={};w.BOBS_OPERATIONAL_RECIPES={};w.BOBS_KITCHENS={isKitchen:()=>false};
+ w.BOBS_DATA={saveModule(){writes++},jsonp:async p=>{if(p.action==='outletList'){if(mode==='hang')return blocked;if(mode==='fail')throw Error('fixture read failure');return {ok:true,outlets:[{outletId:'1',outletName:'Current saved outlet',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}}return {ok:true,found:false}}};
+ w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+ const draft=w.document.getElementById('draft');draft.value='17000';draft.dispatchEvent(new w.Event('input',{bubbles:true}));const progressButton=w.document.querySelector('[data-guide-choice=page-progress]');draft.dispatchEvent(new w.Event('change',{bubbles:true}));assert(progressButton.isConnected,'Blur must not replace the guide button before click');progressButton.click();await settle();
+ assert(w.BOBS_ROADMAP.getState().busy);const slow=[...timers.values()].filter(t=>t.ms===12000).at(-1);slow.fn();assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/taking longer/);
+ const timeout=[...timers.values()].filter(t=>t.ms===45000).at(-1);timeout.fn();await settle();assert.equal(w.BOBS_ROADMAP.getState().busy,false);assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Retry saved-progress/);
+ mode='fail';w.document.querySelector('[data-guide-choice=refresh]').click();await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.equal(w.document.querySelector('#bobsGuideDialogue a'),null);
+ mode='ok';w.document.querySelector('[data-guide-choice=refresh]').click();await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Next incomplete step/);
+ release({ok:true,outlets:[{outletId:'9',outletName:'OLD OUTLET'}]});await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.doesNotMatch(w.document.getElementById('bobsCompanion').textContent,/OLD OUTLET/);assert.equal(draft.value,'17000');assert.equal(writes,0);
+ w.document.querySelector('[data-guide-choice=resume-edit]').click();assert(w.document.getElementById('bobsCompanion').hidden);assert.equal(draft.value,'17000');
+ }finally{w.close()}
+});
