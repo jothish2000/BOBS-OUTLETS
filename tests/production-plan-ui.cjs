@@ -92,8 +92,9 @@ test('optional sides require explicit Yes or No; demand, material and saved choi
  try{assert.equal(f.$('sideExtraYes').checked,false);assert.equal(f.$('sideExtraNo').checked,false);assert.equal(f.writes.length,0);
  f.input('#intendedQuantity','360');f.input('#readyBy','10:00');f.w.BOBS_PRODUCTION_GUIDE.continueQuantity();
  assert.equal(f.w.BOBS_PRODUCTION_GUIDE.snapshot().journey.stage,'extra-sides');
+ await f.$('saveProductionPlan').onclick();assert.match(f.$('planSaveStatus').textContent,/Yes or No/);assert.equal(f.writes.length,0);
  f.w.BOBS_PRODUCTION_GUIDE.chooseExtra(true);assert.match(f.$('sideExtraSummary').textContent,/7.560/);
- assert.match(f.$('recipePlanLinks').innerHTML,/qty=7.56/);assert.match(f.$('recipePlanLinks').innerHTML,/extraSides=yes/);
+ assert.match(f.$('recipePlanLinks').innerHTML,/qty=7.56/);assert.match(f.$('recipePlanLinks').innerHTML,/extraSides=yes/);assert.equal(new URL(f.$('recipePlanLinks').querySelector('a').href).searchParams.has('extraSides'),false);
  assert.equal(f.$('recipeReviewed').checked,false);assert.equal(f.$('capacityReviewed').checked,false);assert.equal(f.writes.length,0);
  f.w.BOBS_PRODUCTION_GUIDE.chooseExtra(false);assert.match(f.$('sideExtraSummary').textContent,/No: normal/);assert.match(f.$('sideExtraSummary').textContent,/7.200/);
  const state=f.w.BOBS_PRODUCTION_PLAN.draftState(f.db['1/METHOD2/default'],[{cat:'Breakfast Catalogue',i:0,quantity:360,unit:'piece',sideExtraFivePercent:false}],f.w.ITEM_DATA,f.w.M2,'2026-10-29');
