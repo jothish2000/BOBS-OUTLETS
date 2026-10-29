@@ -26,8 +26,8 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
 
  const dismissGuidance=async(p=page,method='review')=>{
   const dialog=p.locator('#portionReviewDialog');assert(await dialog.isVisible());
-  assert.match(await dialog.innerText(),/Reference cooked portion weight \(g\)/);
-  assert.match(await dialog.innerText(),/Intended cooked portion weight \(g\)/);
+  assert.match(await dialog.innerText(),/Reference recipe: weight of ONE cooked piece \/ serving \(g\)/);
+  assert.match(await dialog.innerText(),/Your chosen weight of ONE cooked piece \/ serving \(g\)/);
   assert.match(await dialog.innerText(),/ingredient quantities/);
   assert.match(await dialog.innerText(),/Return to section 1/);
   const before=await p.locator('#calculationStatus').innerText();
