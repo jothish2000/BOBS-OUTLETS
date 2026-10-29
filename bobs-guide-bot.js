@@ -53,6 +53,8 @@ function mount(host,options){
 
  function renderChecklist(s){
   let box=host.querySelector('.guide-checklist');
+  // The verified kitchen handoff already has a tick; keep both next-action cards in view.
+  if(state?.step==='kitchen-next'){box?.remove();return;}
   const opened=box?.querySelector('details')?.open;
   if(!box){box=el('section',undefined,'guide-checklist');box.setAttribute('aria-label','Your progress checklist');host.append(box);}
   box.replaceChildren();
@@ -109,7 +111,7 @@ function mount(host,options){
   host.replaceChildren();host.className='bobs-guide-dialogue';
   if(state.step==='kitchen-next'){
    if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
-    host.append(el('p','Kitchen Setup saved and verified. Choose your next step.','guide-question'));
+    host.append(el('p','✓ Kitchen Setup saved and verified. Choose your next step.','guide-question guide-checklist-done'));
     if(document.getElementById('kitchenNext-equipment'))host.append(el('p','Optional now: record existing equipment and capacity.'));
     host.append(el('p','Next required: review outlet expenses and mandatory staff.'),el('p','Choose a card below, then use the highlighted button.'));
     renderChecklist(s);return;
