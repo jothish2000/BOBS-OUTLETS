@@ -40,7 +40,7 @@ function mount(host,options){
  function needProduction(s){
   if(s.production?.ready)return false;
   const help={
-   'recipe-cost-editor.html':['You are reviewing a recipe. Check reference and intended portions, Calculate quantities from reference, review ingredients and rates, then Save. After verification, return to the production plan and review the next recipe.',[['Show portion sizes','referenceSection'],['Show Calculate quantities','scale'],['Show final recipe confirmation','confirmed']]],
+   'recipe-cost-editor.html':['Check the reference batch yield and intended total quantity in their displayed units. For sambar, review litres and serving ml; for Idli, review portion weights in grams. Calculate quantities from reference, review ingredients and rates, then Save. After verification, return to the production plan.',[['Show batch and serving details','referenceSection'],['Show Calculate quantities','scale'],['Show final recipe confirmation','confirmed']]],
    'asset-master.html':['Review each machine’s capacity, required and owned units, price, useful life and product shares. Your production-plan additions use this same Asset Master. Save after reviewing the values.',[['Show equipment details','planningBody'],['Show final asset review','planningReviewed']]],
    'working-capital.html':['Review ingredient, wage and operating-cash requirements against the saved menu and costs, then confirm and save.',[['Show cash requirements','planningBody'],['Show final cash review','planningReviewed']]],
    'outlet-plan.html':['Review this stage’s staffing, coverage and salary inputs. Confirm and save before proceeding to the next stage.',[['Show stage review','flowReviewed']]]
@@ -67,7 +67,8 @@ function mount(host,options){
    const confirmation=document.getElementById('confirmed');
    if(confirmation&&confirmation!==recipeWatched){recipeWatch?.disconnect();recipeWatched=confirmation;recipeWatch=new MutationObserver(()=>renderChecklist(snapshot()));recipeWatch.observe(confirmation,{attributes:true,attributeFilter:['aria-disabled']});}
    const checked=id=>!!document.getElementById(id)?.checked;
-   checks.push(['Review reference portion weight',checked('referenceWeightReviewed')],['Review intended portion weight',checked('intendedWeightReviewed')],
+   const volume=document.getElementById('productionEditor').dataset.portionBasis==='volume';
+   checks.push([volume?'Review reference batch volume':'Review reference portion weight',checked('referenceWeightReviewed')],[volume?'Review total volume and serving ml':'Review intended portion weight',checked('intendedWeightReviewed')],
     ['Calculate quantities from reference',document.getElementById('confirmed')?.getAttribute('aria-disabled')==='false'],
     ['Review ingredient rates and energy',checked('confirmed')]);
   }
