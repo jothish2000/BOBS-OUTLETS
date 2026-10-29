@@ -17,7 +17,7 @@ function mount(host,options){
  let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
- function snapshot(){const s=options.snapshot();return {...s,production:adapter()?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
+ function snapshot(){const s=options.snapshot();return {...s,recipeHelp:root.BOBS_RECIPE_GUIDE?.snapshot(),production:adapter()?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
  function restore(s){
   const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
   if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
@@ -38,6 +38,22 @@ function mount(host,options){
  function focus(id){options.minimise();adapter()?.focus(id);}
  function pageFocus(selector){const target=document.querySelector(selector);if(!target)throw Error('This control is not ready yet. Wait for the page to load, or use its Retry button.');options.minimise();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
  function needProduction(s){
+  if(s.ctx.page==='recipe-cost-editor.html'&&s.recipeHelp){
+   const h=s.recipeHelp,a=root.BOBS_RECIPE_GUIDE,focus=(label,id)=>button(label,'recipe-step-'+id,()=>{options.work();a.focus(id);});
+   host.append(el('p','You are reviewing a recipe.','guide-question'));
+   if(h.stage==='loading'){host.append(el('p','Loading '+h.name+' — wait for the saved reference.'));return true;}
+   host.append(el('p',h.name+' · reference '+h.referenceYield+' '+h.unit+' · intended total '+h.target+' '+h.unit));
+   if(h.extra==='yes')host.append(el('p','The parent plan selected 5% extra produced sides. The linked total already includes it; do not add it again.'));
+   if(h.extra==='no')host.append(el('p','The parent plan selected normal side quantities only. No extra is added.'));
+   if(h.stage==='reference'){host.append(el('p',h.volume?'First check the reference batch yield and its volume unit. Tick the reference review when correct.':'First check the reference recipe yield and cooked portion weight in grams. Tick the reference review when correct.'));host.append(focus('Review the reference and its confirmation','referenceWeightReviewed'));}
+   else if(h.stage==='intended'){host.append(el('p',h.volume?'Now check the intended total volume and serving ml, then tick the second review.':'Now check your intended portion weight in grams, then tick the second review.'));if(h.serving)host.append(el('p',h.serving));host.append(focus('Review intended quantity and serving choice','intendedWeightReviewed'));}
+   else if(h.stage==='calculate'){host.append(el('p','Both checks are complete. Calculate the ingredient quantities now. This creates a preview and does not save.'));host.append(button('Calculate quantities from reference','recipe-step-calculate',()=>a.calculate()));}
+   else if(h.stage==='review'){host.append(el('p','Calculation is ready. Review ingredient quantities, rates and energy use. Tick the final recipe review only when they are correct.'));host.append(focus('Review the calculated ingredients','productionRows'),focus('Show final recipe review','confirmed'));}
+   else if(h.stage==='save'){host.append(el('p','Your recipe review is ticked. Save explicitly; after verification I will guide the next unfinished recipe in the parent plan.'));host.append(button('Save reviewed recipe and return →','recipe-step-save',()=>a.save()));}
+   else host.append(el('p',h.stage==='saving'?'Saving and verifying — keep this page open.':'✓ Recipe saved and verified. Returning to the parent plan.'));
+   if(h.message)host.append(el('small',h.message));
+   const overview=el('details');overview.append(el('summary','See the full recipe checklist'),el('p','Reference → intended quantity / portion → Calculate → ingredients and rates → review confirmation → Save and return.'));host.append(overview);return true;
+  }
   if(s.production?.ready)return false;
   const help={
    'recipe-cost-editor.html':['You are reviewing a recipe. Check the reference batch yield and intended total quantity in their displayed units. For sambar, review litres and serving ml; for Idli, review portion weights in grams. Calculate quantities from reference, review ingredients and rates, then Save. After verification, return to the production plan.',[['Show batch and serving details','referenceSection'],['Show Calculate quantities','scale'],['Show final recipe confirmation','confirmed']]],
@@ -73,9 +89,9 @@ function mount(host,options){
     ['Review ingredient rates and energy',checked('confirmed')]);
   }
   if(s.production?.ready){
-   const p=s.production,order=['quantity','recipes','equipment','timing','assessment','delivery','save'];
-   const at=p.journey?.stage==='saved'?order.length:order.indexOf(p.journey?.stage);
-   for(const [i,title]of ['Quantity and ready-by time','Recipes and sides','Equipment capacity','Process timings','Capacity assessment','Delivery choice'].entries())checks.push([title,at>i]);
+   const p=s.production,steps=[['quantity','Quantity and ready-by time'],...(p.extraSides?.needed?[['extra-sides','Optional 5% extra sides — Yes / No']]:[]),['recipes','Recipes and sides'],['equipment','Equipment capacity'],['timing','Process timings'],['assessment','Capacity assessment'],['delivery','Delivery choice'],['save','Save plan']];
+   const at=p.journey?.stage==='saved'?steps.length:steps.findIndex(x=>x[0]===p.journey?.stage);
+   for(const [i,[stage,title]]of steps.slice(0,-1).entries())checks.push([title,stage==='extra-sides'?typeof p.extraSides.choice==='boolean':at>i]);
   }
   if(checks.length){
    const verified=s.production?.journey?.stage==='saved'&&!s.production?.dirty;
@@ -179,7 +195,8 @@ function mount(host,options){
     if(stage==='saving'||stage==='saved'){ask(stage==='saving'?'Saving and verifying your plan…':'Production plan saved and verified');host.append(el('p',j.message));if(stage==='saving')host.append(el('p','Please keep this window open. I will guide the next step after verification.'));break;}
     if(stage==='error'){ask('The plan is not fully saved');host.append(el('p',j.message));choices(button('Review the unfinished step','plan-retry-step',()=>adapter().retryStep()),work('Show save message','planSaveStatus'));break;}
     if(stage==='quantity'){ask(name+' — how much, and ready by when?');host.append(el('p','Review the intended production quantity, ready-by time and day. These are planning inputs; Sold Today is entered separately as the actual result.'));choices(work('Review quantity and ready-by time','intendedQuantity'),button('Quantity and time reviewed — continue','plan-quantity-next',()=>adapter().continueQuantity()));}
-    else if(stage==='recipes'){ask(name+' — review the main recipe and every side');host.append(el('p','Open each recipe below, check portions, calculate quantities from reference, review ingredients and rates, then save and return. When all are reviewed, tick the recipe confirmation on the page. Opening links alone does not complete a review.'));for(const r of p.recipes){const a=el('a',r.name,'guide-action');a.href=r.href;a.target='_blank';a.rel='opener';host.append(a,el('small',r.status));}choices(work('Show recipe confirmation','recipeReviewed'));}
+    else if(stage==='extra-sides'){ask('Would you like 5% extra produced sides and condiments?');host.append(el('p','Choose Yes or No for '+name+'. No is a complete choice. Neither is preselected; main quantity and normal serving portions stay unchanged.'));choices(button('Yes — prepare 5% extra','extra-yes',()=>adapter().chooseExtra(true)),button('No — normal requirement only','extra-no',()=>adapter().chooseExtra(false)));}
+    else if(stage==='recipes'){const rows=p.recipeSteps||p.recipes,current=rows.find(r=>!r.reviewed);if(current){ask('Next recipe: '+current.name);host.append(el('p','Review this recipe now. I will guide the next unfinished recipe after its verified save or your explicit review of an unchanged saved recipe.'),el('small',current.status));const a=el('a','Open '+current.name+' recipe →','guide-action');a.href=current.href;a.target='_blank';a.rel='opener';host.append(a);if(current.current)choices(button('Saved recipe still applies — continue','recipe-reuse',()=>adapter().confirmRecipe(current.reviewKey)));}else{ask('Each recipe has been reviewed');host.append(el('p','Tick the final recipe confirmation to continue with equipment and capacity.'));choices(work('Show recipe confirmation','recipeReviewed'));}const all=el('details');all.append(el('summary','See all recipes in this plan'));for(const r of rows)all.append(el('p',(r.reviewed?'◐ Reviewed: ':'○ To review: ')+r.name));host.append(all);if(p.extraSides?.needed)host.append(el('p',p.extraSides.summary));}
     else if(stage==='equipment'){ask(name+' — choose equipment and usable capacity');host.append(el('p','For each process, reuse suitable existing equipment or compare the equipment references. Enter the usable capacity per cycle and compatible unit. After checking every process, tick the equipment review confirmation.'));choices(work('Review process equipment and capacity','capacitySection'),work('Show equipment confirmation','capacityReviewed'));}
     else if(stage==='timing'){ask('Review timing for '+j.process);host.append(el('p','Check start and finish times, hands-on work, machine time, supervision and cleaning. Include preparation stages where needed. Tick this process’s timing/skill review only when it is correct.'));choices(button('Review '+j.process+' timings','plan-process',()=>{options.work();adapter().focusProcess(j.processId);}));}
     else if(stage==='assessment'){ask(name+' — check whether production fits');host.append(el('p',j.message||'Calculate the reviewed processes to check completion time and shared equipment. Resolve any warning before continuing.'));choices(button('Calculate time and equipment usage','plan-calculate',()=>adapter().calculate()),work('Show timings and calculation result','timeAssessment'));}

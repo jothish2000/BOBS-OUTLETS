@@ -85,3 +85,40 @@ test('conversation survives minimising/remounting but never confirms business da
  const host=f.w.document.createElement('div');f.w.document.body.append(host);f.w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{outlet:'2',page:'method2.html'}}),minimise(){},refresh(){}});
  assert.match(host.textContent,/What are you trying to do/);assert.doesNotMatch(host.textContent,/Your answers so far/);f.dom.window.close();
 });
+
+test('optional sides require explicit Yes or No; demand, material and saved choice follow one multiplier',async()=>{
+ const side={name:'Idli Sambar',yieldQty:10,yieldUnit:'L',ingredients:[['Dal',1,'kg',100]],productionTiming:{role:'Cook',equipment:'Pot',setupMin:1,activeMinPerCycle:1,machineMinPerCycle:1,finishMinPerCycle:1,cleanupMin:1}};
+ const f=await fixture('piece',{recipes:[side],configure(db){db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].condiments=[{recipeName:'Idli Sambar',portion:20,portionUnit:'ml',source:'production'}];}});
+ try{assert.equal(f.$('sideExtraYes').checked,false);assert.equal(f.$('sideExtraNo').checked,false);assert.equal(f.writes.length,0);
+ f.input('#intendedQuantity','360');f.input('#readyBy','10:00');f.w.BOBS_PRODUCTION_GUIDE.continueQuantity();
+ assert.equal(f.w.BOBS_PRODUCTION_GUIDE.snapshot().journey.stage,'extra-sides');
+ await f.$('saveProductionPlan').onclick();assert.match(f.$('planSaveStatus').textContent,/Yes or No/);assert.equal(f.writes.length,0);
+ f.w.BOBS_PRODUCTION_GUIDE.chooseExtra(true);assert.match(f.$('sideExtraSummary').textContent,/7.560/);
+ assert.match(f.$('recipePlanLinks').innerHTML,/qty=7.56/);assert.match(f.$('recipePlanLinks').innerHTML,/extraSides=yes/);assert.equal(new URL(f.$('recipePlanLinks').querySelector('a').href).searchParams.has('extraSides'),false);
+ assert.equal(f.$('recipeReviewed').checked,false);assert.equal(f.$('capacityReviewed').checked,false);assert.equal(f.writes.length,0);
+ f.w.BOBS_PRODUCTION_GUIDE.chooseExtra(false);assert.match(f.$('sideExtraSummary').textContent,/No: normal/);assert.match(f.$('sideExtraSummary').textContent,/7.200/);
+ const state=f.w.BOBS_PRODUCTION_PLAN.draftState(f.db['1/METHOD2/default'],[{cat:'Breakfast Catalogue',i:0,quantity:360,unit:'piece',sideExtraFivePercent:false}],f.w.ITEM_DATA,f.w.M2,'2026-10-29');
+ assert.equal(state.itemEditors[f.key].sideExtraFivePercent,false);assert.equal(state.itemEditors[f.key].condiments[0].portion,20);assert.equal(f.db['1/METHOD2/default'].itemEditors[f.key].sideExtraFivePercent,undefined);
+ }finally{f.dom.window.close()}
+});
+test('extra side costs are planned once, with unchanged factual usage, spoilage and UUWP',async()=>{
+ const f=await fixture();try{const M=f.w.M2,F=f.w.BOBS_OUTLET_FLOW,C=f.w.BOBS_COST_FLOW,P=f.w.BOBS_PRODUCTION_PLAN;
+ const recipes=[{name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',1,'kg',120]]},{name:'Soup',yieldQty:10,yieldUnit:'L',ingredients:[['Veg',1,'kg',100]]},{name:'Chutney',yieldQty:1,yieldUnit:'kg',ingredients:[['Coconut',1,'kg',100]]}];
+ const d={mode:'production',unit:'piece',batchSize:360,batches:1,sold:360,price:10,spoilage:5,uuwp:5,markup:20,condiments:[{recipeName:'Soup',portion:20,portionUnit:'ml',source:'production'},{recipeName:'Chutney',portion:8,portionUnit:'g',source:'production'}],packaging:[],packingMode:'none'};
+ const item={name:'Idli'},base=M.calculate(d,item,recipes),yes=M.calculate({...d,sideExtraFivePercent:true},item,recipes),no=M.calculate({...d,sideExtraFivePercent:false},item,recipes);
+ assert(Math.abs(yes.extraSidesPerItem-0.05)<1e-12);assert(Math.abs(yes.plannedExtraSidesCost-18)<1e-10);assert.equal(yes.final,base.final);assert.equal(yes.actualDayCost,base.actualDayCost);assert.equal(yes.spoil,base.spoil);assert.equal(yes.uuwpAmount,base.uuwpAmount);assert(Math.abs(yes.withUuwp-base.withUuwp-0.05)<1e-12);assert.equal(no.withUuwp,base.withUuwp);
+ const x={key:'menu',item,d:{...d,sideExtraFivePercent:true}},req=F.requirements([x],recipes,M);assert.equal(req[0].qty,360);assert(Math.abs(req[1].qty-7.56)<1e-12);assert(Math.abs(req[2].qty-3.024)<1e-12);
+ assert.notEqual(F.menuStamp([x]),F.menuStamp([{...x,d:{...d,sideExtraFivePercent:false}}]));
+ const noChoice=F.requirements([{...x,d}],recipes,M);assert.equal(noChoice[1].qty,7.2);
+ }finally{f.dom.window.close()}
+});
+
+test('shared kitchen inherits optional side reserve once; purchased sides and main quantities are unchanged',async()=>{
+ const f=await fixture();try{f.w.eval(fs.readFileSync('bobs-kitchen-core.js','utf8'));const K=f.w.BOBS_KITCHEN_CORE||f.w.BOBS_KITCHEN,F=f.w.BOBS_OUTLET_FLOW,P=f.w.BOBS_PRODUCTION_PLAN,M=f.w.M2;
+ const recipes=[{name:'Idli',yieldQty:60,yieldUnit:'piece',ingredients:[['Rice',1,'kg',60]]},{name:'Soup',yieldQty:10,yieldUnit:'L',ingredients:[['Veg',1,'kg',100]]}];
+ const item={key:'x',cat:'Breakfast',i:0,item:{name:'Idli'},d:{mode:'production',unit:'piece',batchSize:360,batches:1,sideExtraFivePercent:true,condiments:[{recipeName:'Soup',source:'production',portion:20,portionUnit:'ml'}]}};
+ const demands=K.demands('1',[item],recipes,P,F,M,'2026-10-29');assert.equal(demands[0].quantity,360);assert(Math.abs(demands[1].quantity-7.56)<1e-10);
+ const virtual=K.virtualItems([{key:'job',name:'Soup',recipe:recipes[1],quantity:demands[1].quantity,unit:'L',sourceStamp:'s',orders:[]}]);const req=F.requirements(virtual,recipes,M);assert(Math.abs(req[0].qty-7.56)<1e-10);assert.equal(M.calculate({...virtual[0].d,sold:7.56},virtual[0].item,recipes).plannedExtraSidesCost,0);
+ item.d.condiments[0].source='purchase';assert.equal(F.requirements([item],recipes,M).length,1);
+ }finally{f.dom.window.close()}
+});

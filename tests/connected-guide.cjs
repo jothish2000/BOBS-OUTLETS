@@ -145,7 +145,7 @@ test('production bot follows current step and never confirms reviews or saves on
  w.eval(source('bobs-guide-bot.js'));const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'production-plan.html',outlet:'1'}}),minimise(){},work(){},refresh(){}});
  const text=()=>w.document.getElementById('host').textContent;
  assert.match(text(),/how much, and ready by when/);assert.deepEqual(calls,[]);
- for(const [stage,match]of [['recipes',/main recipe/],['equipment',/usable capacity/],['timing',/Review timing/],['assessment',/check whether production fits/],['delivery',/review delivery/],['save',/ready to save/],['saving',/Saving and verifying/],['error',/not fully saved/]]){p.journey={stage,process:'Idli',message:'fixture status'};bot.update();assert.match(text(),match);}
+ for(const [stage,match]of [['recipes',/Each recipe has been reviewed/],['equipment',/usable capacity/],['timing',/Review timing/],['assessment',/check whether production fits/],['delivery',/review delivery/],['save',/ready to save/],['saving',/Saving and verifying/],['error',/not fully saved/]]){p.journey={stage,process:'Idli',message:'fixture status'};bot.update();assert.match(text(),match);}
  assert.deepEqual(calls,[]);p.journey={stage:'save'};bot.update();w.document.querySelector('[data-guide-choice=plan-save]').click();assert.deepEqual(calls,['save']);
  }finally{w.close()}
 });
@@ -212,5 +212,17 @@ test('recipe review ticks are draft checkpoints and update without claiming a sa
  w.document.getElementById('referenceWeightReviewed').dispatchEvent(new w.Event('change',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
  assert.match(host.textContent,/Reviewed — save pending: Review reference portion weight/);assert.match(host.textContent,/Next: Review intended portion weight/);
  assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);
+ }finally{w.close()}
+});
+
+test('recipe guide presents one current action and advances from actual adapter state',()=>{
+ const dom=new JSDOM('<div id="guide"></div>',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1&item=Idli'}),w=dom.window;
+ try{w.eval(source('bobs-guide-bot.js'));let stage='reference',calculated=0,saves=0;w.BOBS_RECIPE_GUIDE={snapshot:()=>({stage,name:'Idli',referenceYield:120,target:360,unit:'piece'}),focus(){},calculate(){calculated++;stage='review';},save(){saves++;stage='saving';}};
+ const host=w.document.getElementById('guide'),bot=w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{page:'recipe-cost-editor.html',outlet:'1'},progress:{status:'idle'}}),minimise(){},refresh(){},journey:true});
+ assert(host.querySelector('[data-guide-choice=recipe-step-referenceWeightReviewed]'));assert(!host.querySelector('[data-guide-choice=recipe-step-save]'));
+ stage='intended';bot.update();assert(host.querySelector('[data-guide-choice=recipe-step-intendedWeightReviewed]'));
+ stage='calculate';bot.update();host.querySelector('[data-guide-choice=recipe-step-calculate]').click();assert.equal(calculated,1);bot.update();assert(host.querySelector('[data-guide-choice=recipe-step-confirmed]'));
+ stage='save';bot.update();host.querySelector('[data-guide-choice=recipe-step-save]').click();assert.equal(saves,1);bot.update();assert.match(host.textContent,/Saving and verifying/);
+ stage='saved';bot.update();assert.match(host.textContent,/Recipe saved and verified/);
  }finally{w.close()}
 });
