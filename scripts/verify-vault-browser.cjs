@@ -82,6 +82,20 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  await liquid.setViewportSize({width:390,height:844});assert(await liquid.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  assert.equal(errors.length,0,errors.join('; '));
  console.log('PASS liquid recipe: explicit litres/ml, hidden gram controls, legacy quantities unchanged on load/Calculate, no double multiplier, explicit protected fixture Save, narrow layout; no live writes.');
+
+ // Direct serving edit: exact field, failed save stays, verified save returns and requires explicit recalculation.
+ await liquid.setViewportSize({width:1280,height:900});
+ const savedRecipeBeforeServing=JSON.stringify(db['1/METHOD2/default'].recipeOverrides),soldBeforeServing=db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].sold;
+ const [servingPage]=await Promise.all([liquid.waitForEvent('popup'),liquid.click('#changeServingQuantity')]);servingPage.on('pageerror',e=>errors.push(e.message));servingPage.on('dialog',d=>d.accept());
+ await servingPage.waitForFunction(()=>document.activeElement?.id==='servingShortcutQuantity');assert.equal(await servingPage.inputValue('#servingShortcutQuantity'),'20');assert.equal(await servingPage.inputValue('#servingShortcutUnit'),'ml');await servingPage.waitForFunction(()=>document.getElementById('bobsGuideDialogue')?.textContent.includes('change serving quantity'));
+ await servingPage.fill('#servingShortcutQuantity','25');
+ await servingPage.evaluate(()=>{window.realServingSave=M2.savePlanning;M2.savePlanning=async()=>{throw Error('Fixture serving save failed')}});
+ await servingPage.click('#saveServingShortcut');await servingPage.waitForFunction(()=>document.getElementById('servingShortcutStatus').textContent.includes('Fixture serving save failed'));assert(!servingPage.isClosed());assert.equal(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].condiments[0].portion,20);
+ await servingPage.evaluate(()=>M2.savePlanning=window.realServingSave);const servingClosed=servingPage.waitForEvent('close');await servingPage.click('#saveServingShortcut');await servingClosed;
+ await liquid.waitForFunction(()=>BOBS_RECIPE_GUIDE.snapshot().stage==='serving-return');assert.match(await liquid.locator('#portionHelp').innerText(),/25 ml per menu item/);assert.match(await liquid.locator('#servingReturnStatus').innerText(),/9.000 L/);assert.equal(await liquid.inputValue('#targetQty'),'7.2');assert.equal(JSON.stringify(db['1/METHOD2/default'].recipeOverrides),savedRecipeBeforeServing);assert.equal(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].sold,soldBeforeServing);
+ assert.match(await liquid.locator('#bobsGuideDialogue').innerText(),/Use updated total and review recipe/);await liquid.click('#applyServingTotal');assert.equal(await liquid.inputValue('#targetQty'),'9');assert.equal(await liquid.locator('#confirmed').isChecked(),false);await liquid.check('#referenceWeightReviewed');await liquid.check('#intendedWeightReviewed');await liquid.click('#scale');await liquid.waitForFunction(()=>document.getElementById('confirmed').getAttribute('aria-disabled')==='false');assert(Math.abs(Number(await liquid.locator('.quantity').first().getAttribute('data-raw'))-1.1*9/9.5)<1e-10);assert.equal(JSON.stringify(db['1/METHOD2/default'].recipeOverrides),savedRecipeBeforeServing);
+ // Missing side cannot focus an unrelated field or offer a save.
+ const missing=await context.newPage();await missing.goto('https://bobs.test/method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&servingRecipe=Missing');await missing.waitForFunction(()=>document.getElementById('controls')?.disabled===false);assert.equal(await missing.locator('#saveServingShortcut').count(),0);assert.match(await missing.locator('#servingShortcut').innerText(),/not found uniquely/);await missing.close();assert.equal(errors.length,0,errors.join('; '));console.log('PASS serving shortcut: exact field focus, failed-save retention, verified return, revised volume, explicit recalculation, recipe and actual-sales preservation, missing-side guard; isolated writes only.');
  await liquid.close();
 
  await context.close();
