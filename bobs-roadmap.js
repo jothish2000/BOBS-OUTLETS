@@ -51,7 +51,7 @@ async function refreshAll(restart=false){
   render();status.textContent=failed?progress.message:'Saved progress checked '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})+'. Business date '+tools.C.today()+'.';
  }catch(e){
   if(request!==epoch)return;
-  progress={status:'error',message:e.message||'Saved progress could not be verified.'};status.textContent='Progress not verified — '+progress.message;
+  progress={status:'error',message:e.message?.includes('within 45 seconds')?e.message:'Saved progress could not be checked. Retry the check or keep editing; your current entries are unchanged.'};status.textContent='Progress not verified — '+progress.message;
   content.replaceChildren(el('p','Retry progress reads. The page and your edits remain available.'));
  }finally{
   clearTimeout(deadline);clearTimeout(slow);
