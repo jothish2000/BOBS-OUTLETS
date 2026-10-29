@@ -65,7 +65,7 @@ function recipeLinks(){
   const name=r.recipe?.kitchenOriginalName||r.recipe?.name||r.name,original=M2.recipe(data.recipes,name),saved=data.raw?.recipeOverrides?.[C.norm(name)];
   const current=saved&&original&&saved.referenceStamp===C.recipeStamp(original);
   const reviewKey=JSON.stringify([selected.key,name,r.qty,original&&C.recipeStamp(original),saved?.savedAt]);
-  return {name,reviewKey,current,reviewed:recipeChecks.has(reviewKey),href:href('recipe-cost-editor.html',{item:name,cat:selected.cat,i:selected.i,qty:r.qty||'',...(extraNeeded()?{extraSides:extraChoice()===true?'yes':extraChoice()===false?'no':'pending'}:{})}),status:current?'Saved outlet recipe available — check it still applies; reopen to change portions or rates.':saved?'Reference changed — open, calculate, review and save again.':'Recipe review required — open, calculate, review and save.'};
+  return {name,reviewKey,current,reviewed:recipeChecks.has(reviewKey),href:href('recipe-cost-editor.html',{item:name,cat:selected.cat,i:selected.i,qty:r.qty||'',...(r.isSide&&extraNeeded()?{extraSides:extraChoice()===true?'yes':extraChoice()===false?'no':'pending'}:{})}),status:current?'Saved outlet recipe available — check it still applies; reopen to change portions or rates.':saved?'Reference changed — open, calculate, review and save again.':'Recipe review required — open, calculate, review and save.'};
  });
  recipeGuideRows=rows;
  list.innerHTML=rows.map(r=>'<li><a target="_blank" rel="opener" href="'+esc(r.href)+'">Review '+esc(r.name)+' recipe, portions, yield & rates ↗</a><small>'+esc(r.status)+'</small></li>').join('');
