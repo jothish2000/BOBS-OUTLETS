@@ -23,6 +23,7 @@ async function saveServingShortcut(){
  const side=servingSide(d);if(!side||!(M2.number(side.portion)>0))return status('Enter a positive serving quantity before saving.');
  const originalDraft=M2.draft(baseline,cat,i,item),next=M2.clone(originalDraft),target=servingSide(next);
  if(!target)return status('Saved side changed. Reload before saving.');
+ if(M2.convert(Number(side.portion),side.portionUnit,target.portionUnit)===null)return status('Choose a compatible serving unit: use ml/litres for a volume or g/kg for a weight. No weight-to-volume conversion is assumed.');
  target.portion=side.portion;target.portionUnit=side.portionUnit;
  // The shortcut saves only the named serving; leave other local edits open.
  const remainder=M2.clone(d),before=M2.clone(servingStart||originalDraft),local=servingSide(remainder),old=servingSide(before);
