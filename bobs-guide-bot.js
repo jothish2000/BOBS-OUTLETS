@@ -144,7 +144,8 @@ function mount(host,options){
     ask(help?'Shall we work through '+help.title.toLowerCase()+'?':'What would you like to complete on this page?');
     if(help){host.append(el('p',help.instruction));if(help.steps?.length){const list=el('ol');for(const text of help.steps)list.append(el('li',text));host.append(list);}else if(help.next)host.append(el('p',help.next));choices(button('Show me where to work on this step','page-work',()=>pageFocus(help.anchor||'main, #flowApp, #itemEditor, form, section:not(#bobsFlowGuide)')));}
     if(['asset-master.html','working-capital.html'].includes(s.ctx.page))needProduction(s);
-    choices(choose('Find my next saved requirement','page-progress','resume'),choose('Help me plan quantities and equipment','page-production','kitchen'));
+    host.append(el('p','Check previously saved Google records to find what is incomplete. This does not save your current entries.','guide-saved-explanation'));
+    choices(choose('Check saved progress & show what’s incomplete','page-progress','resume',()=>options.refresh()),choose('Help me plan quantities and equipment','page-production','kitchen'));
     break;
    }
    case 'start':
@@ -236,13 +237,18 @@ function mount(host,options){
     if(p?.ready)choices(button('Take me to the time assessment','assess',()=>focus('assessTime')));
     host.append(route('outlet-plan.html','After saving: assess workforce →',{stage:'workforce'}),route('asset-master.html','Review Asset Master values →'),route('capital-expenditure.html','Review equipment purchase budget →'),route('working-capital.html','Review working capital →'));
     choices(choose('Check my next saved requirement','next-saved','resume'));break;
-   case 'resume':
-    ask('Let’s continue from your saved work.');
-    if(s.loading)host.append(el('p','Checking saved requirements…'));
-    else if(s.next){host.append(el('p',s.next.title+' — '+s.next.reason));const a=route(s.next.href,'Open the next required step →');host.append(a);}
-    else host.append(el('p',s.readError?'Saved progress could not be verified. Retry the read.':'Use Check saved progress below to find the next missing requirement.'));
-    choices(button('Refresh saved progress','refresh',()=>options.refresh()),choose('Help me plan production','resume-production','kitchen'));
+   case 'resume':{
+    ask('Check saved progress — what is incomplete?');
+    host.append(el('p','This checks records already saved in Google. It does not save your current entries or move you to another page.'));
+    if(s.dirty)host.append(el('p','You have unsaved changes on this page. This result describes the saved version. Save this page first if you want those changes included.','guide-draft-note'));
+    const notice=el('p',s.loading?(s.progress?.message||'Checking saved Google records…'):s.readError?(s.progress?.message||'Saved progress could not be verified. Please retry.'):'Saved records checked.');notice.setAttribute('role','status');
+    if(s.loading||s.readError)host.append(notice);
+    else if(s.next){host.append(notice,el('p','Next incomplete step: '+s.next.title),el('p',s.next.reason));host.append(route(s.next.href,'Open this incomplete step →'));}
+    else host.append(el('p',s.progress?.status==='ready'?'No next incomplete step was identified for this selection. You can keep reviewing this page or open BOBS progress for the full list.':'Run the check to find the next incomplete step in your saved records.'));
+    const retry=button(s.readError?'Retry saved-progress check':s.loading?'Checking saved progress…':'Check saved progress again','refresh',()=>options.refresh());retry.disabled=!!s.loading;
+    choices(retry,button('Keep editing this page','resume-edit',()=>options.minimise()));
     break;
+   }
    case 'route':{
     if(state.task==='new-outlet'){ask('Add the outlet’s details, then I’ll guide its kitchen and production setup.');host.append(route('outlets.html','Open Outlet Setup →'));}
     else if(state.task==='shared'){ask('Which kitchen will supply this outlet?');host.append(el('p','Choose the supplying kitchen for each item and side, then enter the receiving outlets’ quantities and ready-by times. The kitchen’s total comes from those orders.'),route('kitchen-flow.html','Choose supplying kitchen and outlet quantities →',{stage:'demand'}));}
