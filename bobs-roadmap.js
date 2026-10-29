@@ -141,7 +141,7 @@ function companionRender(){
  list.append(li)}board.append(list);companionBody.append(board);
 }
 function companionBoot(){
- const interactivePage=['method2-item.html','production-plan.html'].includes(context().page);
+ const interactivePage=['method2-item.html','production-plan.html','recipe-cost-editor.html'].includes(context().page);
  const journeyKey='bobs-guide-journey-v1',entry=new URLSearchParams(location.search).get('guide');let journey=interactivePage||context().page==='index.html'||entry==='start'||entry==='continue';
  try{journey=journey||sessionStorage.getItem(journeyKey)==='active';if(journey)sessionStorage.setItem(journeyKey,'active');}catch(_){}
  // Follow real page navigation, including child editors. This flag stores guidance only.
@@ -162,7 +162,8 @@ function companionBoot(){
  minimise.onclick=closeCompanion;companionToggle.onclick=()=>{if(companionOpen){closeCompanion();return}if(showKitchenNext()){minimise.focus();return;}companionOpen=true;companion.hidden=false;if(interactivePage)document.body.classList.add('bobs-guided-dock');companionToggle.setAttribute('aria-expanded','true');companionRender();minimise.focus({preventScroll:true});if(companion.classList.contains('method-flow-inline')&&(!interactivePage||innerWidth<900))companion.scrollIntoView({block:'start'});const ctx=context();if(ctx.outlet){active=ctx.outlet;loadedIds.add(active)}if(!common||ctx.outlet&&!records.has(ctx.outlet))refreshAll()};
  companion.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeCompanion()}});
  document.body.append(companionToggle,companion);
- const methodSlot=document.getElementById('methodFlowGuide')||document.getElementById('itemCompanionGuide')||document.getElementById('productionCompanionGuide');if(methodSlot){methodSlot.append(companion);companion.classList.add('method-flow-inline');}if(interactivePage)companion.classList.add('interactive-guide');
+ if(context().page==='recipe-cost-editor.html'&&!document.getElementById('recipeCompanionGuide')){const slot=el('div');slot.id='recipeCompanionGuide';const main=document.querySelector('main');if(main)main.before(slot);else document.body.prepend(slot);}
+ const methodSlot=document.getElementById('recipeCompanionGuide')||document.getElementById('methodFlowGuide')||document.getElementById('itemCompanionGuide')||document.getElementById('productionCompanionGuide');if(methodSlot){methodSlot.append(companion);companion.classList.add('method-flow-inline');}if(interactivePage)companion.classList.add('interactive-guide');
  companionRender();
  const guideSnapshot=()=>{
   const pageGuide=document.getElementById('bobsFlowGuide');
