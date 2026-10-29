@@ -111,3 +111,13 @@ test('extra side costs are planned once, with unchanged factual usage, spoilage 
  const noChoice=F.requirements([{...x,d}],recipes,M);assert.equal(noChoice[1].qty,7.2);
  }finally{f.dom.window.close()}
 });
+
+test('shared kitchen inherits optional side reserve once; purchased sides and main quantities are unchanged',async()=>{
+ const f=await fixture();try{f.w.eval(fs.readFileSync('bobs-kitchen-core.js','utf8'));const K=f.w.BOBS_KITCHEN_CORE||f.w.BOBS_KITCHEN,F=f.w.BOBS_OUTLET_FLOW,P=f.w.BOBS_PRODUCTION_PLAN,M=f.w.M2;
+ const recipes=[{name:'Idli',yieldQty:60,yieldUnit:'piece',ingredients:[['Rice',1,'kg',60]]},{name:'Soup',yieldQty:10,yieldUnit:'L',ingredients:[['Veg',1,'kg',100]]}];
+ const item={key:'x',cat:'Breakfast',i:0,item:{name:'Idli'},d:{mode:'production',unit:'piece',batchSize:360,batches:1,sideExtraFivePercent:true,condiments:[{recipeName:'Soup',source:'production',portion:20,portionUnit:'ml'}]}};
+ const demands=K.demands('1',[item],recipes,P,F,M,'2026-10-29');assert.equal(demands[0].quantity,360);assert(Math.abs(demands[1].quantity-7.56)<1e-10);
+ const virtual=K.virtualItems([{key:'job',name:'Soup',recipe:recipes[1],quantity:demands[1].quantity,unit:'L',sourceStamp:'s',orders:[]}]);const req=F.requirements(virtual,recipes,M);assert(Math.abs(req[0].qty-7.56)<1e-10);assert.equal(M.calculate({...virtual[0].d,sold:7.56},virtual[0].item,recipes).plannedExtraSidesCost,0);
+ item.d.condiments[0].source='purchase';assert.equal(F.requirements([item],recipes,M).length,1);
+ }finally{f.dom.window.close()}
+});
