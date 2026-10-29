@@ -3,6 +3,42 @@ const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),o
  $('sharedOrderLink').href='method2-overall.html?outlet='+encodeURIComponent(outlet||'');
 const fields=['mode','batchSize','batches','capacity','purchaseRate','spoilage','uuwp','uuwpPolicy','markup','price','sold','servingQty','servingUnit','pricingBasis'];
 let baseline,recipes=[],d,dirty=false,busy=false,soldTouched=false,loading=false,ready=false,loadEpoch=0,standardRecipes=[];
+const servingRecipe=q.get('servingRecipe');let servingStatus='edit',servingStart=null;
+function servingSide(source){const rows=(source?.condiments||[]).filter(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(servingRecipe||''));return rows.length===1?rows[0]:null;}
+function focusServing(){const field=$('servingShortcutQuantity');if(!field)throw Error('The requested side is not uniquely present. Return to the recipe and review the item settings.');for(let p=field.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;field.scrollIntoView({block:'center'});field.focus({preventScroll:true});}
+function setupServingShortcut(){
+ if(!servingRecipe)return;
+ const side=servingSide(d),field=[...$('condiments').querySelectorAll('.component')].find(el=>M2.purchaseKey(el.querySelector('h3')?.dataset.recipeName||'')===M2.purchaseKey(servingRecipe))?.querySelector('.fields input');
+ let box=$('servingShortcut');if(!box){box=document.createElement('section');box.id='servingShortcut';box.className='notice';$('condiments').before(box);}
+ box.replaceChildren();const h=document.createElement('h2');h.textContent='Change '+servingRecipe+' serving quantity';box.append(h);
+ const info=document.createElement('p');info.textContent='Edit QUANTITY SERVED PER UNIT SOLD and its portion unit below. Save only this serving change, then return to the recipe to review its new total and Calculate again. Other item entries are not saved by this button.';box.append(info);
+ if(!side||!field){info.textContent='The requested side was not found uniquely. Nothing has been changed. Return to the recipe and review this item’s sides.';return;}
+ field.id='servingShortcutQuantity';field.setAttribute('aria-label',servingRecipe+' quantity served per unit sold');
+ const unit=field.closest('.fields').querySelectorAll('select')[1];unit.id='servingShortcutUnit';
+ const button=document.createElement('button');button.type='button';button.id='saveServingShortcut';button.textContent='Save serving quantity & return to recipe →';button.onclick=saveServingShortcut;box.append(button);
+ const message=document.createElement('p');message.id='servingShortcutStatus';message.role='status';box.append(message);
+}
+async function saveServingShortcut(){
+ if(busy||loading||!ready)return;
+ const side=servingSide(d);if(!side||!(M2.number(side.portion)>0))return status('Enter a positive serving quantity before saving.');
+ const originalDraft=M2.draft(baseline,cat,i,item),next=M2.clone(originalDraft),target=servingSide(next);
+ if(!target)return status('Saved side changed. Reload before saving.');
+ target.portion=side.portion;target.portionUnit=side.portionUnit;
+ // The shortcut saves only the named serving; leave other local edits open.
+ const remainder=M2.clone(d),before=M2.clone(servingStart||originalDraft),local=servingSide(remainder),old=servingSide(before);
+ local.portion=old.portion;local.portionUnit=old.portionUnit;delete remainder.soldConfirmed;delete before.soldConfirmed;
+ // Compare actual item fields, ignoring display-normalised scalar types.
+ const otherFields=fields.filter(id=>!['servingQty','servingUnit'].includes(id));
+ if(otherFields.some(id=>String(remainder[id]??'')!==String(before[id]??''))||JSON.stringify(remainder.condiments)!==JSON.stringify(before.condiments))return status('Other item fields were changed too. Keep this draft open and save those separately before using the serving-only shortcut.');
+ busy=true;servingStatus='saving';$('controls').disabled=true;$('servingShortcutStatus').textContent='Saving serving quantity and verifying in Google…';window.dispatchEvent(new Event('bobs-guide-context'));
+ try{
+ const saved=await M2.savePlanning(outlet,cat,i,item,next,baseline);baseline=M2.state(saved);dirty=false;servingStatus='saved';const token=baseline.itemEditors[M2.keys(cat,i).k].planningToken;
+ $('servingShortcutStatus').textContent='Serving quantity saved and verified. Returning to the recipe…';
+ const receipt={type:'bobs-side-serving-saved',outlet,key:M2.keys(cat,i).k,recipeName:servingRecipe,token};
+ busy=false;BOBS_WINDOW_RETURN.notify(receipt,['bobs-side-serving']);BOBS_WINDOW_RETURN.afterSave('method2.html?outlet='+encodeURIComponent(outlet));
+ }catch(e){servingStatus='edit';$('servingShortcutStatus').textContent='Not saved — '+e.message;}finally{busy=false;$('controls').disabled=false;window.dispatchEvent(new Event('bobs-guide-context'));}
+}
+window.BOBS_SERVING_GUIDE={snapshot:()=>servingRecipe?{name:servingRecipe,stage:!ready?'loading':servingStatus,available:!!$('servingShortcutQuantity'),message:$('servingShortcutStatus')?.textContent||$('status').textContent}:null,focus:focusServing,save:saveServingShortcut};
 let activeGuideStep=location.hash==='#supplyHeading'?2:1,costReviewMode=null,costReviewComplete=false,recipeRefresh=null,pendingRecipeReceipt=null,lastReviewReceipt=null;
 function guideProgress(){for(let step=1;step<=3;step++)$('guideStep'+step).setAttribute('aria-current',activeGuideStep===step?'step':'false');$('guideProgress').textContent='Step '+activeGuideStep+' of 3: '+['','review recipe or purchase costs','enter today’s quantities, sides and packing','save this item and continue the parent flow'][activeGuideStep];}
 function continueItemDetails(){activeGuideStep=2;guideProgress();const u=new URL(location.href);u.hash='supplyHeading';history.replaceState(null,'',u);const field=d.mode==='production'?$('batchSize'):$('batches');field.scrollIntoView({behavior:'smooth',block:'center'});field.focus({preventScroll:true});}
@@ -80,6 +116,7 @@ function renderComponents(){
  box.append(M2PackingUI.create(x,{name:x.recipeName,salesUnit:d.unit,main:false,changed}));
  const b=document.createElement('button');b.type='button';b.className='secondary remove-side';b.textContent='Remove side';b.onclick=()=>{d.condiments=d.condiments.filter(y=>y!==x);dirty=true;renderComponents();calculate()};box.append(b);$('condiments').append(box);
  }
+ setupServingShortcut();
 }
 function consolidatedCosts(c){
  $('costs').replaceChildren();
@@ -190,7 +227,8 @@ async function loadEditor(){if(loading||busy)return;loading=true;ready=false;con
  const canonical=M2.sideRecipes(recipes),seen=new Set(canonical.map(r=>M2.purchaseKey(r.name))),choices=[...canonical,...BOBS_PORIYAL.filter(r=>!seen.has(M2.purchaseKey(r.name)))].filter(r=>M2.purchaseKey(r.name)!==M2.purchaseKey(item.recipeName||item.name));
  $('condimentChoice').replaceChildren();choices.forEach(r=>{const o=document.createElement('option');o.value=r.name;o.textContent=r.name;$('condimentChoice').append(o)});
  supportRecord=null;supportError='';fullCostData={pending:true};
- show();ready=true;$('controls').disabled=false;status('Loaded from Google — your outlet information is ready to review.');$('itemGuide').hidden=false;dirty=false;
+ show();servingStart=M2.clone(d);ready=true;$('controls').disabled=false;status('Loaded from Google — your outlet information is ready to review.');$('itemGuide').hidden=false;dirty=false;
+ if(servingRecipe)setTimeout(()=>{try{focusServing();window.dispatchEvent(new Event('bobs-guide-resume'));}catch(e){status(e.message)}},0);
  loadOptionalCosts(epoch);
  }catch(e){status('Could not load and verify this item: '+e.message+'. Click “Retry Google read” below. No item was saved by this attempt.');$('retryGoogle').hidden=false}
  finally{loading=false}}
@@ -211,7 +249,7 @@ function receiveFullCost(data){if(data?.type==='bobs-full-cost-saved'&&String(da
 window.addEventListener('message',e=>{if(e.origin===location.origin)receiveFullCost(e.data)});
 if(window.BroadcastChannel){const fullCostChannel=new BroadcastChannel('bobs-full-cost');fullCostChannel.onmessage=e=>receiveFullCost(e.data)}
 let lastProductionReceipt='';
-async function receiveProduction(message){if(message?.type!=='bobs-production-plan-saved'||String(message.outlet)!==String(outlet)||message.key!==M2.keys(cat,i).k||busy||!ready)return;try{const raw=M2.state(await M2.read(outlet)),saved=M2.draft(raw,cat,i,item);baseline=raw;d.batchSize=saved.batchSize;d.batches=saved.batches;if(typeof saved.sideExtraFivePercent==='boolean')d.sideExtraFivePercent=saved.sideExtraFivePercent;d.soldConfirmed=saved.soldConfirmed;soldTouched=false;$('batchSize').value=d.batchSize;$('batches').value=d.batches;dirty=true;calculate();status('Production plan saved and verified. Your other item edits are retained. Next: review sides / packing and combined workforce in section 06.');await refreshFullCost();const plan=fullCostData?.production,key=M2.keys(cat,i).k,x=fullCostData?.items?.find(x=>x.key===key);if(message.savedAt&&message.savedAt!==lastProductionReceipt&&plan?.savedAt===message.savedAt&&x&&plan.items?.[key]?.itemStamp===BOBS_OUTLET_FLOW.menuStamp([x])){lastProductionReceipt=message.savedAt;const slot=$('itemCompanionGuide');if(slot)slot.dataset.returnMessage='Production plan saved and verified. Let’s continue with the next item review.';window.dispatchEvent(new Event('bobs-guide-resume'));}}catch(e){status(e.message)}}
+async function receiveProduction(message){if(message?.type!=='bobs-production-plan-saved'||String(message.outlet)!==String(outlet)||message.key!==M2.keys(cat,i).k||busy||!ready)return;try{const raw=M2.state(await M2.read(outlet)),saved=M2.draft(raw,cat,i,item);for(const side of saved.condiments||[]){const local=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(side.recipeName)),old=(baseline.itemEditors?.[M2.keys(cat,i).k]?.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(side.recipeName));if(local&&old&&(String(side.portion)!==String(old.portion)||side.portionUnit!==old.portionUnit)){if(String(local.portion)!==String(old.portion)||local.portionUnit!==old.portionUnit)throw Error('Serving quantity changed in another window. Your draft is retained; reload and review before saving.');local.portion=side.portion;local.portionUnit=side.portionUnit;}}baseline=raw;renderComponents();d.batchSize=saved.batchSize;d.batches=saved.batches;if(typeof saved.sideExtraFivePercent==='boolean')d.sideExtraFivePercent=saved.sideExtraFivePercent;d.soldConfirmed=saved.soldConfirmed;soldTouched=false;$('batchSize').value=d.batchSize;$('batches').value=d.batches;dirty=true;calculate();status('Production plan saved and verified. Your other item edits are retained. Next: review sides / packing and combined workforce in section 06.');await refreshFullCost();const plan=fullCostData?.production,key=M2.keys(cat,i).k,x=fullCostData?.items?.find(x=>x.key===key);if(message.savedAt&&message.savedAt!==lastProductionReceipt&&plan?.savedAt===message.savedAt&&x&&plan.items?.[key]?.itemStamp===BOBS_OUTLET_FLOW.menuStamp([x])){lastProductionReceipt=message.savedAt;const slot=$('itemCompanionGuide');if(slot)slot.dataset.returnMessage='Production plan saved and verified. Let’s continue with the next item review.';window.dispatchEvent(new Event('bobs-guide-resume'));}}catch(e){status(e.message)}}
 window.addEventListener('message',e=>{if(e.origin===location.origin)receiveProduction(e.data)});if(window.BroadcastChannel){const ch=new BroadcastChannel('bobs-production-plan');ch.onmessage=e=>receiveProduction(e.data)}
 $('savePlanningInputs').onclick=async()=>{if(busy||loading||!ready)return;pull();busy=true;$('controls').disabled=true;$('planningInputsStatus').textContent='Saving planning inputs to Google…';try{const saved=await M2.savePlanning(outlet,cat,i,item,d,baseline);baseline=M2.state(saved);d.soldConfirmed=false;soldTouched=false;dirty=false;$('planningInputsStatus').textContent='Planning inputs saved and verified. Sold Today remains unconfirmed. Continue with capacity and time.';const a=document.createElement('a');a.href='production-plan.html?'+new URLSearchParams({outlet,cat,i,mode:d.mode,returnTo:location.href});a.target='_blank';a.textContent='Continue production plan →';$('planningInputsStatus').append(' ',a);calculate();refreshFullCost()}catch(e){$('planningInputsStatus').textContent=e.message}finally{busy=false;$('controls').disabled=false}};
 $('retryGoogle').onclick=loadEditor;
