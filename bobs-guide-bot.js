@@ -89,9 +89,9 @@ function mount(host,options){
     ['Review ingredient rates and energy',checked('confirmed')]);
   }
   if(s.production?.ready){
-   const p=s.production,order=['quantity','recipes','equipment','timing','assessment','delivery','save'];
-   const at=p.journey?.stage==='saved'?order.length:order.indexOf(p.journey?.stage);
-   for(const [i,title]of ['Quantity and ready-by time','Recipes and sides','Equipment capacity','Process timings','Capacity assessment','Delivery choice'].entries())checks.push([title,at>i]);
+   const p=s.production,steps=[['quantity','Quantity and ready-by time'],...(p.extraSides?.needed?[['extra-sides','Optional 5% extra sides — Yes / No']]:[]),['recipes','Recipes and sides'],['equipment','Equipment capacity'],['timing','Process timings'],['assessment','Capacity assessment'],['delivery','Delivery choice'],['save','Save plan']];
+   const at=p.journey?.stage==='saved'?steps.length:steps.findIndex(x=>x[0]===p.journey?.stage);
+   for(const [i,[stage,title]]of steps.slice(0,-1).entries())checks.push([title,stage==='extra-sides'?typeof p.extraSides.choice==='boolean':at>i]);
   }
   if(checks.length){
    const verified=s.production?.journey?.stage==='saved'&&!s.production?.dirty;
