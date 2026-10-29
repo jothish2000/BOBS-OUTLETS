@@ -53,3 +53,17 @@
  body.bobs-guided-dock .grid,body.bobs-guided-dock .fields{grid-template-columns:minmax(0,1fr)}
  body.bobs-guided-dock #bobsFlowGuide{display:none}
 }
+
+/* Read-only guide progress; never floats above page controls. */
+.guide-checklist{margin-top:16px;padding-top:12px;border-top:1px solid #cbd5d1;font-size:13px;overflow-wrap:anywhere}
+.guide-checklist ol,.guide-checklist ul{padding-left:22px}
+.guide-checklist li{margin:8px 0;line-height:1.5}
+.guide-checklist small{display:block;color:#46554c}
+.guide-checklist summary{cursor:pointer;padding:8px 0;font-weight:700}
+.guide-checklist-done{color:#155a2d;font-weight:600}
+.guide-checklist-draft{color:#795000}
+.guide-checklist-next{background:#fff0b5;color:#263d2b;border-left:4px solid #ae7800;padding:7px;font-weight:700}
+
+#recipeCompanionGuide{max-width:1100px;margin:12px auto;padding:0 16px;box-sizing:border-box}
+#recipeCompanionGuide:empty{display:none}
+@media(min-width:900px){body.bobs-guided-dock .recipe-columns{grid-template-columns:minmax(0,1fr)}}
