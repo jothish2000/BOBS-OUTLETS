@@ -194,7 +194,10 @@ function calculate(d,item,recipes){
  const uuwpPctApplied=actualLeftoverPct===null?null:(unsold>0?actualLeftoverPct:fallbackUuwpPct);
  const apply=uuwpPctApplied!==null&&uuwpPctApplied>0;
  const uuwpAmount=uuwpPctApplied===null?null:pricingAfterSpoilage*uuwpPctApplied/100;
- const withUuwp=uuwpAmount===null?null:pricingAfterSpoilage+uuwpAmount;
+ const extraSidesPerItem=d.sideExtraFivePercent===true?sideComponents.filter(x=>x.source==='production').reduce((sum,x)=>sum+x.food*0.05,0):0;
+ // Optional extra production is a separate planning allowance, not actual consumption or a second spoilage/UUWP percentage.
+ const plannedExtraSidesCost=made*extraSidesPerItem;
+ const withUuwp=uuwpAmount===null?null:pricingAfterSpoilage+uuwpAmount+extraSidesPerItem;
  // Actual-day incurred cost uses the full main-food purchase/production commitment, while sale-triggered
  // packing and included-condiment portions are charged only for units actually sold. Pricing provisions
  // (spoilage/UUWP) are excluded here, preventing both omission of unsold main food and double counting.
@@ -205,7 +208,7 @@ function calculate(d,item,recipes){
  const actualDayCost=sold===null?null:actualMainFood+actualMainPacking+actualCondiments+actualCommonPacking;
  const percent=number(d.markup),margin=d.pricingBasis==='margin';
  if(margin&&(percent===null||percent>=100))missing.push('Target margin must be at least 0 and below 100%');
- return {commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,spoilagePct,spoilageApplied,pricingAfterSpoilage,actualLeftoverPct,fallbackUuwpPct,uuwpPctApplied,uuwpAmount,final,withUuwp,apply,made,sold,unsold,
+ return {extraSidesPerItem,plannedExtraSidesCost,commonCost,commonPacking:commonCost.allocated,base:baseCost,baseQty,sourceUnit,usage,cond,pack,packingCost,components,baseWithPacking:components[0].subtotal,condWithPacking:sideComponents.reduce((sum,x)=>sum+x.subtotal,0),parcelSize,parcelPackCost,parcels,totalPacking,spoil,spoilagePct,spoilageApplied,pricingAfterSpoilage,actualLeftoverPct,fallbackUuwpPct,uuwpPctApplied,uuwpAmount,final,withUuwp,apply,made,sold,unsold,
  actualMainFood,actualMainPacking,actualCondiments,actualCommonPacking,actualDayCost,
  suggested:withUuwp===null?null:margin?(percent!==null&&percent<100?withUuwp/(1-percent/100):null):withUuwp*(1+(percent||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
