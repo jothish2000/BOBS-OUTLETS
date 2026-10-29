@@ -245,7 +245,7 @@ function mount(host,options){
     if(s.loading||s.readError)host.append(notice);
     else if(s.next){host.append(notice,el('p','Next incomplete step: '+s.next.title),el('p',s.next.reason));host.append(route(s.next.href,'Open this incomplete step →'));}
     else host.append(el('p',s.progress?.status==='ready'?'No next incomplete step was identified for this selection. You can keep reviewing this page or open BOBS progress for the full list.':'Run the check to find the next incomplete step in your saved records.'));
-    const retry=button(s.readError?'Retry saved-progress check':s.loading?'Checking saved progress…':'Check saved progress again','refresh',()=>options.refresh());retry.disabled=!!s.loading;
+    const retry=button(s.readError?'Retry saved-progress check':s.loading?'Checking saved progress…':'Check saved progress again','refresh',()=>{options.refresh();host.parentElement?.scrollTo?.({top:0});});retry.disabled=!!s.loading;
     choices(retry,button('Keep editing this page','resume-edit',()=>options.minimise()));
     break;
    }
