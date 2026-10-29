@@ -56,7 +56,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  assert.equal(await page.locator('#referenceRows tr').nth(1).locator('td').nth(1).innerText(),'4');
  assert.match(await page.locator('#referenceTotal').innerText(),/120 pieces · Reference cost ₹0\.995 per idli$/);
  assert(await page.locator('#customPortion').isDisabled());assert.equal(await page.locator('#customPortion').inputValue(),'');
- assert.equal(await page.getByLabel('Choose intended cooked portion weight (g)').count(),1);
+ assert.equal(await page.getByLabel('Your chosen weight of ONE cooked piece / serving (g)',{exact:true}).count(),1);
  await page.locator('#portion').selectOption('custom');assert(await page.locator('#customPortion').isEnabled());
  await page.locator('#customPortion').fill('100');assert.equal(await page.locator('#portion').inputValue(),'custom');
  assert.match(await page.locator('#calculationStatus').innerText(),/Not recalculated/);
