@@ -97,7 +97,7 @@ function mount(host,options){
    return li;
   }
   const list=el('ol');m.rows.forEach(n=>list.append(row(n)));details.append(list);
-  if(!m.blocked){const next=m.rows.find(n=>!['done','na'].includes(n.status));box.append(el('p',next?'→ Next incomplete saved stage: '+next.title:'✓ All listed saved stages are verified or not required.',next?'guide-checklist-next':'guide-checklist-done'));}
+  if(!m.blocked){const completed=m.rows.filter(n=>n.status==='done');if(completed.length)box.append(el('p','✓ Saved and verified: '+completed.at(-1).title,'guide-checklist-done'));const next=m.rows.find(n=>!['done','na'].includes(n.status));box.append(el('p',next?'→ Next incomplete saved stage: '+next.title:'✓ All listed saved stages are verified or not required.',next?'guide-checklist-next':'guide-checklist-done'));}
   box.append(details);
  }
 
