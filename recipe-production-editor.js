@@ -19,7 +19,7 @@ function volumeRecipe(){return !!original&&/^(l|litre|litres|ml)$/i.test(String(
 function bulkRecipe(){return volumeRecipe()||!!original&&/^(kg|g|kilogram|kilograms|gram|grams)$/i.test(String(original.yieldUnit||''));}
 
 let pendingServing=null,lastServingToken='',servingRead=null;
-function sideServing(record=state){const key=M2.keys(q.get('cat')||'',q.get('i')||'0').k,rows=(record?.itemEditors?.[key]?.condiments||record?.condiments?.[key]||[]).filter(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(original?.name||q.get('item')));if(rows.length!==1)return null;const side=rows[0],unit=side.portion!=null?side.portionUnit:side.unit,value=side.portion??side.qty;return C.number(value)>0?M2.convert(+value,unit,original?.yieldUnit):null;}
+function sideServing(record=state){if(!original||typeof M2.keys!=='function')return null;const key=M2.keys(q.get('cat')||'',q.get('i')||'0').k,rows=(record?.itemEditors?.[key]?.condiments||record?.condiments?.[key]||[]).filter(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(original?.name||q.get('item')));if(rows.length!==1)return null;const side=rows[0],unit=side.portion!=null?side.portionUnit:side.unit,value=side.portion??side.qty;return C.number(value)>0?M2.convert(+value,unit,original?.yieldUnit):null;}
 function servingAddress(){if(!original||!q.get('cat')||!q.has('i')||!(sideServing()>0))return null;const parent=new URL(location.href);parent.searchParams.set('servingBaseline',String(sideServing()));return 'method2-item.html?'+new URLSearchParams({outlet,cat:q.get('cat'),i:q.get('i'),servingRecipe:original.name,guide:'continue',returnTo:parent.href})+'#servingShortcut';}
 const servingAction=document.createElement('button');servingAction.type='button';servingAction.id='changeServingQuantity';servingAction.hidden=true;servingAction.className='button';servingAction.style.cssText='display:inline-block;padding:12px;background:#214b35;color:#fff;font-weight:bold;margin:8px 0';$('portionHelp').after(servingAction);
 function renderServingAction(){const address=servingAddress();servingAction.hidden=!address;if(address){servingAction.href=address;servingAction.textContent='Change '+original.name+' serving quantity →';}}
@@ -46,7 +46,7 @@ function unitView(){
  $('referenceYield').closest('label').firstChild.textContent='Reference recipe: total output from one batch ('+unit+') ';
  $('targetQty').closest('label').firstChild.textContent='Your required production quantity ('+unit+') ';
  let explain=$('batchYieldExplanation');if(!explain){explain=document.createElement('p');explain.id='batchYieldExplanation';$('referenceYield').closest('label').after(explain);}
- explain.textContent='Source: '+(knowledgeSource==='google'?'Google BOBS Standard Recipe':'audited market-reference recipe')+'. This is what one reference batch produces; it is not your current order requirement. Your required production quantity is shown separately in section 1. If you change the reference output, verify it against an actual batch trial.';
+ explain.textContent='Source: '+(knowledgeSource==='google'?'Google BOBS Standard Recipe':'audited market-reference recipe')+'. '+(state?.recipeOverrides?.[loadedKey]?'Saved outlet reference settings may be applied; the original source batch produces '+quantityText(original.yieldQty,original.yieldUnit)+' '+original.yieldUnit+'. ':'')+'This is what one reference batch produces; it is not your current order requirement. Your required production quantity is shown separately in section 1. If you change the reference output, verify it against an actual batch trial.';
  $('referencePortion').closest('label').firstChild.textContent='Reference recipe: weight of ONE cooked piece / serving (g) ';
  $('portion').closest('label').firstChild.textContent='Your chosen weight of ONE cooked piece / serving (g) ';
  $('portionWeightsTitle').textContent='Check reference piece size and your chosen piece size';
@@ -80,7 +80,7 @@ function recipeGuideSnapshot(){
 }
 window.BOBS_RECIPE_GUIDE={snapshot:recipeGuideSnapshot,openServing,applyServingTotal,focus(id){const field=$(id);if(!field)throw Error('Wait for the recipe controls to load.');field.scrollIntoView({block:'center'});if(!field.matches('input,button,select,a'))field.tabIndex=-1;field.focus({preventScroll:true});},calculate(){if(!busy)$('scale').click();},save(){if(!busy)$('saveProduction').click();}};
 let lastRecipeGuide='',recipeGuideTimer;
-function notifyRecipeGuide(){const next=JSON.stringify(recipeGuideSnapshot());if(next!==lastRecipeGuide){lastRecipeGuide=next;window.dispatchEvent(new Event('bobs-guide-context'));}}
+function notifyRecipeGuide(){if(!window.document||window.closed)return;const next=JSON.stringify(recipeGuideSnapshot());if(next!==lastRecipeGuide){lastRecipeGuide=next;window.dispatchEvent(new Event('bobs-guide-context'));}}
 box.addEventListener('input',()=>{clearTimeout(recipeGuideTimer);recipeGuideTimer=setTimeout(notifyRecipeGuide,0);});
 new MutationObserver(notifyRecipeGuide).observe($('productionStatus'),{childList:true,subtree:true,characterData:true});
 new MutationObserver(notifyRecipeGuide).observe($('confirmed'),{attributes:true,attributeFilter:['aria-disabled']});
