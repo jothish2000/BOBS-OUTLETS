@@ -1,6 +1,17 @@
 /* Question-led companion. Session state is navigation only, never business data or completion. */
 (function(root){'use strict';
 const steps=new Set(['start','setup','outlet-details','locations','location-details','outlet-kitchen-existing','outlet-kitchen-details','outlet-kitchen-summary','kitchen-next','production-flow','page-task','kitchen','quantity','target','time','recipes','assets','equipment','next','resume','route']);
+
+// Completion is projected from the existing saved-record evaluator, never from visits or answers.
+function checklistModel(s){
+ const saved=s.savedChecklist||{},blocked=s.loading||s.readError||s.progress?.status!=='ready';
+ const rows=(saved.stages||[]).map(function copy(n){
+  return {title:n.title||'Review step',status:blocked?'unknown':n.status,reason:blocked?'Saved progress is not verified yet.':n.reason||'',children:(n.children||[]).map(copy)};
+ });
+ return {owner:saved.owner,name:saved.name,rows,blocked,dirty:!!s.dirty,done:rows.filter(n=>n.status==='done').length,
+ message:s.loading?'Checking saved progress…':s.readError?'Saved progress could not be verified. Retry the saved-progress check.':!rows.length?'Use “Check saved progress & show what’s incomplete” to load the checklist.':s.progress?.status!=='ready'?'Saved progress has not been checked yet.':''};
+}
+
 function mount(host,options){
  options.work=options.work||options.minimise;
  let state,scope='',draft={},error='',methodPhase='';
@@ -39,6 +50,57 @@ function mount(host,options){
   host.append(productionRoute(s,'Open this production plan →'));
   return true;
  }
+
+ function renderChecklist(s){
+  let box=host.querySelector('.guide-checklist');
+  const opened=box?.querySelector('details')?.open;
+  if(!box){box=el('section',undefined,'guide-checklist');box.setAttribute('aria-label','Your progress checklist');host.append(box);}
+  box.replaceChildren();
+  const m=checklistModel(s);
+  box.append(el('strong','Your saved progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
+  if(m.message)box.append(el('p',m.message));
+  if(m.dirty)box.append(el('p','Save pending: your current changes are not included in these ticks. Ticks below describe the last verified saved version.','guide-checklist-draft'));
+  const checks=[];
+  if(s.ctx.page==='recipe-cost-editor.html'&&document.getElementById('productionEditor')){
+   const checked=id=>!!document.getElementById(id)?.checked;
+   checks.push(['Review reference portion weight',checked('referenceWeightReviewed')],['Review intended portion weight',checked('intendedWeightReviewed')],
+    ['Calculate quantities from reference',document.getElementById('confirmed')?.getAttribute('aria-disabled')==='false'],
+    ['Review ingredient rates and energy',checked('confirmed')]);
+  }
+  if(s.production?.ready){
+   const p=s.production,order=['quantity','recipes','equipment','timing','assessment','delivery','save'];
+   const at=p.journey?.stage==='saved'?order.length:order.indexOf(p.journey?.stage);
+   for(const [i,title]of ['Quantity and ready-by time','Recipes and sides','Equipment capacity','Process timings','Capacity assessment','Delivery choice'].entries())checks.push([title,at>i]);
+  }
+  if(checks.length){
+   const verified=s.production?.journey?.stage==='saved'&&!s.production?.dirty;
+   box.append(el('p',verified?'This production plan was saved and verified:':'On this page — review checkpoints (not saved completion):'));
+   const list=el('ol',undefined,'guide-checklist-local');
+   let next=false;
+   for(const [title,reviewed] of checks){const current=!reviewed&&!next;if(current)next=true;const li=el('li',(reviewed?(verified?'✓ Saved and verified: ':'◐ Reviewed — save pending: '):current?'→ Next: ':'○ To review: ')+title,reviewed?(verified?'guide-checklist-done':'guide-checklist-draft'):current?'guide-checklist-next':'');if(current)li.setAttribute('aria-current','step');list.append(li);}
+   box.append(list);
+  }
+  if(!m.rows.length)return;
+  const details=el('details'),summary=el('summary',m.done+' of '+m.rows.length+' saved stages verified — show checklist');
+  details.open=!!opened;details.append(summary);
+  let nextMarked=false;
+  function row(n){
+   const done=n.status==='done',na=n.status==='na',unknown=n.status==='unknown';
+   const next=!m.blocked&&!nextMarked&&!done&&!na;
+   if(next)nextMarked=true;
+   const label=done?'✓ Saved and verified: ':na?'— Not required: ':unknown?'? Not verified: ':next?'→ Next incomplete: ':n.status==='review'?'! Needs review: ':'○ Not completed: ';
+   const li=el('li',undefined,done?'guide-checklist-done':next?'guide-checklist-next':'');
+   li.append(el('span',label+n.title));
+   if(next)li.setAttribute('aria-current','step');
+   if(n.reason)li.append(el('small',n.reason));
+   if(n.children.length){const nested=el('details');nested.append(el('summary','Show checks for this stage'));const list=el('ul');n.children.forEach(c=>list.append(row(c)));nested.append(list);li.append(nested);}
+   return li;
+  }
+  const list=el('ol');m.rows.forEach(n=>list.append(row(n)));details.append(list);
+  if(!m.blocked){const next=m.rows.find(n=>!['done','na'].includes(n.status));box.append(el('p',next?'→ Next incomplete saved stage: '+next.title:'✓ All listed saved stages are verified or not required.',next?'guide-checklist-next':'guide-checklist-done'));}
+  box.append(details);
+ }
+
  function render(){
   const s=snapshot();restore(s);const p=s.production;
   if(s.methodFlow){const phase=s.methodFlow.outlet+':'+s.methodFlow.phase;if(phase!==methodPhase){methodPhase=phase;state.step='page-task';state.history=[];}}
@@ -50,7 +112,7 @@ function mount(host,options){
     host.append(el('p','Kitchen Setup saved and verified. Choose your next step.','guide-question'));
     if(document.getElementById('kitchenNext-equipment'))host.append(el('p','Optional now: record existing equipment and capacity.'));
     host.append(el('p','Next required: review outlet expenses and mandatory staff.'),el('p','Choose a card below, then use the highlighted button.'));
-    return;
+    renderChecklist(s);return;
    }
    state.step=s.ctx.page==='kitchen-flow.html'?'outlet-kitchen-summary':'page-task';
   }
@@ -258,6 +320,7 @@ function mount(host,options){
    }
   }
   if(error){const notice=el('p',error,'guide-error');notice.setAttribute('role','alert');host.append(notice);}
+  renderChecklist(s);
   const nav=el('div',undefined,'guide-nav');
   if(state.history.length)nav.append(button('Back one question','back',()=>{const previous=state.history.pop();state.step=steps.has(previous.step)?previous.step:'start';draft={};error='';persist();render();}));
   if(state.step!=='start')nav.append(button('Choose a different task','restart',()=>{state={step:'start',history:[]};draft={};persist();render();}));host.append(nav);
@@ -265,7 +328,11 @@ function mount(host,options){
  }
  function update(){if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
  function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
+ // Update only the read-only checklist after page edits; keep action buttons attached during clicks.
+ let checklistTimer;
+ const checklistUpdate=e=>{if(host.contains(e.target))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(()=>renderChecklist(snapshot()),0);};
+ for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
  render();return {update,kitchenNext};
 }
-root.BOBS_GUIDE_BOT={mount};
+root.BOBS_GUIDE_BOT={mount,checklistModel};
 })(window);
