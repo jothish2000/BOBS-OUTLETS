@@ -16,6 +16,20 @@ function total(){try{const r=values(),sum=C.recipeTotal(r);if(!(r.yieldQty>0))th
 function rows(){$('productionRows').innerHTML=current.ingredients.map(a=>{const d=displayQty(a);return '<tr data-factor="'+d.factor+'"><td>'+esc(a[0])+'</td><td><input class="quantity" type="number" min="0" step="any" data-raw="'+esc(a[1])+'" title="Exact quantity: '+esc(a[1])+' '+esc(a[2])+'" value="'+quantityText(a[1]*d.factor,d.unit)+'"></td><td>'+esc(d.unit)+'</td><td><input class="rate" type="number" min="0" step="any" data-raw="'+esc(a[3])+'" title="Exact rate: '+esc(a[3])+'" value="'+fixed(a[3])+'"><small>₹ / '+esc(a[2])+'</small></td><td></td></tr>';}).join('');total();}
 
 function volumeRecipe(){return !!original&&/^(l|litre|litres|ml)$/i.test(String(original.yieldUnit||''));}
+
+let pendingServing=null,lastServingToken='',servingRead=null;
+function sideServing(record=state){const key=M2.keys(q.get('cat')||'',q.get('i')||'0').k,rows=(record?.itemEditors?.[key]?.condiments||record?.condiments?.[key]||[]).filter(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(original?.name||q.get('item')));if(rows.length!==1)return null;const side=rows[0],unit=side.portion!=null?side.portionUnit:side.unit,value=side.portion??side.qty;return C.number(value)>0?M2.convert(+value,unit,original?.yieldUnit):null;}
+function servingAddress(){if(!original||!q.get('cat')||!q.has('i')||!(sideServing()>0))return null;const parent=new URL(location.href);parent.searchParams.set('servingBaseline',String(sideServing()));return 'method2-item.html?'+new URLSearchParams({outlet,cat:q.get('cat'),i:q.get('i'),servingRecipe:original.name,guide:'continue',returnTo:parent.href})+'#servingShortcut';}
+const servingAction=document.createElement('button');servingAction.type='button';servingAction.id='changeServingQuantity';servingAction.className='button';servingAction.style.cssText='display:inline-block;padding:12px;background:#214b35;color:#fff;font-weight:bold;margin:8px 0';$('portionHelp').after(servingAction);
+function renderServingAction(){const address=servingAddress();servingAction.hidden=!address;if(address){servingAction.href=address;servingAction.textContent='Change '+original.name+' serving quantity →';}}
+function openServing(){const address=servingAddress();if(!address)return;const child=window.open(address,'_blank');if(!child){servingReturn.textContent='The serving editor could not open. Allow pop-ups for BOBS, then click Change serving quantity again.';notifyRecipeGuide();}}
+servingAction.addEventListener('click',openServing);
+const servingReturn=document.createElement('p');servingReturn.id='servingReturnStatus';servingReturn.role='status';servingAction.after(servingReturn);
+function setServingPending(before,after){if(!(before>0&&after>0)||before===after)return;pendingServing={quantity:Number(q.get('qty'))*after/before,unit:original.yieldUnit};resetWeightReview();userCalculated=false;scaleSignature=null;$('confirmed').checked=false;syncReview();servingReturn.textContent='Serving quantity saved. Required total is now '+quantityText(pendingServing.quantity,pendingServing.unit)+' '+pendingServing.unit+'. Use the updated total, review both checks and Calculate again. Existing ingredient edits remain on screen until Calculate.';notifyRecipeGuide();window.dispatchEvent(new Event('bobs-guide-resume'));}
+function applyServingTotal(){if(!pendingServing||!(pendingServing.quantity>0))throw Error('Return to the production planner to review the required quantity.');$('targetQty').value=pendingServing.quantity;q.set('qty',String(pendingServing.quantity));const u=new URL(location.href);u.searchParams.set('qty',String(pendingServing.quantity));u.searchParams.delete('servingBaseline');history.replaceState(null,'',u);q.delete('servingBaseline');pendingServing=null;$('targetQty').dispatchEvent(new Event('input',{bubbles:true}));servingReturn.textContent='Updated total applied. Review the reference and intended total, then Calculate; nothing is saved automatically.';notifyRecipeGuide();}
+async function receiveServing(message){if(message?.type!=='bobs-side-serving-saved'||String(message.outlet)!==String(outlet)||message.key!==M2.keys(q.get('cat'),q.get('i')).k||M2.purchaseKey(message.recipeName)!==M2.purchaseKey(original?.name)||message.token===lastServingToken||busy)return;if(servingRead)return;servingRead=true;try{const latest=await V.read(outlet,'METHOD2'),saved=latest?.itemEditors?.[message.key];if(saved?.planningToken!==message.token)throw Error('Serving save could not be verified. Reload the saved serving settings before continuing.');const before=sideServing();state=latest;lastServingToken=message.token;sourceNote();setServingPending(before,sideServing());if(!pendingServing){servingReturn.textContent='Serving saved and verified; the amount is unchanged. Continue reviewing this recipe.';notifyRecipeGuide();window.dispatchEvent(new Event('bobs-guide-resume'));}}catch(e){servingReturn.textContent=e.message;}finally{servingRead=false;}}
+window.addEventListener('message',e=>{if(e.origin===location.origin)receiveServing(e.data)});if(window.BroadcastChannel){const ch=new BroadcastChannel('bobs-side-serving');ch.onmessage=e=>receiveServing(e.data);}
+
 function servingSummary(){
  const key=M2.keys(q.get('cat')||'',q.get('i')||'0').k,d=state?.itemEditors?.[key];
  const sides=d?.condiments||state?.condiments?.[key]||[];
@@ -24,7 +38,7 @@ function servingSummary(){
  const item=window.ITEM_DATA?.[q.get('cat')]?.[+q.get('i')]||(q.get('cat')===M2.SIDES?state?.sideCatalogue?.[+q.get('i')]:null);
  if(item&&M2.purchaseKey(item.recipeName||item.name)===M2.purchaseKey(original.name)&&d?.servingQty!=null)amounts.push({qty:d.servingQty,unit:d.servingUnit});
  if(!amounts.length)return 'Serving quantity (ml per menu item): not saved for this item yet. Set it in the item’s side / serving settings; no serving amount is assumed here.';
- return 'Serving quantity from saved item settings: '+amounts.map(x=>{const ml=C.number(x.qty)>0?M2.convert(+x.qty,x.unit,'ml'):null;return ml!==null?quantityText(ml,'ml')+' ml per menu item':String(x.qty??'unknown')+' '+String(x.unit||'unknown unit')+' — cannot convert to ml without a verified volume';}).join('; ')+'. To change it, return to the item’s side / serving settings, then review the required production volume.';
+ return 'Serving quantity from saved item settings: '+amounts.map(x=>{const ml=C.number(x.qty)>0?M2.convert(+x.qty,x.unit,'ml'):null;return ml!==null?quantityText(ml,'ml')+' ml per menu item':String(x.qty??'unknown')+' '+String(x.unit||'unknown unit')+' — cannot convert to ml without a verified volume';}).join('; ')+'. Use “Change '+original.name+' serving quantity” below to edit the exact serving field. Save there to return here, review the revised total, then Calculate again.';
 }
 function unitView(){
  const liquid=volumeRecipe(),unit=liquid?(M2.convert(1,original.yieldUnit,'L')===1?'litres (L)':original.yieldUnit):original.yieldUnit;
@@ -38,7 +52,7 @@ function unitView(){
  $('portionWeightsTitle').nextElementSibling.textContent='Batch yield is the total recipe output. Serving quantity is the amount per menu item. Required total litres already include serving allocation; no gram-based portion multiplier is used.';
  for(const id of ['referencePortion','portion','customPortion']){$(id).closest('label').hidden=true;$(id).disabled=true;}
  $('portionSource').hidden=true;$('customPortionHelp').hidden=true;
- $('portionHelp').textContent=servingSummary();
+ $('portionHelp').textContent=servingSummary();renderServingAction();
  $('referenceWeightReviewed').closest('label').lastChild.textContent=' I checked the reference batch yield and its volume unit.';
  $('intendedWeightReviewed').closest('label').lastChild.textContent=' I checked the intended total volume and the saved serving information above.';
  $('goToReference').textContent='Review volumes, then Calculate';
@@ -52,17 +66,17 @@ function unitView(){
 
 function recipeGuideSnapshot(){
  if(!original)return {stage:'loading',name:q.get('item')||'Recipe',message:$('status').textContent};
- const stage=busy?'saving':recipeSaveState==='saved'&&!dirty?'saved':!$('referenceWeightReviewed').checked?'reference':!$('intendedWeightReviewed').checked?'intended':!reviewReady()?'calculate':!$('confirmed').checked?'review':'save';
- return {stage,name:original.name,volume:volumeRecipe(),referenceYield:$('referenceYield').value,unit:original.yieldUnit,target:$('targetQty').value,message:$('productionStatus').textContent,serving:volumeRecipe()?servingSummary():'',extra:q.get('extraSides')||'',dirty};
+ const stage=busy?'saving':pendingServing?'serving-return':recipeSaveState==='saved'&&!dirty?'saved':!$('referenceWeightReviewed').checked?'reference':!$('intendedWeightReviewed').checked?'intended':!reviewReady()?'calculate':!$('confirmed').checked?'review':'save';
+ return {stage,name:original.name,volume:volumeRecipe(),referenceYield:$('referenceYield').value,unit:original.yieldUnit,target:$('targetQty').value,message:$('productionStatus').textContent,serving:volumeRecipe()?servingSummary():'',extra:q.get('extraSides')||'',dirty,servingHref:servingAddress(),servingReturn:servingReturn.textContent};
 }
-window.BOBS_RECIPE_GUIDE={snapshot:recipeGuideSnapshot,focus(id){const field=$(id);if(!field)throw Error('Wait for the recipe controls to load.');field.scrollIntoView({block:'center'});if(!field.matches('input,button,select,a'))field.tabIndex=-1;field.focus({preventScroll:true});},calculate(){if(!busy)$('scale').click();},save(){if(!busy)$('saveProduction').click();}};
+window.BOBS_RECIPE_GUIDE={snapshot:recipeGuideSnapshot,openServing,applyServingTotal,focus(id){const field=$(id);if(!field)throw Error('Wait for the recipe controls to load.');field.scrollIntoView({block:'center'});if(!field.matches('input,button,select,a'))field.tabIndex=-1;field.focus({preventScroll:true});},calculate(){if(!busy)$('scale').click();},save(){if(!busy)$('saveProduction').click();}};
 let lastRecipeGuide='',recipeGuideTimer;
 function notifyRecipeGuide(){const next=JSON.stringify(recipeGuideSnapshot());if(next!==lastRecipeGuide){lastRecipeGuide=next;window.dispatchEvent(new Event('bobs-guide-context'));}}
 box.addEventListener('input',()=>{clearTimeout(recipeGuideTimer);recipeGuideTimer=setTimeout(notifyRecipeGuide,0);});
 new MutationObserver(notifyRecipeGuide).observe($('productionStatus'),{childList:true,subtree:true,characterData:true});
 new MutationObserver(notifyRecipeGuide).observe($('confirmed'),{attributes:true,attributeFilter:['aria-disabled']});
 
-function sourceNote(){if(volumeRecipe()){$('portionHelp').textContent=servingSummary();return;}const v=$('referencePortion').value;
+function sourceNote(){if(volumeRecipe()){$('portionHelp').textContent=servingSummary();renderServingAction();return;}const v=$('referencePortion').value;
  $('portionSource').textContent=!original.portionGrams&&!v?'No reference cooked weight was supplied. Enter a verified baseline before choosing a different intended weight.':Number(v)!==Number(original.portionGrams)?'Reference weight entered or changed on this page. Verify it with an outlet trial; it has not changed the shared standard.':original.portionGrams?(knowledgeSource==='google'?'Source: BOBS standard recipe stored in Google Sheets. ':'Source: previously prepared BOBS market-reference library. ')+'This is a BOBS-calibrated planning weight, not a universal industry standard. Confirm actual cooked weight with a trial batch.':'No reference cooked weight was supplied. Enter a verified baseline before choosing a different intended weight.';
 }
 function syncCustomPortion(){const custom=$('portion').value==='custom';$('customPortion').disabled=!custom;if(!custom)$('customPortion').value='';$('customPortionHelp').textContent=custom?'Enter your intended cooked weight in grams, then click Calculate.':'Select Custom weight in the list above to enter grams.';}
@@ -114,6 +128,7 @@ $('viewProduction').onclick=()=>{$('productionTotal').scrollIntoView({behavior:'
 $('recipe').onchange=()=>{if(!dirty||confirm('Discard unsaved production changes and switch recipe?'))show()};
 $('saveProduction').onclick=async()=>{
  if(busy)return;
+ if(pendingServing){servingReturn.textContent='Use the updated serving total and Calculate again before saving.';notifyRecipeGuide();return;}
  if(!reviewReady()){focusReference();return;}
  busy=true;$('saveProduction').disabled=true;
  const controls=[...box.querySelectorAll('input,select,button')].map(el=>[el,el.disabled]);
@@ -154,5 +169,5 @@ $('saveProduction').onclick=async()=>{
  finally{busy=false;controls.forEach(([el,disabled])=>el.disabled=disabled);$('saveProduction').disabled=false;notifyRecipeGuide();}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});
-try{const [googleStandard,method2]=await Promise.all([K?.loadStandards(BOBS_DATA).catch(()=>null),V.read(outlet,'METHOD2')]);state=method2;const fallback=(window.BOBS_MARKET_REFERENCES||window.BOBS_GUIDE_RECIPES||[]).map(clone);if(googleStandard?.records?.length){knowledgeSource='google';master={recipes:googleStandard.records}}else{knowledgeSource='market';master={recipes:fallback}}if(!master.recipes.length||!state)throw Error('Load BOBS Standard / audited market reference and Method 2 first.');$('recipe').innerHTML=master.recipes.map(r=>'<option value="'+esc(r.recipeId||r.name)+'">'+esc(r.name)+'</option>').join('');const target=master.recipes.find(r=>M2.purchaseKey(r.name)===M2.purchaseKey(q.get('item')));if(!target)throw Error('Recipe not found.');$('recipe').value=target.recipeId||target.name;$('recipe').disabled=true;show()}catch(e){$('status').textContent=e.message;$('saveProduction').disabled=true;retryGoogle.hidden=false}
+try{const [googleStandard,method2]=await Promise.all([K?.loadStandards(BOBS_DATA).catch(()=>null),V.read(outlet,'METHOD2')]);state=method2;const fallback=(window.BOBS_MARKET_REFERENCES||window.BOBS_GUIDE_RECIPES||[]).map(clone);if(googleStandard?.records?.length){knowledgeSource='google';master={recipes:googleStandard.records}}else{knowledgeSource='market';master={recipes:fallback}}if(!master.recipes.length||!state)throw Error('Load BOBS Standard / audited market reference and Method 2 first.');$('recipe').innerHTML=master.recipes.map(r=>'<option value="'+esc(r.recipeId||r.name)+'">'+esc(r.name)+'</option>').join('');const target=master.recipes.find(r=>M2.purchaseKey(r.name)===M2.purchaseKey(q.get('item')));if(!target)throw Error('Recipe not found.');$('recipe').value=target.recipeId||target.name;$('recipe').disabled=true;show();if(q.has('servingBaseline'))setServingPending(Number(q.get('servingBaseline')),sideServing());}catch(e){$('status').textContent=e.message;$('saveProduction').disabled=true;retryGoogle.hidden=false}
 }};})();
