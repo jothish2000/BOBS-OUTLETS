@@ -28,8 +28,8 @@ async function saveServingShortcut(){
  const remainder=M2.clone(d),before=M2.clone(servingStart||originalDraft),local=servingSide(remainder),old=servingSide(before);
  local.portion=old.portion;local.portionUnit=old.portionUnit;delete remainder.soldConfirmed;delete before.soldConfirmed;
  // Compare actual item fields, ignoring display-normalised scalar types.
- const otherFields=fields.filter(id=>!['servingQty','servingUnit'].includes(id));
- if(otherFields.some(id=>String(remainder[id]??'')!==String(before[id]??''))||JSON.stringify(remainder.condiments)!==JSON.stringify(before.condiments))return status('Other item fields were changed too. Keep this draft open and save those separately before using the serving-only shortcut.');
+ const otherFields=fields;
+ if(otherFields.some(id=>String(remainder[id]??'')!==String(before[id]??''))||['condiments','mainPacking','commonPacking','packaging','purchase'].some(key=>JSON.stringify(remainder[key])!==JSON.stringify(before[key])))return status('Other item fields were changed too. Keep this draft open and save those separately before using the serving-only shortcut.');
  busy=true;servingStatus='saving';$('controls').disabled=true;$('servingShortcutStatus').textContent='Saving serving quantity and verifying in Google…';window.dispatchEvent(new Event('bobs-guide-context'));
  try{
  const saved=await M2.savePlanning(outlet,cat,i,item,next,baseline);baseline=M2.state(saved);dirty=false;servingStatus='saved';const token=baseline.itemEditors[M2.keys(cat,i).k].planningToken;
