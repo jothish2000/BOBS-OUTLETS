@@ -19,7 +19,7 @@ const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{
  await owner.locator('[data-guide-choice=item-open-production]').waitFor();
  const parentURL=owner.url(),opening=owner.waitForEvent('popup');await owner.locator('[data-guide-choice=item-open-production]').click();
  const p=await opening;p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());
- const url=p.url();assert.equal(new URL(url).searchParams.get('returnTo'),parentURL);assert.equal(new URL(url).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(url).searchParams.get('i'),'0');
+ await p.waitForURL(u=>u.pathname.endsWith('/production-plan.html'),{waitUntil:'domcontentloaded'});const url=p.url();assert.equal(new URL(url).searchParams.get('returnTo'),parentURL);assert.equal(new URL(url).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(url).searchParams.get('i'),'0');
  await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);
  await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
