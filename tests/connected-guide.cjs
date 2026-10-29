@@ -145,7 +145,7 @@ test('production bot follows current step and never confirms reviews or saves on
  w.eval(source('bobs-guide-bot.js'));const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'production-plan.html',outlet:'1'}}),minimise(){},work(){},refresh(){}});
  const text=()=>w.document.getElementById('host').textContent;
  assert.match(text(),/how much, and ready by when/);assert.deepEqual(calls,[]);
- for(const [stage,match]of [['recipes',/main recipe/],['equipment',/usable capacity/],['timing',/Review timing/],['assessment',/check whether production fits/],['delivery',/review delivery/],['save',/ready to save/],['saving',/Saving and verifying/],['error',/not fully saved/]]){p.journey={stage,process:'Idli',message:'fixture status'};bot.update();assert.match(text(),match);}
+ for(const [stage,match]of [['recipes',/Each recipe has been reviewed/],['equipment',/usable capacity/],['timing',/Review timing/],['assessment',/check whether production fits/],['delivery',/review delivery/],['save',/ready to save/],['saving',/Saving and verifying/],['error',/not fully saved/]]){p.journey={stage,process:'Idli',message:'fixture status'};bot.update();assert.match(text(),match);}
  assert.deepEqual(calls,[]);p.journey={stage:'save'};bot.update();w.document.querySelector('[data-guide-choice=plan-save]').click();assert.deepEqual(calls,['save']);
  }finally{w.close()}
 });
