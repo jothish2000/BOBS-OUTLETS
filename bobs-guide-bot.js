@@ -14,7 +14,7 @@ function checklistModel(s){
 
 function mount(host,options){
  options.work=options.work||options.minimise;
- let state,scope='',draft={},error='',methodPhase='';
+ let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
  function snapshot(){const s=options.snapshot();return {...s,production:adapter()?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
@@ -64,6 +64,8 @@ function mount(host,options){
   if(m.dirty)box.append(el('p','Save pending: your current changes are not included in these ticks. Ticks below describe the last verified saved version.','guide-checklist-draft'));
   const checks=[];
   if(s.ctx.page==='recipe-cost-editor.html'&&document.getElementById('productionEditor')){
+   const confirmation=document.getElementById('confirmed');
+   if(confirmation&&confirmation!==recipeWatched){recipeWatch?.disconnect();recipeWatched=confirmation;recipeWatch=new MutationObserver(()=>renderChecklist(snapshot()));recipeWatch.observe(confirmation,{attributes:true,attributeFilter:['aria-disabled']});}
    const checked=id=>!!document.getElementById(id)?.checked;
    checks.push(['Review reference portion weight',checked('referenceWeightReviewed')],['Review intended portion weight',checked('intendedWeightReviewed')],
     ['Calculate quantities from reference',document.getElementById('confirmed')?.getAttribute('aria-disabled')==='false'],
