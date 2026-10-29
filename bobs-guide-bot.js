@@ -42,15 +42,17 @@ function mount(host,options){
    const h=s.recipeHelp,a=root.BOBS_RECIPE_GUIDE,focus=(label,id)=>button(label,'recipe-step-'+id,()=>{options.work();a.focus(id);});
    host.append(el('p','You are reviewing a recipe.','guide-question'));
    if(h.stage==='loading'){host.append(el('p','Loading '+h.name+' — wait for the saved reference.'));return true;}
-   host.append(el('p',h.name+' · reference '+h.referenceYield+' '+h.unit+' · intended total '+h.target+' '+h.unit));
+   host.append(el('p',h.name+' · one reference batch produces '+h.referenceYield+' '+h.unit+' · your required total '+h.target+' '+h.unit));
    if(h.extra==='yes')host.append(el('p','The parent plan selected 5% extra produced sides. The linked total already includes it; do not add it again.'));
    if(h.extra==='no')host.append(el('p','The parent plan selected normal side quantities only. No extra is added.'));
-   if(h.stage==='reference'){host.append(el('p',h.volume?'First check the reference batch yield and its volume unit. Tick the reference review when correct.':'First check the reference recipe yield and cooked portion weight in grams. Tick the reference review when correct.'));host.append(focus('Review the reference and its confirmation','referenceWeightReviewed'));}
-   else if(h.stage==='intended'){host.append(el('p',h.volume?'Now check the intended total volume and serving ml, then tick the second review.':'Now check your intended portion weight in grams, then tick the second review.'));if(h.serving)host.append(el('p',h.serving));host.append(focus('Review intended quantity and serving choice','intendedWeightReviewed'));}
+   if(h.stage==='serving-return'){host.append(el('p',h.servingReturn));host.append(button('Use updated total and review recipe','recipe-serving-apply',()=>a.applyServingTotal()));}
+   else if(h.stage==='reference'){host.append(el('p',(h.bulk||h.volume)?'First check how much ONE reference recipe batch produces and its unit. This is separate from the quantity you need for this plan. Tick the reference review when correct.':'First check the reference batch output and the grams in ONE cooked piece / serving. This is not the total batch weight. Tick the reference review when correct.'));host.append(focus('Review the reference and its confirmation','referenceWeightReviewed'));}
+   else if(h.stage==='intended'){host.append(el('p',(h.bulk||h.volume)?'Now check your required total production and serving quantity per menu item, then tick the second review.':'Now check your required piece count and the grams you want in ONE cooked piece / serving, then tick the second review.'));if(h.serving)host.append(el('p',h.serving));host.append(focus('Review intended quantity and serving choice','intendedWeightReviewed'));}
    else if(h.stage==='calculate'){host.append(el('p','Both checks are complete. Calculate the ingredient quantities now. This creates a preview and does not save.'));host.append(button('Calculate quantities from reference','recipe-step-calculate',()=>a.calculate()));}
    else if(h.stage==='review'){host.append(el('p','Calculation is ready. Review ingredient quantities, rates and energy use. Tick the final recipe review only when they are correct.'));host.append(focus('Review the calculated ingredients','productionRows'),focus('Show final recipe review','confirmed'));}
    else if(h.stage==='save'){host.append(el('p','Your recipe review is ticked. Save explicitly; after verification I will guide the next unfinished recipe in the parent plan.'));host.append(button('Save reviewed recipe and return →','recipe-step-save',()=>a.save()));}
    else host.append(el('p',h.stage==='saving'?'Saving and verifying — keep this page open.':'✓ Recipe saved and verified. Returning to the parent plan.'));
+   if(h.servingHref&&h.stage!=='saving')host.append(button('Change '+h.name+' serving quantity →','recipe-change-serving',()=>a.openServing()));
    if(h.message)host.append(el('small',h.message));
    const overview=el('details');overview.append(el('summary','See the full recipe checklist'),el('p','Reference → intended quantity / portion → Calculate → ingredients and rates → review confirmation → Save and return.'));host.append(overview);return true;
   }
@@ -84,7 +86,7 @@ function mount(host,options){
    if(confirmation&&confirmation!==recipeWatched){recipeWatch?.disconnect();recipeWatched=confirmation;recipeWatch=new MutationObserver(()=>renderChecklist(snapshot()));recipeWatch.observe(confirmation,{attributes:true,attributeFilter:['aria-disabled']});}
    const checked=id=>!!document.getElementById(id)?.checked;
    const volume=document.getElementById('productionEditor').dataset.portionBasis==='volume';
-   checks.push([volume?'Review reference batch volume':'Review reference portion weight',checked('referenceWeightReviewed')],[volume?'Review total volume and serving ml':'Review intended portion weight',checked('intendedWeightReviewed')],
+   checks.push([volume?'Review reference batch output':'Review reference portion weight',checked('referenceWeightReviewed')],[volume?'Review required total and serving amount':'Review intended portion weight',checked('intendedWeightReviewed')],
     ['Calculate quantities from reference',document.getElementById('confirmed')?.getAttribute('aria-disabled')==='false'],
     ['Review ingredient rates and energy',checked('confirmed')]);
   }

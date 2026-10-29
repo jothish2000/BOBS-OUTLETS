@@ -2,6 +2,7 @@
 (function(root){'use strict';
  const $=id=>document.getElementById(id);
  function snapshot(){
+  const serving=root.BOBS_SERVING_GUIDE?.snapshot();if(serving)return {name:serving.name,title:serving.name+' — '+(serving.stage==='saving'?'saving and verifying':'change serving quantity'),instruction:serving.stage==='saving'?'Keep this page open until Google verification finishes.':serving.stage==='saved'?'Saved and verified. Returning to your recipe.':'Change the highlighted serving quantity and check its unit. Then click Save serving quantity & return to recipe. You do not need to enter Sold Today for this change. '+serving.message,selector:serving.available?'#servingShortcutQuantity':'#servingShortcut',action:'Show serving quantity field'};
   const name=$('title')?.textContent||'This item',status=$('status')?.textContent||'Loading item…';
   const result=(title,instruction,selector,action)=>({name,title,instruction,selector,action,notice:$('itemCompanionGuide')?.dataset.returnMessage||'',...(selector==='#productionEntry a'?{href:document.querySelector(selector)?.href,action:'Open '+name+' production planner →'}:{})});
   if(!$('controls')||$('controls').disabled||$('editor').hidden)return result(name+' — checking item records',status,$('retryGoogle')&&!$('retryGoogle').hidden?'#retryGoogle':'#status','Show item status / Retry');
