@@ -15,7 +15,7 @@ function values(){const r=clone(current);r.yieldQty=C.number($('targetQty').valu
 function total(){try{const r=values(),sum=C.recipeTotal(r);if(!(r.yieldQty>0))throw Error('Enter intended quantity.');$('productionTotal').textContent='Production ₹'+fixed(sum)+' ÷ '+quantityText(r.yieldQty,r.yieldUnit)+' '+r.yieldUnit+' = ₹'+fixed(sum/r.yieldQty)+' each, before packing/sides/labour/overheads.';[...$('productionRows').children].forEach((tr,i)=>tr.lastElementChild.textContent=fixed(r.ingredients[i][1]*r.ingredients[i][3]))}catch(e){$('productionTotal').textContent=e.message}}
 function rows(){$('productionRows').innerHTML=current.ingredients.map(a=>{const d=displayQty(a);return '<tr data-factor="'+d.factor+'"><td>'+esc(a[0])+'</td><td><input class="quantity" type="number" min="0" step="any" data-raw="'+esc(a[1])+'" title="Exact quantity: '+esc(a[1])+' '+esc(a[2])+'" value="'+quantityText(a[1]*d.factor,d.unit)+'"></td><td>'+esc(d.unit)+'</td><td><input class="rate" type="number" min="0" step="any" data-raw="'+esc(a[3])+'" title="Exact rate: '+esc(a[3])+'" value="'+fixed(a[3])+'"><small>₹ / '+esc(a[2])+'</small></td><td></td></tr>';}).join('');total();}
 
-function volumeRecipe(){return !!original&&M2.convert(1,original.yieldUnit,'L')!==null;}
+function volumeRecipe(){return !!original&&/^(l|litre|litres|ml)$/i.test(String(original.yieldUnit||''));}
 function servingSummary(){
  const key=M2.keys(q.get('cat')||'',q.get('i')||'0').k,d=state?.itemEditors?.[key];
  const sides=d?.condiments||state?.condiments?.[key]||[];
