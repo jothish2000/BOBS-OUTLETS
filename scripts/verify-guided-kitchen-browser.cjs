@@ -245,7 +245,7 @@ await p.getByText('Connected planning board',{exact:true}).click();
 assert.match(await p.locator('#bobsCompanion').innerText(),/Connected planning board/);
 assert.match(await p.locator('#bobsCompanion').innerText(),/Workforce selection/);
 assert.equal(new URL(await p.getByRole('link',{name:'Open Asset Master →',exact:true}).getAttribute('href')).searchParams.get('outlet'),id);
-assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight}));
+assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&getComputedStyle(x).position==='static'}));
 await p.locator('#bobsCompanion').screenshot({path:path.join(require('os').tmpdir(),'bobs-connected-guide-mobile.png')});
 await p.getByRole('button',{name:'Minimise',exact:true}).click();assert(!(await p.locator('#bobsCompanion').isVisible()));assert.equal(writes.length,companionWrites);
 await p.evaluate(()=>scrollTo(0,0));console.log('BOBS_FLOW_PREVIEW:'+(await p.screenshot({type:'jpeg',quality:65})).toString('base64'));
