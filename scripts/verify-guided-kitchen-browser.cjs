@@ -2,12 +2,12 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright'),root=path.resolve(__dirname,'..');
 const clone=x=>JSON.parse(JSON.stringify(x)),id='Kitchen-Elimedu',db={},writes=[],errors=[],shifts=[{start:'04:30',end:'13:30'},{start:'15:00',end:'18:30'}];
 const register={reviewed:true,outletDecisions:{'1':{hasKitchen:false},'2':{hasKitchen:false},'3':{hasKitchen:true,kitchenId:id}},kitchens:[{id,name:'Elimedu kitchen',status:'operating',outletId:'3',shiftTimes:shifts}]};
-let failAssetSave=false,failRegisterRead=false,slowKitchenSave=false,failKitchenSave=false;
+let failAssetRead=false,failAssetSave=false,failRegisterRead=false,slowKitchenSave=false,failKitchenSave=false;
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
 const ctx=await browser.newContext({viewport:{width:1071,height:580}});ctx.setDefaultTimeout(30000);ctx.on('page',p=>{p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());});
 await ctx.route('**/*',async r=>{const req=r.request(),u=new URL(req.url());if(u.hostname==='bobs.test'){const f=path.join(root,decodeURIComponent(u.pathname.slice(1)));return fs.existsSync(f)?r.fulfill({path:f}):r.fulfill({status:404,body:'missing'});}if(u.hostname!=='script.google.com')return r.abort();
 if(req.method()==='POST'){const b=JSON.parse(req.postData());if(b.action==='snapshot')return r.fulfill({body:'ok'});writes.push(b.module);if(b.module==='KITCHEN_MASTER'){if(slowKitchenSave)await new Promise(resolve=>setTimeout(resolve,600));if(failKitchenSave)return r.abort();}if(b.module==='ASSET_MASTER'&&failAssetSave)return r.abort();db[b.outletId+'/'+b.module+'/'+b.recordKey]=b.data;return r.fulfill({body:'ok'});}
-const key=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey'),data=u.searchParams.get('action')==='outletList'?{ok:true,outlets:['1','2','3'].map(outletId=>({outletId,outletName:'Shop '+outletId,data:{shiftTimes:shifts}}))}:failRegisterRead&&u.searchParams.get('module')==='KITCHEN_MASTER'?{ok:false,error:'fixture register unavailable'}:{ok:true,found:key in db,data:db[key]??null};return r.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(data)+')'});});
+const key=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey'),data=u.searchParams.get('action')==='outletList'?{ok:true,outlets:['1','2','3'].map(outletId=>({outletId,outletName:'Shop '+outletId,data:{shiftTimes:shifts}}))}:(failRegisterRead&&u.searchParams.get('module')==='KITCHEN_MASTER'||failAssetRead&&u.searchParams.get('module')==='ASSET_MASTER')?{ok:false,error:'fixture register unavailable'}:{ok:true,found:key in db,data:db[key]??null};return r.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(data)+')'});});
 const p=await ctx.newPage();
 async function checkHandoff(page,desktop=true){
  const bot=page.locator('#kitchenNextGuide #bobsCompanion');assert(await bot.isVisible());assert.equal(await bot.evaluate(el=>getComputedStyle(el).position),'static');
@@ -154,6 +154,31 @@ await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.fill(
 failRegisterRead=true;await p.reload();await p.waitForFunction(()=>!document.getElementById('kitchenRetry').hidden);assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#saveKitchen').isDisabled());failRegisterRead=false;
 // Inventory loads saved assets, preserves ownership/financials and saves unknown/estimated values honestly.
 db['COMPANY/KITCHEN_MASTER/default']=clone(register);
+// Empty inventory, saved viewer, name resolution, truthful review status and no-write reads.
+await p.goto('https://bobs.test/kitchen-equipment.html?'+new URLSearchParams({outlet:id,returnTo:kitchenUrl}));
+await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
+assert.match(await p.locator('#equipmentInventorySummary').innerText(),/No equipment has been added for Elimedu kitchen yet/);
+await p.waitForFunction(()=>document.getElementById('bobsGuideDialogue')?.textContent.includes('No equipment recorded'));
+assert.equal(await p.locator('[data-equipment]').count(),0);
+const recordPage=await ctx.newPage(),recordUrl='https://bobs.test/google-records.html?'+new URLSearchParams({outlet:id,module:'ASSET_MASTER',returnTo:p.url()}),readWrites=writes.length;
+await recordPage.goto(recordUrl);await recordPage.waitForFunction(()=>!document.getElementById('retry').disabled);
+assert.match(await recordPage.locator('#description').innerText(),/Elimedu kitchen/);assert.match(await recordPage.locator('#equipmentList').innerText(),/No equipment has been added/);assert.equal(writes.length,readWrites);
+const recordFixture={inventoryReviewed:true,inventorySavedAt:'2026-10-30T01:00:00Z',reviewed:false,assets:[{id:'test',name:'Test steamer',ownedQty:2,capacityFacts:{status:'estimate',value:120,unit:'pieces',basis:'Idli per cycle'}},{id:'unknown',name:'Wet grinder',quantity:9}]};
+db[id+'/ASSET_MASTER/default']=clone(recordFixture);
+await recordPage.click('#retry');await recordPage.waitForFunction(()=>!document.getElementById('retry').disabled);
+assert.match(await recordPage.locator('#summary').innerText(),/Equipment inventory review\s+Marked reviewed/);
+assert.match(await recordPage.locator('#summary').innerText(),/Asset costing review\s+Pending/);
+assert.equal(await recordPage.locator('#equipmentList tbody tr').count(),2);
+assert.match(await recordPage.locator('#equipmentList tbody tr').first().innerText(),/Test steamer\s+2\s+120 pieces/);
+assert.match(await recordPage.locator('#equipmentList tbody tr').last().innerText(),/Wet grinder\s+Not recorded/);
+assert.match(await recordPage.locator('#recordGuide').innerText(),/Return to review existing equipment/);
+assert.deepEqual(db[id+'/ASSET_MASTER/default'],recordFixture);assert.equal(writes.length,readWrites);
+await recordPage.setViewportSize({width:390,height:844});assert(await recordPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+failRegisterRead=true;await recordPage.click('#retry');await recordPage.waitForFunction(()=>!document.getElementById('retry').disabled);
+assert.match(await recordPage.locator('#description').innerText(),/name could not be verified/);assert.equal(await recordPage.locator('#equipmentList tbody tr').count(),2);failRegisterRead=false;
+failAssetRead=true;await recordPage.click('#retry');await recordPage.waitForFunction(()=>!document.getElementById('retry').disabled);
+assert.match(await recordPage.locator('#status').innerText(),/Could not verify/);assert.equal(await recordPage.locator('#equipmentList').innerText(),'');assert.doesNotMatch(await recordPage.locator('#recordGuide').innerText(),/No equipment has been added/);assert.equal(writes.length,readWrites);failAssetRead=false;
+await recordPage.close();
 const old={reviewed:true,assets:[{id:'S',name:'Old steamer',quantity:2,ownedQty:1,unitCost:30000,residual:1000,usefulYears:10,annualDays:300,costConfirmed:true,uses:{Idli:100},custom:'preserve'}]};db[id+'/ASSET_MASTER/default']=clone(old);writes.length=0;
 await p.goto('https://bobs.test/kitchen-equipment.html?'+new URLSearchParams({outlet:id,returnTo:kitchenUrl}));await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
 assert.equal(await p.locator('header a').evaluate(el=>getComputedStyle(el).color),'rgb(255, 243, 208)');assert.equal(writes.length,0);assert.equal(await p.locator('[data-field=status]').inputValue(),'unknown');assert.equal(await p.locator('[data-field=value]').inputValue(),'');
@@ -212,15 +237,15 @@ assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p
 await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isVisible());
 await p.locator('#bobsFlowGuide button').first().click();assert.equal(await p.evaluate(()=>document.activeElement.id),'equipmentReviewed');
 const companionWrites=writes.length;
-await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
-await p.getByText('What are you trying to do?',{exact:true}).waitFor();
+if(!await p.locator('#bobsCompanion').isVisible())await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
+assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Elimedu kitchen — existing equipment/);
 await p.waitForFunction(()=>!window.BOBS_ROADMAP.getState().busy);
 await p.getByText('Saved progress and connected modules',{exact:true}).click();
 await p.getByText('Connected planning board',{exact:true}).click();
 assert.match(await p.locator('#bobsCompanion').innerText(),/Connected planning board/);
 assert.match(await p.locator('#bobsCompanion').innerText(),/Workforce selection/);
 assert.equal(new URL(await p.getByRole('link',{name:'Open Asset Master →',exact:true}).getAttribute('href')).searchParams.get('outlet'),id);
-assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight}));
+assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&getComputedStyle(x).position==='static'}));
 await p.locator('#bobsCompanion').screenshot({path:path.join(require('os').tmpdir(),'bobs-connected-guide-mobile.png')});
 await p.getByRole('button',{name:'Minimise',exact:true}).click();assert(!(await p.locator('#bobsCompanion').isVisible()));assert.equal(writes.length,companionWrites);
 await p.evaluate(()=>scrollTo(0,0));console.log('BOBS_FLOW_PREVIEW:'+(await p.screenshot({type:'jpeg',quality:65})).toString('base64'));

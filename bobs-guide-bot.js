@@ -17,7 +17,7 @@ function mount(host,options){
  let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
- function snapshot(){const s=options.snapshot();return {...s,recipeHelp:root.BOBS_RECIPE_GUIDE?.snapshot(),production:adapter()?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
+ function snapshot(){const s=options.snapshot();return {...s,recipeHelp:root.BOBS_RECIPE_GUIDE?.snapshot(),production:adapter()?.snapshot(),equipmentHelp:root.BOBS_EQUIPMENT_GUIDE?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
  function restore(s){
   const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
   if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
@@ -208,6 +208,16 @@ function mount(host,options){
    }
 
    case 'page-task':{
+    if(s.equipmentHelp){const h=s.equipmentHelp,work=(label,id)=>button(label,'inventory-'+id,()=>{options.work();root.BOBS_EQUIPMENT_GUIDE.focus(id);});
+     ask(h.stage==='empty'?'No equipment recorded for '+h.name:h.stage==='saved'?'Equipment saved — choose your next step':h.name+' — existing equipment');
+     if(h.stage==='loading')host.append(el('p','Reading the saved equipment. Wait for the result before adding anything.'));
+     else if(h.stage==='load-error'){host.append(el('p','The equipment could not be loaded. This does not mean the inventory is empty.'));choices(work('Show Retry Google load','equipmentRetry'));}
+     else if(h.stage==='saving')host.append(el('p','Saving and verifying in Google. Keep this page open.'));
+     else if(h.stage==='saved'){host.append(el('p','✓ Inventory saved and verified. Next, review outlet expenses and mandatory staff. Capacity and costing will be assessed against the menu later.'));choices(work('Show Continue to outlet expenses','equipmentContinue'));}
+     else if(h.stage==='empty'){host.append(el('p','No equipment has been added here yet. Start with the food you produce, then identify the machines you already own. This does not mean your kitchen has no machines.'));choices(button('Help me identify my existing equipment →','inventory-help',()=>{options.minimise();document.getElementById('openEquipmentHelp').click();}));}
+     else{host.append(el('p',h.stage==='draft'?'Your equipment changes are not saved. Check each machine name, existing units and capacity status. Unknown capacity can stay pending.':'There are '+h.count+' equipment entries. Review existing units and capacity status. Estimates are different from confirmed measurements.'));choices(work('Review equipment entries','equipmentRows'),work('Show inventory confirmation and Save','equipmentReviewed'));}
+     host.append(el('small',h.message||''));break;
+    }
     if(s.itemHelp){const help=s.itemHelp;if(help.notice)host.append(el('p',help.notice,'guide-confirmed'));ask(help.title);host.append(el('p',help.instruction));
      if(help.href){const u=new URL(help.href,location.href);if(u.origin!==location.origin)throw Error('Planner link must stay within BOBS.');u.searchParams.set('guide','continue');const a=el('a',help.action,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';a.dataset.guideChoice='item-open-production';host.append(a);}
      else choices(button(help.action,'item-next-control',()=>{options.work();root.BOBS_ITEM_GUIDE.focus();}));break;}

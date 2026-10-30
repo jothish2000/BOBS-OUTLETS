@@ -142,7 +142,7 @@ function companionRender(){
 }
 function companionBoot(){
  const interactivePage=['method2-item.html','production-plan.html','recipe-cost-editor.html'].includes(context().page);
- const journeyKey='bobs-guide-journey-v1',entry=new URLSearchParams(location.search).get('guide');let journey=interactivePage||context().page==='index.html'||entry==='start'||entry==='continue';
+ const journeyKey='bobs-guide-journey-v1',entry=new URLSearchParams(location.search).get('guide');let journey=interactivePage||context().page==='kitchen-equipment.html'||context().page==='index.html'||entry==='start'||entry==='continue';
  try{journey=journey||sessionStorage.getItem(journeyKey)==='active';if(journey)sessionStorage.setItem(journeyKey,'active');}catch(_){}
  // Follow real page navigation, including child editors. This flag stores guidance only.
  document.addEventListener('click',e=>{const a=e.target.closest?.('a[href]');if(!journey||!a||a.download||a.getAttribute('href').startsWith('#'))return;const u=new URL(a.href,location.href);if(u.origin===location.origin&&u.pathname.startsWith(new URL('.',location.href).pathname)&&u.pathname.endsWith('.html')&&!u.searchParams.has('guide')){u.searchParams.set('guide','continue');a.href=u.href;}});
@@ -163,7 +163,7 @@ function companionBoot(){
  companion.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeCompanion()}});
  document.body.append(companionToggle,companion);
  if(context().page==='recipe-cost-editor.html'&&!document.getElementById('recipeCompanionGuide')){const slot=el('div');slot.id='recipeCompanionGuide';const main=document.querySelector('main');if(main)main.before(slot);else document.body.prepend(slot);}
- const methodSlot=document.getElementById('recipeCompanionGuide')||document.getElementById('methodFlowGuide')||document.getElementById('itemCompanionGuide')||document.getElementById('productionCompanionGuide');if(methodSlot){methodSlot.append(companion);companion.classList.add('method-flow-inline');}if(interactivePage)companion.classList.add('interactive-guide');
+ const methodSlot=document.getElementById('equipmentCompanionGuide')||document.getElementById('recipeCompanionGuide')||document.getElementById('methodFlowGuide')||document.getElementById('itemCompanionGuide')||document.getElementById('productionCompanionGuide');if(methodSlot){methodSlot.append(companion);companion.classList.add('method-flow-inline');}if(interactivePage)companion.classList.add('interactive-guide');
  companionRender();
  const guideSnapshot=()=>{
   const pageGuide=document.getElementById('bobsFlowGuide');
@@ -171,7 +171,7 @@ function companionBoot(){
   return {methodFlow:window.BOBS_METHOD_FLOW_GUIDE?.snapshot(),itemHelp:window.BOBS_ITEM_GUIDE?.snapshot(),ctx:{...ctx,outlet:id},pageHelp:pageGuide?{title:pageGuide.querySelector('h2')?.textContent,instruction:pageGuide.querySelector('p')?.textContent,next:pageGuide.querySelector('.flow-guide-next')?.textContent,steps:[...pageGuide.querySelectorAll('[data-guide-step]')].map(el=>el.textContent),anchor:pageGuide.dataset.guideAnchor}:null,loading:busy,dirty:draftDirty,progress:{...progress},savedChecklist:{owner:id||'',name:common?.outlets?.value?.find(x=>String(x.id)===String(id))?.name||common?.kitchens?.value?.kitchens?.find(x=>x.id===id)?.name||'',stages:view?.stages||view?.steps||[]},next:progress.status==='error'?null:view?.next,readError:progress.status==='error'||row?.method2?.status==='error'||common?.outlets?.status==='error',
    items:tools&&row?.method2?.status==='ok'?BOBS_OUTLET_FLOW.selected(M2.state(row.method2.value),ITEM_DATA,M2):[],kitchens:common?.kitchens?.value?.kitchens||[]};
  };
- const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{await script('bobs-guide-bot.js?v=serving-return-20261029',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
+ const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{await script('bobs-guide-bot.js?v=inventory-clarity-20261030',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
  let autoStarted=false;
  const startJourney=()=>{if(!journey||autoStarted||document.getElementById('savedModal')?.classList.contains('hidden')===false)return;autoStarted=true;if(!companionOpen)companionToggle.click();};
  // The outlet's saved-data choice is the first guide question; hand off only after the user answers it.
