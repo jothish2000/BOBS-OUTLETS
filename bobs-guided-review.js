@@ -14,6 +14,7 @@ function scope(n){
  return (selectors[n.id]&&doc.querySelector(selectors[n.id]))||n.closest('[data-process],[data-capacity],.planning-component,dialog,section,article,fieldset,form')||doc.querySelector('main')||doc.body;
 }
 function targets(n){
+ if(['salaryEligibility','salaryReviewed'].includes(n.id)&&doc.getElementById('salaryTotals'))return ['#salaryThp','#consolidated','#salaryEarnings','#salaryDeductions','#salaryEmployer',...(n.id==='salaryReviewed'?['#salaryTotals']:[])].map(s=>doc.querySelector(s)).filter(visible);
  if(n.dataset.field==='costConfirmed'){const asset=n.closest('[data-asset]');if(asset)return [...asset.querySelectorAll('[data-field]')].filter(x=>['quantity','ownedQty','unitCost','residual','usefulYears','annualDays'].includes(x.dataset.field)&&visible(x));}
  const bulk=!!doc.querySelector('#productionEditor[data-portion-basis]');
  const explicit=n.id==='referenceWeightReviewed'?['#referenceYield',...(bulk?[]:['#referencePortion'])]:n.id==='intendedWeightReviewed'?['#targetQty',...(bulk?['#portionHelp']:['#portion',...(doc.querySelector('#portion')?.value==='custom'?['#customPortion']:[])])]:n.id==='confirmed'&&doc.getElementById('productionEditor')?['#productionRows','#energyRows','#targetQty']:null;
@@ -22,7 +23,7 @@ function targets(n){
  // Empty inventories and read-only report confirmations still have a concrete section to inspect.
  return list.length?list:[s];
 }
-function value(n){if(n.matches('input[type=checkbox],input[type=radio]'))return n.checked?'Yes':'No';if(n.tagName==='SELECT')return n.selectedOptions?.[0]?.textContent||'No selection';if(n.matches(controls))return n.value||'Not entered';const copy=n.cloneNode(true);copy.querySelectorAll('[data-review-ui]').forEach(x=>x.remove());return clean(copy.textContent).slice(0,500)||'No entries recorded';}
+function value(n){if(n.matches('input[type=checkbox],input[type=radio]'))return n.checked?'Yes':'No';if(n.tagName==='SELECT')return n.selectedOptions?.[0]?.textContent||'No selection';if(n.matches(controls))return n.value||'Not entered';const copy=n.cloneNode(true);copy.querySelectorAll('[data-review-ui],[role=status],button').forEach(x=>x.remove());return clean(copy.textContent).slice(0,500)||'No entries recorded';}
 function signature(n){return JSON.stringify(targets(n).map(t=>[t.id,t.name,t.dataset.field,value(t)]));}
 function announce(){root.dispatchEvent(new Event('bobs-review-context'));}
 function entry(n){let e=entries.get(n);if(!e){e={node:n,signature:signature(n),confirmed:new Set(),authorised:false,method:'',changed:false};entries.set(n,e);}return e;}
