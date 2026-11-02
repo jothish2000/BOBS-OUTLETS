@@ -35,7 +35,7 @@ function install(){
  }
  const equipment=$('capacityReferences');if(equipment&&!$('openEquipmentReferences')){const b=d.createElement('button');b.type='button';b.id='openEquipmentReferences';b.className='bobs-reference-launch';b.textContent='Review equipment references and sources';b.onclick=()=>show('equipment');equipment.before(b);equipment.hidden=true;}
 }
-root.BOBS_REFERENCE={show,ensure,reviewed:done};
+root.BOBS_REFERENCE={show,ensure,reviewed:done,needs(n){const key=keyFor(n);return !!key&&!done(key);}};
 new MutationObserver(records=>{if(records.every(r=>dialog.contains(r.target)))return;install();}).observe(d.body,{subtree:true,childList:true});
 install();
 })(window);
