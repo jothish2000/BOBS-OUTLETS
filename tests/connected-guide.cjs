@@ -199,19 +199,18 @@ test('shared checklist keeps saved ticks separate from draft and leaves action b
  assert.equal(host.querySelectorAll('.guide-checklist').length,1);
  const action=host.querySelector('button');state.dirty=true;
  w.document.getElementById('amount').dispatchEvent(new w.Event('input',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
- assert.equal(host.querySelector('button'),action);assert(action.isConnected);assert.match(host.textContent,/Save pending: your current changes/);
+ assert.equal(host.querySelector('button'),action);assert(action.isConnected);assert.match(host.textContent,/saved checklist below does not include unsaved edits/);
  state.readError=true;bot.update();assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);assert.match(host.textContent,/could not be verified/);
  }finally{w.close()}
 });
-test('recipe review ticks are draft checkpoints and update without claiming a saved recipe',async()=>{
- const dom=new JSDOM('<section id="productionEditor"><input id="referenceWeightReviewed" type="checkbox"><input id="intendedWeightReviewed" type="checkbox"><input id="confirmed" type="checkbox" aria-disabled="true"></section><div id="guide"></div>',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1&item=Idli'}),w=dom.window;
- try{w.HTMLElement.prototype.scrollIntoView=function(){};w.eval(source('bobs-guide-bot.js'));
+test('recipe review ticks identify actual current confirmations separately from saved progress',async()=>{
+ const dom=new JSDOM('<label><input id="referenceWeightReviewed" type="checkbox">I checked reference output</label><label><input id="intendedWeightReviewed" type="checkbox">I checked required quantity</label><aside id="bobsCompanion"><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1&item=Idli'}),w=dom.window;
+ try{w.HTMLElement.prototype.scrollIntoView=function(){};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-guide-bot.js'));
  const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{page:'recipe-cost-editor.html',outlet:'1'},progress:{status:'idle'},pageHelp:{}}),minimise(){},refresh(){},journey:true});
- assert.match(host.textContent,/Next: Review reference portion weight/);
  w.document.getElementById('referenceWeightReviewed').checked=true;
  w.document.getElementById('referenceWeightReviewed').dispatchEvent(new w.Event('change',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
- assert.match(host.textContent,/Reviewed — save pending: Review reference portion weight/);assert.match(host.textContent,/Next: Review intended portion weight/);
- assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);
+ assert.match(host.textContent,/Confirmation ticked: I checked reference output/);assert.match(host.textContent,/Confirm: I checked required quantity/);
+ assert.match(host.textContent,/Saving to Google is a separate action/);
  }finally{w.close()}
 });
 
