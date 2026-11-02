@@ -14,6 +14,7 @@ function scope(n){
  return (selectors[n.id]&&doc.querySelector(selectors[n.id]))||n.closest('[data-process],[data-capacity],.planning-component,dialog,section,article,fieldset,form')||doc.querySelector('main')||doc.body;
 }
 function targets(n){
+ if(n.dataset.field==='costConfirmed'){const asset=n.closest('[data-asset]');if(asset)return [...asset.querySelectorAll('[data-field]')].filter(x=>['quantity','ownedQty','unitCost','residual','usefulYears','annualDays'].includes(x.dataset.field)&&visible(x));}
  const bulk=!!doc.querySelector('#productionEditor[data-portion-basis]');
  const explicit=n.id==='referenceWeightReviewed'?['#referenceYield',...(bulk?[]:['#referencePortion'])]:n.id==='intendedWeightReviewed'?['#targetQty',...(bulk?['#portionHelp']:['#portion',...(doc.querySelector('#portion')?.value==='custom'?['#customPortion']:[])])]:n.id==='confirmed'&&doc.getElementById('productionEditor')?['#productionRows','#energyRows','#targetQty']:null;
  if(explicit)return explicit.map(s=>doc.querySelector(s)).filter(visible);
