@@ -28,6 +28,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
   await p.check('[data-review-shortcut]');await p.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();assert(await p.isChecked('#'+id));
   await p.fill('#amount','101');assert.equal(await p.isChecked('#'+id),false,id+' review invalidated after input edit');
  }
+ // A review inside an equipment dialog must inspect that dialog, not the page behind it.
+ await p.evaluate(()=>{document.querySelector('main').innerHTML='<label>Outside quantity<input id="outside" value="360"></label><dialog id="equipmentTest"><label>Usable capacity<input id="machineAmount" value="120"></label><label><input type="checkbox" id="machineBasis">I checked the equipment capacity.</label></dialog>';document.getElementById('equipmentTest').showModal();});
+ await p.click('#machineBasis');await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();assert.equal(await p.evaluate(()=>document.activeElement.id),'machineAmount');
+ await p.getByRole('button',{name:'I have checked this input — next',exact:true}).click();await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#machineBasis'));await p.evaluate(()=>document.getElementById('equipmentTest').close());
  // Selection checkboxes are business choices, not review gates.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<label><input type="checkbox" id="includeSide">Include sambar</label>';});
  await p.check('#includeSide');assert(await p.isChecked('#includeSide'));
