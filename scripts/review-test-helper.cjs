@@ -6,6 +6,7 @@ module.exports=async function review(locator){
  if(!eligible)return locator.check();
  if(await locator.isChecked())return;
  await locator.evaluate(n=>window.BOBS_REVIEW.request(n));
+ if(await page.locator('#bobsReferenceDialog[open]').count()){await page.check('#bobsReferenceAcknowledged');await page.click('#bobsReferenceContinue');}
  const panel=page.locator('[data-review-ui=choices]');
  await panel.locator('[data-review-shortcut]').check();
  await panel.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();
