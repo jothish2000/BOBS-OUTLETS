@@ -4,7 +4,7 @@ const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r))
 test('opening the index itself welcomes the user automatically with the real setup entry',async()=>{
  for(const url of ['https://bobs.test/index.html','https://bobs.test/']){
  const dom=new JSDOM('<main>BOBS</main>',{runScripts:'outside-only',url}),w=dom.window;
- try{w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+ try{w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
   assert.equal(w.document.getElementById('bobsCompanion').hidden,false);assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Welcome to BOBS/);const a=[...w.document.querySelectorAll('#bobsGuideDialogue a')].find(a=>a.textContent==='Start here — guided outlet setup →');assert.equal(new URL(a.href).pathname,'/outlets.html');assert.equal(new URL(a.href).searchParams.get('guide'),'start');assert.equal(a.target,'_self');
  }finally{w.close()}
  }
@@ -13,7 +13,7 @@ test('index starts the guided journey; outlet choice hands off once and minimisi
  assert.match(source('index.html'),/href="outlets.html\?guide=start"/);
  const dom=new JSDOM('<div id="savedModal"><button>Choose saved work</button></div><input id="count" value="2"><div id="cards"><input class="name"></div><input type="checkbox" id="outletsReviewed">',{runScripts:'outside-only',url:'https://bobs.test/outlets.html?guide=start'}),w=dom.window;
  try{
- w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+ w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
  const panel=w.document.getElementById('bobsCompanion');assert(panel.hidden,'Saved-data choice stays foremost');assert.equal(w.sessionStorage.getItem('bobs-guide-journey-v1'),'active');
  w.document.getElementById('savedModal').classList.add('hidden');w.dispatchEvent(new w.Event('bobs-outlet-choice'));await settle();
  assert(!panel.hidden);assert.match(panel.textContent,/How many outlets/);w.document.querySelector('[data-guide-choice=outlet-count]').click();assert(panel.hidden);assert.equal(w.document.activeElement.id,'count');
@@ -36,7 +36,7 @@ test('companion follows the owner, displays real pending requirements, and never
  for(const p of ['shared_data.js','method2-core.js','bobs-cost-flow.js','idli-support-core.js','bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-production-plan-core.js','bobs-capital-core.js','bobs-outlet-report.js','bobs-roadmap-core.js','bobs-kitchen-core.js','bobs-roadmap-outlet-flow.js'])w.eval(source(p));
  w.BOBS_CONFIG={DATA_VAULT_WEB_APP_URL:'https://fixture.invalid'};w.BOBS_VERIFIED={save(){writes++}};w.BOBS_RECIPE_KNOWLEDGE={};w.BOBS_OPERATIONAL_RECIPES={};w.BOBS_KITCHENS={isKitchen:()=>false};
  w.BOBS_DATA={jsonp:async p=>p.action==='outletList'?{ok:true,outlets:[{outletId:'1',outletName:'Trial',data:{shiftTimes:[{start:'06:00',end:'14:00'}]}}]}:{ok:true,found:false}};
- w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+ w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
  const button=w.document.getElementById('bobsCompanionToggle'),panel=w.document.getElementById('bobsCompanion');assert(!panel.hidden,'Planner guide opens on entry');await settle();assert.match(panel.textContent,/Next: Outlet count/);assert.match(panel.textContent,/Working capital/);assert.match(panel.textContent,/Ideal Price Builder/);
  assert.match(panel.textContent,/Loading your production plan/);
  const assets=[...panel.querySelectorAll('a')].find(a=>a.textContent==='Open Asset Master →');assert.equal(new URL(assets.href).searchParams.get('outlet'),'1');
@@ -66,7 +66,7 @@ test('verified kitchen handoff opens inline, explains actual options, and clears
  const dom=new JSDOM('<div id="nextAction"><div id="kitchenNextGuide"></div><input id="kitchenNext-equipment" type="radio" name="kitchenNextChoice"><input id="kitchenNext-baseline" type="radio" name="kitchenNextChoice"><button id="kitchenNextGo" disabled>Choose first</button></div>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations&outlet=1'}),w=dom.window;let verified=false;
  try{
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified,outlets:[]})};
-  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
   const next=w.document.getElementById('nextAction'),guide=w.document.getElementById('bobsCompanion'),first=w.document.getElementById('kitchenNext-equipment');
   next.dataset.guideRequested='true';w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));assert(guide.hidden,'Unverified state cannot announce success');
   verified=true;first.focus();w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));
@@ -82,7 +82,7 @@ test('handoff requested before guide loads is retained, and zero kitchens offers
  const dom=new JSDOM('<div id="nextAction" data-guide-requested="true"><div id="kitchenNextGuide"></div><input id="kitchenNext-baseline" type="radio" name="kitchenNextChoice"><button id="kitchenNextGo" disabled></button></div>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations'}),w=dom.window;
  try{
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified:true,outlets:[]})};
-  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
   const guide=w.document.getElementById('bobsCompanion');assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
   const text=w.document.getElementById('bobsGuideDialogue').textContent;assert.match(text,/Next required: review outlet expenses/);assert.doesNotMatch(text,/Optional now/);
   guide.querySelector('button').click();assert(guide.hidden);assert(!w.document.getElementById('bobsCompanionToggle').hidden);
@@ -94,7 +94,7 @@ test('menu selection guide names the real save, mode and item-editor controls wi
  const dom=new JSDOM('<main><input type="checkbox" id="selectedItem" checked><button id="saveReturn">Save selection & return to Method 2</button></main>',{runScripts:'outside-only',url:'https://bobs.test/method2-select.html?outlet=1&cat=Breakfast+Catalogue&guide=continue'}),w=dom.window;let saves=0;
  try{
   w.document.getElementById('saveReturn').onclick=()=>saves++;
-  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+  w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
   const steps=[...w.document.querySelectorAll('#bobsGuideDialogue ol li')].map(el=>el.textContent);
   assert.equal(steps.length,4);assert.match(steps[1],/bottom.*Save selection & return to Method 2/);assert.match(steps[2],/Mode column/);assert.match(steps[3],/Edit item ↗/);
   assert.equal(w.document.getElementById('selectedItem').checked,true);assert.equal(saves,0);assert.doesNotMatch(w.document.getElementById('bobsGuideDialogue').textContent,/After this: Item quantities/);
@@ -126,7 +126,7 @@ test('item guide follows capacity, saved next requirement, verified recipe retur
  w.HTMLElement.prototype.scrollIntoView=function(){};w.document.querySelectorAll('a,button').forEach(x=>x.onclick=e=>{e.preventDefault();clicks++});w.addEventListener('bobs-guide-context',()=>events++);
  w.eval(source('bobs-item-guide.js'));w.eval(source('bobs-guide-bot.js'));
  const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'method2-item.html',outlet:'1'},itemHelp:w.BOBS_ITEM_GUIDE.snapshot()}),minimise(){},refresh(){}});
- let state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/Idli.*production capacity/);
+ let state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/Idli.*quantity, recipes, equipment/);
  const direct=w.document.querySelector('[data-guide-choice=item-open-production]');assert.equal(direct.tagName,'A');assert.match(direct.textContent,/Open Idli production planner/);assert.equal(new URL(direct.href).pathname,'/production-plan.html');assert.equal(new URL(direct.href).searchParams.get('guide'),'continue');assert.equal(direct.target,'_blank');assert.equal(clicks,0);
  const full=w.document.getElementById('idliLabourCost');
  full.dataset.productionReady='true';full.innerHTML='<p class="flow-current"><a href="outlet-plan.html?stage=workforce">Next: review combined menu workforce and riders →</a></p>';await settle();bot.update();
@@ -169,7 +169,7 @@ test('saved-progress scan times out, retries, rejects late results and preserves
  for(const p of ['shared_data.js','method2-core.js','bobs-cost-flow.js','idli-support-core.js','bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-production-plan-core.js','bobs-capital-core.js','bobs-outlet-report.js','bobs-roadmap-core.js','bobs-kitchen-core.js','bobs-roadmap-outlet-flow.js'])w.eval(source(p));
  w.BOBS_CONFIG={DATA_VAULT_WEB_APP_URL:'https://fixture.invalid'};w.BOBS_VERIFIED={save(){writes++}};w.BOBS_RECIPE_KNOWLEDGE={};w.BOBS_OPERATIONAL_RECIPES={};w.BOBS_KITCHENS={isKitchen:()=>false};
  w.BOBS_DATA={saveModule(){writes++},jsonp:async p=>{if(p.action==='outletList'){if(mode==='hang')return blocked;if(mode==='fail')throw Error('fixture read failure');return {ok:true,outlets:[{outletId:'1',outletName:'Current saved outlet',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}}return {ok:true,found:false}}};
- w.eval(source('bobs-guide-bot.js'));w.eval(source('bobs-roadmap.js'));await settle();
+ w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
  const draft=w.document.getElementById('draft');draft.value='17000';draft.dispatchEvent(new w.Event('input',{bubbles:true}));const progressButton=w.document.querySelector('[data-guide-choice=page-progress]');draft.dispatchEvent(new w.Event('change',{bubbles:true}));assert(progressButton.isConnected,'Blur must not replace the guide button before click');progressButton.click();await settle();
  assert(w.BOBS_ROADMAP.getState().busy);const slow=[...timers.values()].filter(t=>t.ms===12000).at(-1);slow.fn();assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/taking longer/);
  const timeout=[...timers.values()].filter(t=>t.ms===45000).at(-1);timeout.fn();await settle();assert.equal(w.BOBS_ROADMAP.getState().busy,false);assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Retry saved-progress/);
@@ -199,19 +199,18 @@ test('shared checklist keeps saved ticks separate from draft and leaves action b
  assert.equal(host.querySelectorAll('.guide-checklist').length,1);
  const action=host.querySelector('button');state.dirty=true;
  w.document.getElementById('amount').dispatchEvent(new w.Event('input',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
- assert.equal(host.querySelector('button'),action);assert(action.isConnected);assert.match(host.textContent,/Save pending: your current changes/);
+ assert.equal(host.querySelector('button'),action);assert(action.isConnected);assert.match(host.textContent,/saved checklist below does not include unsaved edits/);
  state.readError=true;bot.update();assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);assert.match(host.textContent,/could not be verified/);
  }finally{w.close()}
 });
-test('recipe review ticks are draft checkpoints and update without claiming a saved recipe',async()=>{
- const dom=new JSDOM('<section id="productionEditor"><input id="referenceWeightReviewed" type="checkbox"><input id="intendedWeightReviewed" type="checkbox"><input id="confirmed" type="checkbox" aria-disabled="true"></section><div id="guide"></div>',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1&item=Idli'}),w=dom.window;
- try{w.HTMLElement.prototype.scrollIntoView=function(){};w.eval(source('bobs-guide-bot.js'));
+test('recipe review ticks identify actual current confirmations separately from saved progress',async()=>{
+ const dom=new JSDOM('<label><input id="referenceWeightReviewed" type="checkbox">I checked reference output</label><label><input id="intendedWeightReviewed" type="checkbox">I checked required quantity</label><aside id="bobsCompanion"><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/recipe-cost-editor.html?outlet=1&item=Idli'}),w=dom.window;
+ try{w.HTMLElement.prototype.scrollIntoView=function(){};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-guide-bot.js'));
  const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{page:'recipe-cost-editor.html',outlet:'1'},progress:{status:'idle'},pageHelp:{}}),minimise(){},refresh(){},journey:true});
- assert.match(host.textContent,/Next: Review reference portion weight/);
  w.document.getElementById('referenceWeightReviewed').checked=true;
  w.document.getElementById('referenceWeightReviewed').dispatchEvent(new w.Event('change',{bubbles:true}));await new Promise(r=>setTimeout(r,10));
- assert.match(host.textContent,/Reviewed — save pending: Review reference portion weight/);assert.match(host.textContent,/Next: Review intended portion weight/);
- assert.equal(host.querySelectorAll('.guide-checklist-done').length,0);
+ assert.match(host.textContent,/Confirmation ticked: I checked reference output/);assert.match(host.textContent,/Confirm: I checked required quantity/);
+ assert.match(host.textContent,/Saving to Google is a separate action/);
  }finally{w.close()}
 });
 

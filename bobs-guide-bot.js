@@ -54,11 +54,11 @@ function mount(host,options){
  function item(s){return s.items?.find(x=>x.key===state.itemKey)||s.items?.find(x=>x.cat===s.ctx.cat&&String(x.i)===String(s.ctx.index))||s.items?.[0];}
  function productionRoute(s,label){const x=item(s);return route('production-plan.html',label,x?{cat:x.cat,i:x.i}:{});}
  function input(label,name,type,value){const l=el('label',label),i=el('input');i.id='bobsGuide-'+name;i.type=type;i.value=draft[name]??value??'';if(type==='number'){i.min='0.001';i.step='any';}i.oninput=()=>{draft[name]=i.value;};l.append(i);return l;}
- function focus(id){options.minimise();adapter()?.focus(id);}
- function pageFocus(selector){const target=document.querySelector(selector);if(!target)throw Error('This control is not ready yet. Wait for the page to load, or use its Retry button.');options.minimise();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
+ function focus(id){if(root.BOBS_REVIEW?.request('#'+id))return;options.minimise();adapter()?.focus(id);}
+ function pageFocus(selector){if(root.BOBS_REVIEW?.request(selector))return;const target=document.querySelector(selector);if(!target)throw Error('This control is not ready yet. Wait for the page to load, or use its Retry button.');options.minimise();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
  function needProduction(s){
   if(s.ctx.page==='recipe-cost-editor.html'&&s.recipeHelp){
-   const h=s.recipeHelp,a=root.BOBS_RECIPE_GUIDE,focus=(label,id)=>button(label,'recipe-step-'+id,()=>{options.work();a.focus(id);});
+   const h=s.recipeHelp,a=root.BOBS_RECIPE_GUIDE,focus=(label,id)=>button(label,'recipe-step-'+id,()=>{if(root.BOBS_REVIEW?.request('#'+id))return;options.work();a.focus(id);});
    host.append(el('p','You are reviewing a recipe.','guide-question'));
    if(h.stage==='loading'){host.append(el('p','Loading '+h.name+' — wait for the saved reference.'));return true;}
    host.append(el('p',h.name+' · one reference batch produces '+h.referenceYield+' '+h.unit+' · your required total '+h.target+' '+h.unit));
@@ -95,33 +95,38 @@ function mount(host,options){
   const opened=box?.querySelector('details')?.open;
   if(!box){box=el('section',undefined,'guide-checklist');box.setAttribute('aria-label','Your progress checklist');host.append(box);}
   box.replaceChildren();
-  const m=checklistModel(s);
-  box.append(el('strong','Your saved progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
-  if(m.message)box.append(el('p',m.message));
-  if(m.dirty)box.append(el('p','Save pending: your current changes are not included in these ticks. Ticks below describe the last verified saved version.','guide-checklist-draft'));
-  const checks=[];
-  if(s.ctx.page==='recipe-cost-editor.html'&&document.getElementById('productionEditor')){
-   const confirmation=document.getElementById('confirmed');
-   if(confirmation&&confirmation!==recipeWatched){recipeWatch?.disconnect();recipeWatched=confirmation;recipeWatch=new MutationObserver(()=>renderChecklist(snapshot()));recipeWatch.observe(confirmation,{attributes:true,attributeFilter:['aria-disabled']});}
-   const checked=id=>!!document.getElementById(id)?.checked;
-   const volume=document.getElementById('productionEditor').dataset.portionBasis==='volume';
-   checks.push([volume?'Review reference batch output':'Review reference portion weight',checked('referenceWeightReviewed')],[volume?'Review required total and serving amount':'Review intended portion weight',checked('intendedWeightReviewed')],
-    ['Calculate quantities from reference',document.getElementById('confirmed')?.getAttribute('aria-disabled')==='false'],
-    ['Review ingredient rates and energy',checked('confirmed')]);
-  }
+  const m=checklistModel(s),local=root.BOBS_REVIEW?.snapshot();
+  box.append(el('strong','Your actions on this page'));
+  box.append(el('p','A green tick below means you confirmed that specific review or choice. Saving to Google is a separate action.'));
+  const localList=el('ol',undefined,'guide-checklist-local');
+  const add=(title,done,selector,detail)=>{const li=el('li',undefined,done?'guide-checklist-done':'guide-checklist-next');li.append(el('span',(done?'✓ ':'○ ')+title));if(detail)li.append(el('small',detail));if(selector)li.append(button('Review these inputs','review-inputs-'+localList.children.length,()=>pageFocus(selector)));localList.append(li);};
   if(s.production?.ready){
-   const p=s.production,steps=[['quantity','Quantity and ready-by time'],...(p.extraSides?.needed?[['extra-sides','Optional 5% extra sides — Yes / No']]:[]),['recipes','Recipes and sides'],['equipment','Equipment capacity'],['timing','Process timings'],['assessment','Capacity assessment'],['delivery','Delivery choice'],['save','Save plan']];
-   const at=p.journey?.stage==='saved'?steps.length:steps.findIndex(x=>x[0]===p.journey?.stage);
-   for(const [i,[stage,title]]of steps.slice(0,-1).entries())checks.push([title,stage==='extra-sides'?typeof p.extraSides.choice==='boolean':at>i]);
+   const p=s.production,c=p.checks||{};
+   add(c.quantity?'You confirmed: '+p.quantity+' '+p.unit+' of '+p.name+', ready by '+p.readyBy+' '+(String(p.readyDay)==='1'?'tomorrow':'today'):'Confirm quantity and ready-by time',!!c.quantity,'#intendedQuantity');
+   if(p.sides?.needed)add('Sides and serving quantities',!!p.sides.reviewed,'#sideServingSection',p.sides.summary);
+   if(p.extraSides?.needed)add(typeof p.extraSides.choice==='boolean'?'You selected: '+(p.extraSides.choice?'5% extra produced sides':'normal side quantities; no extra'):'Choose Yes or No for 5% extra sides',typeof p.extraSides.choice==='boolean','#sideExtraSection');
+   add('Recipe review',!!p.recipeReviewed,'#recipeReviewed');
+   let nextRecipe=false;for(const r of p.recipeSteps||[]){const next=!r.reviewed&&!nextRecipe;if(next)nextRecipe=true;add(r.name+' — '+(r.reviewed?(r.reviewMethod==='saved'?'saved and verified':'you confirmed the saved recipe still applies'):next?'next recipe to complete':'not reviewed yet'),!!r.reviewed,'#recipePlanLinks');}
+   add('Equipment and capacity review',!!p.capacityReviewed,'#capacityReviewed');
+   add('Process timing reviews',!!c.timing,'#processes');
+   add('Capacity calculation completed without warnings',!!c.assessment,'#timeAssessment');
+   add('Delivery choice confirmed',!!c.delivery,'#deliveryNeeded');
+   box.append(el('p',p.journey?.stage==='saved'&&!p.dirty?'✓ Production plan saved and verified in Google.':'Production plan not saved yet. Finish the remaining reviews, then use Save reviewed plan to Google & continue.'));
   }
-  if(checks.length){
-   const verified=s.production?.journey?.stage==='saved'&&!s.production?.dirty;
-   box.append(el('p',verified?'This production plan was saved and verified:':'On this page — review checkpoints (not saved completion):'));
-   const list=el('ol',undefined,'guide-checklist-local');
-   let next=false;
-   for(const [title,reviewed] of checks){const current=!reviewed&&!next;if(current)next=true;const li=el('li',(reviewed?(verified?'✓ Saved and verified: ':'◐ Reviewed — save pending: '):current?'→ Next: ':'○ To review: ')+title,reviewed?(verified?'guide-checklist-done':'guide-checklist-draft'):current?'guide-checklist-next':'');if(current)li.setAttribute('aria-current','step');list.append(li);}
-   box.append(list);
+  const omit=s.production?.ready?new Set(['recipeReviewed','capacityReviewed','quantityReviewed','sideServingReviewed','deliveryReviewed']):new Set();
+  for(const r of local?.rows||[])if(!omit.has(r.node.id)){
+   const li=el('li',undefined,r.checked?'guide-checklist-done':'guide-checklist-next');
+   li.append(el('span',(r.checked?'✓ Confirmation ticked: ':'○ Confirm: ')+r.title));
+   if(r.checked&&r.method)li.append(el('small',r.method==='already-reviewed'?'You chose to confirm previously reviewed inputs without repeating the walkthrough.':'You confirmed after the guided input review.'));
+   if(r.changed&&!r.checked)li.append(el('small','An input changed. Review the current values again.'));
+   li.append(button('Review these inputs','review-field-'+localList.children.length,()=>root.BOBS_REVIEW.request(r.node)));localList.append(li);
   }
+  if(s.recipeHelp&&!['loading','saving'].includes(s.recipeHelp.stage))add('Ingredient calculation complete',!!s.recipeHelp.calculated,'#scale');
+  if(localList.children.length)box.append(localList);
+  if(local?.active){const a=local.active;box.append(el('p','Current review: '+a.title));if(a.method==='guided'&&!a.ready)box.append(button('Show the current input','review-current',()=>root.BOBS_REVIEW.focusCurrent()),button('I have checked this input — next','review-next',()=>root.BOBS_REVIEW.confirmField()));}
+  box.append(el('strong','Previously saved Google progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
+  if(m.message)box.append(el('p',m.message));
+  if(m.dirty)box.append(el('p','The saved checklist below does not include unsaved edits on this page.','guide-checklist-draft'));
   if(!m.rows.length)return;
   const details=el('details'),summary=el('summary',m.done+' of '+m.rows.length+' saved stages verified — show checklist');
   details.open=!!opened;details.append(summary);
@@ -211,11 +216,12 @@ function mount(host,options){
 
    case 'production-flow':{
     const stage=p?.journey?.stage||'loading',name=p?.name||'Production plan',j=p?.journey||{};
-    const work=(label,id)=>button(label,'plan-'+id,()=>{options.work();adapter().focus(id);});
+    const work=(label,id)=>button(label,'plan-'+id,()=>{if(root.BOBS_REVIEW?.request('#'+id))return;options.work();adapter().focus(id);});
     if(stage==='loading'||stage==='load-error'){ask(stage==='loading'?'Loading your production plan…':'Production records need attention');host.append(el('p',j.message||'Wait for the saved quantities, recipes and equipment to load.'));if(stage==='load-error')choices(work('Show Retry Google reads','plannerRetry'));break;}
     if(stage==='saving'||stage==='saved'){ask(stage==='saving'?'Saving and verifying your plan…':'Production plan saved and verified');host.append(el('p',j.message));if(stage==='saving')host.append(el('p','Please keep this window open. I will guide the next step after verification.'));break;}
     if(stage==='error'){ask('The plan is not fully saved');host.append(el('p',j.message));choices(button('Review the unfinished step','plan-retry-step',()=>adapter().retryStep()),work('Show save message','planSaveStatus'));break;}
     if(stage==='quantity'){ask(name+' — how much, and ready by when?');host.append(el('p','Review the intended production quantity, ready-by time and day. These are planning inputs; Sold Today is entered separately as the actual result.'));choices(work('Review quantity and ready-by time','intendedQuantity'),button('Quantity and time reviewed — continue','plan-quantity-next',()=>adapter().continueQuantity()));}
+    else if(stage==='side-servings'){ask(name+' — review sides and serving quantities first');host.append(el('p',p.sides.summary),el('p','Review which sides are supplied, whether each is produced or purchased, and the amount per main item. The page links open the existing serving settings with optional reference help. Then confirm this review before choosing the extra allowance or opening recipes.'));choices(work('Review sides and serving quantities','sideServingSection'),work('Confirm the sides review','sideServingReviewed'));}
     else if(stage==='extra-sides'){ask('Would you like 5% extra produced sides and condiments?');host.append(el('p','Choose Yes or No for '+name+'. No is a complete choice. Neither is preselected; main quantity and normal serving portions stay unchanged.'));choices(button('Yes — prepare 5% extra','extra-yes',()=>adapter().chooseExtra(true)),button('No — normal requirement only','extra-no',()=>adapter().chooseExtra(false)));}
     else if(stage==='recipes'){const rows=p.recipeSteps||p.recipes,current=rows.find(r=>!r.reviewed);if(current){ask('Next recipe: '+current.name);host.append(el('p','Review this recipe now. I will guide the next unfinished recipe after its verified save or your explicit review of an unchanged saved recipe.'),el('small',current.status));const a=el('a','Open '+current.name+' recipe →','guide-action');a.href=current.href;a.target='_blank';a.rel='opener';host.append(a);if(current.current)choices(button('Saved recipe still applies — continue','recipe-reuse',()=>adapter().confirmRecipe(current.reviewKey)));}else{ask('Each recipe has been reviewed');host.append(el('p','Tick the final recipe confirmation to continue with equipment and capacity.'));choices(work('Show recipe confirmation','recipeReviewed'));}const all=el('details');all.append(el('summary','See all recipes in this plan'));for(const r of rows)all.append(el('p',(r.reviewed?'◐ Reviewed: ':'○ To review: ')+r.name));host.append(all);if(p.extraSides?.needed)host.append(el('p',p.extraSides.summary));}
     else if(stage==='equipment'){ask(name+' — choose equipment and usable capacity');host.append(el('p','For each process, reuse suitable existing equipment or compare the equipment references. Enter the usable capacity per cycle and compatible unit. After checking every process, tick the equipment review confirmation.'));choices(work('Review process equipment and capacity','capacitySection'),work('Show equipment confirmation','capacityReviewed'));}
@@ -398,6 +404,7 @@ function mount(host,options){
  let checklistTimer;
  const checklistUpdate=e=>{if(host.contains(e.target))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(()=>renderChecklist(snapshot()),0);};
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
+ root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);checklistTimer=setTimeout(()=>renderChecklist(snapshot()),0);});
  render();return {update,kitchenNext};
 }
 root.BOBS_GUIDE_BOT={mount,checklistModel,savedPageContext};

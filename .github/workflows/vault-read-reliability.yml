@@ -23,6 +23,8 @@ on:
       - 'method2-item.js'
       - 'method2-item.html'
       - 'bobs-guide-bot.js'
+      - 'bobs-guided-review.js'
+      - 'scripts/*review*.cjs'
       - 'bobs-roadmap*'
       - 'bobs-outlet*'
       - 'bobs-item-full-cost.js'
@@ -73,6 +75,8 @@ on:
       - 'method2-item.js'
       - 'method2-item.html'
       - 'bobs-guide-bot.js'
+      - 'bobs-guided-review.js'
+      - 'scripts/*review*.cjs'
       - 'bobs-roadmap*'
       - 'bobs-outlet*'
       - 'bobs-item-full-cost.js'
@@ -126,6 +130,7 @@ jobs:
         env:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
         run: |
+          node scripts/verify-guided-review-browser.cjs
           node scripts/verify-guided-kitchen-browser.cjs
           node scripts/verify-vault-browser.cjs
           node scripts/verify-production-guidance-browser.cjs
@@ -154,6 +159,7 @@ jobs:
           node --check bobs-roadmap-core.js
           node --check bobs-roadmap.js
           node --check bobs-guide-bot.js
+          node --check bobs-guided-review.js
           node --check bobs-kitchen-setup.js
           node --check bobs-outlet-flow-core.js
           node --check bobs-outlet-plan.js

@@ -11,7 +11,7 @@
   const full=$('idliLabourCost'),production=$('productionEntry')&&!$('productionEntry').hidden;
   if(production){
    if(full?.dataset.guideState==='error')return result(name+' — saved plan could not be checked',$('fullCostStatus')?.textContent+' Use Refresh verified cost records before deciding what is complete.','#refreshFullCost','Show Refresh verified cost records');
-   if(full?.dataset.productionReady!=='true')return result(name+' — first, review production capacity','Click “Start / review production capacity, quantity and time →” below. In that planner, review equipment, intended quantity, recipes and production time, then save the reviewed plan and return here. '+(full?.dataset.guideState==='loading'?'Saved planning checks are still loading.':''),'#productionEntry a','Show production capacity link');
+   if(full?.dataset.productionReady!=='true')return result(name+' — plan quantity, recipes, equipment and time','Click “Start / review production capacity, quantity and time →” below. In that planner, enter intended quantity and ready-by time, review recipes and sides, then choose equipment, review process timings, calculate capacity and check delivery. Save the reviewed plan and return here. '+(full?.dataset.guideState==='loading'?'Saved planning checks are still loading.':''),'#productionEntry a','Show production capacity link');
   }
   if(production||location.hash==='#idliLabourCost'){
    const next=full?.querySelector('.flow-current');

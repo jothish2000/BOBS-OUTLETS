@@ -46,7 +46,7 @@ function unitView(){
  $('referenceYield').closest('label').firstChild.textContent='Reference recipe: total output from one batch ('+unit+') ';
  $('targetQty').closest('label').firstChild.textContent='Your required production quantity ('+unit+') ';
  let explain=$('batchYieldExplanation');if(!explain){explain=document.createElement('p');explain.id='batchYieldExplanation';$('referenceYield').closest('label').after(explain);}
- explain.textContent='Source: '+(knowledgeSource==='google'?'Google BOBS Standard Recipe':'audited market-reference recipe')+'. '+(state?.recipeOverrides?.[loadedKey]?'Saved outlet reference settings may be applied; the original source batch produces '+quantityText(original.yieldQty,original.yieldUnit)+' '+original.yieldUnit+'. ':'')+'This is what one reference batch produces; it is not your current order requirement. Your required production quantity is shown separately in section 1. If you change the reference output, verify it against an actual batch trial.';
+ updateBatchExplanation();
  $('referencePortion').closest('label').firstChild.textContent='Reference recipe: weight of ONE cooked piece / serving (g) ';
  $('portion').closest('label').firstChild.textContent='Your chosen weight of ONE cooked piece / serving (g) ';
  $('portionWeightsTitle').textContent='Check reference piece size and your chosen piece size';
@@ -76,7 +76,7 @@ function unitView(){
 function recipeGuideSnapshot(){
  if(!original)return {stage:'loading',name:q.get('item')||'Recipe',message:$('status').textContent};
  const stage=busy?'saving':pendingServing?'serving-return':recipeSaveState==='saved'&&!dirty?'saved':!$('referenceWeightReviewed').checked?'reference':!$('intendedWeightReviewed').checked?'intended':!reviewReady()?'calculate':!$('confirmed').checked?'review':'save';
- return {stage,name:original.name,volume:volumeRecipe(),bulk:bulkRecipe(),referenceYield:$('referenceYield').value,unit:original.yieldUnit,target:$('targetQty').value,message:$('productionStatus').textContent,serving:bulkRecipe()?servingSummary():'',extra:q.get('extraSides')||'',dirty,servingHref:servingAddress(),servingReturn:servingReturn.textContent};
+ return {stage,calculated:reviewReady(),name:original.name,volume:volumeRecipe(),bulk:bulkRecipe(),referenceYield:$('referenceYield').value,unit:original.yieldUnit,target:$('targetQty').value,message:$('productionStatus').textContent,serving:bulkRecipe()?servingSummary():'',extra:q.get('extraSides')||'',dirty,servingHref:servingAddress(),servingReturn:servingReturn.textContent};
 }
 window.BOBS_RECIPE_GUIDE={snapshot:recipeGuideSnapshot,openServing,applyServingTotal,focus(id){const field=$(id);if(!field)throw Error('Wait for the recipe controls to load.');field.scrollIntoView({block:'center'});if(!field.matches('input,button,select,a'))field.tabIndex=-1;field.focus({preventScroll:true});},calculate(){if(!busy)$('scale').click();},save(){if(!busy)$('saveProduction').click();}};
 let lastRecipeGuide='',recipeGuideTimer;
@@ -85,7 +85,8 @@ box.addEventListener('input',()=>{clearTimeout(recipeGuideTimer);recipeGuideTime
 new MutationObserver(notifyRecipeGuide).observe($('productionStatus'),{childList:true,subtree:true,characterData:true});
 new MutationObserver(notifyRecipeGuide).observe($('confirmed'),{attributes:true,attributeFilter:['aria-disabled']});
 
-function sourceNote(){if(bulkRecipe()){$('portionHelp').textContent=servingSummary();renderServingAction();return;}const v=$('referencePortion').value;
+function updateBatchExplanation(){const explain=$('batchYieldExplanation');if(!explain||!original)return;explain.textContent='The reference ingredient quantities make '+quantityText($('referenceYield').value,original.yieldUnit)+' '+original.yieldUnit+' of '+original.name+'. Your current plan needs '+quantityText($('targetQty').value,original.yieldUnit)+' '+original.yieldUnit+'. Calculate will adjust the ingredients for that requirement'+(bulkRecipe()?'':', including any chosen change to the weight of one piece')+'. Change the reference output only to correct the recipe yield using a measured batch; enter today’s requirement in “Your required production quantity”. Source: '+(knowledgeSource==='google'?'Google BOBS Standard Recipe':'audited market-reference recipe')+'.';}
+function sourceNote(){updateBatchExplanation();if(bulkRecipe()){$('portionHelp').textContent=servingSummary();renderServingAction();return;}const v=$('referencePortion').value;
  $('portionSource').textContent=!original.portionGrams&&!v?'No reference cooked weight was supplied. Enter a verified baseline before choosing a different intended weight.':Number(v)!==Number(original.portionGrams)?'Reference weight entered or changed on this page. Verify it with an outlet trial; it has not changed the shared standard.':original.portionGrams?(knowledgeSource==='google'?'Source: BOBS standard recipe stored in Google Sheets. ':'Source: previously prepared BOBS market-reference library. ')+'This is a BOBS-calibrated planning weight, not a universal industry standard. Confirm actual cooked weight with a trial batch.':'No reference cooked weight was supplied. Enter a verified baseline before choosing a different intended weight.';
 }
 function syncCustomPortion(){const custom=$('portion').value==='custom';$('customPortion').disabled=!custom;if(!custom)$('customPortion').value='';$('customPortionHelp').textContent=custom?'Enter your intended cooked weight in grams, then click Calculate.':'Select Custom weight in the list above to enter grams.';}
