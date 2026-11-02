@@ -11,7 +11,7 @@ function isReview(n){return n?.matches('input[type=checkbox]')&&!n.closest(exclu
 /Reviewed$|^confirmed$|^dutiesComplete$|^outletReview-/.test(n.id)||/^(reviewed|preparationReviewed|capacityBasisReviewed|costConfirmed)$/.test(n.dataset.field||'')||n.classList.contains('capacity-basis')||/^\s*I (?:have )?(?:reviewed|checked|confirmed|completed the review)\b/i.test(caption(n)));}
 function scope(n){
  const selectors={outletsReviewed:'#cards',kitchenReviewed:'#kitchenBody',equipmentReviewed:'#equipmentRows',flowReviewed:'#flowApp',dutiesComplete:'#flowApp',planningReviewed:'#planningBody',capexReviewed:'main',sideServingReviewed:'#sideServingSection',quantityReviewed:'#quantitySection > .fields',deliveryReviewed:'#deliverySection',recipeReviewed:'#recipeReviewGuide',capacityReviewed:'#capacitySection',confirmed:'#productionEditor'};
- return (selectors[n.id]&&doc.querySelector(selectors[n.id]))||n.closest('[data-process],[data-capacity],.planning-component,section,article,fieldset,form')||doc.querySelector('main')||doc.body;
+ return (selectors[n.id]&&doc.querySelector(selectors[n.id]))||n.closest('[data-process],[data-capacity],.planning-component,dialog,section,article,fieldset,form')||doc.querySelector('main')||doc.body;
 }
 function targets(n){
  const bulk=!!doc.querySelector('#productionEditor[data-portion-basis]');
