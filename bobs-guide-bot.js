@@ -12,6 +12,25 @@ function checklistModel(s){
  message:s.loading?'Checking saved progress…':s.readError?'Saved progress could not be verified. Retry the saved-progress check.':!rows.length?'Use “Check saved progress & show what’s incomplete” to load the checklist.':s.progress?.status!=='ready'?'Saved progress has not been checked yet.':''};
 }
 
+
+function savedPageContext(s,href){
+ const blocked=s.loading||s.readError||s.progress?.status!=='ready'||!!(s.savedChecklist?.owner&&s.ctx?.outlet&&String(s.savedChecklist.owner)!==String(s.ctx.outlet));
+ const owner=s.savedChecklist?.name||s.ctx?.outlet&&'Outlet '+s.ctx.outlet||'the selected scope';
+ let current;try{
+ const here=new URL(href),matches=[];
+ function visit(rows){for(const row of rows||[]){if(row.href){try{const u=new URL(row.href,here),page=u.pathname.split('/').pop();
+ if(u.origin===here.origin&&page===here.pathname.split('/').pop()&&['stage','cat','i','item'].every(key=>{
+ const wanted=u.searchParams.get(key),actual=here.searchParams.get(key);
+ return wanted==null?!(key==='stage'&&page==='outlet-plan.html'&&actual):wanted===actual||(key==='stage'&&wanted==='baseline'&&!actual);
+ }))matches.push(row);}catch(_){}}
+ visit(row.children);}}
+ visit(s.savedChecklist?.stages);
+ // Ambiguous shared routes must never invent a page-completion result.
+ current=matches.length===1?matches[0]:null;
+ }catch(_){}
+ return {owner,blocked,current:blocked?null:current,title:s.pageHelp?.title||current?.title||'this page'};
+}
+
 function mount(host,options){
  options.work=options.work||options.minimise;
  let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null;
@@ -334,15 +353,28 @@ function mount(host,options){
     host.append(route('outlet-plan.html','After saving: assess workforce →',{stage:'workforce'}),route('asset-master.html','Review Asset Master values →'),route('capital-expenditure.html','Review equipment purchase budget →'),route('working-capital.html','Review working capital →'));
     choices(choose('Check my next saved requirement','next-saved','resume'));break;
    case 'resume':{
-    ask('Check saved progress — what is incomplete?');
-    host.append(el('p','This checks records already saved in Google. It does not save your current entries or move you to another page.'));
-    if(s.dirty)host.append(el('p','You have unsaved changes on this page. This result describes the saved version. Save this page first if you want those changes included.','guide-draft-note'));
-    const notice=el('p',s.loading?(s.progress?.message||'Checking saved Google records…'):s.readError?(s.progress?.message||'Saved progress could not be verified. Please retry.'):'Saved records checked.');notice.setAttribute('role','status');
-    if(s.loading||s.readError)host.append(notice);
-    else if(s.next){host.append(notice,el('p','Next incomplete step: '+s.next.title),el('p',s.next.reason));host.append(route(s.next.href,'Open this incomplete step →'));}
-    else host.append(el('p',s.progress?.status==='ready'?'No next incomplete step was identified for this selection. You can keep reviewing this page or open BOBS progress for the full list.':'Run the check to find the next incomplete step in your saved records.'));
+    const info=savedPageContext(s,location.href),current=info.current;
+    ask('Saved progress check — separate from your current review');
+    host.append(el('p','Checking saved records for '+info.owner+'. This does not save your current entries or move you to another page.'));
+    host.append(el('p','You are reviewing: '+info.title+'.','guide-current-page'));
+    if(s.ctx.selected?.length>1)host.append(el('p','This result is for the selected outlet, not confirmation that all selected outlets are complete.'));
+    if(s.dirty)host.append(el('p','You have unsaved changes on this page. The result below describes the saved version only. Review and save here before relying on those changes.','guide-draft-note'));
+    const notice=el('p',s.loading?(s.progress?.message||'Checking saved Google records…'):s.readError?(s.progress?.message||'Saved progress could not be verified. Please retry.'):'Saved records checked.');notice.setAttribute('role','status');host.append(notice);
+    if(!info.blocked){
+     if(current?.status==='done')host.append(el('p','Saved status of this section: complete — '+current.title+'. Its saved inputs passed the current checks. This does not mean you have reviewed it again today.','guide-current-status'));
+     else if(current?.status==='na')host.append(el('p','Saved status of this section: not applicable to the saved selection.','guide-current-status'));
+     else if(current)host.append(el('p','Saved status of this section: '+(current.status==='unknown'?'could not be verified':current.status==='review'?'needs review':'not complete')+'. '+(current.reason||''),'guide-current-status'));
+     else host.append(el('p','This page has no single matching saved-completion check. No completion is assumed.','guide-current-status'));
+     if(s.next){
+      host.append(el('p','Next incomplete step: '+s.next.title));
+      if(current?.status==='done'&&current!==s.next)host.append(el('p','Why another step is shown: this section is already complete in the saved records, while the step below still needs attention.'));
+      host.append(el('p',s.next.reason||'Review this saved requirement.'));
+      host.append(el('p','If you are testing or reviewing the flow from the beginning, stay on this page and finish your review. Opening the saved-data requirement is optional.'));
+      host.append(route(s.next.href,'Open this saved-data requirement →'));
+     }else host.append(el('p','No next incomplete step was identified for this selection. Continue reviewing this page or open BOBS progress.'));
+    }else if(!s.loading&&!s.readError)host.append(el('p','Run the check to see what is saved. No completion is assumed yet.'));
     const retry=button(s.readError?'Retry saved-progress check':s.loading?'Checking saved progress…':'Check saved progress again','refresh',()=>{options.refresh();host.parentElement?.scrollTo?.({top:0});});retry.disabled=!!s.loading;
-    choices(retry,button('Keep editing this page','resume-edit',()=>options.minimise()));
+    choices(button('Stay here — review this page','resume-edit',()=>{const target=s.pageHelp?.anchor;if(target&&document.querySelector(target))pageFocus(target);else options.minimise();}),retry);
     break;
    }
    case 'route':{
@@ -368,5 +400,5 @@ function mount(host,options){
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
  render();return {update,kitchenNext};
 }
-root.BOBS_GUIDE_BOT={mount,checklistModel};
+root.BOBS_GUIDE_BOT={mount,checklistModel,savedPageContext};
 })(window);

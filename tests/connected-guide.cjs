@@ -226,3 +226,34 @@ test('recipe guide presents one current action and advances from actual adapter 
  stage='saved';bot.update();assert.match(host.textContent,/Recipe saved and verified/);
  }finally{w.close()}
 });
+
+test('saved progress explains verified baseline vs next menu and keeps the current walkthrough intact',()=>{
+ const dom=new JSDOM('<div id="host"></div><input id="expense" value="15000">',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&stage=baseline'}),w=dom.window;
+ try{
+ w.HTMLElement.prototype.scrollIntoView=function(){};
+ const baseline={title:'Outlet expenses and mandatory staff',status:'done',href:'outlet-plan.html?outlet=1&stage=baseline'},menu={title:'Menu planning',status:'review',reason:'Review Idli capacity.',href:'method2.html?outlet=1'};
+ let state={ctx:{page:'outlet-plan.html',outlet:'1',selected:['1','2','3']},progress:{status:'ready'},pageHelp:{title:'Outlet expenses and mandatory staff',anchor:'#expense'},savedChecklist:{owner:'1',name:'Rasipuram',stages:[baseline,menu]},next:menu};
+ let closed=0;w.eval(source('bobs-guide-bot.js'));const host=w.document.getElementById('host'),ui=w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>state,minimise:()=>closed++,refresh(){},journey:true});
+ host.querySelector('[data-guide-choice=page-progress]').click();
+ assert.match(host.textContent,/Checking saved records for Rasipuram/);assert.match(host.textContent,/Saved status of this section: complete/);assert.match(host.textContent,/Why another step is shown/);assert.match(host.textContent,/not confirmation that all selected outlets are complete/);
+ assert.match(host.textContent,/Opening the saved-data requirement is optional/);
+ const link=host.querySelector('a');assert.equal(new URL(link.href).pathname,'/method2.html');
+ host.querySelector('[data-guide-choice=resume-edit]').click();assert.equal(closed,1);assert.equal(w.document.activeElement.id,'expense');assert.equal(w.document.getElementById('expense').value,'15000');assert.equal(w.location.pathname,'/outlet-plan.html');
+ state={...state,dirty:true};ui.update();assert.match(host.textContent,/unsaved changes/);assert.match(host.textContent,/saved version only/);
+ for(const status of ['pending','review','unknown']){baseline.status=status;ui.update();assert.doesNotMatch(host.textContent,/Saved status of this section: complete|Why another step is shown/);}
+ baseline.status='done';state={...state,readError:true};ui.update();assert.equal(host.querySelector('a'),null);assert.equal(host.querySelector('.guide-current-status'),null);
+ }finally{w.close()}
+});
+test('current saved-page matching is stage-specific and conservative for unmatched or ambiguous routes',()=>{
+ const dom=new JSDOM('',{runScripts:'outside-only',url:'https://bobs.test/'}),w=dom.window;
+ try{w.eval(source('bobs-guide-bot.js'));const model=w.BOBS_GUIDE_BOT.savedPageContext;
+ const baseline={title:'Baseline',status:'done',href:'outlet-plan.html?outlet=1&stage=baseline'},salary={title:'Salaries',status:'review',href:'outlet-plan.html?outlet=1&stage=salary'};
+ const s={ctx:{outlet:'1'},progress:{status:'ready'},savedChecklist:{owner:'1',stages:[baseline,salary]}};
+ assert.equal(model(s,'https://bobs.test/outlet-plan.html?stage=baseline').current.title,'Baseline');
+ assert.equal(model(s,'https://bobs.test/outlet-plan.html?stage=salary').current.title,'Salaries');
+ assert.equal(model(s,'https://bobs.test/unmapped.html').current,null);
+ assert.equal(model({...s,savedChecklist:{owner:'2',stages:[baseline]}},'https://bobs.test/outlet-plan.html?stage=baseline').current,null);
+ assert.equal(model({...s,savedChecklist:{owner:'1',stages:[baseline,{...baseline,title:'Ambiguous'}]}},'https://bobs.test/outlet-plan.html?stage=baseline').current,null);
+ for(const changes of [{loading:true},{readError:true},{progress:{status:'idle'}}])assert.equal(model({...s,...changes},'https://bobs.test/outlet-plan.html?stage=baseline').current,null);
+ }finally{w.close()}
+});
