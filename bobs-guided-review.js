@@ -2,7 +2,7 @@
 (function(root){'use strict';if(root.BOBS_REVIEW)return;
 const doc=root.document, entries=new Map();let active=null, timer, ownClick=false;
 const el=(tag,text)=>{const n=doc.createElement(tag);if(text!=null)n.textContent=text;return n;};
-const excluded='#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
+const excluded='#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
 const visible=n=>!!n&&!n.closest('[hidden]')&&root.getComputedStyle(n).display!=='none'&&root.getComputedStyle(n).visibility!=='hidden';
 const controls='input:not([type=hidden]),select,textarea';
 const clean=s=>String(s||'').replace(/\s+/g,' ').trim();
@@ -44,6 +44,7 @@ function summary(e,host){
 }
 function request(n){
  if(typeof n==='string')n=doc.querySelector(n);if(!isReview(n))return false;
+ if(root.BOBS_REFERENCE?.ensure(n,()=>request(n)))return true;
  refresh();const e=entry(n);active=e;e.panel?.remove();const panel=el('section');panel.dataset.reviewUi='choices';panel.className='bobs-review-panel';for(const type of ['input','change'])panel.addEventListener(type,e=>e.stopPropagation());e.panel=panel;
  panel.append(el('h3','Review before confirming'),el('p',caption(n)));
  if(locked(n)){panel.append(el('p','This confirmation is not available yet. Complete the page’s required loading, calculation or earlier checks first.'));(n.closest('label')||n).before(panel);focus(panel);announce();return true;}
@@ -77,7 +78,7 @@ function confirmField(){
  (e.node.closest('label')||e.node).before(panel);focus(e.node);announce();
 }
 function complete(e){
- refresh();if(!e.authorised||locked(e.node))return;
+ refresh();if(!e.authorised||locked(e.node))return;if(root.BOBS_REFERENCE?.ensure(e.node,()=>complete(e)))return;
  ownClick=true;try{if(!e.node.checked)e.node.click();}finally{ownClick=false;}
  if(e.node.checked){e.signature=signature(e.node);e.panel?.remove();e.panel=null;active=null;announce();root.dispatchEvent(new Event('bobs-guide-context'));root.BOBS_GUIDE?.open();}
 }
