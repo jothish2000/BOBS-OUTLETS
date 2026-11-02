@@ -34,6 +34,7 @@ function setupServingShortcut(){
 }
 async function saveServingShortcut(){
  if(busy||loading||!ready)return;
+ if(window.BOBS_REFERENCE?.ensureServing(saveServingShortcut))return;
  const side=servingSide(d);if(!side||!(M2.number(side.portion)>0))return status('Enter a positive serving quantity before saving.');
  const originalDraft=M2.draft(baseline,cat,i,item),next=M2.clone(originalDraft),target=servingSide(next);
  if(!target)return status('Saved side changed. Reload before saving.');
