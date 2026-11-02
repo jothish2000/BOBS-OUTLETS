@@ -8,14 +8,28 @@ function servingSide(source){const rows=(source?.condiments||[]).filter(x=>M2.pu
 function focusServing(){const field=$('servingShortcutQuantity');if(!field)throw Error('The requested side is not uniquely present. Return to the recipe and review the item settings.');for(let p=field.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;field.scrollIntoView({block:'center'});field.focus({preventScroll:true});}
 function setupServingShortcut(){
  if(!servingRecipe)return;
+ $('servingReferenceHelp')?.remove();
  const side=servingSide(d),field=[...$('condiments').querySelectorAll('.component')].find(el=>M2.purchaseKey(el.querySelector('h3')?.dataset.recipeName||'')===M2.purchaseKey(servingRecipe))?.querySelector('.fields input');
  let box=$('servingShortcut');if(!box){box=document.createElement('section');box.id='servingShortcut';box.className='notice';$('condiments').before(box);}
  box.replaceChildren();const h=document.createElement('h2');h.textContent='Change '+servingRecipe+' serving quantity';box.append(h);
- const info=document.createElement('p');info.textContent='Edit QUANTITY SERVED PER UNIT SOLD and its portion unit below. Save only this serving change, then return to the recipe to review its new total and Calculate again. Other item entries are not saved by this button.';box.append(info);
+ const info=document.createElement('p');info.textContent='Edit QUANTITY SERVED PER UNIT SOLD and its portion unit below. Save only this serving change, then return to the previous step to review its new total before calculating. Other item entries are not saved by this button.';box.append(info);
  if(!side||!field){info.textContent='The requested side was not found uniquely. Nothing has been changed. Return to the recipe and review this item’s sides.';return;}
  field.id='servingShortcutQuantity';field.setAttribute('aria-label',servingRecipe+' quantity served per unit sold');
  const unit=field.closest('.fields').querySelectorAll('select')[1];unit.id='servingShortcutUnit';
- const button=document.createElement('button');button.type='button';button.id='saveServingShortcut';button.textContent='Save serving quantity & return to recipe →';button.onclick=saveServingShortcut;box.append(button);
+
+ const helper=document.createElement('div');helper.id='servingReferenceHelp';
+ const note=document.createElement('p');note.textContent='Choose a serving amount per ONE '+(d.unit||'menu item')+'. Use a measured trial of your ladle/spoon and customer service needs. Examples below are planning choices, not a universal small-hotel standard. No suggestion is selected automatically.';helper.append(note);
+ const label=document.createElement('label');label.textContent='Optional serving-size examples ';
+ const select=document.createElement('select');select.id='servingExample';
+ const volume=M2.convert(1,unit.value,'ml')!==null,mass=M2.convert(1,unit.value,'g')!==null,exampleUnit=volume?'ml':mass?'g':unit.value;
+ for(const v of ['',...(volume?[20,30,40,50]:mass?[5,10,15,20]:[])]){const o=document.createElement('option');o.value=v;o.textContent=v===''?'Choose an example, or type your own amount':v+' '+exampleUnit+' per '+(d.unit||'menu item');select.append(o);}
+ select.onchange=()=>{if(!select.value)return;const amount=M2.convert(+select.value,exampleUnit,unit.value);if(amount===null)return;field.value=amount;field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));focusServing();};label.append(select);helper.append(label);
+ const source=/sambar/i.test(servingRecipe)?['Tiffin sambar recipe and serving context','https://www.indianhealthyrecipes.com/idli-sambar-recipe-tiffin-sambar/']:/chutney/i.test(servingRecipe)?['Chutney recipe and serving context','https://www.indianhealthyrecipes.com/coriander-coconut-chutney/']:null;
+ if(source){const a=document.createElement('a');a.href=source[1];a.textContent=source[0]+' — optional external reference ↗';a.target='_blank';a.rel='noopener noreferrer';helper.append(a);const p=document.createElement('p');p.textContent='This reference describes the recipe and servings; it does not prescribe the example amounts per individual item. You do not need to open it to continue.';helper.append(p);}
+ else {const p=document.createElement('p');p.textContent='No verified external serving-size reference is linked for this side. Use your measured serving amount; no industry-standard amount is assumed.';helper.append(p);}
+ field.closest('.fields').before(helper);
+
+ const button=document.createElement('button');button.type='button';button.id='saveServingShortcut';button.textContent='Save serving quantity & return to previous step →';button.onclick=saveServingShortcut;box.append(button);
  const message=document.createElement('p');message.id='servingShortcutStatus';message.role='status';box.append(message);
 }
 async function saveServingShortcut(){
@@ -34,7 +48,7 @@ async function saveServingShortcut(){
  busy=true;servingStatus='saving';$('controls').disabled=true;$('servingShortcutStatus').textContent='Saving serving quantity and verifying in Google…';window.dispatchEvent(new Event('bobs-guide-context'));
  try{
  const saved=await M2.savePlanning(outlet,cat,i,item,next,baseline);baseline=M2.state(saved);dirty=false;servingStatus='saved';const token=baseline.itemEditors[M2.keys(cat,i).k].planningToken;
- $('servingShortcutStatus').textContent='Serving quantity saved and verified. Returning to the recipe…';
+ $('servingShortcutStatus').textContent='Serving quantity saved and verified. Returning to the previous step…';
  const receipt={type:'bobs-side-serving-saved',outlet,key:M2.keys(cat,i).k,recipeName:servingRecipe,token};
  busy=false;BOBS_WINDOW_RETURN.notify(receipt,['bobs-side-serving']);BOBS_WINDOW_RETURN.afterSave('method2.html?outlet='+encodeURIComponent(outlet));
  }catch(e){servingStatus='edit';$('servingShortcutStatus').textContent='Not saved — '+e.message;}finally{busy=false;$('controls').disabled=false;window.dispatchEvent(new Event('bobs-guide-context'));}
@@ -50,7 +64,7 @@ function status(t){$('status').textContent=t}
 function link(name){const a=document.createElement('a');const isMain=M2.purchaseKey(name)===M2.purchaseKey(item.recipeName||item.name),side=(d.condiments||[]).find(x=>M2.purchaseKey(x.recipeName)===M2.purchaseKey(name)),r=M2.recipe(recipes,name);let qty=Number(d.batchSize)*Number(d.batches);if(isMain){const per=M2.convert(item.side?M2.number(d.servingQty):1,item.side?d.servingUnit:d.unit,r?.yieldUnit);qty=per==null?0:qty*per;}if(!isMain){const per=side&&M2.convert(Number(side.portion),side.portionUnit,r?.yieldUnit);qty=per==null?0:qty*per;}a.href='recipe-cost-editor.html?'+new URLSearchParams({item:M2.canonicalRecipeName(name),outlet,qty:String(qty),cat,i:String(i)});a.target='_blank';a.textContent=name+' · recipe & cost';return a}
 function purchaseLink(name,unit){const a=document.createElement('a');a.href='purchase-cost-editor.html?'+new URLSearchParams({outlet,item:name,unit:unit||'piece'});a.target='_blank';a.textContent=name+' · Purchase Master COGS';return a}
 function primaryCostLink(label){const a=d.mode==='production'?link(item.recipeName||item.name):purchaseLink(item.recipeName||item.name,item.side?d.servingUnit:d.unit);a.textContent=label;return a}
-function productionEntry(){let box=$('productionEntry');if(!box){box=document.createElement('section');box.id='productionEntry';box.className='card';$('itemGuide').before(box)}box.hidden=d.mode!=='production'&&!d.condiments?.some(x=>x.source!=='purchase');if(box.hidden)return;const a=document.createElement('a');a.href='production-plan.html?'+new URLSearchParams({outlet,cat,i,mode:d.mode,returnTo:location.href});a.target='_blank';a.textContent='Start / review production capacity, quantity and time →';const h=document.createElement('h2');h.textContent='First: confirm production capacity';const p=document.createElement('p');p.textContent='Choose existing or proposed equipment, then intended quantity, recipe and timings. The combined menu assessment checks shared equipment and staff. Sold Today is entered later as the actual result.';box.replaceChildren(h,p,a);}
+function productionEntry(){let box=$('productionEntry');if(!box){box=document.createElement('section');box.id='productionEntry';box.className='card';$('itemGuide').before(box)}box.hidden=d.mode!=='production'&&!d.condiments?.some(x=>x.source!=='purchase');if(box.hidden)return;const a=document.createElement('a');a.href='production-plan.html?'+new URLSearchParams({outlet,cat,i,mode:d.mode,returnTo:location.href});a.target='_blank';a.textContent='Start / review production capacity, quantity and time →';const h=document.createElement('h2');h.textContent='First: plan quantity, recipes, equipment and time';const p=document.createElement('p');p.textContent='Enter intended quantity and ready-by time, review recipes and sides, then choose equipment, review process timings, calculate capacity and check delivery. Save the reviewed plan and return here. The combined menu assessment checks shared equipment and staff. Sold Today is entered later as the actual result.';box.replaceChildren(h,p,a);}
 function renderItemGuide(){productionEntry();
  const production=d.mode==='production',name=item.recipeName||item.name;if(costReviewMode!==null&&costReviewMode!==d.mode){costReviewComplete=false;activeGuideStep=1;lastReviewReceipt=null;}costReviewMode=d.mode;guideProgress();
  const reference=M2.recipe(recipes,name),standard=reference&&standardRecipes.includes(reference);
