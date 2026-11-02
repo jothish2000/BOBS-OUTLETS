@@ -3,7 +3,7 @@
 const doc=root.document, entries=new Map();let active=null, timer, ownClick=false;
 const el=(tag,text)=>{const n=doc.createElement(tag);if(text!=null)n.textContent=text;return n;};
 const excluded='#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
-const visible=n=>!!n&&!n.closest('[hidden]')&&root.getComputedStyle(n).display!=='none'&&root.getComputedStyle(n).visibility!=='hidden';
+const visible=n=>{if(!n||n.closest('[hidden]'))return false;for(let p=n;p;p=p.parentElement){const s=root.getComputedStyle(p);if(s.display==='none'||s.visibility==='hidden')return false;}return true;};
 const controls='input:not([type=hidden]),select,textarea';
 const clean=s=>String(s||'').replace(/\s+/g,' ').trim();
 function caption(n){const label=n.labels?.[0]||n.closest('label'),copy=label?.cloneNode(true);copy?.querySelectorAll('input,select,textarea,button').forEach(x=>x.remove());return clean(n.getAttribute('aria-label')||copy?.textContent||n.getAttribute('placeholder')||n.name||n.id||'Input');}
@@ -89,7 +89,7 @@ function rows(){
 function snapshot(){const result=rows();return {rows:result,active:active?{title:caption(active.node),method:active.method,index:active.index||0,total:targets(active.node).length,ready:active.authorised}:null};}
 doc.addEventListener('click',event=>{const n=event.target;if(ownClick||!isReview(n)||!n.checked)return;
  // click activation has provisionally toggled checked; cancellation restores the prior value.
- const e=entry(n);if(e.authorised&&e.signature===signature(n))return;
+ const e=entry(n);if(e.authorised&&e.signature===signature(n)&&!root.BOBS_REFERENCE?.needs(n))return;
  event.preventDefault();event.stopImmediatePropagation();setTimeout(()=>request(n),0);
 },true);
 function changed(event){if(event.target.closest?.(excluded)||isReview(event.target)) {announce();return;}refresh();announce();}
