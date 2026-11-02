@@ -19,7 +19,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  await p.evaluate(()=>BOBS_REVIEW.request('#referenceWeightReviewed'));
  await p.check('[data-review-shortcut]');assert(await p.locator('[data-review-ui] details').evaluate(n=>n.open));
  await p.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();assert(await p.isChecked('#referenceWeightReviewed'));
- await p.click('#confirmed');assert.equal(await p.isChecked('#confirmed'),false);assert.match(await p.locator('[data-review-ui]').innerText(),/not available yet/);
+ await p.click('#confirmed',{force:true});assert.equal(await p.isChecked('#confirmed'),false);assert.match(await p.locator('[data-review-ui]').innerText(),/not available yet/);
  await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  // Same controller covers existing outlet, kitchen, equipment, expenses, salary, assets and report reviews.
  for(const [id,scope]of [['outletsReviewed','cards'],['kitchenReviewed','kitchenBody'],['equipmentReviewed','equipmentRows'],['flowReviewed','flowApp'],['planningReviewed','planningBody'],['salaryReviewed','salaryFields'],['outletReview-1','report']]){
@@ -31,5 +31,17 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  // Selection checkboxes are business choices, not review gates.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<label><input type="checkbox" id="includeSide">Include sambar</label>';});
  await p.check('#includeSide');assert(await p.isChecked('#includeSide'));
+
+ const r=await browser.newPage();await r.setContent('<main><section id="referenceSection"><h2>Recipe reference</h2><p id="referenceInfo">Trial batch assumption</p><div id="referenceEvidence"><a href="https://example.org/reference">Optional source</a></div><label>Reference output<input id="referenceYield" value="3.8"></label><label>Piece grams<input id="referencePortion" value="40"></label><label><input type="checkbox" id="referenceWeightReviewed">I checked this reference.</label></section></main>');
+ await r.addScriptTag({path:path.resolve(__dirname,'../bobs-reference-help.js')});await r.addScriptTag({path:path.resolve(__dirname,'../bobs-guided-review.js')});
+ await r.evaluate(()=>BOBS_REVIEW.request('#referenceWeightReviewed'));
+ assert(await r.locator('#bobsReferenceDialog').isVisible());assert(await r.locator('#bobsReferenceContinue').isDisabled());assert.equal(await r.isChecked('#referenceWeightReviewed'),false);
+ assert.equal(await r.locator('#bobsReferenceContent a').getAttribute('href'),'https://example.org/reference');
+ await r.click('#bobsReferenceClose');assert.equal(await r.isChecked('#referenceWeightReviewed'),false);assert.equal(await r.inputValue('#referenceYield'),'3.8');
+ await r.evaluate(()=>BOBS_REVIEW.request('#referenceWeightReviewed'));await r.check('#bobsReferenceAcknowledged');await r.click('#bobsReferenceContinue');
+ await r.check('[data-review-shortcut]');await r.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();assert(await r.isChecked('#referenceWeightReviewed'));
+ await r.fill('#referenceYield','4');await r.evaluate(()=>BOBS_REVIEW.request('#referenceWeightReviewed'));assert(await r.locator('#bobsReferenceDialog').isVisible(),'changed reference requires renewed assessment');
+ assert.equal(await r.locator('dialog[open]').count(),1);await r.close();
+
  assert.deepEqual(errors,[]);console.log('Guided review browser tests passed: sequential focus, explicit shortcut, no default, invalidation, locked checks, all mapped stages and narrow screen.');
  }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
