@@ -1,5 +1,5 @@
 /* Shared walkthrough for existing review controls. No business records or saved progress are written here. */
-(function(root){'use strict';
+(function(root){'use strict';if(root.BOBS_REVIEW)return;
 const doc=root.document, entries=new Map();let active=null, timer, ownClick=false;
 const el=(tag,text)=>{const n=doc.createElement(tag);if(text!=null)n.textContent=text;return n;};
 const excluded='#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
