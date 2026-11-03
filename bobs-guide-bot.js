@@ -34,7 +34,7 @@ function savedPageContext(s,href){
 
 function currentAction(s){
  if(root.BOBS_OUTLET_PLAN_GUIDE)return root.BOBS_OUTLET_PLAN_GUIDE.snapshot();
- const ids={'outlets.html':['outletsReviewed','save','status'],'kitchen-flow.html':['kitchenReviewed','saveKitchen','kitchenStatus'],'asset-master.html':['planningReviewed','planningSave','planningStatus'],'working-capital.html':['planningReviewed','planningSave','planningStatus'],'salary-editor.html':['salaryReviewed','saveSalaryPackage','salaryActionStatus'],'kitchen-equipment.html':['equipmentReviewed','saveEquipment','equipmentStatus']};
+ const ids={'outlets.html':['outletsReviewed','save','status'],'kitchen-flow.html':['kitchenReviewed','saveKitchen','kitchenStatus'],'asset-master.html':['planningReviewed','planningSave','planningStatus'],'working-capital.html':['planningReviewed','planningSave','planningStatus'],'salary-editor.html':['salaryReviewed','saveSalaryPackage','salaryActionStatus'],'kitchen-equipment.html':['equipmentReviewed','saveEquipment','equipmentStatus'],'capital-expenditure.html':['capexReviewed','capexSave','capexStatus']};
  const fields=ids[s.ctx.page];if(!fields)return null;
  const review=document.getElementById(fields[0]),save=document.getElementById(fields[1]),status=document.getElementById(fields[2]);if(!review||!save)return null;
  const message=status?.textContent||'',saving=save.closest('[aria-busy=true]')||save.matches(':disabled')&&review.checked;
@@ -100,7 +100,14 @@ function mount(host,options){
 
 
  // Reuse this page's real next action. The checklist must not invent a second flow.
- function continuation(s){
+ function continuation(s,reviewNode){
+  // Report reviews have one independent Save per outlet; use its explicit association.
+  const reportSave=reviewNode?.id&&[...document.querySelectorAll('[data-review-save]')].find(n=>n.dataset.reviewSave===reviewNode.id);
+  if(reportSave){
+   if(reportSave.disabled)return {message:'Saving and verifying this outlet review in Google. Keep this page open.'};
+   if(reportSave.dataset.reviewSaved==='true'){const next=reportSave.closest('section')?.querySelector('[data-review-next]');return next?{choices:[next]}:{message:'This outlet review is saved and verified.'};}
+   return {label:reportSave.textContent,run:()=>{options.minimise();reportSave.scrollIntoView?.({block:'center'});reportSave.focus();}};
+  }
   const a=s.currentAction,stage=s.recipeHelp?.stage||s.production?.journey?.stage||s.equipmentHelp?.stage;
   if(a?.phase==='saving'||stage==='saving')return {message:'Saving and verifying in Google. Keep this page open.'};
   if(a?.phase==='error'||stage==='error'||stage==='load-error')return {message:a?.message||'Resolve the page’s error before continuing.'};
@@ -116,7 +123,7 @@ function mount(host,options){
   const done=[...list.children].filter(n=>n.classList.contains('guide-checklist-done'));if(!done.length)return;
   const current=s.currentAction?.review&&document.querySelector(s.currentAction.review);
   const target=(current&&done.find(n=>n.reviewNode===current))||(lastConfirmedNode&&done.find(n=>n.reviewNode===lastConfirmedNode))||done.at(-1);
-  const next=continuation(s);if(!next)return;
+  const next=continuation(s,target.reviewNode);if(!next)return;
   const box=el('div',undefined,'guide-confirmation-next');box.dataset.confirmationNext='true';box.setAttribute('aria-live','polite');
   if(next.message)box.append(el('p',next.message));
   else if(next.label){box.append(el('strong','Next: '+next.label));box.append(button('Show '+next.label,'confirmation-next',next.run));}
