@@ -165,13 +165,37 @@ function companionBoot(){
  if(context().page==='recipe-cost-editor.html'&&!document.getElementById('recipeCompanionGuide')){const slot=el('div');slot.id='recipeCompanionGuide';const main=document.querySelector('main');if(main)main.before(slot);else document.body.prepend(slot);}
  const methodSlot=document.getElementById('equipmentCompanionGuide')||document.getElementById('recipeCompanionGuide')||document.getElementById('methodFlowGuide')||document.getElementById('itemCompanionGuide')||document.getElementById('productionCompanionGuide');if(methodSlot){methodSlot.append(companion);companion.classList.add('method-flow-inline');}if(interactivePage)companion.classList.add('interactive-guide');
  companionRender();
+
+ // Compact reminder mirrors the live guide; it never advances or saves the form.
+ const nextBar=el('section');nextBar.id='bobsNextActionBar';nextBar.setAttribute('aria-label','Current BOBS action');
+ const nextText=el('span','Preparing the next action…'),openGuide=el('button','Open BOBS Guide');
+ nextText.id='bobsNextActionText';nextText.setAttribute('role','status');openGuide.type='button';openGuide.onclick=()=>{if(!companionOpen)companionToggle.click();};
+ nextBar.append(nextText,openGuide);document.getElementById('bobsRoadmapSpace').after(nextBar);
+ let pendingHandoff=false,barTimer,lastError='';
+ const typing=()=>document.activeElement?.matches('input:not([type=checkbox]):not([type=radio]),textarea,select');
+ function syncNextBar(){
+  nextBar.hidden=companionOpen||document.getElementById('savedModal')?.classList.contains('hidden')===false;
+  const confirmation=guideHost.querySelector('[data-confirmation-next] strong,[data-confirmation-next] p');
+  const primary=[...guideHost.querySelectorAll('button[data-guide-choice],a.guide-action')].find(n=>!n.closest('.guide-checklist,.guide-nav,details')&&!n.disabled);
+  const error=guideHost.querySelector('.guide-error')?.textContent?.trim();
+  const text=error?'Action needed: '+error:confirmation?.textContent?.trim()||(primary?'Next: '+primary.textContent.trim():guideHost.querySelector('.guide-question')?.textContent||'Open BOBS Guide for your next action.');
+  if(nextText.textContent!==text)nextText.textContent=text;
+  if(error&&error!==lastError)pendingHandoff=true;lastError=error||'';
+  if(pendingHandoff&&!typing()&&!document.querySelector('dialog[open]')&&nextBar.hidden===false){pendingHandoff=false;companionToggle.click();}
+ }
+ function scheduleBar(){clearTimeout(barTimer);barTimer=setTimeout(syncNextBar,60);}
+ new MutationObserver(scheduleBar).observe(guideHost,{subtree:true,childList:true,characterData:true});
+ new MutationObserver(scheduleBar).observe(companion,{attributes:true,attributeFilter:['hidden']});
+ for(const event of ['bobs-flow-saved','bobs-guide-resume'])window.addEventListener(event,()=>{pendingHandoff=true;scheduleBar();});
+ document.addEventListener('focusout',scheduleBar);window.addEventListener('bobs-outlet-choice',scheduleBar);
+ scheduleBar();
  const guideSnapshot=()=>{
   const pageGuide=document.getElementById('bobsFlowGuide');
   const ctx=context(),id=ctx.outlet||active,row=records.get(id),view=common&&id&&row?projection(id):null;
   return {methodFlow:window.BOBS_METHOD_FLOW_GUIDE?.snapshot(),itemHelp:window.BOBS_ITEM_GUIDE?.snapshot(),ctx:{...ctx,outlet:id},pageHelp:pageGuide?{title:pageGuide.querySelector('h2')?.textContent,instruction:pageGuide.querySelector('p')?.textContent,next:pageGuide.querySelector('.flow-guide-next')?.textContent,steps:[...pageGuide.querySelectorAll('[data-guide-step]')].map(el=>el.textContent),anchor:pageGuide.dataset.guideAnchor}:null,loading:busy,dirty:draftDirty,progress:{...progress},savedChecklist:{owner:id||'',name:common?.outlets?.value?.find(x=>String(x.id)===String(id))?.name||common?.kitchens?.value?.kitchens?.find(x=>x.id===id)?.name||'',stages:view?.stages||view?.steps||[]},next:progress.status==='error'?null:view?.next,readError:progress.status==='error'||row?.method2?.status==='error'||common?.outlets?.status==='error',
    items:tools&&row?.method2?.status==='ok'?BOBS_OUTLET_FLOW.selected(M2.state(row.method2.value),ITEM_DATA,M2):[],kitchens:common?.kitchens?.value?.kitchens||[]};
  };
- const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{script('bobs-window-return.js?v=reuse-workspaces-20261104',()=>!!window.BOBS_WINDOW_RETURN).catch(()=>{});await script('bobs-reference-help.js?v=inline-servings-20261104',()=>!!window.BOBS_REFERENCE);await script('bobs-guided-review.js?v=confirmation-next-20261104',()=>!!window.BOBS_REVIEW);await script('bobs-guide-bot.js?v=inline-kitchens-20261104',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
+ const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{script('bobs-window-return.js?v=reuse-workspaces-20261104',()=>!!window.BOBS_WINDOW_RETURN).catch(()=>{});await script('bobs-reference-help.js?v=inline-servings-20261104',()=>!!window.BOBS_REFERENCE);await script('bobs-guided-review.js?v=confirmation-next-20261104',()=>!!window.BOBS_REVIEW);await script('bobs-guide-bot.js?v=single-guide-20261104',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
  let autoStarted=false;
  const startJourney=()=>{if(!journey||autoStarted||document.getElementById('savedModal')?.classList.contains('hidden')===false)return;autoStarted=true;if(!companionOpen)companionToggle.click();};
  // The outlet's saved-data choice is the first guide question; hand off only after the user answers it.
