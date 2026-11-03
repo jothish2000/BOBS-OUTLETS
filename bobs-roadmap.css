@@ -73,3 +73,11 @@
 #bobsCompanion .guide-confirmation-next strong{display:block;margin-bottom:7px}
 #bobsCompanion .guide-confirmation-next button{display:block;width:100%;text-align:left;white-space:normal;min-height:44px;margin:6px 0}
 #bobsCompanion button.guide-review-again{display:inline-block;background:transparent;color:#315446;border:1px solid #9eb2a6;font-weight:400;padding:6px 9px;min-height:32px;margin-top:6px}
+
+/* A single compact reminder remains when the full guide is minimised. */
+#bobsFlowGuide[hidden],#bobsNextActionBar[hidden]{display:none!important}
+#bobsNextActionBar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px 10px 160px;background:#fff3c8;color:#173d2d;border-bottom:2px solid #b48624;font:600 14px/1.4 system-ui;box-sizing:border-box;overflow-wrap:anywhere}
+#bobsNextActionBar span{min-width:0}
+#bobsNextActionBar button{flex-shrink:0;background:#214f3c;color:#fff;border:0;border-radius:5px;padding:10px;font:inherit}
+@media(max-width:650px){#bobsNextActionBar{position:relative;padding:12px;flex-wrap:wrap}}
+#bobsCompanion{overflow-anchor:none}
