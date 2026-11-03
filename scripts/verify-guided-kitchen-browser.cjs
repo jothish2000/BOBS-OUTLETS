@@ -236,7 +236,7 @@ assert(!writes.includes('METHOD2'));assert(!writes.includes('BOBS_STANDARD_RECIP
 await p.reload();await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
 assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p.locator('[data-field=name]').last().inputValue(),'Wet grinder');assert.equal(await p.locator('[data-field=status]').last().inputValue(),'unknown');
 await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isHidden());
-await p.locator('#kitchenReviewed').click();assert(await p.locator('[data-review-ui=choices]').isVisible());
+await p.locator('#equipmentReviewed').click();assert(await p.locator('[data-review-ui=choices]').isVisible());
 const companionWrites=writes.length;
 if(!await p.locator('#bobsCompanion').isVisible())await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
 assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Elimedu kitchen — existing equipment/);
