@@ -126,7 +126,7 @@ function mount(host,options){
   const next=continuation(s,target.reviewNode);if(!next)return;
   const box=el('div',undefined,'guide-confirmation-next');box.dataset.confirmationNext='true';box.setAttribute('aria-live','polite');
   if(next.message)box.append(el('p',next.message));
-  else if(next.label){box.append(el('strong','Next: '+next.label));box.append(button('Show '+next.label,'confirmation-next',next.run));}
+  else if(next.label){box.append(el('strong','Next: '+next.label));box.append(button('Go to “'+next.label+'”','confirmation-next',next.run));}
   else {
    box.append(el('strong',next.choices.length>1?'Next: choose one option':'Next: '+next.choices[0].textContent));
    for(const original of next.choices){
@@ -144,6 +144,7 @@ function mount(host,options){
  function revealNext(){
   if(!revealContinuation)return;
   const pane=host.parentElement,next=host.querySelector('[data-confirmation-next]');
+  if(pane)pane.style.overflowAnchor='none';
   if(!next||!pane?.clientHeight)return;
   const b=next.getBoundingClientRect(),p=pane.getBoundingClientRect();
   const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
@@ -316,7 +317,7 @@ function mount(host,options){
      else if(h.stage==='load-error'){host.append(el('p','The equipment could not be loaded. This does not mean the inventory is empty.'));choices(work('Show Retry Google load','equipmentRetry'));}
      else if(h.stage==='saving')host.append(el('p','Saving and verifying in Google. Keep this page open.'));
      else if(h.stage==='saved'){host.append(el('p','✓ Inventory saved and verified. Next, review outlet expenses and mandatory staff. Capacity and costing will be assessed against the menu later.'));choices(work('Show Continue to outlet expenses','equipmentContinue'));}
-     else if(s.currentAction?.phase==='reviewed'){host.append(el('p','✓ Inventory review confirmed. Next: '+s.currentAction.saveLabel));choices(work('Show '+s.currentAction.saveLabel,'saveEquipment'));}
+     else if(s.currentAction?.phase==='reviewed'){host.append(el('p','✓ Inventory review confirmed. Next: '+s.currentAction.saveLabel));choices(work('Go to “'+s.currentAction.saveLabel+'”','saveEquipment'));}
      else if(h.stage==='empty'){host.append(el('p','No equipment has been added here yet. Start with the food you produce, then identify the machines you already own. This does not mean your kitchen has no machines.'));choices(button('Help me identify my existing equipment →','inventory-help',()=>{options.minimise();document.getElementById('openEquipmentHelp').click();}));}
      else{host.append(el('p',h.stage==='draft'?'Your equipment changes are not saved. Check each machine name, existing units and capacity status. Unknown capacity can stay pending.':'There are '+h.count+' equipment entries. Review existing units and capacity status. Estimates are different from confirmed measurements.'));choices(work('Review equipment entries','equipmentRows'),work('Show inventory confirmation and Save','equipmentReviewed'));}
      host.append(el('small',h.message||''));break;
@@ -344,7 +345,7 @@ function mount(host,options){
      ask((action.name?action.name+' — ':'')+action.title);
      host.append(el('p',action.phase==='reviewed'?'✓ Review confirmed. These entries have not been saved by ticking the box.':action.phase==='saving'?'Saving and verifying in Google. Keep this page open.':action.phase==='saved'?'✓ Saved and verified in Google.':action.phase==='error'?'The current step could not be completed.':action.phase==='loading'?'Loading the current page records. Please wait.':'Review the existing entries in the highlighted sections.'));
      if(action.phase==='error'||action.phase==='saving')host.append(el('p',action.message||'Check the page status.'));
-     if(action.phase==='reviewed'){host.append(el('p','Next: click “'+action.saveLabel+'”. '+(action.next||'')));choices(button('Show '+action.saveLabel,'current-save',()=>pageFocus(action.save)));}
+     if(action.phase==='reviewed'){host.append(el('p','Next: click “'+action.saveLabel+'”. '+(action.next||'')));choices(button('Go to “'+action.saveLabel+'”','current-save',()=>pageFocus(action.save)));}
      else if(action.phase==='review')choices(button('Review my previously entered inputs','current-review',()=>root.BOBS_REVIEW?root.BOBS_REVIEW.request(action.review):pageFocus(action.review)));
      else if(action.phase==='saved')host.append(el('p',action.next||'Follow the verified save continuation on this page.'));
      if(action.phase==='error')choices(button('Show the current entries and save status','current-error',()=>pageFocus(action.save||action.review)));
