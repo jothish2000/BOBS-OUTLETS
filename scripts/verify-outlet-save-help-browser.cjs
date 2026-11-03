@@ -24,6 +24,7 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  assert.match(await next.innerText(),/Next: Save outlets & go to Kitchen Setup/);
  assert(await next.evaluate(el=>el.previousElementSibling?.textContent.startsWith('✓')));
  assert.equal(await confirmation.locator('.guide-checklist-local .guide-review-again').innerText(),'Review again');
+await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-confirmation-next]')?.getBoundingClientRect(),p=document.getElementById('bobsCompanion')?.getBoundingClientRect(),h=document.querySelector('#bobsCompanion .companion-head')?.getBoundingClientRect();return a&&p&&a.y>=Math.max(p.y,h?.bottom||0)&&a.bottom<=p.bottom;});
  const nextBounds=await next.boundingBox(),paneBounds=await confirmation.locator('#bobsCompanion').boundingBox();
  assert(nextBounds.y>=paneBounds.y&&nextBounds.y+nextBounds.height<=paneBounds.y+paneBounds.height,'Tick continuation must be visible in the guide pane');
  assert.equal(writes.length,0,'Review confirmation must not save');
