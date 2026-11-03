@@ -9,9 +9,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();
  assert.equal(await p.evaluate(()=>document.activeElement.id),'targetQty');
  assert.equal(await p.isChecked('#intendedWeightReviewed'),false,'visiting a field is not confirmation');
- await p.getByRole('button',{name:'I have checked this input — next',exact:true}).click();
+ await p.getByRole('button',{name:'Confirm this section & continue',exact:true}).click();
  assert.equal(await p.evaluate(()=>document.activeElement.id),'portion');
- await p.getByRole('button',{name:'I have checked this input — next',exact:true}).click();
+ await p.getByRole('button',{name:'Confirm this section & continue',exact:true}).click();
  assert.equal(await p.isChecked('#intendedWeightReviewed'),false,'final confirmation is still explicit');
  await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();
  assert.equal(await p.isChecked('#intendedWeightReviewed'),true);
@@ -31,7 +31,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  // A review inside an equipment dialog must inspect that dialog, not the page behind it.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<label>Outside quantity<input id="outside" value="360"></label><dialog id="equipmentTest"><label>Usable capacity<input id="machineAmount" value="120"></label><label><input type="checkbox" id="machineBasis">I checked the equipment capacity.</label></dialog>';document.getElementById('equipmentTest').showModal();});
  await p.click('#machineBasis');await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();assert.equal(await p.evaluate(()=>document.activeElement.id),'machineAmount');
- await p.getByRole('button',{name:'I have checked this input — next',exact:true}).click();await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#machineBasis'));await p.evaluate(()=>document.getElementById('equipmentTest').close());
+ await p.getByRole('button',{name:'Confirm this section & continue',exact:true}).click();await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#machineBasis'));await p.evaluate(()=>document.getElementById('equipmentTest').close());
  // Product allocation edits do not change the separately confirmed asset cost assumptions.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<section data-asset="S"><label>Cost<input data-field="unitCost" id="cost" value="100"></label><label>Share<input id="share" value="50"></label><label><input type="checkbox" id="costCheck" data-field="costConfirmed">I checked cost assumptions.</label></section>';});
  await p.click('#costCheck');await p.check('[data-review-shortcut]');await p.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();await p.fill('#share','100');assert(await p.isChecked('#costCheck'),'allocation does not invalidate cost assumptions');await p.fill('#cost','101');assert.equal(await p.isChecked('#costCheck'),false,'changed cost does invalidate cost review');
