@@ -8,6 +8,9 @@
   'use strict';
   const cfg=window.BOBS_CONFIG||{};
   const VAULT_URL=cfg.DATA_VAULT_WEB_APP_URL||'';
+  // A timed-out JSONP script can still execute much later. Keep a shared inert
+  // callback until this document closes; it cannot resolve a read or change data.
+  const ignoreLateResponse=function(){};
   function jsonpAttempt(params,timeout){
     return new Promise(function(resolve,reject){
       if(!VAULT_URL)return reject(new Error('Data Vault URL is not configured'));
@@ -15,7 +18,7 @@
       const s=document.createElement('script');
       const q=Object.keys(params||{}).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]==null?'':params[k])}).join('&');
       let done=false;
-      function finish(fn,v){if(done)return;done=true;clearTimeout(timer);if(fn===reject){window[cb]=function(){};setTimeout(function(){try{delete window[cb]}catch(e){}},60000)}else{try{delete window[cb]}catch(e){}}s.remove();fn(v)}
+      function finish(fn,v){if(done)return;done=true;clearTimeout(timer);if(fn===reject){window[cb]=ignoreLateResponse}else{try{delete window[cb]}catch(e){}}s.remove();fn(v)}
       const timer=setTimeout(function(){finish(reject,Object.assign(new Error('Google Data Vault timeout'),{retryable:true}))},timeout);
       window[cb]=function(v){finish(resolve,v)};
       s.onerror=function(){finish(reject,Object.assign(new Error('Google Data Vault request failed'),{retryable:true}))};

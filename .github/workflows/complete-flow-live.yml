@@ -6,6 +6,7 @@ on:
       - 'outlets.html'
       - 'outlet-shift-presets.js'
       - 'bobs-config.js'
+      - 'bobs-google-data.js'
       - 'production-plan.html'
       - 'kitchen-flow.html'
       - 'bobs-kitchen*'
