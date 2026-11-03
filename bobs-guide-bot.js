@@ -131,10 +131,18 @@ function mount(host,options){
   // Directly below the tick, before any explanatory note or the secondary review button.
   target.children[0].after(box);
   if(revealContinuation){
-   revealContinuation=false;
-   // Scroll only the guide pane, never the working form or its controls.
-   const pane=host.parentElement,b=box.getBoundingClientRect(),p=pane?.getBoundingClientRect();
-   if(p&&pane.clientHeight&&pane.scrollHeight>pane.clientHeight){const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;else if(b.top<top)pane.scrollTop-=top-b.top+12;}
+   // Wait until the complete guide (including its footer) has been laid out.
+   const reveal=()=>{
+    if(!revealContinuation)return;
+    const pane=host.parentElement,next=host.querySelector('[data-confirmation-next]');
+    if(!next||!pane?.clientHeight)return;
+    const b=next.getBoundingClientRect(),p=pane.getBoundingClientRect();
+    const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
+    if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
+    else if(b.top<top)pane.scrollTop-=top-b.top+12;
+    revealContinuation=false;
+   };
+   if(root.requestAnimationFrame)root.requestAnimationFrame(reveal);else setTimeout(reveal,0);
   }
  }
 
