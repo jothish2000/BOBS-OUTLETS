@@ -6,6 +6,7 @@ const timing={role:'Cook',equipment:'Steamer',setupMin:0,activeMinPerCycle:1,mac
 const recipes=[{name:'Idli',yieldQty:60,yieldUnit:'piece',ingredients:[['Rice',1,'kg',60],['Urad dal',0.25,'kg',100]],productionTiming:timing},{name:'Idli Sambar',yieldQty:9,yieldUnit:'L',ingredients:[['Toor dal',1,'kg',100]],productionTiming:{...timing,equipment:'Stock pot and stove'}},{name:'Coconut Chutney',yieldQty:1,yieldUnit:'kg',ingredients:[['Coconut',500,'g',20]],productionTiming:{...timing,equipment:'Mixer'}}];
 const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{mode:'production',unit:'piece',batchSize:120,batches:1,sold:80,soldConfirmed:true,price:10,condiments:[{recipeName:'Idli Sambar',source:'production',portion:50,portionUnit:'ml'},{recipeName:'Coconut Chutney',source:'production',portion:20,portionUnit:'g'}]}}},'1/ASSET_MASTER/default':{assets:[{id:'G',name:'Existing grinder',quantity:1,ownedQty:1}]},'COMPANY/BOBS_STANDARD_RECIPE/ACTIVE_V1':K.manifest('standard',['test-chunk'],'guidance',3),'COMPANY/BOBS_STANDARD_RECIPE/test-chunk':K.chunkData('standard',recipes,'guidance',0,1)};
 db['COMPANY/KITCHEN_MASTER/default']={reviewed:true,kitchens:[{id:'Kitchen-Elimedu',name:'Elimedu Production Kitchen',status:'operating',outletId:'',shiftTimes:[{start:'04:30',end:'13:30'}]}],outletDecisions:{'1':{hasKitchen:false}}};
+db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Second Kitchen',status:'operating',shiftTimes:[{start:'04:30',end:'13:30'}]},{id:'Kitchen-Future',name:'Future Kitchen',status:'proposed',shiftTimes:[]});
 (async()=>{const browser=await chromium.launch({channel:process.env.BOBS_BROWSER_CHANNEL||'chrome',headless:true});try{
  const ctx=await browser.newContext({viewport:{width:1280,height:900}}),errors=[],writes=[];let failPlanSave=false;ctx.setDefaultTimeout(60000);
  await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(u.hostname==='bobs.test'){const f=path.join(root,decodeURIComponent(u.pathname.slice(1)));return fs.existsSync(f)?route.fulfill({path:f}):route.fulfill({status:404,body:'missing'});}
@@ -41,10 +42,10 @@ db['COMPANY/KITCHEN_MASTER/default']={reviewed:true,kitchens:[{id:'Kitchen-Elime
  await review(p.locator('#sideServingReviewed'));
  assert.equal(await p.locator('#sideExtraYes').isChecked(),false);assert.equal(await p.locator('#sideExtraNo').isChecked(),false);
  await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source');
- assert.equal(await p.locator('[data-source-key]').count(),3);assert.equal(await p.locator('[data-source-key]').first().inputValue(),'');assert(await p.locator('#useSameKitchen').isDisabled());
+ assert.equal(await p.locator('[data-source-key]').count(),3);assert.equal(await p.locator('[data-source-key]').first().inputValue(),'');assert(await p.locator('#useSameKitchen').isDisabled());assert.equal(await p.locator('[data-source-key]').first().locator('option').count(),4);assert(await p.locator('[data-source-key]').first().locator('option[value="Kitchen-Future"]').isDisabled());
  assert.match(await p.locator('#bobsGuideDialogue').innerText(),/supplying kitchen/);assert(await p.locator('#capacitySection').isHidden());assert.equal(writes.length,0);
  await p.click('#chooseProductionSource');assert.match(await p.locator('#sourceSaveStatus').innerText(),/Select an operating/);assert.equal(writes.length,0);
- await p.locator('[data-source-key]').first().selectOption('Kitchen-Elimedu');await p.click('#useSameKitchen');
+ await p.locator('[data-source-key]').first().selectOption('Kitchen-Elimedu');await p.locator('[data-source-key]').nth(1).selectOption('Kitchen-Second');assert.equal(await p.locator('[data-source-key]').nth(1).inputValue(),'Kitchen-Second');await p.click('#useSameKitchen');
  assert.deepEqual(await p.locator('[data-source-key]').evaluateAll(xs=>xs.map(x=>x.value)),['Kitchen-Elimedu','Kitchen-Elimedu','Kitchen-Elimedu']);
  await review(p.locator('#productionSourceReviewed'));await p.locator('[data-guide-choice=extra-no]').click();
  await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source-save');
