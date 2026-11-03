@@ -181,6 +181,7 @@ function companionBoot(){
   const text=error?'Action needed: '+error:confirmation?.textContent?.trim()||(primary?'Next: '+primary.textContent.trim():guideHost.querySelector('.guide-question')?.textContent||'Open BOBS Guide for your next action.');
   if(nextText.textContent!==text)nextText.textContent=text;
   if(error&&error!==lastError)pendingHandoff=true;lastError=error||'';
+  if(pendingHandoff&&companionOpen)pendingHandoff=false;
   if(pendingHandoff&&!typing()&&!document.querySelector('dialog[open]')&&nextBar.hidden===false){pendingHandoff=false;companionToggle.click();}
  }
  function scheduleBar(){clearTimeout(barTimer);barTimer=setTimeout(syncNextBar,60);}
