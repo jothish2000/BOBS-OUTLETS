@@ -56,10 +56,10 @@ test('recipe confirmations advance locally from intended review to Calculate to 
 });
 test('production confirmation keeps explicit Yes and No choices and then offers the actual kitchen-source action',async()=>{
  const d=new JSDOM('<main><input id="quantityReviewed" type="checkbox" checked><input id="sideServingReviewed" type="checkbox" checked><section id="sideExtraSection"></section><button id="chooseProductionSource">Save confirmed demand & choose supplying kitchens</button></main><aside><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/production-plan.html?guide=continue'}),w=d.window;
- try{let stage='extra-sides',choice,selected;w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_PRODUCTION_GUIDE={snapshot:()=>({ready:true,itemKey:'Idli',name:'Idli',journey:{stage},checks:{quantity:true},sides:{needed:true,reviewed:true},extraSides:{needed:true,choice}}),chooseExtra:v=>{choice=v;selected=v;stage='source';w.dispatchEvent(new w.Event('bobs-review-context'));},focus:id=>w.document.getElementById(id).focus()};
+ try{let stage='extra-sides',choice,selected;w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_PRODUCTION_GUIDE={snapshot:()=>({ready:true,itemKey:'Idli',name:'Idli',journey:{stage},checks:{quantity:true},sides:{needed:true,reviewed:true},extraSides:{needed:true,choice}}),chooseExtra:v=>{choice=v;selected=v;stage='source-save';w.dispatchEvent(new w.Event('bobs-review-context'));},focus:id=>w.document.getElementById(id).focus()};
  w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{journey:true,minimise(){},snapshot:()=>({ctx:{page:'production-plan.html'},progress:{status:'idle'}})});
  let next=host.querySelector('[data-confirmation-next]');assert.equal(next.querySelectorAll('button').length,2);assert.equal(selected,undefined);next.querySelectorAll('button')[1].click();await settle();assert.equal(selected,false);
- next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/choose supplying kitchens/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');
+ next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/selected kitchen’s next step/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');
  }finally{w.close();}
 });
 
