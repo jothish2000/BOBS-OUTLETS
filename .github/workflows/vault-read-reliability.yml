@@ -130,11 +130,11 @@ jobs:
         env:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
         run: |
+          node scripts/verify-production-guidance-browser.cjs
           node scripts/verify-outlet-save-help-browser.cjs
           node scripts/verify-guided-review-browser.cjs
           node scripts/verify-guided-kitchen-browser.cjs
           node scripts/verify-vault-browser.cjs
-          node scripts/verify-production-guidance-browser.cjs
           node scripts/verify-shared-kitchen-browser.cjs
           node scripts/verify-salary-capital-browser.cjs
       - name: Syntax and whitespace
