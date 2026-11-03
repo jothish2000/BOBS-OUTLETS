@@ -101,6 +101,9 @@ function mount(host,options){
 
  // Reuse this page's real next action. The checklist must not invent a second flow.
  function continuation(s,reviewNode){
+  const kitchenSource=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();
+  if(kitchenSource?.busy)return {message:'Saving and verifying supplying kitchens in Google. Keep this page open.'};
+  if(kitchenSource?.saved){const links=[...document.querySelectorAll('#nextAction a')];return links.length?{choices:links}:{message:'Supplying kitchens saved and verified. Next actions are loading.'};}
   // Report reviews have one independent Save per outlet; use its explicit association.
   const reportSave=reviewNode?.id&&[...document.querySelectorAll('[data-review-save]')].find(n=>n.dataset.reviewSave===reviewNode.id);
   if(reportSave){
@@ -310,7 +313,7 @@ function mount(host,options){
    }
 
    case 'page-task':{
-    const sourceGuide=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceGuide){ask(sourceGuide.title);host.append(el('p',sourceGuide.instruction));choices(button('Show the kitchen selection and next action','source-review',()=>pageFocus(sourceGuide.selector)));break;}
+    const sourceGuide=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceGuide){ask(sourceGuide.title);host.append(el('p',sourceGuide.instruction));if(sourceGuide.saved){for(const next of sourceGuide.next||[])host.append(link(next.label,next.href));}else choices(button('Review producing kitchens, batch choices and dispatch','source-review',()=>pageFocus(sourceGuide.selector)));break;}
     if(s.equipmentHelp){const h=s.equipmentHelp,work=(label,id)=>button(label,'inventory-'+id,()=>{options.work();root.BOBS_EQUIPMENT_GUIDE.focus(id);});
      ask(h.stage==='empty'?'No equipment recorded for '+h.name:h.stage==='saved'?'Equipment saved — choose your next step':h.name+' — existing equipment');
      if(h.stage==='loading')host.append(el('p','Reading the saved equipment. Wait for the result before adding anything.'));
