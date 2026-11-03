@@ -16,7 +16,7 @@ function entries(){const rows=[],seenSides=new Set();for(const cat of CAT_ORDER)
 function url(cat,i,mode){const target='method2-item.html?'+new URLSearchParams({outlet,cat,i,mode});return window.BOBS_WINDOW_RETURN?BOBS_WINDOW_RETURN.child(target):target}
 function open(cat,i,mode){
  if(!ready)return;const {k}=M2.keys(cat,i);pending[k]=s.itemEditors[k]?.saveToken||'new';sessionStorage.setItem(pendingKey,JSON.stringify(pending));
- const win=window.open(url(cat,i,mode),'bobs-item-'+outlet+'-'+CAT_ORDER.indexOf(cat)+'-'+i);
+ const win=window.BOBS_WINDOW_RETURN?.openWorkspace?BOBS_WINDOW_RETURN.openWorkspace(url(cat,i,mode)):window.open(url(cat,i,mode),'bobs-item-'+outlet+'-'+CAT_ORDER.indexOf(cat)+'-'+i);
  const row=Array.from($('catList').children).find(x=>x.dataset.key===k);if(row){row.children[3].textContent='Editor opened — save required';row.querySelector('.cancel-edit').hidden=false}
  render();
  if(!win){$('status').textContent='Allow the item window, or use this link.';const a=document.createElement('a');a.href=url(cat,i,mode);a.target='_top';a.textContent='Open item editor';$('status').append(' ',a)}
