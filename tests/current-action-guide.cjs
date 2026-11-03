@@ -62,3 +62,16 @@ test('production confirmation keeps explicit Yes and No choices and then offers 
  next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/choose supplying kitchens/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');
  }finally{w.close();}
 });
+
+test('capital review and each outlet report keep their own Save and verified next action',async()=>{
+ for(const capex of [true,false]){
+ const markup=capex?'<input type="checkbox" id="capexReviewed"><button id="capexSave">Save capital plan</button><p id="capexStatus"></p>':'<section><label><input type="checkbox" id="outletReview-1">Review outlet one</label><button id="reportSave1" data-review-save="outletReview-1">Save outlet one review</button><a data-review-next href="/outlet-review.html">Next outlet / company review →</a></section>';
+ const d=new JSDOM('<main>'+markup+'</main><aside><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/'+(capex?'capital-expenditure.html':'outlet-review.html')+'?guide=continue'}),w=d.window;
+ try{const id=capex?'capexReviewed':'outletReview-1';reviewRows(w,[id]);w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_REVIEW.request=()=>false;
+ w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide'),bot=w.BOBS_GUIDE_BOT.mount(host,{journey:true,minimise(){},snapshot:()=>({ctx:{page:capex?'capital-expenditure.html':'outlet-review.html'},progress:{status:'idle'}})});
+ const n=w.document.getElementById(id);n.checked=true;n.dispatchEvent(new w.Event('change',{bubbles:true}));await settle();
+ let next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,capex?/Save capital plan/:/Save outlet one review/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,capex?'capexSave':'reportSave1');
+ if(!capex){w.document.getElementById('reportSave1').dataset.reviewSaved='true';bot.update();next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/Next outlet \/ company review/);assert.doesNotMatch(next.textContent,/Save outlet one/);}
+ }finally{w.close();}
+ }
+});
