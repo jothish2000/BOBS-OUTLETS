@@ -6,7 +6,7 @@ d.body.append(dialog);
 const $=id=>d.getElementById(id),style=d.createElement('style');style.textContent='#bobsReferenceDialog{box-sizing:border-box;width:min(760px,94vw);max-height:88vh;overflow:auto;background:#fffaf0;color:#193e30;border:2px solid #b48624;border-radius:10px;padding:20px;font:16px/1.5 system-ui}#bobsReferenceDialog::backdrop{background:#0007}#bobsReferenceDialog button{padding:10px;margin:10px 8px 0 0}#bobsReferenceContent{overflow-wrap:anywhere}#bobsReferenceContent table{max-width:100%;font-size:14px}#bobsReferenceContent .scroll{overflow:auto}.bobs-reference-launch{padding:12px;background:#214f3c;color:white;border:0;margin:10px 0;font:inherit}';d.head.append(style);
 function sources(key){
  if(key==='recipe')return ['referenceInfo','referenceEvidence','referenceRows','referenceTotal'].map($).filter(Boolean);
- if(key.startsWith('serving:'))return [...d.querySelectorAll('[data-serving-reference]')].filter(n=>n.dataset.servingReference===key.split(':')[1]);
+ if(key.startsWith('serving:'))return [...d.querySelectorAll('[data-serving-reference]')].filter(n=>!dialog.contains(n)&&n.dataset.servingReference===key.split(':')[1]);
  if(key==='serving')return [$('servingReferenceHelp')].filter(Boolean);
  if(key==='equipment')return [...d.querySelectorAll('#capacityReferences,.equipment-help .capacity-reference')];
  return [];
@@ -29,7 +29,7 @@ $('bobsReferenceAcknowledged').onchange=()=>{$('bobsReferenceContinue').disabled
 $('bobsReferenceContinue').onclick=()=>{if(!$('bobsReferenceAcknowledged').checked||!opened)return;checked.set(opened,stamp(opened));const next=after;close();root.dispatchEvent(new Event('bobs-review-context'));next?.();};
 $('bobsReferenceClose').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
 function keyFor(n){if(n?.id==='referenceWeightReviewed'&&$('referenceEvidence'))return 'recipe';if(n?.id==='capacityReviewed'&&$('capacityReferences'))return 'equipment';return null;}
-function ensure(n,next){if(n?.id==='sideServingReviewed'){const key=[...d.querySelectorAll('[data-serving-reference]')].map(n=>'serving:'+n.dataset.servingReference).find(k=>!done(k));if(key){show(key,()=>ensure(n,next)||next?.());return true;}}const key=keyFor(n);if(!key||done(key))return false;show(key,next);return true;}
+function ensure(n,next){if(n?.id==='sideServingReviewed'){const key=[...d.querySelectorAll('[data-serving-reference]')].filter(n=>!dialog.contains(n)).map(n=>'serving:'+n.dataset.servingReference).find(k=>!done(k));if(key){show(key,()=>ensure(n,next)||next?.());return true;}}const key=keyFor(n);if(!key||done(key))return false;show(key,next);return true;}
 function install(){
  const serving=$('servingReferenceHelp');if(serving&&!$('openServingReference')){const b=d.createElement('button');b.type='button';b.id='openServingReference';b.className='bobs-reference-launch';b.textContent='Review serving-size examples and optional sources';b.onclick=()=>show('serving');serving.before(b);serving.hidden=true;}
 
