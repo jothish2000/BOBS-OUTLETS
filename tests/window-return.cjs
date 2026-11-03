@@ -13,3 +13,21 @@ test('referrer supplies safe previous-window fallback',()=>{const f=fixture({ref
 test('notification failures cannot suppress return',()=>{const p=parent();p.postMessage=()=>{throw Error('closed race')};const f=fixture({opener:p});f.nav.notify({type:'saved'},['test']);f.nav.afterSave();assert.deepEqual(f.calls,[['close']])});
 
 test('verified child fallback resumes matching parent details without changing route context',()=>{const f=fixture({href:'https://bobs.test/recipe-cost-editor.html?returnTo='+encodeURIComponent('https://bobs.test/method2-item.html?outlet=2&cat=Breakfast&i=0')});f.nav.afterSave(null,{page:'method2-item.html',hash:'supplyHeading'});assert.deepEqual(f.calls,[['navigate','https://bobs.test/method2-item.html?outlet=2&cat=Breakfast&i=0#supplyHeading']]);const other=fixture({referrer:'https://bobs.test/method2.html?outlet=2'});other.nav.afterSave(null,{page:'method2-item.html',hash:'supplyHeading'});assert.deepEqual(other.calls,[['navigate','https://bobs.test/method2.html?outlet=2']])});
+
+test('same related item is focused without reload, including different guide and return context',()=>{
+ const p=parent(),a=fixture({opener:p,href:'https://bobs.test/method2-item.html?outlet=1&cat=Breakfast&i=0&mode=production'}),b=fixture({opener:p,href:'https://bobs.test/production-plan.html?outlet=1'});
+ a.root.focus=()=>a.calls.push(['focus']);a.root.unsaved='keep';b.root.open=()=>{throw Error('must reuse existing item')};
+ assert.equal(b.nav.openWorkspace('method2-item.html?i=0&cat=Breakfast&outlet=1&guide=continue&returnTo='+encodeURIComponent(b.root.location.href)),a.root);
+ assert.deepEqual(a.calls,[['focus']]);assert.equal(a.root.unsaved,'keep');assert.equal(a.root.location.href,'https://bobs.test/method2-item.html?outlet=1&cat=Breakfast&i=0&mode=production');
+});
+test('different item opens once and subsequent requests reuse it; closed windows reopen',()=>{
+ const p=parent(),f=fixture({opener:p});let opened=0;
+ f.root.open=url=>{opened++;return {location:{href:url},closed:false,focus(){this.focused=true}};};
+ const first=f.nav.openWorkspace('method2-item.html?outlet=2&cat=Breakfast&i=1');
+ assert.equal(f.nav.openWorkspace('method2-item.html?cat=Breakfast&i=1&outlet=2'),first);assert.equal(opened,1);assert(first.focused);
+ first.closed=true;assert.notEqual(f.nav.openWorkspace('method2-item.html?outlet=2&cat=Breakfast&i=1'),first);assert.equal(opened,2);
+});
+test('serving shortcut and different recipe quantities remain distinct contexts',()=>{
+ const f=fixture();assert.notEqual(f.nav.identity('method2-item.html?outlet=1&i=0'),f.nav.identity('method2-item.html?outlet=1&i=0&servingRecipe=Sambar'));
+ assert.notEqual(f.nav.identity('recipe-cost-editor.html?item=Sambar&qty=7.2'),f.nav.identity('recipe-cost-editor.html?item=Sambar&qty=7.56'));
+});
