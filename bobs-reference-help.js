@@ -6,6 +6,7 @@ d.body.append(dialog);
 const $=id=>d.getElementById(id),style=d.createElement('style');style.textContent='#bobsReferenceDialog{box-sizing:border-box;width:min(760px,94vw);max-height:88vh;overflow:auto;background:#fffaf0;color:#193e30;border:2px solid #b48624;border-radius:10px;padding:20px;font:16px/1.5 system-ui}#bobsReferenceDialog::backdrop{background:#0007}#bobsReferenceDialog button{padding:10px;margin:10px 8px 0 0}#bobsReferenceContent{overflow-wrap:anywhere}#bobsReferenceContent table{max-width:100%;font-size:14px}#bobsReferenceContent .scroll{overflow:auto}.bobs-reference-launch{padding:12px;background:#214f3c;color:white;border:0;margin:10px 0;font:inherit}';d.head.append(style);
 function sources(key){
  if(key==='recipe')return ['referenceInfo','referenceEvidence','referenceRows','referenceTotal'].map($).filter(Boolean);
+ if(key.startsWith('serving:'))return [...d.querySelectorAll('[data-serving-reference]')].filter(n=>n.dataset.servingReference===key.split(':')[1]);
  if(key==='serving')return [$('servingReferenceHelp')].filter(Boolean);
  if(key==='equipment')return [...d.querySelectorAll('#capacityReferences,.equipment-help .capacity-reference')];
  return [];
@@ -15,9 +16,9 @@ function done(key){return checked.get(key)===stamp(key);}
 function close(){if(dialog.open)dialog.close();const target=returnFocus;after=null;opened=null;if(target?.isConnected){target.scrollIntoView({block:'center'});target.focus({preventScroll:true});}}
 function show(key,next){
  if(dialog.open)dialog.close();opened=key;after=next;returnFocus=d.activeElement;
- $('bobsReferenceTitle').textContent=key==='recipe'?'Recipe reference — assess suitability':key==='serving'?'Serving-size reference — choose a suitable amount':'Equipment references — assess suitability';
+ $('bobsReferenceTitle').textContent=key==='recipe'?'Recipe reference — assess suitability':key.startsWith('serving')?'Serving-size reference — choose a suitable amount':'Equipment references — assess suitability';
  const content=$('bobsReferenceContent');content.replaceChildren();
- const items=sources(key);for(const source of items){let copy=source.cloneNode(true);copy.hidden=false;copy.removeAttribute('hidden');copy.querySelectorAll(key==='serving'?'button,input,textarea':'button,input,select,textarea').forEach(n=>n.remove());if(key==='serving'){const choice=copy.querySelector('select'),original=source.querySelector('select');if(choice&&original)choice.onchange=()=>{original.value=choice.value;original.dispatchEvent(new Event('change',{bubbles:true}));};}copy.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));copy.removeAttribute('id');
+ const items=sources(key);for(const source of items){let copy=source.cloneNode(true);copy.hidden=false;copy.removeAttribute('hidden');copy.querySelectorAll(key.startsWith('serving')?'button,input,textarea':'button,input,select,textarea').forEach(n=>n.remove());if(key.startsWith('serving')){const choice=copy.querySelector('select'),original=source.querySelector('select');if(choice&&original)choice.onchange=()=>{original.value=choice.value;original.dispatchEvent(new Event('change',{bubbles:true}));};}copy.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));copy.removeAttribute('id');
  if(copy.tagName==='TBODY'){const table=d.createElement('table');table.append(copy);const wrap=d.createElement('div');wrap.className='scroll';wrap.append(table);copy=wrap;}
  copy.querySelectorAll('a').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer';});content.append(copy);
  }
@@ -28,7 +29,7 @@ $('bobsReferenceAcknowledged').onchange=()=>{$('bobsReferenceContinue').disabled
 $('bobsReferenceContinue').onclick=()=>{if(!$('bobsReferenceAcknowledged').checked||!opened)return;checked.set(opened,stamp(opened));const next=after;close();root.dispatchEvent(new Event('bobs-review-context'));next?.();};
 $('bobsReferenceClose').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
 function keyFor(n){if(n?.id==='referenceWeightReviewed'&&$('referenceEvidence'))return 'recipe';if(n?.id==='capacityReviewed'&&$('capacityReferences'))return 'equipment';return null;}
-function ensure(n,next){const key=keyFor(n);if(!key||done(key))return false;show(key,next);return true;}
+function ensure(n,next){if(n?.id==='sideServingReviewed'){const key=[...d.querySelectorAll('[data-serving-reference]')].map(n=>'serving:'+n.dataset.servingReference).find(k=>!done(k));if(key){show(key,()=>ensure(n,next)||next?.());return true;}}const key=keyFor(n);if(!key||done(key))return false;show(key,next);return true;}
 function install(){
  const serving=$('servingReferenceHelp');if(serving&&!$('openServingReference')){const b=d.createElement('button');b.type='button';b.id='openServingReference';b.className='bobs-reference-launch';b.textContent='Review serving-size examples and optional sources';b.onclick=()=>show('serving');serving.before(b);serving.hidden=true;}
 
