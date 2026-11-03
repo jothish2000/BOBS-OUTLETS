@@ -27,21 +27,34 @@ db['COMPANY/KITCHEN_MASTER/default']={reviewed:true,kitchens:[{id:'Kitchen-Elime
  assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
  await p.fill('#intendedQuantity','360');await p.fill('#readyBy','07:00');
- await review(p.locator('#quantityReviewed'));await review(p.locator('#sideServingReviewed'));
+ await review(p.locator('#quantityReviewed'));
+ // Existing item window is reused without reload or draft loss.
+ await owner.fill('#batchSize','121');
+ const count=ctx.pages().length;await owner.locator('[data-guide-choice=item-open-production]').click();await owner.waitForTimeout(150);
+ assert.equal(ctx.pages().length,count);assert.equal(await p.inputValue('#intendedQuantity'),'360');assert.equal(await owner.inputValue('#batchSize'),'121');
+ assert.equal(await p.locator('[data-serving-row]').count(),2);
+ await p.locator('#servingAmount-0').fill('20');await p.locator('#servingAmount-1').fill('8');
+ assert.equal(await p.locator('#servingAmount-1').inputValue(),'8');
+ // Reference assessment is one popup at a time; external source visits are optional.
+ await p.evaluate(()=>BOBS_REVIEW.request('#sideServingReviewed'));
+ for(let i=0;i<2;i++){await p.locator('#bobsReferenceDialog[open]').waitFor();await p.check('#bobsReferenceAcknowledged');await p.click('#bobsReferenceContinue');}
+ await review(p.locator('#sideServingReviewed'));
  assert.equal(await p.locator('#sideExtraYes').isChecked(),false);assert.equal(await p.locator('#sideExtraNo').isChecked(),false);
- await p.locator('[data-guide-choice=extra-no]').click();await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source');
+ await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source');
+ assert.equal(await p.locator('[data-source-key]').count(),3);assert.equal(await p.locator('[data-source-key]').first().inputValue(),'');assert(await p.locator('#useSameKitchen').isDisabled());
  assert.match(await p.locator('#bobsGuideDialogue').innerText(),/supplying kitchen/);assert(await p.locator('#capacitySection').isHidden());assert.equal(writes.length,0);
- await p.click('#chooseProductionSource');await p.waitForURL('**/kitchen-flow.html?**stage=demand**');await p.waitForFunction(()=>document.getElementById('saveKitchen')?.disabled===false);
- assert.equal(db['1/METHOD2/default'].itemEditors[key].batchSize,360);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert.equal(db['1/OUTLET_PRODUCTION_PLAN/default'],undefined);
- assert.equal(await p.locator('[data-demand]').count(),3);assert.equal(await p.locator('[data-field=kitchenId]').first().inputValue(),'');
- await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForFunction(()=>document.getElementById('kitchenStatus').textContent.startsWith('Not saved:'));assert.match(await p.locator('#kitchenStatus').innerText(),/Choose an operating production kitchen/);
- for(const row of await p.locator('[data-demand]').all()){await row.locator('[data-field=kitchenId]').selectOption('Kitchen-Elimedu');await row.locator('[data-field=readyBy]').fill('07:00');await review(row.locator('[data-field=away]'));}
- await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForFunction(()=>document.getElementById('kitchenStatus').textContent.includes('read back'));
- await p.waitForSelector('#nextAction a');assert.match(await p.locator('#nextAction').innerText(),/Elimedu.*next required action/);
+ await p.click('#chooseProductionSource');assert.match(await p.locator('#sourceSaveStatus').innerText(),/Select an operating/);assert.equal(writes.length,0);
+ await p.locator('[data-source-key]').first().selectOption('Kitchen-Elimedu');await p.click('#useSameKitchen');
+ assert.deepEqual(await p.locator('[data-source-key]').evaluateAll(xs=>xs.map(x=>x.value)),['Kitchen-Elimedu','Kitchen-Elimedu','Kitchen-Elimedu']);
+ await review(p.locator('#productionSourceReviewed'));await p.locator('[data-guide-choice=extra-no]').click();
+ await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source-save');
+ await p.click('#chooseProductionSource');await p.waitForFunction(()=>document.getElementById('sourceSaveStatus').textContent.includes('saved and verified'));
+ assert.equal(p.url(),url);assert.equal(db['1/METHOD2/default'].itemEditors[key].batchSize,360);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert.equal(db['1/OUTLET_PRODUCTION_PLAN/default'],undefined);
+ await p.waitForSelector('#sourceNextActions a');assert.match(await p.locator('#sourceNextActions').innerText(),/Elimedu.*next required action/);
  const saved=db['1/METHOD2/default'];assert.equal(Object.keys(saved.kitchenSources).length,3);assert(Object.values(saved.kitchenSources).every(x=>x.kitchenId==='Kitchen-Elimedu'));assert.equal(saved.itemEditors[key].sideExtraFivePercent,false);assert.equal(db['1/ASSET_MASTER/default'].assets.length,1);
- const context=await p.evaluate(()=>BOBS_KITCHENS.context('Kitchen-Elimedu'));assert.equal(context.jobs.length,3);assert.equal(context.jobs.find(j=>j.name==='Idli').quantity,360);assert.equal(context.jobs.find(j=>j.name==='Idli Sambar').quantity,18);assert.equal(context.jobs.find(j=>j.name==='Coconut Chutney').quantity,7.2);
+ const context=await p.evaluate(()=>BOBS_KITCHENS.context('Kitchen-Elimedu'));assert.equal(context.jobs.length,3);assert.equal(context.jobs.find(j=>j.name==='Idli').quantity,360);assert.equal(context.jobs.find(j=>j.name==='Idli Sambar').quantity,7.2);assert.equal(context.jobs.find(j=>j.name==='Coconut Chutney').quantity,2.88);
  const local=await p.evaluate(async()=>{const items=BOBS_OUTLET_FLOW.selected(M2.state(await M2.read('1')),ITEM_DATA,M2),recipes=(await BOBS_OPERATIONAL_RECIPES.load()).recipes;return BOBS_OUTLET_FLOW.requirements(items,recipes,M2)});assert.equal(local.length,0,'kitchen production must not also count at the shop');
- await p.locator('#nextAction > section > a').click();await p.waitForURL('**/outlet-plan.html?**');assert.equal(new URL(p.url()).searchParams.get('outlet'),'Kitchen-Elimedu');
+ await p.locator('#sourceNextActions > section > a').click();await p.waitForURL('**/outlet-plan.html?**');assert.equal(new URL(p.url()).searchParams.get('outlet'),'Kitchen-Elimedu');
  assert(!owner.isClosed());assert.equal(owner.url(),parentURL);assert.deepEqual(errors,[]);
  console.log('PASS production sourcing: confirmed demand, explicit per-side kitchen, missing choice blocked, exact quantities, no shop equipment writes, verified next kitchen step and retained parent.');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
