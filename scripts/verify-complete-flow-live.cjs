@@ -53,6 +53,7 @@ const confirmedNext=setup.locator('.guide-checklist-local [data-confirmation-nex
 assert.match(await confirmedNext.innerText(),/Next: Save outlets & go to Kitchen Setup/);
 assert(await confirmedNext.evaluate(el=>el.previousElementSibling?.textContent.startsWith('✓')));
 assert.equal(await setup.locator('.guide-checklist-local .guide-review-again').innerText(),'Review again');
+await setup.waitForFunction(()=>{const a=document.querySelector('[data-confirmation-next]')?.getBoundingClientRect(),p=document.getElementById('bobsCompanion')?.getBoundingClientRect(),h=document.querySelector('#bobsCompanion .companion-head')?.getBoundingClientRect();return a&&p&&a.y>=Math.max(p.y,h?.bottom||0)&&a.bottom<=p.bottom;});
 const nextRect=await confirmedNext.boundingBox(),guideRect=await setup.locator('#bobsCompanion').boundingBox();
 assert(nextRect.y>=guideRect.y&&nextRect.y+nextRect.height<=guideRect.y+guideRect.height);
 await captureRendered(setup,'outlet-confirmation-next-live.png');
