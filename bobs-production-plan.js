@@ -8,11 +8,11 @@ function renderSourceStep(){
  box.innerHTML='<h3>Where will '+esc(selected.item.name)+' and its sides be produced?</h3><p><strong>Selling outlet: '+esc(data.outlet.name)+'</strong>. This quantity is demand for the shop; it does not mean the shop has a kitchen.</p><p>First confirm the quantity, ready-by time, sides and optional extra allowance above. Then save this demand and choose an operating kitchen for each produced item and side. Equipment, staff and production costs belong to the selected kitchen.</p><button id="chooseProductionSource" type="button">Save confirmed demand & choose supplying kitchens →</button><p id="sourceSaveStatus" role="status"></p>';
  $('chooseProductionSource').onclick=async()=>{
   if(busy)return;
-  try{requireExtraChoice();busy=true;$('chooseProductionSource').disabled=true;$('sourceSaveStatus').textContent='Saving demand and verifying Google records…';
+  try{requireExtraChoice();if($('readyDay').value!=='0')throw Error('Shared-kitchen routing currently plans today’s orders. Choose Today to continue, or retain this draft for a dated-production update.');busy=true;$('chooseProductionSource').disabled=true;$('sourceSaveStatus').textContent='Saving demand and verifying Google records…';
    const fresh=await M2.read(outlet);if(!V.equal(fresh,data.raw))throw Error('Menu changed elsewhere. Reload and review before saving demand.');
    const next=P.draftState(data.raw,[{cat:selected.cat,i:selected.i,quantity:$('intendedQuantity').value,unit:selected.d.unit,mode:selected.d.mode,...(extraNeeded()?{sideExtraFivePercent:extraChoice()}:{})}],ITEM_DATA,M2,C.today());
    data.raw=await V.save(outlet,'METHOD2','default',next,data.raw);dirty=false;
-   BOBS_WINDOW_RETURN.notify({type:'bobs-production-demand-saved',outlet,key:selected.key},['bobs-production-plan']);busy=false;location.assign(sourceDestination());
+   try{BOBS_WINDOW_RETURN.notify({type:'bobs-production-demand-saved',outlet,key:selected.key},['bobs-production-plan']);}catch(_){}busy=false;location.assign(sourceDestination());
   }catch(e){$('sourceSaveStatus').textContent='Demand was not confirmed: '+e.message;}finally{busy=false;if($('chooseProductionSource'))$('chooseProductionSource').disabled=false;guideChanged();}
  };
 }

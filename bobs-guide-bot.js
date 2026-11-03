@@ -38,7 +38,7 @@ function currentAction(s){
  const fields=ids[s.ctx.page];if(!fields)return null;
  const review=document.getElementById(fields[0]),save=document.getElementById(fields[1]),status=document.getElementById(fields[2]);if(!review||!save)return null;
  const message=status?.textContent||'',saving=save.closest('[aria-busy=true]')||save.disabled&&review.checked;
- return {title:s.pageHelp?.title||'This page',name:s.savedChecklist?.name||'',phase:saving?'saving':status?.dataset.tone==='error'?'error':review.checked?'reviewed':'review',message,review:'#'+fields[0],save:'#'+fields[1],saveLabel:save.textContent};
+ return {title:s.pageHelp?.title||'This page',name:s.savedChecklist?.name||'',phase:saving?'saving':(status?.dataset.tone==='error'||/^(Not saved:|Could not load:|Incomplete)/.test(message))?'error':review.checked?'reviewed':'review',message,review:'#'+fields[0],save:'#'+fields[1],saveLabel:save.textContent};
 }
 
 function mount(host,options){
@@ -277,12 +277,13 @@ function mount(host,options){
     const action=s.currentAction;
     if(action){
      ask((action.name?action.name+' — ':'')+action.title);
-     host.append(el('p',action.phase==='reviewed'?'✓ Review confirmed. These entries have not been saved by ticking the box.':action.phase==='saving'?'Saving and verifying in Google. Keep this page open.':action.phase==='saved'?'✓ Saved and verified in Google.':action.phase==='error'?'The current step could not be completed.':'Review the existing entries in the highlighted sections.'));
+     host.append(el('p',action.phase==='reviewed'?'✓ Review confirmed. These entries have not been saved by ticking the box.':action.phase==='saving'?'Saving and verifying in Google. Keep this page open.':action.phase==='saved'?'✓ Saved and verified in Google.':action.phase==='error'?'The current step could not be completed.':action.phase==='loading'?'Loading the current page records. Please wait.':'Review the existing entries in the highlighted sections.'));
      if(action.phase==='error'||action.phase==='saving')host.append(el('p',action.message||'Check the page status.'));
      if(action.phase==='reviewed'){host.append(el('p','Next: click “'+action.saveLabel+'”. '+(action.next||'')));choices(button('Show '+action.saveLabel,'current-save',()=>pageFocus(action.save)));}
      else if(action.phase==='review')choices(button('Review my previously entered inputs','current-review',()=>root.BOBS_REVIEW?root.BOBS_REVIEW.request(action.review):pageFocus(action.review)));
      else if(action.phase==='saved')host.append(el('p',action.next||'Follow the verified save continuation on this page.'));
      if(action.phase==='error')choices(button('Show the current entries and save status','current-error',()=>pageFocus(action.save||action.review)));
+     const other=el('details');other.dataset.otherChecks='true';other.append(el('summary','Other checks — previously saved progress'),el('p','This checks saved Google records. It does not save or replace your current entries.'),choose('Check saved progress & show what’s incomplete','page-progress','resume',()=>options.refresh()));host.append(other);
      break;
     }
     const help=s.pageHelp;

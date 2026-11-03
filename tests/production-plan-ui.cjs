@@ -134,9 +134,6 @@ test('selling outlet must choose a supplying kitchen before equipment; demand sa
  }finally{f.dom.window.close();}
 });
 test('production continuation keeps the selected item and costing destination',async()=>{
- const f=await fixture();try{
-  assert.equal(f.w.BOBS_PRODUCTION_GUIDE.itemCostContinuation(),null,'an item opener retains its immediate return');
-  f.w.history.replaceState(null,'','?outlet=1&cat=Breakfast+Catalogue&i=0&returnTo=https%3A%2F%2Fbobs.test%2Foutlet-method-flow.html');
-  // The URL context is captured when loading; test the workspace route in a fresh fixture instead.
- }finally{f.dom.window.close();}
+ const f=await fixture();try{assert.equal(f.w.BOBS_PRODUCTION_GUIDE.itemCostContinuation(),null,'an item opener retains its immediate return');}finally{f.dom.window.close();}
+ const g=await fixture('piece',{url:'https://bobs.test/production-plan.html?outlet=1&cat=Breakfast+Catalogue&i=0&returnTo=https%3A%2F%2Fbobs.test%2Foutlet-method-flow.html'});try{const url=new URL(g.w.BOBS_PRODUCTION_GUIDE.itemCostContinuation());assert.equal(url.pathname,'/method2-item.html');assert.equal(url.searchParams.get('cat'),'Breakfast Catalogue');assert.equal(url.searchParams.get('i'),'0');assert.equal(url.searchParams.get('outlet'),'1');assert.equal(url.hash,'#idliLabourCost');}finally{g.dom.window.close();}
 });
