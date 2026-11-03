@@ -431,7 +431,7 @@ function mount(host,options){
  root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);});
  const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
  actionObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['disabled','aria-busy','data-tone']});
- render();return {update,kitchenNext};
+ actionStamp=JSON.stringify(snapshot().currentAction);render();return {update,kitchenNext};
 }
 root.BOBS_GUIDE_BOT={mount,checklistModel,savedPageContext};
 })(window);

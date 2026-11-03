@@ -4,7 +4,7 @@ function needsKitchenRouting(){return !!BOBS_KITCHENS.locations&&!BOBS_KITCHENS.
 function sourceDestination(){return 'kitchen-flow.html?'+new URLSearchParams({outlet,stage:'demand',cat:selected.cat,i:selected.i,readyBy:$('readyBy').value,guide:'continue',returnTo:BOBS_WINDOW_RETURN.safe(q.get('returnTo'))||location.href});}
 function renderSourceStep(){
  let box=$('productionSourceStep');if(!box){box=document.createElement('section');box.id='productionSourceStep';extraBox.after(box);}
- box.hidden=!needsKitchenRouting();if(box.hidden)return;
+ box.hidden=!needsKitchenRouting();for(const node of [$('recipeReviewGuide'),$('capacitySection'),$('processes')?.closest('section'),$('deliverySection'),$('saveProductionPlan')?.closest('.save'),$('workforceNext')])if(node)node.hidden=!box.hidden;if(box.hidden)return;
  box.innerHTML='<h3>Where will '+esc(selected.item.name)+' and its sides be produced?</h3><p><strong>Selling outlet: '+esc(data.outlet.name)+'</strong>. This quantity is demand for the shop; it does not mean the shop has a kitchen.</p><p>First confirm the quantity, ready-by time, sides and optional extra allowance above. Then save this demand and choose an operating kitchen for each produced item and side. Equipment, staff and production costs belong to the selected kitchen.</p><button id="chooseProductionSource" type="button">Save confirmed demand & choose supplying kitchens →</button><p id="sourceSaveStatus" role="status"></p>';
  $('chooseProductionSource').onclick=async()=>{
   if(busy)return;
@@ -12,7 +12,7 @@ function renderSourceStep(){
    const fresh=await M2.read(outlet);if(!V.equal(fresh,data.raw))throw Error('Menu changed elsewhere. Reload and review before saving demand.');
    const next=P.draftState(data.raw,[{cat:selected.cat,i:selected.i,quantity:$('intendedQuantity').value,unit:selected.d.unit,mode:selected.d.mode,...(extraNeeded()?{sideExtraFivePercent:extraChoice()}:{})}],ITEM_DATA,M2,C.today());
    data.raw=await V.save(outlet,'METHOD2','default',next,data.raw);dirty=false;
-   location.assign(sourceDestination());
+   busy=false;location.assign(sourceDestination());
   }catch(e){$('sourceSaveStatus').textContent='Demand was not confirmed: '+e.message;}finally{busy=false;if($('chooseProductionSource'))$('chooseProductionSource').disabled=false;guideChanged();}
  };
 }
