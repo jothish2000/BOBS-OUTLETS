@@ -41,40 +41,39 @@ function refresh(){
  }
 }
 function clearHighlight(){highlighted?.classList.remove('bobs-review-highlight');highlighted=null;}
-function groups(n){
+function groups(n,individual=false){
  const result=[];for(const field of targets(n)){
   const explicit=['referenceWeightReviewed','intendedWeightReviewed'].includes(n.id);
-  const section=explicit?field:field.closest('[data-position],[data-kitchen],[data-asset],[data-process],[data-capacity],section,article,fieldset')||field;
+  const section=(individual||explicit)?field:field.closest('[data-position],[data-kitchen],[data-asset],[data-process],[data-capacity],section,article,fieldset')||field;
   let group=result.find(x=>x.section===section);if(!group){group={section,fields:[],title:section.querySelector?.('h2,h3,h4,legend')?.textContent||caption(field)};result.push(group);}group.fields.push(field);
  }return result;
 }
-function summary(e,host){host.append(el('p','Review '+groups(e.node).length+' section(s) in the original form. Your existing values stay beside their editable fields; nothing is saved by this confirmation.'));}
 function request(n){
  if(typeof n==='string')n=doc.querySelector(n);if(!isReview(n))return false;
  if(root.BOBS_REFERENCE?.ensure(n,()=>request(n)))return true;
  refresh();clearHighlight();active?.panel?.remove();const e=entry(n);active=e;e.panel?.remove();const panel=el('section');panel.dataset.reviewUi='choices';panel.className='bobs-review-panel';for(const type of ['input','change'])panel.addEventListener(type,e=>e.stopPropagation());e.panel=panel;
  panel.append(el('h3','Review before confirming'),el('p',caption(n)));
  if(locked(n)){panel.append(el('p','This confirmation is not available yet. Complete the page’s required loading, calculation or earlier checks first.'));(n.closest('label')||n).before(panel);focus(panel);announce();return true;}
- panel.append(el('p','Choose how to review these inputs. Continuing without the walkthrough still requires your explicit confirmation and all existing validation and saving.'));
+ panel.append(el('p','Choose a review below to go to your actual entered values. BOBS will highlight and focus the original inputs so you can check or edit them. If you have already reviewed them, use the explicit shortcut below. Confirmation does not save.'));
  panel.append(button('Review my previously entered inputs',()=>start(e)));
- const details=el('details');details.append(el('summary','What this confirmation covers'));summary(e,details);panel.append(details);
+ panel.append(button('Review each field individually →',()=>start(e,true)));
  const label=el('label'),skip=el('input');skip.type='checkbox';skip.dataset.reviewShortcut='true';label.append(skip,' I have already reviewed these inputs — continue without repeating the guided review');panel.append(label);
- const confirm=button('Confirm these inputs and continue',()=>{refresh();if(!skip.checked||locked(n))return;e.authorised=true;e.method='already-reviewed';complete(e);});confirm.disabled=true;skip.onchange=()=>{details.open=skip.checked;confirm.disabled=!skip.checked;};panel.append(confirm);
+ const confirm=button('Confirm these inputs and continue',()=>{refresh();if(!skip.checked||locked(n))return;e.authorised=true;e.method='already-reviewed';complete(e);});confirm.disabled=true;skip.onchange=()=>{confirm.disabled=!skip.checked;};panel.append(confirm);
  (n.closest('label')||n).before(panel);focus(panel);announce();return true;
 }
-function start(e){e.method='guided';e.authorised=false;e.confirmed.clear();e.signature=signature(e.node);e.index=0;showField(e);}
+function start(e,individual=false){e.individual=individual;e.method='guided';e.authorised=false;e.confirmed.clear();e.signature=signature(e.node);e.index=0;showField(e);}
 function showField(e){
- refresh();clearHighlight();const sections=groups(e.node);if(!sections.length)return;
+ refresh();clearHighlight();const sections=groups(e.node,e.individual);if(!sections.length)return;
  e.index=Math.min(e.index||0,sections.length-1);const group=sections[e.index];e.panel?.remove();
  const panel=el('section');panel.dataset.reviewUi='field';panel.className='bobs-review-panel';for(const type of ['input','change'])panel.addEventListener(type,e=>e.stopPropagation());e.panel=panel;active=e;
- panel.append(el('strong','Review section '+(e.index+1)+' of '+sections.length+': '+group.title),el('p','Check or edit the highlighted original inputs below, then confirm this section.'));
- panel.append(button('Confirm this section & continue',()=>confirmField()),button('Return to review choices',()=>request(e.node)));
+ panel.append(el('strong','Review '+(e.individual?'field ':'section ')+(e.index+1)+' of '+sections.length+': '+group.title),el('p',e.individual?'Check or edit this highlighted original value, then confirm it to move to the next field.':'Check or edit the highlighted original inputs below, then confirm this section.'));
+ panel.append(button(e.individual?'Confirm this field & continue':'Confirm this section & continue',()=>confirmField()),button('Return to review choices',()=>request(e.node)));
  const target=group.section,anchor=target.closest('td,th,tr,tbody,thead')?.closest('table')||target.closest('label')||target;
  anchor.before(panel);highlighted=anchor;anchor.classList.add('bobs-review-highlight');focus(group.fields.find(n=>n.matches(controls)&&!n.disabled)||target);panel.scrollIntoView({block:'start'});announce();
 }
 function confirmField(){
  const e=active;if(!e||e.method!=='guided'||!e.node.isConnected)return;
- refresh();const sections=groups(e.node),group=sections[e.index||0];if(!group)return;
+ refresh();const sections=groups(e.node,e.individual),group=sections[e.index||0];if(!group)return;
  for(const field of group.fields){if(field.matches(controls)&&!field.disabled&&!field.checkValidity()){field.reportValidity();focus(field);return;}}
  group.fields.forEach(field=>e.confirmed.add(field));const next=sections.findIndex(g=>g.fields.some(n=>!e.confirmed.has(n)));
  if(next>=0){e.index=next;showField(e);return;}
@@ -92,7 +91,7 @@ function rows(){
  refresh();return [...doc.querySelectorAll('input[type=checkbox]')].filter(n=>isReview(n)&&visible(n)).map(n=>{const e=entry(n);return {node:n,title:caption(n),checked:n.checked,method:e.method,changed:e.changed,
  summary:targets(n).map(t=>(t.matches(controls)?caption(t)+': ':'')+value(t)).join('; ')};});
 }
-function snapshot(){const result=rows();return {rows:result,active:active?{title:caption(active.node),method:active.method,index:active.index||0,total:groups(active.node).length,ready:active.authorised}:null};}
+function snapshot(){const result=rows();return {rows:result,active:active?{title:caption(active.node),method:active.method,index:active.index||0,total:groups(active.node,active.individual).length,individual:!!active.individual,ready:active.authorised}:null};}
 doc.addEventListener('click',event=>{const n=event.target;if(ownClick||!isReview(n)||!n.checked)return;
  // click activation has provisionally toggled checked; cancellation restores the prior value.
  const e=entry(n);if(e.authorised&&e.signature===signature(n)&&!root.BOBS_REFERENCE?.needs(n))return;

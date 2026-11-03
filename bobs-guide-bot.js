@@ -34,16 +34,16 @@ function savedPageContext(s,href){
 
 function currentAction(s){
  if(root.BOBS_OUTLET_PLAN_GUIDE)return root.BOBS_OUTLET_PLAN_GUIDE.snapshot();
- const ids={'outlets.html':['outletsReviewed','save','status'],'kitchen-flow.html':['kitchenReviewed','saveKitchen','kitchenStatus'],'asset-master.html':['planningReviewed','planningSave','planningStatus'],'working-capital.html':['planningReviewed','planningSave','planningStatus'],'salary-editor.html':['salaryReviewed','saveSalaryPackage','salaryActionStatus']};
+ const ids={'outlets.html':['outletsReviewed','save','status'],'kitchen-flow.html':['kitchenReviewed','saveKitchen','kitchenStatus'],'asset-master.html':['planningReviewed','planningSave','planningStatus'],'working-capital.html':['planningReviewed','planningSave','planningStatus'],'salary-editor.html':['salaryReviewed','saveSalaryPackage','salaryActionStatus'],'kitchen-equipment.html':['equipmentReviewed','saveEquipment','equipmentStatus'],'capital-expenditure.html':['capexReviewed','capexSave','capexStatus']};
  const fields=ids[s.ctx.page];if(!fields)return null;
  const review=document.getElementById(fields[0]),save=document.getElementById(fields[1]),status=document.getElementById(fields[2]);if(!review||!save)return null;
- const message=status?.textContent||'',saving=save.closest('[aria-busy=true]')||save.disabled&&review.checked;
+ const message=status?.textContent||'',saving=save.closest('[aria-busy=true]')||save.matches(':disabled')&&review.checked;
  return {title:s.pageHelp?.title||'This page',name:s.savedChecklist?.name||'',phase:saving?'saving':(status?.dataset.tone==='error'||/^(Not saved:|Could not load:|Incomplete)/.test(message))?'error':review.checked?'reviewed':'review',message,review:'#'+fields[0],save:'#'+fields[1],saveLabel:save.textContent};
 }
 
 function mount(host,options){
  options.work=options.work||options.minimise;
- let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null;
+ let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null,lastConfirmedNode=null,revealContinuation=false;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
  function snapshot(){const s=options.snapshot();return {...s,currentAction:currentAction(s),recipeHelp:root.BOBS_RECIPE_GUIDE?.snapshot(),production:adapter()?.snapshot(),equipmentHelp:root.BOBS_EQUIPMENT_GUIDE?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
@@ -98,7 +98,66 @@ function mount(host,options){
   return true;
  }
 
+
+ // Reuse this page's real next action. The checklist must not invent a second flow.
+ function continuation(s,reviewNode){
+  // Report reviews have one independent Save per outlet; use its explicit association.
+  const reportSave=reviewNode?.id&&[...document.querySelectorAll('[data-review-save]')].find(n=>n.dataset.reviewSave===reviewNode.id);
+  if(reportSave){
+   if(reportSave.disabled)return {message:'Saving and verifying this outlet review in Google. Keep this page open.'};
+   if(reportSave.dataset.reviewSaved==='true'){const next=reportSave.closest('section')?.querySelector('[data-review-next]');return next?{choices:[next]}:{message:'This outlet review is saved and verified.'};}
+   return {label:reportSave.textContent,run:()=>{options.minimise();reportSave.scrollIntoView?.({block:'center'});reportSave.focus();}};
+  }
+  const a=s.currentAction,stage=s.recipeHelp?.stage||s.production?.journey?.stage||s.equipmentHelp?.stage;
+  if(a?.phase==='saving'||stage==='saving')return {message:'Saving and verifying in Google. Keep this page open.'};
+  if(a?.phase==='error'||stage==='error'||stage==='load-error')return {message:a?.message||'Resolve the page’s error before continuing.'};
+  const saved=a?.phase==='saved'||stage==='saved';
+  if(!saved&&a?.phase==='reviewed')return {label:a.saveLabel,show:true,run:()=>pageFocus(a.save)};
+  // This is the same action (including recipe links and Yes/No choices) already offered above.
+  const candidates=[...host.querySelectorAll('button[data-guide-choice],a.guide-action')].filter(n=>!n.closest('.guide-checklist,.guide-nav,details')&&!n.disabled);
+  const first=candidates[0];if(!first)return saved?{message:a?.next||'Saved and verified. Follow the next action shown on this page.'}:null;
+  const choices=stage==='extra-sides'?candidates.filter(n=>['extra-yes','extra-no'].includes(n.dataset.guideChoice)):[first];
+  return {choices};
+ }
+ function appendContinuation(s,list){
+  const done=[...list.children].filter(n=>n.classList.contains('guide-checklist-done'));if(!done.length)return;
+  const current=s.currentAction?.review&&document.querySelector(s.currentAction.review);
+  const target=(current&&done.find(n=>n.reviewNode===current))||(lastConfirmedNode&&done.find(n=>n.reviewNode===lastConfirmedNode))||done.at(-1);
+  const next=continuation(s,target.reviewNode);if(!next)return;
+  const box=el('div',undefined,'guide-confirmation-next');box.dataset.confirmationNext='true';box.setAttribute('aria-live','polite');
+  if(next.message)box.append(el('p',next.message));
+  else if(next.label){box.append(el('strong','Next: '+next.label));box.append(button('Show '+next.label,'confirmation-next',next.run));}
+  else {
+   box.append(el('strong',next.choices.length>1?'Next: choose one option':'Next: '+next.choices[0].textContent));
+   for(const original of next.choices){
+    const b=button(original.textContent,'confirmation-next-'+(original.dataset.guideChoice||'link'),()=>{
+     if(original.isConnected&&!original.disabled)original.click();else update();
+    });box.append(b);
+   }
+  }
+  // Directly below the tick, before any explanatory note or the secondary review button.
+  target.children[0].after(box);
+
+ }
+
+
+ function revealNext(){
+  if(!revealContinuation)return;
+  const pane=host.parentElement,next=host.querySelector('[data-confirmation-next]');
+  if(!next||!pane?.clientHeight)return;
+  const b=next.getBoundingClientRect(),p=pane.getBoundingClientRect();
+  const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
+  if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
+  else if(b.top<top)pane.scrollTop-=top-b.top+12;
+ }
+ function restoreGuideScroll(top){
+  if(host.parentElement)host.parentElement.scrollTop=top;
+  revealNext();
+  if(revealContinuation){if(root.requestAnimationFrame)root.requestAnimationFrame(revealNext);else setTimeout(revealNext,0);}
+ }
+
  function renderChecklist(s){
+  const scrollBefore=host.parentElement?.scrollTop||0;
   let box=host.querySelector('.guide-checklist');
   // The verified kitchen handoff already has a tick; keep both next-action cards in view.
   if(state?.step==='kitchen-next'){box?.remove();return;}
@@ -109,7 +168,7 @@ function mount(host,options){
   box.append(el('strong','Your actions on this page'));
   box.append(el('p','A green tick below means you confirmed that specific review or choice. Saving to Google is a separate action.'));
   const localList=el('ol',undefined,'guide-checklist-local');
-  const add=(title,done,selector,detail)=>{const li=el('li',undefined,done?'guide-checklist-done':'guide-checklist-next');li.append(el('span',(done?'✓ ':'○ ')+title));if(detail)li.append(el('small',detail));if(selector)li.append(button('Review these inputs','review-inputs-'+localList.children.length,()=>pageFocus(selector)));localList.append(li);};
+  const add=(title,done,selector,detail)=>{const li=el('li',undefined,done?'guide-checklist-done':'guide-checklist-next');li.append(el('span',(done?'✓ ':'○ ')+title));if(detail)li.append(el('small',detail));if(selector){li.reviewNode=document.querySelector(selector);const b=button(done?'Review again':'Review these inputs','review-inputs-'+localList.children.length,()=>pageFocus(selector));if(done)b.classList.add('guide-review-again');li.append(b);}localList.append(li);};
   if(s.production?.ready){
    const p=s.production,c=p.checks||{};
    add(c.quantity?'You confirmed: '+p.quantity+' '+p.unit+' of '+p.name+', ready by '+p.readyBy+' '+(String(p.readyDay)==='1'?'tomorrow':'today'):'Confirm quantity and ready-by time',!!c.quantity,'#intendedQuantity');
@@ -125,20 +184,20 @@ function mount(host,options){
   }
   const omit=s.production?.ready?new Set(['recipeReviewed','capacityReviewed','quantityReviewed','sideServingReviewed','deliveryReviewed']):new Set();
   for(const r of local?.rows||[])if(!omit.has(r.node.id)){
-   const li=el('li',undefined,r.checked?'guide-checklist-done':'guide-checklist-next');
+   const li=el('li',undefined,r.checked?'guide-checklist-done':'guide-checklist-next');li.reviewNode=r.node;
    li.append(el('span',(r.checked?'✓ Confirmation ticked: ':'○ Confirm: ')+r.title));
    if(r.checked&&r.method)li.append(el('small',r.method==='already-reviewed'?'You chose to confirm previously reviewed inputs without repeating the walkthrough.':'You confirmed after the guided input review.'));
    if(r.changed&&!r.checked)li.append(el('small','An input changed. Review the current values again.'));
-   li.append(button('Review these inputs','review-field-'+localList.children.length,()=>root.BOBS_REVIEW.request(r.node)));localList.append(li);
+   const reviewButton=button(r.checked?'Review again':'Review these inputs','review-field-'+localList.children.length,()=>root.BOBS_REVIEW.request(r.node));if(r.checked)reviewButton.classList.add('guide-review-again');li.append(reviewButton);localList.append(li);
   }
   if(s.recipeHelp&&!['loading','saving'].includes(s.recipeHelp.stage))add('Ingredient calculation complete',!!s.recipeHelp.calculated,'#scale');
-  if(localList.children.length)box.append(localList);
-  if(local?.active){const a=local.active;box.append(el('p','Current review: '+a.title));if(a.method==='guided'&&!a.ready)box.append(button('Show the current section','review-current',()=>root.BOBS_REVIEW.focusCurrent()),button('Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()));}
+  if(localList.children.length){box.append(localList);appendContinuation(s,localList);}
+  if(local?.active){const a=local.active;box.append(el('p','Current review: '+a.title));if(a.method==='guided'&&!a.ready)box.append(button('Show the current section','review-current',()=>root.BOBS_REVIEW.focusCurrent()),button(a.individual?'Confirm this field & continue':'Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()));}
   const savedBox=el('details');savedBox.dataset.savedProgress='true';savedBox.open=!!opened;savedBox.append(el('summary','View overall saved progress'));box.append(savedBox);
   savedBox.append(el('strong','Previously saved Google progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
   if(m.message)savedBox.append(el('p',m.message));
   if(m.dirty)savedBox.append(el('p','The saved checklist below does not include unsaved edits on this page.','guide-checklist-draft'));
-  if(!m.rows.length)return;
+  if(!m.rows.length){restoreGuideScroll(scrollBefore);return;}
   const details=savedBox;details.append(el('p',m.done+' of '+m.rows.length+' saved stages verified'));
   let nextMarked=false;
   function row(n){
@@ -156,9 +215,11 @@ function mount(host,options){
   const list=el('ol');m.rows.forEach(n=>list.append(row(n)));details.append(list);
   if(!m.blocked){const completed=m.rows.filter(n=>n.status==='done');if(completed.length)savedBox.append(el('p','✓ Saved and verified: '+completed.at(-1).title,'guide-checklist-done'));const next=m.rows.find(n=>!['done','na'].includes(n.status));savedBox.append(el('p',next?'→ Next incomplete saved stage: '+next.title:'✓ All listed saved stages are verified or not required.',next?'guide-checklist-next':'guide-checklist-done'));}
 
+  restoreGuideScroll(scrollBefore);
  }
 
  function render(){
+  const scrollBefore=host.parentElement?.scrollTop||0;
   const s=snapshot();restore(s);const p=s.production;
   if(s.methodFlow){const phase=s.methodFlow.outlet+':'+s.methodFlow.phase;if(phase!==methodPhase){methodPhase=phase;state.step='page-task';state.history=[];}}
   if(p?.ready&&state.itemKey&&state.itemKey!==p.itemKey){state.step=p.journey?'production-flow':'quantity';state.history=[];draft={};}
@@ -252,6 +313,7 @@ function mount(host,options){
      else if(h.stage==='load-error'){host.append(el('p','The equipment could not be loaded. This does not mean the inventory is empty.'));choices(work('Show Retry Google load','equipmentRetry'));}
      else if(h.stage==='saving')host.append(el('p','Saving and verifying in Google. Keep this page open.'));
      else if(h.stage==='saved'){host.append(el('p','✓ Inventory saved and verified. Next, review outlet expenses and mandatory staff. Capacity and costing will be assessed against the menu later.'));choices(work('Show Continue to outlet expenses','equipmentContinue'));}
+     else if(s.currentAction?.phase==='reviewed'){host.append(el('p','✓ Inventory review confirmed. Next: '+s.currentAction.saveLabel));choices(work('Show '+s.currentAction.saveLabel,'saveEquipment'));}
      else if(h.stage==='empty'){host.append(el('p','No equipment has been added here yet. Start with the food you produce, then identify the machines you already own. This does not mean your kitchen has no machines.'));choices(button('Help me identify my existing equipment →','inventory-help',()=>{options.minimise();document.getElementById('openEquipmentHelp').click();}));}
      else{host.append(el('p',h.stage==='draft'?'Your equipment changes are not saved. Check each machine name, existing units and capacity status. Unknown capacity can stay pending.':'There are '+h.count+' equipment entries. Review existing units and capacity status. Estimates are different from confirmed measurements.'));choices(work('Review equipment entries','equipmentRows'),work('Show inventory confirmation and Save','equipmentReviewed'));}
      host.append(el('small',h.message||''));break;
@@ -421,19 +483,23 @@ function mount(host,options){
   const nav=el('div',undefined,'guide-nav');
   if(state.history.length)nav.append(button('Back one question','back',()=>{const previous=state.history.pop();state.step=steps.has(previous.step)?previous.step:'start';draft={};error='';persist();render();}));
   if(state.step!=='start')nav.append(button('Choose a different task','restart',()=>{state={step:'start',history:[]};draft={};persist();render();}));host.append(nav);
-  persist();
+  persist();restoreGuideScroll(scrollBefore);
  }
  function update(){if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
  function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
  // Update only the read-only checklist after page edits; keep action buttons attached during clicks.
  let checklistTimer,actionStamp='';
- function refreshAction(){const s=snapshot(),stamp=JSON.stringify(s.currentAction);if(stamp!==actionStamp){actionStamp=stamp;update();}else renderChecklist(s);}
- const checklistUpdate=e=>{if(host.contains(e.target))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
+ const actionKey=s=>JSON.stringify([s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp?.action]);
+ function refreshAction(){const s=snapshot(),stamp=actionKey(s);if(stamp!==actionStamp){actionStamp=stamp;update();}else renderChecklist(s);}
+ const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='input'||e.type==='change')revealContinuation=false;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked&&(root.BOBS_REVIEW?.isReview?.(e.target)??true)){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
+ // Keep the new action visible through asynchronous saved-progress refreshes,
+ // but yield immediately when the user scrolls, navigates or clicks in the guide.
+ for(const type of ['wheel','touchstart','pointerdown','keydown'])host.parentElement?.addEventListener(type,()=>{revealContinuation=false;},{passive:true});
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
  root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);});
  const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
  actionObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['disabled','aria-busy','data-tone']});
- actionStamp=JSON.stringify(snapshot().currentAction);render();return {update,kitchenNext};
+ actionStamp=actionKey(snapshot());render();return {update,kitchenNext};
 }
 root.BOBS_GUIDE_BOT={mount,checklistModel,savedPageContext};
 })(window);

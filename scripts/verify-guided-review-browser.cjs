@@ -17,7 +17,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  assert.equal(await p.isChecked('#intendedWeightReviewed'),true);
  await p.fill('#targetQty','370');assert.equal(await p.isChecked('#intendedWeightReviewed'),false,'editing relevant input invalidates review');
  await p.evaluate(()=>BOBS_REVIEW.request('#referenceWeightReviewed'));
- await p.check('[data-review-shortcut]');assert(await p.locator('[data-review-ui] details').evaluate(n=>n.open));
+ await p.check('[data-review-shortcut]');assert.equal(await p.locator('[data-review-ui] details').count(),0,'No section-count disclosure replaces the actual review');
  await p.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();assert(await p.isChecked('#referenceWeightReviewed'));
  await p.click('#confirmed',{force:true});assert.equal(await p.isChecked('#confirmed'),false);assert.match(await p.locator('[data-review-ui]').innerText(),/not available yet/);
  await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
@@ -28,6 +28,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
   await p.check('[data-review-shortcut]');await p.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();assert(await p.isChecked('#'+id));
   await p.fill('#amount','101');assert.equal(await p.isChecked('#'+id),false,id+' review invalidated after input edit');
  }
+
+ // Explicit field-by-field mode preserves entered values and visits each original control.
+ await p.evaluate(()=>{document.querySelector('main').innerHTML='<section id="flowApp"><label>Working days<input id="days" type="number" value="30"></label><label>Monthly wage<input id="wage" type="number" value="15000"></label><label><input type="checkbox" id="flowReviewed">I reviewed expenses and staff.</label></section>';});
+ await p.click('#flowReviewed');
+ assert.doesNotMatch(await p.locator('[data-review-ui]').innerText(),/Review \d+ section\(s\)/);
+ await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ assert.equal(await p.evaluate(()=>document.activeElement.id),'days');assert.equal(await p.inputValue('#days'),'30');
+ await p.fill('#days','31');await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ assert.equal(await p.evaluate(()=>document.activeElement.id),'wage');assert.equal(await p.inputValue('#wage'),'15000');
+ await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ assert.equal(await p.isChecked('#flowReviewed'),false);await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#flowReviewed'));
+ await p.fill('#wage','15500');assert.equal(await p.isChecked('#flowReviewed'),false);
  // A review inside an equipment dialog must inspect that dialog, not the page behind it.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<label>Outside quantity<input id="outside" value="360"></label><dialog id="equipmentTest"><label>Usable capacity<input id="machineAmount" value="120"></label><label><input type="checkbox" id="machineBasis">I checked the equipment capacity.</label></dialog>';document.getElementById('equipmentTest').showModal();});
  await p.click('#machineBasis');await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();assert.equal(await p.evaluate(()=>document.activeElement.id),'machineAmount');

@@ -15,6 +15,23 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  const guided=await ctx.newPage();await guided.goto('https://bobs.test/index.html');await guided.waitForSelector('#bobsCompanion:not([hidden])');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Welcome to BOBS/);await guided.getByRole('link',{name:'Start here — guided outlet setup →',exact:true}).click();await guided.waitForSelector('#keep');
  assert.equal(new URL(guided.url()).searchParams.get('guide'),'start');assert.match(await guided.locator('#savedModal').innerText(),/BOBS Guide · start here/);assert(await guided.locator('#bobsCompanion').isHidden());
  await guided.click('#keep');await guided.waitForSelector('#bobsCompanion:not([hidden]) [data-guide-choice=outlet-count]');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/How many outlets/);assert.equal(writes.length,0);
+
+ // Confirmed checklist must show the next Save action where the tick is, not only above it.
+ const confirmation=await ctx.newPage();await confirmation.setViewportSize({width:1071,height:580});
+ await confirmation.goto('https://bobs.test/outlets.html?guide=start');await confirmation.click('#keep');await confirmation.waitForSelector('[data-guide-choice=outlet-count]');
+ await review(confirmation.locator('#outletsReviewed'));
+ const next=confirmation.locator('.guide-checklist-local [data-confirmation-next]');await next.waitFor();
+ assert.match(await next.innerText(),/Next: Save outlets & go to Kitchen Setup/);
+ assert(await next.evaluate(el=>el.previousElementSibling?.textContent.startsWith('✓')));
+ assert.equal(await confirmation.locator('.guide-checklist-local .guide-review-again').innerText(),'Review again');
+ await confirmation.evaluate(()=>window.dispatchEvent(new Event('bobs-guide-context')));
+await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-confirmation-next]')?.getBoundingClientRect(),p=document.getElementById('bobsCompanion')?.getBoundingClientRect(),h=document.querySelector('#bobsCompanion .companion-head')?.getBoundingClientRect();return a&&p&&a.width>0&&a.height>0&&p.height>0&&a.y>=Math.max(p.y,h?.bottom||0)&&a.bottom<=p.bottom;});
+ assert(await next.evaluate(el=>{const a=el.getBoundingClientRect(),p=document.getElementById('bobsCompanion').getBoundingClientRect();return a.width>0&&a.y>=p.y&&a.bottom<=p.bottom;}),'Tick continuation must be visible in the guide pane');
+ assert.equal(writes.length,0,'Review confirmation must not save');
+ await next.locator('button').click();assert.equal(await confirmation.evaluate(()=>document.activeElement.id),'save');assert.equal(writes.length,0,'Show Save must not auto-save');
+ await confirmation.click('#bobsCompanionToggle');await confirmation.locator('.guide-review-again').click();assert(await confirmation.locator('[data-review-ui=choices]').isVisible());
+ assert.equal(writes.length,0);await confirmation.close();
+ console.log('PASS laptop confirmation: next Save directly below tick, secondary Review again, guide-pane visibility, original Save focus, zero automatic writes.');
  await guided.click('[data-guide-choice=outlet-count]');assert.equal(await guided.evaluate(()=>document.activeElement.id),'count');await guided.fill('#count','3');assert(await guided.locator('#bobsCompanion').isHidden());assert.equal(await guided.locator('#outletsReviewed').isChecked(),false);
  await guided.getByRole('link',{name:'Set up attached / common kitchens and shared production →',exact:true}).click();await guided.waitForSelector('[data-guide-choice=outlet-kitchen-yes]');assert(await guided.locator('#bobsCompanion').isVisible());assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Do you want a kitchen at Fixture outlet 1/);
  await guided.click('[data-guide-choice=outlet-kitchen-no]');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Do you want a kitchen at Fixture outlet 2/);await guided.click('[data-guide-choice=outlet-kitchen-no]');await guided.click('[data-guide-choice=kitchen-review]');assert(await guided.locator('[data-review-ui=choices]').isVisible());assert(await guided.locator('[data-review-ui=choices]').evaluate(el=>el===document.activeElement||el.contains(document.activeElement)));assert.equal(await guided.locator('#kitchenReviewed').isChecked(),false);assert.equal(writes.length,0);

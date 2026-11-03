@@ -47,6 +47,17 @@ const shownOutlets=await setup.locator('#cards > .stack').evaluateAll(cards=>car
 assert.deepEqual(shownOutlets,savedOutlets);
 result.checks.push('Live Outlet Setup and staff choices agree with the same saved Vault times; no schedule assigned and no save attempted');
 await captureRendered(setup,{path:path.join(out,'outlet-times-desktop.png')});
+await setup.setViewportSize({width:1071,height:580});
+await review(setup.locator('#outletsReviewed'));
+const confirmedNext=setup.locator('.guide-checklist-local [data-confirmation-next]');await confirmedNext.waitFor();
+assert.match(await confirmedNext.innerText(),/Next: Save outlets & go to Kitchen Setup/);
+assert(await confirmedNext.evaluate(el=>el.previousElementSibling?.textContent.startsWith('✓')));
+assert.equal(await setup.locator('.guide-checklist-local .guide-review-again').innerText(),'Review again');
+await setup.waitForFunction(()=>{const a=document.querySelector('[data-confirmation-next]')?.getBoundingClientRect(),p=document.getElementById('bobsCompanion')?.getBoundingClientRect(),h=document.querySelector('#bobsCompanion .companion-head')?.getBoundingClientRect();return a&&p&&a.width>0&&a.height>0&&p.height>0&&a.y>=Math.max(p.y,h?.bottom||0)&&a.bottom<=p.bottom;});
+assert(await confirmedNext.evaluate(el=>{const a=el.getBoundingClientRect(),p=document.getElementById('bobsCompanion').getBoundingClientRect();return a.width>0&&a.y>=p.y&&a.bottom<=p.bottom;}));
+await captureRendered(setup,'outlet-confirmation-next-live.png');
+await confirmedNext.locator('button').click();assert.equal(await setup.evaluate(()=>document.activeElement.id),'save');assert.equal(result.blockedWrites,0);
+result.checks.push('Live outlet confirmation shows exact next Save beneath the green tick, with secondary Review again; continuation is visible and focuses the original Save without writing.');
 await baseline.setViewportSize({width:390,height:844});assert(await baseline.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await captureRendered(baseline,{path:path.join(out,'baseline-mobile.png')});
 assert(await baseline.locator('.staff-entry-tools').count()>0);assert(await baseline.locator('#mandatoryPositions [data-position]:visible').count()<=3);result.checks.push('Per-person staff table loads with at most three visible people');const kitchens=await ctx.newPage();await kitchens.goto(base+'kitchen-flow.html?stage=locations',{waitUntil:'domcontentloaded'});await kitchens.waitForFunction(()=>document.getElementById('saveKitchen')?.disabled===false);assert(await kitchens.locator('#addKitchen').isVisible());assert.match(await kitchens.locator('#kitchenRecords').innerText(),/identity register.*read-only/);result.checks.push('Real Google kitchen register loaded without creating locations or orders');
 const savedRegister=await kitchens.evaluate(()=>BOBS_VERIFIED.read('COMPANY','KITCHEN_MASTER'));

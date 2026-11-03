@@ -67,3 +67,9 @@
 #recipeCompanionGuide{max-width:1100px;margin:12px auto;padding:0 16px;box-sizing:border-box}
 #recipeCompanionGuide:empty{display:none}
 @media(min-width:900px){body.bobs-guided-dock .recipe-columns{grid-template-columns:minmax(0,1fr)}}
+
+/* Current continuation belongs beside the confirmed review, not above the scroll position. */
+#bobsCompanion .guide-confirmation-next{margin:8px 0;padding:10px;border-left:4px solid #a87800;background:#fff1bd;color:#173d2d;border-radius:4px}
+#bobsCompanion .guide-confirmation-next strong{display:block;margin-bottom:7px}
+#bobsCompanion .guide-confirmation-next button{display:block;width:100%;text-align:left;white-space:normal;min-height:44px;margin:6px 0}
+#bobsCompanion button.guide-review-again{display:inline-block;background:transparent;color:#315446;border:1px solid #9eb2a6;font-weight:400;padding:6px 9px;min-height:32px;margin-top:6px}
