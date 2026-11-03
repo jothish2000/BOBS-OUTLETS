@@ -158,7 +158,7 @@ function companionBoot(){
  };
  window.addEventListener('bobs-kitchen-next-ready',showKitchenNext);
  window.addEventListener('bobs-kitchen-next-cleared',releaseKitchenGuide);
- const closeCompanion=()=>{document.body.classList.remove('bobs-guided-dock');releaseKitchenGuide();companionOpen=false;companion.hidden=true;companionToggle.setAttribute('aria-expanded','false');companionToggle.focus()};
+ const closeCompanion=()=>{document.body.classList.remove('bobs-guided-dock');releaseKitchenGuide();companionOpen=false;companion.hidden=true;companionToggle.setAttribute('aria-expanded','false');companionToggle.focus();syncNextBar()};
  minimise.onclick=closeCompanion;companionToggle.onclick=()=>{if(companionOpen){closeCompanion();return}if(showKitchenNext()){minimise.focus();return;}companionOpen=true;companion.hidden=false;if(interactivePage)document.body.classList.add('bobs-guided-dock');companionToggle.setAttribute('aria-expanded','true');companionRender();minimise.focus({preventScroll:true});if(window.BOBS_SERVING_GUIDE?.snapshot()?.available)window.BOBS_SERVING_GUIDE.focus();if(companion.classList.contains('method-flow-inline')&&(!interactivePage||innerWidth<900))companion.scrollIntoView({block:'start'});const ctx=context();if(ctx.outlet){active=ctx.outlet;loadedIds.add(active)}if(!common||ctx.outlet&&!records.has(ctx.outlet))refreshAll()};
  companion.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeCompanion()}});
  document.body.append(companionToggle,companion);
@@ -167,7 +167,7 @@ function companionBoot(){
  companionRender();
 
  // Compact reminder mirrors the live guide; it never advances or saves the form.
- const nextBar=el('section');nextBar.id='bobsNextActionBar';nextBar.setAttribute('aria-label','Current BOBS action');
+ const nextBar=el('section');nextBar.id='bobsNextActionBar';nextBar.hidden=true;nextBar.setAttribute('aria-label','Current BOBS action');
  const nextText=el('span','Preparing the next action…'),openGuide=el('button','Open BOBS Guide');
  nextText.id='bobsNextActionText';nextText.setAttribute('role','status');openGuide.type='button';openGuide.onclick=()=>{if(!companionOpen)companionToggle.click();};
  nextBar.append(nextText,openGuide);document.getElementById('bobsRoadmapSpace').after(nextBar);
@@ -184,7 +184,7 @@ function companionBoot(){
   if(pendingHandoff&&companionOpen)pendingHandoff=false;
   if(pendingHandoff&&!typing()&&!document.querySelector('dialog[open]')&&nextBar.hidden===false){pendingHandoff=false;companionToggle.click();}
  }
- function scheduleBar(){clearTimeout(barTimer);barTimer=setTimeout(syncNextBar,60);}
+ function scheduleBar(){if(barTimer)return;barTimer=setTimeout(()=>{barTimer=null;syncNextBar();},30);}
  new MutationObserver(scheduleBar).observe(guideHost,{subtree:true,childList:true,characterData:true});
  new MutationObserver(scheduleBar).observe(companion,{attributes:true,attributeFilter:['hidden']});
  for(const event of ['bobs-flow-saved','bobs-guide-resume'])window.addEventListener(event,()=>{pendingHandoff=true;scheduleBar();});
