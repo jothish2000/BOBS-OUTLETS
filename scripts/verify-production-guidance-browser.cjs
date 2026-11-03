@@ -43,7 +43,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await review(p.locator('#sideServingReviewed'));
  assert.equal(await p.locator('#sideExtraYes').isChecked(),false);assert.equal(await p.locator('#sideExtraNo').isChecked(),false);
  await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source');
- assert.equal(await p.locator('[data-source-key]').count(),3);assert.equal(await p.locator('[data-source-key]').first().inputValue(),'');assert(await p.locator('#useSameKitchen').isDisabled());assert.equal(await p.locator('[data-source-key]').first().locator('option').count(),4);assert(await p.locator('[data-source-key]').first().locator('option[value="Kitchen-Future"]').isDisabled());
+ assert.equal(await p.locator('[data-source-key]').count(),3);assert.equal(await p.locator('[data-source-key]').first().inputValue(),'');assert(await p.locator('#useSameKitchen').isDisabled());assert.equal(await p.locator('[data-source-key]').first().locator('option').count(),4);assert.equal(await p.locator('[data-source-key]').first().locator('option[value="Kitchen-Future"]').evaluate(n=>n.disabled),true);
  assert.match(await p.locator('#bobsGuideDialogue').innerText(),/supplying kitchen/);assert(await p.locator('#capacitySection').isHidden());assert.equal(writes.length,0);
  await p.click('#chooseProductionSource');assert.match(await p.locator('#sourceSaveStatus').innerText(),/Select an operating/);assert.equal(writes.length,0);
  await p.locator('[data-source-key]').first().selectOption('Kitchen-Elimedu');await p.locator('[data-source-key]').nth(1).selectOption('Kitchen-Second');assert.equal(await p.locator('[data-source-key]').nth(1).inputValue(),'Kitchen-Second');await p.click('#useSameKitchen');
