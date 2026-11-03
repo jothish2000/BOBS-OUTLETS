@@ -119,7 +119,7 @@ jobs:
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/jsdom
         run: |
-          node --test tests/current-action-guide.cjs tests/kitchen-outlet-guide.cjs tests/connected-guide.cjs tests/kitchen-equipment-help.cjs tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
+          node --test tests/window-return.cjs tests/current-action-guide.cjs tests/kitchen-outlet-guide.cjs tests/connected-guide.cjs tests/kitchen-equipment-help.cjs tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs
@@ -130,11 +130,11 @@ jobs:
         env:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
         run: |
+          node scripts/verify-production-guidance-browser.cjs
           node scripts/verify-outlet-save-help-browser.cjs
           node scripts/verify-guided-review-browser.cjs
           node scripts/verify-guided-kitchen-browser.cjs
           node scripts/verify-vault-browser.cjs
-          node scripts/verify-production-guidance-browser.cjs
           node scripts/verify-shared-kitchen-browser.cjs
           node scripts/verify-salary-capital-browser.cjs
       - name: Syntax and whitespace

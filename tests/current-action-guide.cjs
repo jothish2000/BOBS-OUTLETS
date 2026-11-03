@@ -56,10 +56,10 @@ test('recipe confirmations advance locally from intended review to Calculate to 
 });
 test('production confirmation keeps explicit Yes and No choices and then offers the actual kitchen-source action',async()=>{
  const d=new JSDOM('<main><input id="quantityReviewed" type="checkbox" checked><input id="sideServingReviewed" type="checkbox" checked><section id="sideExtraSection"></section><button id="chooseProductionSource">Save confirmed demand & choose supplying kitchens</button></main><aside><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/production-plan.html?guide=continue'}),w=d.window;
- try{let stage='extra-sides',choice,selected;w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_PRODUCTION_GUIDE={snapshot:()=>({ready:true,itemKey:'Idli',name:'Idli',journey:{stage},checks:{quantity:true},sides:{needed:true,reviewed:true},extraSides:{needed:true,choice}}),chooseExtra:v=>{choice=v;selected=v;stage='source';w.dispatchEvent(new w.Event('bobs-review-context'));},focus:id=>w.document.getElementById(id).focus()};
+ try{let stage='extra-sides',choice,selected;w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_PRODUCTION_GUIDE={snapshot:()=>({ready:true,itemKey:'Idli',name:'Idli',journey:{stage},checks:{quantity:true},sides:{needed:true,reviewed:true},extraSides:{needed:true,choice}}),chooseExtra:v=>{choice=v;selected=v;stage='source-save';w.dispatchEvent(new w.Event('bobs-review-context'));},focus:id=>w.document.getElementById(id).focus()};
  w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{journey:true,minimise(){},snapshot:()=>({ctx:{page:'production-plan.html'},progress:{status:'idle'}})});
  let next=host.querySelector('[data-confirmation-next]');assert.equal(next.querySelectorAll('button').length,2);assert.equal(selected,undefined);next.querySelectorAll('button')[1].click();await settle();assert.equal(selected,false);
- next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/choose supplying kitchens/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');
+ next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/selected kitchen’s next step/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');
  }finally{w.close();}
 });
 
@@ -74,4 +74,18 @@ test('capital review and each outlet report keep their own Save and verified nex
  if(!capex){w.document.getElementById('reportSave1').dataset.reviewSaved='true';bot.update();next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/Next outlet \/ company review/);assert.doesNotMatch(next.textContent,/Save outlet one/);}
  }finally{w.close();}
  }
+});
+
+test('verified kitchen source handoff replaces a remembered start question',()=>{
+ const dom=new JSDOM('<main><input id="kitchenReviewed" type="checkbox" checked><button id="saveKitchen">Save supplying kitchens</button><p id="kitchenStatus">Saved</p><div id="nextAction"><a href="outlet-plan.html?outlet=Kitchen-E">Elimedu — Kitchen expenses and existing positions</a></div></main><aside id="bobsCompanion"><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=demand&outlet=1'}),w=dom.window;
+ try{
+ w.HTMLElement.prototype.scrollIntoView=function(){};
+ w.sessionStorage.setItem('bobs-guide-conversation-v1:1',JSON.stringify({step:'start',history:[]}));
+ w.BOBS_KITCHEN_SOURCE_GUIDE={snapshot:()=>({saved:true,busy:false,title:'✓ Supplying kitchens saved and verified',instruction:'Continue with Elimedu.',next:[{label:'Elimedu — Kitchen expenses and existing positions',href:'outlet-plan.html?outlet=Kitchen-E'}]})};
+ w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide');
+ w.BOBS_GUIDE_BOT.mount(host,{minimise(){},snapshot:()=>({ctx:{page:'kitchen-flow.html',outlet:'1'},progress:{status:'idle'}})});
+ assert.match(host.textContent,/Supplying kitchens saved and verified/);
+ assert.match(host.textContent,/Elimedu — Kitchen expenses/);
+ assert.doesNotMatch(host.textContent,/Next: Save supplying/);
+ }finally{dom.window.close();}
 });

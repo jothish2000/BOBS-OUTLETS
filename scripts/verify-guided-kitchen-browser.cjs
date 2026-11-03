@@ -38,8 +38,8 @@ failRegisterRead=true;await guide.goto('https://bobs.test/kitchen-flow.html?stag
 for(const key of Object.keys(db))delete db[key];writes.length=0;
 console.log('PASS per-outlet kitchen guide: pending legacy answers, named Yes/No questions, saved kitchen reuse, protected save/reload, fresh draft without duplicate identity, mobile, failed-read blocking and no automatic writes.');
 await p.goto('https://bobs.test/kitchen-flow.html?stage=locations&outlets=1,2,3');await p.waitForFunction(()=>!document.getElementById('saveKitchen').disabled);
-assert(await p.locator('#bobsFlowGuide').isVisible());assert.match(await p.locator('#bobsFlowGuide').innerText(),/Outlet expenses/);
-await p.locator('#bobsFlowGuide button').first().click();assert(await p.locator('[data-review-ui=choices]').isVisible());
+assert(await p.locator('#bobsFlowGuide').isHidden());assert.match(await p.locator('#bobsFlowGuide').textContent(),/Outlet expenses/);
+await p.waitForFunction(()=>!!window.BOBS_REVIEW);await p.evaluate(()=>BOBS_REVIEW.request('#kitchenReviewed'));await p.locator('[data-review-ui=choices]').waitFor();
 await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForFunction(()=>document.getElementById('kitchenStatus').textContent.startsWith('Not saved:'));
 assert.equal(writes.length,0);assert.match(await p.locator('#kitchenStatus').innerText(),/answer whether this outlet needs a kitchen/i);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenStatus');
 for(const id of ['1','2','3'])await p.selectOption('[data-outlet-kitchen-answer="'+id+'"]','no');await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForSelector('#kitchenNextGo');assert.equal(db['COMPANY/KITCHEN_MASTER/default'].noSeparateKitchens,true);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-baseline');assert(await p.locator('#kitchenNextGo').isDisabled());assert.equal(await p.locator('#kitchenNext-equipment').count(),0);await review(p.locator('#kitchenNext-baseline'));assert(await p.locator('.kitchen-choice-selected').isVisible());assert(await p.locator('#kitchenNextGo').isEnabled());
@@ -235,8 +235,8 @@ assert.equal(db[id+'/ASSET_MASTER/default'].assets.length,2);assert.equal(db[id+
 assert(!writes.includes('METHOD2'));assert(!writes.includes('BOBS_STANDARD_RECIPE'));assert(!writes.includes('RECIPE_MASTER'));
 await p.reload();await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);
 assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p.locator('[data-field=name]').last().inputValue(),'Wet grinder');assert.equal(await p.locator('[data-field=status]').last().inputValue(),'unknown');
-await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isVisible());
-await p.locator('#bobsFlowGuide button').first().click();assert(await p.locator('[data-review-ui=choices]').isVisible());
+await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isHidden());
+await p.waitForFunction(()=>!!window.BOBS_REVIEW);await p.evaluate(()=>BOBS_REVIEW.request('#equipmentReviewed'));await p.locator('[data-review-ui=choices]').waitFor();
 const companionWrites=writes.length;
 if(!await p.locator('#bobsCompanion').isVisible())await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
 assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Elimedu kitchen — existing equipment/);

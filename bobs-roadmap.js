@@ -94,7 +94,7 @@ function guide(){
  };
  const report=/^(annual-sales-pnl|monthly-sales-pnl|breakeven-overall|breakeven-site|daily-breakeven|headcount-advisor|outlet-analysis|outlet-costing|cogs-outlet-analysis|production-cogs|recipe-item-cogs|method2-overall|costing|salary-history|recipe-master|research-datasets|sitemap)\.html$/.test(ctx.page)?['Reference / report view','Use this view to inspect the available records. A report visit does not complete the current assessment.','Check saved progress to return to the next required planning step','']:null;
  const d=map[ctx.page]||supporting[ctx.page]||report||['Current activity',activity(ctx),'Use saved progress to find the next incomplete requirement',''];
- const g=el('section');g.id='bobsFlowGuide';g.dataset.guideAnchor=d[3];g.setAttribute('aria-label','Current step and next action');const h=el('h2',d[0]),instruction=el('p',d[1]),next=el('p','After this: '+d[2]);next.className='flow-guide-next';const actions=el('div'),review=el('button','Review this step ↓'),progress=el('button','Check saved progress / missing steps');review.type=progress.type='button';
+ const g=el('section');g.id='bobsFlowGuide';g.hidden=true;g.dataset.guideAnchor=d[3];g.setAttribute('aria-label','Current step and next action');const h=el('h2',d[0]),instruction=el('p',d[1]),next=el('p','After this: '+d[2]);next.className='flow-guide-next';const actions=el('div'),review=el('button','Review this step ↓'),progress=el('button','Check saved progress / missing steps');review.type=progress.type='button';
  review.onclick=()=>{if(d[3]&&window.BOBS_REVIEW?.request(d[3]))return;const target=d[3]&&document.querySelector(d[3]);if(target){target.focus();target.scrollIntoView({block:'center'});}else{const target=document.querySelector('main, #flowApp, #itemEditor, form');if(target){target.tabIndex=-1;target.focus();target.scrollIntoView({block:'start'});}}};progress.onclick=show;const bot=el('button','Plan with BOBS Guide');bot.type='button';bot.onclick=()=>window.BOBS_GUIDE?.open();if(d[3])actions.append(review);actions.append(bot,progress);const note=el('p','Save and Google verification are required for completion. This guide does not mark a step complete.');note.className='flow-guide-note';g.append(h,instruction,next,actions,note);
  if(ctx.page==='method2-select.html'){
   const steps=[new URLSearchParams(location.search).get('cat')?'Tick the items you sell.':'Choose a category, then tick the items you sell.',
@@ -158,20 +158,45 @@ function companionBoot(){
  };
  window.addEventListener('bobs-kitchen-next-ready',showKitchenNext);
  window.addEventListener('bobs-kitchen-next-cleared',releaseKitchenGuide);
- const closeCompanion=()=>{document.body.classList.remove('bobs-guided-dock');releaseKitchenGuide();companionOpen=false;companion.hidden=true;companionToggle.setAttribute('aria-expanded','false');companionToggle.focus()};
+ const closeCompanion=()=>{document.body.classList.remove('bobs-guided-dock');releaseKitchenGuide();companionOpen=false;companion.hidden=true;companionToggle.setAttribute('aria-expanded','false');companionToggle.focus();syncNextBar()};
  minimise.onclick=closeCompanion;companionToggle.onclick=()=>{if(companionOpen){closeCompanion();return}if(showKitchenNext()){minimise.focus();return;}companionOpen=true;companion.hidden=false;if(interactivePage)document.body.classList.add('bobs-guided-dock');companionToggle.setAttribute('aria-expanded','true');companionRender();minimise.focus({preventScroll:true});if(window.BOBS_SERVING_GUIDE?.snapshot()?.available)window.BOBS_SERVING_GUIDE.focus();if(companion.classList.contains('method-flow-inline')&&(!interactivePage||innerWidth<900))companion.scrollIntoView({block:'start'});const ctx=context();if(ctx.outlet){active=ctx.outlet;loadedIds.add(active)}if(!common||ctx.outlet&&!records.has(ctx.outlet))refreshAll()};
  companion.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeCompanion()}});
  document.body.append(companionToggle,companion);
  if(context().page==='recipe-cost-editor.html'&&!document.getElementById('recipeCompanionGuide')){const slot=el('div');slot.id='recipeCompanionGuide';const main=document.querySelector('main');if(main)main.before(slot);else document.body.prepend(slot);}
  const methodSlot=document.getElementById('equipmentCompanionGuide')||document.getElementById('recipeCompanionGuide')||document.getElementById('methodFlowGuide')||document.getElementById('itemCompanionGuide')||document.getElementById('productionCompanionGuide');if(methodSlot){methodSlot.append(companion);companion.classList.add('method-flow-inline');}if(interactivePage)companion.classList.add('interactive-guide');
  companionRender();
+
+ // Compact reminder mirrors the live guide; it never advances or saves the form.
+ const nextBar=el('section');nextBar.id='bobsNextActionBar';nextBar.hidden=true;nextBar.setAttribute('aria-label','Current BOBS action');
+ const nextText=el('span','Preparing the next action…'),openGuide=el('button','Open BOBS Guide');
+ nextText.id='bobsNextActionText';nextText.setAttribute('role','status');openGuide.type='button';openGuide.onclick=()=>{if(!companionOpen)companionToggle.click();};
+ nextBar.append(nextText,openGuide);document.getElementById('bobsRoadmapSpace').after(nextBar);
+ let pendingHandoff=false,barTimer,lastError='';
+ const typing=()=>document.activeElement?.matches('input:not([type=checkbox]):not([type=radio]),textarea,select');
+ function syncNextBar(){
+  nextBar.hidden=companionOpen||document.getElementById('savedModal')?.classList.contains('hidden')===false;
+  const confirmation=guideHost.querySelector('[data-confirmation-next] strong,[data-confirmation-next] p');
+  const primary=[...guideHost.querySelectorAll('button[data-guide-choice],a.guide-action')].find(n=>!n.closest('.guide-checklist,.guide-nav,details')&&!n.disabled);
+  const error=guideHost.querySelector('.guide-error')?.textContent?.trim();
+  const text=error?'Action needed: '+error:confirmation?.textContent?.trim()||(primary?'Next: '+primary.textContent.trim():guideHost.querySelector('.guide-question')?.textContent||'Open BOBS Guide for your next action.');
+  if(nextText.textContent!==text)nextText.textContent=text;
+  if(error&&error!==lastError)pendingHandoff=true;lastError=error||'';
+  if(pendingHandoff&&companionOpen)pendingHandoff=false;
+  if(pendingHandoff&&!typing()&&!document.querySelector('dialog[open]')&&nextBar.hidden===false){pendingHandoff=false;companionToggle.click();}
+ }
+ function scheduleBar(){if(barTimer)return;barTimer=setTimeout(()=>{barTimer=null;syncNextBar();},30);}
+ new MutationObserver(scheduleBar).observe(guideHost,{subtree:true,childList:true,characterData:true});
+ new MutationObserver(scheduleBar).observe(companion,{attributes:true,attributeFilter:['hidden']});
+ for(const event of ['bobs-flow-saved','bobs-guide-resume'])window.addEventListener(event,()=>{pendingHandoff=true;scheduleBar();});
+ document.addEventListener('focusout',scheduleBar);window.addEventListener('bobs-outlet-choice',scheduleBar);
+ scheduleBar();
  const guideSnapshot=()=>{
   const pageGuide=document.getElementById('bobsFlowGuide');
   const ctx=context(),id=ctx.outlet||active,row=records.get(id),view=common&&id&&row?projection(id):null;
   return {methodFlow:window.BOBS_METHOD_FLOW_GUIDE?.snapshot(),itemHelp:window.BOBS_ITEM_GUIDE?.snapshot(),ctx:{...ctx,outlet:id},pageHelp:pageGuide?{title:pageGuide.querySelector('h2')?.textContent,instruction:pageGuide.querySelector('p')?.textContent,next:pageGuide.querySelector('.flow-guide-next')?.textContent,steps:[...pageGuide.querySelectorAll('[data-guide-step]')].map(el=>el.textContent),anchor:pageGuide.dataset.guideAnchor}:null,loading:busy,dirty:draftDirty,progress:{...progress},savedChecklist:{owner:id||'',name:common?.outlets?.value?.find(x=>String(x.id)===String(id))?.name||common?.kitchens?.value?.kitchens?.find(x=>x.id===id)?.name||'',stages:view?.stages||view?.steps||[]},next:progress.status==='error'?null:view?.next,readError:progress.status==='error'||row?.method2?.status==='error'||common?.outlets?.status==='error',
    items:tools&&row?.method2?.status==='ok'?BOBS_OUTLET_FLOW.selected(M2.state(row.method2.value),ITEM_DATA,M2):[],kitchens:common?.kitchens?.value?.kitchens||[]};
  };
- const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{await script('bobs-reference-help.js?v=unified-review-20261102',()=>!!window.BOBS_REFERENCE);await script('bobs-guided-review.js?v=confirmation-next-20261104',()=>!!window.BOBS_REVIEW);await script('bobs-guide-bot.js?v=confirmation-next-20261104',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
+ const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{script('bobs-window-return.js?v=reuse-workspaces-20261104',()=>!!window.BOBS_WINDOW_RETURN).catch(()=>{});await script('bobs-reference-help.js?v=inline-servings-20261104',()=>!!window.BOBS_REFERENCE);await script('bobs-guided-review.js?v=confirmation-next-20261104',()=>!!window.BOBS_REVIEW);await script('bobs-guide-bot.js?v=single-guide-20261104',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
  let autoStarted=false;
  const startJourney=()=>{if(!journey||autoStarted||document.getElementById('savedModal')?.classList.contains('hidden')===false)return;autoStarted=true;if(!companionOpen)companionToggle.click();};
  // The outlet's saved-data choice is the first guide question; hand off only after the user answers it.
