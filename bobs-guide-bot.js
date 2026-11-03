@@ -154,6 +154,7 @@ function mount(host,options){
   if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
   else if(b.top<top)pane.scrollTop-=top-b.top+12;
  }
+ if(root.ResizeObserver){const resize=new root.ResizeObserver(()=>{if(revealContinuation)root.requestAnimationFrame(revealNext);});resize.observe(host);if(host.parentElement)resize.observe(host.parentElement);}
  function restoreGuideScroll(top){
   if(host.parentElement)host.parentElement.scrollTop=top;
   revealNext();
