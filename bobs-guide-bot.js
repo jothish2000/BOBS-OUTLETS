@@ -178,6 +178,7 @@ function mount(host,options){
   const ask=text=>{const q=el('p',text,'guide-question');host.append(q);};
   const choices=(...buttons)=>{const box=el('div',undefined,'guide-choices');box.append(...buttons);host.append(box);};
   const choose=(text,id,next,action)=>button(text,id,()=>{action?.();go(next,text);});
+  if(['outlets.html','kitchen-flow.html'].includes(s.ctx.page)&&['reviewed','saving','error'].includes(s.currentAction?.phase))state.step='page-task';
   switch(state.step){
    case 'outlet-details':
     ask('How many outlets are you setting up, and what are their working shifts?');
