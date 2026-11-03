@@ -134,7 +134,7 @@ function mount(host,options){
    revealContinuation=false;
    // Scroll only the guide pane, never the working form or its controls.
    const pane=host.parentElement,b=box.getBoundingClientRect(),p=pane?.getBoundingClientRect();
-   if(p&&pane.clientHeight&&pane.scrollHeight>pane.clientHeight){if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;if(b.top<p.top)pane.scrollTop-=p.top-b.top+12;}
+   if(p&&pane.clientHeight&&pane.scrollHeight>pane.clientHeight){const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;else if(b.top<top)pane.scrollTop-=top-b.top+12;}
   }
  }
 
