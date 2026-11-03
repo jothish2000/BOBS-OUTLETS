@@ -230,6 +230,7 @@ function mount(host,options){
   if(s.methodFlow){const phase=s.methodFlow.outlet+':'+s.methodFlow.phase;if(phase!==methodPhase){methodPhase=phase;state.step='page-task';state.history=[];}}
   if(p?.ready&&state.itemKey&&state.itemKey!==p.itemKey){state.step=p.journey?'production-flow':'quantity';state.history=[];draft={};}
   if(p?.ready)state.itemKey=p.itemKey;
+  const sourceState=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceState?.saved||sourceState?.busy){state.step='page-task';state.history=[];}
   host.replaceChildren();host.className='bobs-guide-dialogue';
   if(state.step==='kitchen-next'){
    if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
@@ -497,7 +498,7 @@ function mount(host,options){
  function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
  // Update only the read-only checklist after page edits; keep action buttons attached during clicks.
  let checklistTimer,actionStamp='';
- const actionKey=s=>JSON.stringify([s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp?.action]);
+ const actionKey=s=>JSON.stringify([root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot(),s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp?.action]);
  function refreshAction(){const s=snapshot(),stamp=actionKey(s);if(stamp!==actionStamp){actionStamp=stamp;update();}else renderChecklist(s);}
  const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='input'||e.type==='change')revealContinuation=false;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked&&(root.BOBS_REVIEW?.isReview?.(e.target)??true)){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
  // Keep the new action visible through asynchronous saved-progress refreshes,
