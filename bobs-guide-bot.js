@@ -147,7 +147,6 @@ function mount(host,options){
     const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
     if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
     else if(b.top<top)pane.scrollTop-=top-b.top+12;
-    revealContinuation=false;
    };
    if(root.requestAnimationFrame)root.requestAnimationFrame(reveal);else setTimeout(reveal,0);
   }
@@ -485,7 +484,10 @@ function mount(host,options){
  let checklistTimer,actionStamp='';
  const actionKey=s=>JSON.stringify([s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp?.action]);
  function refreshAction(){const s=snapshot(),stamp=actionKey(s);if(stamp!==actionStamp){actionStamp=stamp;update();}else renderChecklist(s);}
- const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
+ const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='input'||e.type==='change')revealContinuation=false;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked&&(root.BOBS_REVIEW?.isReview?.(e.target)??true)){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
+ // Keep the new action visible through asynchronous saved-progress refreshes,
+ // but yield immediately when the user scrolls, navigates or clicks in the guide.
+ for(const type of ['wheel','touchstart','pointerdown','keydown'])host.parentElement?.addEventListener(type,()=>{revealContinuation=false;},{passive:true});
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
  root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);});
  const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
