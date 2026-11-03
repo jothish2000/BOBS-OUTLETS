@@ -36,6 +36,7 @@ async function saveSourceDemand(){
  next.itemEditors[selected.key].condiments=V.clone(selected.d.condiments||[]);
  next.itemEditors[selected.key].planningToken='Planning-'+crypto.randomUUID();
  const sources=next.kitchenSources={...(next.kitchenSources||{})},rows=sourceRows();
+ const activeKeys=new Set(rows.map(r=>r.key));for(const key of Object.keys(sources))if((key===selected.key||key.startsWith(selected.key+':'))&&!activeKeys.has(key))delete sources[key];
  for(const r of rows){const k=freshLocations.kitchens.find(k=>k.id===sourceChoices[r.key]&&k.status==='operating');if(!k)throw Error('Selected kitchen is no longer operating.');const old=sources[r.key]||{};sources[r.key]={...(old.kitchenId===k.id?old:{}),kitchenId:k.id,shared:old.kitchenId===k.id?!!old.shared:false,group:old.kitchenId===k.id&&old.shared?old.group||'':'',readyBy:$('readyBy').value,away:String(k.outletId)!==String(outlet),date:C.today()};}
  // Validate the selected kitchen jobs against all receiving outlets before the protected write.
  const latestMaster=await BOBS_OPERATIONAL_RECIPES.load();if(!V.equal(latestMaster.recipes,data.recipes))throw Error('Recipes changed. Reload and review before saving.');const all=await BOBS_KITCHENS.allDemands(latestMaster);if(!V.equal(all.record,data.locations.record)||!V.equal(all.rows.find(r=>String(r.outlet.id)===String(outlet))?.raw,data.raw))throw Error('Kitchen or outlet records changed. Reload before saving.');
