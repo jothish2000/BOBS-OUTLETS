@@ -103,7 +103,7 @@ function mount(host,options){
  function continuation(s,reviewNode){
   const kitchenSource=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();
   if(kitchenSource?.busy)return {message:'Saving and verifying supplying kitchens in Google. Keep this page open.'};
-  if(kitchenSource?.saved){const links=[...document.querySelectorAll('#nextAction a')];return links.length?{choices:links}:{message:'Supplying kitchens saved and verified. Next actions are loading.'};}
+  if(kitchenSource?.saved){const links=[...document.querySelectorAll('#nextAction a')].filter(a=>!a.closest('details'));return links.length?{choices:links}:{message:'Supplying kitchens saved and verified. Next actions are loading.'};}
   // Report reviews have one independent Save per outlet; use its explicit association.
   const reportSave=reviewNode?.id&&[...document.querySelectorAll('[data-review-save]')].find(n=>n.dataset.reviewSave===reviewNode.id);
   if(reportSave){
