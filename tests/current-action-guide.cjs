@@ -75,3 +75,17 @@ test('capital review and each outlet report keep their own Save and verified nex
  }finally{w.close();}
  }
 });
+
+test('verified kitchen source handoff replaces a remembered start question',()=>{
+ const dom=new JSDOM('<main><input id="kitchenReviewed" type="checkbox" checked><button id="saveKitchen">Save supplying kitchens</button><p id="kitchenStatus">Saved</p><div id="nextAction"><a href="outlet-plan.html?outlet=Kitchen-E">Elimedu — Kitchen expenses and existing positions</a></div></main><aside id="bobsCompanion"><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=demand&outlet=1'}),w=dom.window;
+ try{
+ w.HTMLElement.prototype.scrollIntoView=function(){};
+ w.sessionStorage.setItem('bobs-guide-conversation-v1:1',JSON.stringify({step:'start',history:[]}));
+ w.BOBS_KITCHEN_SOURCE_GUIDE={snapshot:()=>({saved:true,busy:false,title:'✓ Supplying kitchens saved and verified',instruction:'Continue with Elimedu.',next:[{label:'Elimedu — Kitchen expenses and existing positions',href:'outlet-plan.html?outlet=Kitchen-E'}]})};
+ w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide');
+ w.BOBS_GUIDE_BOT.mount(host,{minimise(){},snapshot:()=>({ctx:{page:'kitchen-flow.html',outlet:'1'},progress:{status:'idle'}})});
+ assert.match(host.textContent,/Supplying kitchens saved and verified/);
+ assert.match(host.textContent,/Elimedu — Kitchen expenses/);
+ assert.doesNotMatch(host.textContent,/Next: Save supplying/);
+ }finally{dom.window.close();}
+});
