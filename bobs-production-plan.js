@@ -12,7 +12,7 @@ function renderSourceStep(){
    const fresh=await M2.read(outlet);if(!V.equal(fresh,data.raw))throw Error('Menu changed elsewhere. Reload and review before saving demand.');
    const next=P.draftState(data.raw,[{cat:selected.cat,i:selected.i,quantity:$('intendedQuantity').value,unit:selected.d.unit,mode:selected.d.mode,...(extraNeeded()?{sideExtraFivePercent:extraChoice()}:{})}],ITEM_DATA,M2,C.today());
    data.raw=await V.save(outlet,'METHOD2','default',next,data.raw);dirty=false;
-   busy=false;location.assign(sourceDestination());
+   BOBS_WINDOW_RETURN.notify({type:'bobs-production-demand-saved',outlet,key:selected.key},['bobs-production-plan']);busy=false;location.assign(sourceDestination());
   }catch(e){$('sourceSaveStatus').textContent='Demand was not confirmed: '+e.message;}finally{busy=false;if($('chooseProductionSource'))$('chooseProductionSource').disabled=false;guideChanged();}
  };
 }

@@ -11,7 +11,7 @@
   const full=$('idliLabourCost'),production=$('productionEntry')&&!$('productionEntry').hidden;
   if(production){
    if(full?.dataset.guideState==='error')return result(name+' — saved plan could not be checked',$('fullCostStatus')?.textContent+' Use Refresh verified cost records before deciding what is complete.','#refreshFullCost','Show Refresh verified cost records');
-   if(full?.dataset.productionReady!=='true')return result(name+' — plan quantity, recipes, equipment and time','Click “'+(document.querySelector('#productionEntry a')?.textContent||'Open production plan →')+'”. First confirm intended quantity and ready-by time, then the supplying kitchen for the item and its sides. Review recipes, equipment, timings and delivery at that kitchen. After saving, continue with the outstanding costs in the Ideal Price Builder. '+(full?.dataset.guideState==='loading'?'Saved planning checks are still loading.':''),'#productionEntry a','Show production capacity link');
+   if(full?.dataset.productionReady!=='true'||$('productionEntry')?.dataset.sourceRequired==='true')return result(name+' — plan quantity, recipes, equipment and time','Click “'+(document.querySelector('#productionEntry a')?.textContent||'Open production plan →')+'”. First confirm intended quantity and ready-by time, then the supplying kitchen for the item and its sides. Review recipes, equipment, timings and delivery at that kitchen. After saving, continue with the outstanding costs in the Ideal Price Builder. '+(full?.dataset.guideState==='loading'?'Saved planning checks are still loading.':''),'#productionEntry a','Show production capacity link');
   }
   if(production||location.hash==='#idliLabourCost'){
    const next=full?.querySelector('.flow-current');
