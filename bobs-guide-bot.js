@@ -137,22 +137,27 @@ function mount(host,options){
   }
   // Directly below the tick, before any explanatory note or the secondary review button.
   target.children[0].after(box);
-  if(revealContinuation){
-   // Wait until the complete guide (including its footer) has been laid out.
-   const reveal=()=>{
-    if(!revealContinuation)return;
-    const pane=host.parentElement,next=host.querySelector('[data-confirmation-next]');
-    if(!next||!pane?.clientHeight)return;
-    const b=next.getBoundingClientRect(),p=pane.getBoundingClientRect();
-    const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
-    if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
-    else if(b.top<top)pane.scrollTop-=top-b.top+12;
-   };
-   if(root.requestAnimationFrame)root.requestAnimationFrame(reveal);else setTimeout(reveal,0);
-  }
+
+ }
+
+
+ function revealNext(){
+  if(!revealContinuation)return;
+  const pane=host.parentElement,next=host.querySelector('[data-confirmation-next]');
+  if(!next||!pane?.clientHeight)return;
+  const b=next.getBoundingClientRect(),p=pane.getBoundingClientRect();
+  const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
+  if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
+  else if(b.top<top)pane.scrollTop-=top-b.top+12;
+ }
+ function restoreGuideScroll(top){
+  if(host.parentElement)host.parentElement.scrollTop=top;
+  revealNext();
+  if(revealContinuation){if(root.requestAnimationFrame)root.requestAnimationFrame(revealNext);else setTimeout(revealNext,0);}
  }
 
  function renderChecklist(s){
+  const scrollBefore=host.parentElement?.scrollTop||0;
   let box=host.querySelector('.guide-checklist');
   // The verified kitchen handoff already has a tick; keep both next-action cards in view.
   if(state?.step==='kitchen-next'){box?.remove();return;}
@@ -192,7 +197,7 @@ function mount(host,options){
   savedBox.append(el('strong','Previously saved Google progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
   if(m.message)savedBox.append(el('p',m.message));
   if(m.dirty)savedBox.append(el('p','The saved checklist below does not include unsaved edits on this page.','guide-checklist-draft'));
-  if(!m.rows.length)return;
+  if(!m.rows.length){restoreGuideScroll(scrollBefore);return;}
   const details=savedBox;details.append(el('p',m.done+' of '+m.rows.length+' saved stages verified'));
   let nextMarked=false;
   function row(n){
@@ -210,9 +215,11 @@ function mount(host,options){
   const list=el('ol');m.rows.forEach(n=>list.append(row(n)));details.append(list);
   if(!m.blocked){const completed=m.rows.filter(n=>n.status==='done');if(completed.length)savedBox.append(el('p','✓ Saved and verified: '+completed.at(-1).title,'guide-checklist-done'));const next=m.rows.find(n=>!['done','na'].includes(n.status));savedBox.append(el('p',next?'→ Next incomplete saved stage: '+next.title:'✓ All listed saved stages are verified or not required.',next?'guide-checklist-next':'guide-checklist-done'));}
 
+  restoreGuideScroll(scrollBefore);
  }
 
  function render(){
+  const scrollBefore=host.parentElement?.scrollTop||0;
   const s=snapshot();restore(s);const p=s.production;
   if(s.methodFlow){const phase=s.methodFlow.outlet+':'+s.methodFlow.phase;if(phase!==methodPhase){methodPhase=phase;state.step='page-task';state.history=[];}}
   if(p?.ready&&state.itemKey&&state.itemKey!==p.itemKey){state.step=p.journey?'production-flow':'quantity';state.history=[];draft={};}
@@ -476,7 +483,7 @@ function mount(host,options){
   const nav=el('div',undefined,'guide-nav');
   if(state.history.length)nav.append(button('Back one question','back',()=>{const previous=state.history.pop();state.step=steps.has(previous.step)?previous.step:'start';draft={};error='';persist();render();}));
   if(state.step!=='start')nav.append(button('Choose a different task','restart',()=>{state={step:'start',history:[]};draft={};persist();render();}));host.append(nav);
-  persist();
+  persist();restoreGuideScroll(scrollBefore);
  }
  function update(){if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
  function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
