@@ -38,7 +38,8 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  assert.equal(await p.locator('#servingAmount-1').inputValue(),'8');
  // Reference assessment is one popup at a time; external source visits are optional.
  await p.evaluate(()=>BOBS_REVIEW.request('#sideServingReviewed'));
- for(let i=0;i<2;i++){await p.locator('#bobsReferenceDialog[open]').waitFor();console.log('SIDE reference',i,await p.locator('#bobsReferenceTitle').innerText());await p.check('#bobsReferenceAcknowledged');await p.click('#bobsReferenceContinue');console.log('SIDE after',i,await p.evaluate(()=>({open:document.getElementById('bobsReferenceDialog').open,a:BOBS_REFERENCE.reviewed('serving:0'),b:BOBS_REFERENCE.reviewed('serving:1'),choices:!!document.querySelector('[data-review-ui=choices]')})));}
+ for(let i=0;i<2;i++){await p.locator('#bobsReferenceDialog[open]').waitFor();await p.check('#bobsReferenceAcknowledged');await p.click('#bobsReferenceContinue');}
+ assert.equal(await p.evaluate(()=>BOBS_REFERENCE.reviewed('serving:0')&&BOBS_REFERENCE.reviewed('serving:1')),true,'reviewed references must remain confirmed after popup closes');
  await review(p.locator('#sideServingReviewed'));
  assert.equal(await p.locator('#sideExtraYes').isChecked(),false);assert.equal(await p.locator('#sideExtraNo').isChecked(),false);
  await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source');
