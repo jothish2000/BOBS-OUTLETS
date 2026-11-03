@@ -26,7 +26,7 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  assert.equal(await confirmation.locator('.guide-checklist-local .guide-review-again').innerText(),'Review again');
  await confirmation.evaluate(()=>window.dispatchEvent(new Event('bobs-guide-context')));
 await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-confirmation-next]')?.getBoundingClientRect(),p=document.getElementById('bobsCompanion')?.getBoundingClientRect(),h=document.querySelector('#bobsCompanion .companion-head')?.getBoundingClientRect();return a&&p&&a.width>0&&a.height>0&&p.height>0&&a.y>=Math.max(p.y,h?.bottom||0)&&a.bottom<=p.bottom;});
- assert(await next.evaluate(el=>{const a=el.getBoundingClientRect(),p=document.getElementById('bobsCompanion').getBoundingClientRect();return a.width>0&&a.y>=p.y&&a.bottom<=p.bottom;}),'Tick continuation must be visible in the guide pane');
+ // The geometry wait above includes the pane and sticky heading; do not re-sample mid-layout in a separate assertion.
  assert.equal(writes.length,0,'Review confirmation must not save');
  await next.locator('button').click();await confirmation.waitForSelector('#bobsNextActionBar:not([hidden])');assert.match(await confirmation.locator('#bobsNextActionText').innerText(),/Save outlets/);assert.equal(await confirmation.evaluate(()=>document.activeElement.id),'save');assert.equal(writes.length,0,'Show Save must not auto-save');
  await confirmation.locator('#bobsNextActionBar button').click();await confirmation.locator('#bobsNextActionBar').waitFor({state:'hidden'});await confirmation.locator('.guide-review-again').click();assert(await confirmation.locator('[data-review-ui=choices]').isVisible());
