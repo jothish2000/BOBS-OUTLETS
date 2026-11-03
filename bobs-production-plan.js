@@ -27,6 +27,7 @@ function renderSourceStep(){
 }
 async function saveSourceDemand(){
  if(busy)return;
+ let savedThisAttempt=false;
  try{requireExtraChoice();requireSources();if($('readyDay').value!=='0')throw Error('Shared-kitchen routing currently plans today’s orders. Choose Today to continue, or retain this draft for a dated-production update.');
  busy=true;$('chooseProductionSource').disabled=true;$('sourceSaveStatus').textContent='Saving demand and verifying Google records…';guideChanged();
  const freshLocations=await BOBS_KITCHENS.locations();if(!V.equal(freshLocations.record,data.locations.record))throw Error('Kitchen register changed. Reload and review before saving.');
@@ -40,7 +41,7 @@ async function saveSourceDemand(){
  const latestMaster=await BOBS_OPERATIONAL_RECIPES.load();if(!V.equal(latestMaster.recipes,data.recipes))throw Error('Recipes changed. Reload and review before saving.');const all=await BOBS_KITCHENS.allDemands(latestMaster);if(!V.equal(all.record,data.locations.record)||!V.equal(all.rows.find(r=>String(r.outlet.id)===String(outlet))?.raw,data.raw))throw Error('Kitchen or outlet records changed. Reload before saving.');
  const own=BOBS_KITCHEN_CORE.demands(outlet,F.selected(M2.state(next),ITEM_DATA,M2),data.recipes,P,F,M2,C.today()),candidate=[...all.demands.filter(d=>d.outlet!==String(outlet)),...own];
  for(const id of new Set(rows.map(r=>sourceChoices[r.key])))BOBS_KITCHEN_CORE.jobs(candidate,freshLocations.kitchens.find(k=>k.id===id),C.today(),F);
- data.raw=await V.save(outlet,'METHOD2','default',next,data.raw);dirty=false;sourcesSaved=true;
+ data.raw=await V.save(outlet,'METHOD2','default',next,data.raw);dirty=false;sourcesSaved=true;savedThisAttempt=true;$('sourceNextActions').replaceChildren();
  $('sourceSaveStatus').textContent='✓ Demand, serving quantities and supplying kitchens saved and verified in Google.';
  try{BOBS_WINDOW_RETURN.notify({type:'bobs-production-demand-saved',outlet,key:selected.key},['bobs-production-plan']);}catch(_){}
  for(const id of new Set(rows.map(r=>sourceChoices[r.key]))){const k=freshLocations.kitchens.find(k=>k.id===id),section=document.createElement('section');let nextStep;
@@ -48,9 +49,9 @@ async function saveSourceDemand(){
  section.innerHTML='<h3>'+esc(k.name)+' — next required action</h3>'+(nextStep?'<a class="guide-action" href="'+esc(nextStep.href+'&returnTo='+encodeURIComponent(BOBS_WINDOW_RETURN.safe(q.get('returnTo'))||location.href))+'">'+esc(nextStep.title)+' →</a>':'<p>All saved kitchen stages are verified. Review the item costs in the opening item editor.</p>');$('sourceNextActions').append(section);
  }
  $('sourceNextActions').tabIndex=-1;$('sourceNextActions').focus();$('sourceNextActions').scrollIntoView({block:'center'});
- }catch(e){$('sourceSaveStatus').textContent='Not saved — '+e.message;}finally{busy=false;if($('chooseProductionSource'))$('chooseProductionSource').disabled=false;guideChanged();}
+ }catch(e){$('sourceSaveStatus').textContent=(savedThisAttempt?'Saved and verified. Could not display the next action — ':'Not saved — ')+e.message;}finally{busy=false;if($('chooseProductionSource'))$('chooseProductionSource').disabled=false;guideChanged();}
 }
-function requireProductionOwner(){if(needsKitchenRouting())throw Error('Choose and confirm the supplying kitchen first. Use Save confirmed demand & choose supplying kitchens. Review equipment and capacity in that kitchen’s plan.');}
+function requireProductionOwner(){if(needsKitchenRouting())throw Error('Choose and confirm the supplying kitchen first. Use Save demand & show selected kitchen’s next step. Review equipment and capacity in that kitchen’s plan.');}
 function itemCostContinuation(){
  if(BOBS_KITCHENS.isKitchen(outlet)||!selected)return null;
  const parent=BOBS_WINDOW_RETURN.safe(q.get('returnTo'));
@@ -81,7 +82,7 @@ function renderSides(){
 sideBox.addEventListener('input',e=>{
  const row=e.target.closest('[data-serving-row]'),field=e.target.dataset.servingField;if(!row||!field)return;
  selected.d.condiments[+row.dataset.servingRow][field]=e.target.value;$('sideServingReviewed').checked=false;if($('productionSourceReviewed'))$('productionSourceReviewed').checked=false;
- dirty=true;sourcesSaved=false;recipeChecks.clear();$('recipeReviewed').checked=false;$('capacityReviewed').checked=false;guideAssessment=null;renderSourceStep();renderExtra();guideChanged();
+ dirty=true;sourcesSaved=false;recipeChecks.clear();$('recipeReviewed').checked=false;$('capacityReviewed').checked=false;guideAssessment=null;if(field==='portionUnit'||field==='source')renderSides();renderSourceStep();renderExtra();guideChanged();
 });
 function requireQuantity(){if(!$('quantityReviewed')?.checked||!(+$('intendedQuantity').value>0)||!$('readyBy').value)throw Error('Enter and confirm your intended quantity and ready-by time before reviewing recipes or equipment.');}
 function requireSides(){requireQuantity();for(const side of selected?.d.condiments||[])if(!(Number(side.portion)>0)||!side.portionUnit)throw Error('Enter a positive serving quantity and unit for '+side.recipeName+'.');if(!selected?.job&&!$('sideServingReviewed')?.checked)throw Error('Review sides and serving quantities before the extra allowance, recipes or saving.');}
