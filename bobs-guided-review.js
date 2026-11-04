@@ -10,7 +10,7 @@ function caption(n){const label=n.labels?.[0]||n.closest('label'),copy=label?.cl
 function isReview(n){return n?.matches('input[type=checkbox]')&&!n.closest(excluded)&&(
 /Reviewed$|^confirmed$|^dutiesComplete$|^outletReview-/.test(n.id)||/^(reviewed|preparationReviewed|capacityBasisReviewed|costConfirmed)$/.test(n.dataset.field||'')||n.classList.contains('capacity-basis')||/^\s*I (?:have )?(?:reviewed|checked|confirmed|completed the review)\b/i.test(caption(n)));}
 function scope(n){
- const selectors={outletsReviewed:'#cards',kitchenReviewed:'#kitchenBody',equipmentReviewed:'#equipmentRows',flowReviewed:'#flowApp',dutiesComplete:'#flowApp',planningReviewed:'#planningBody',capexReviewed:'main',sideServingReviewed:'#sideServingSection',quantityReviewed:'#quantitySection > .fields',deliveryReviewed:'#deliverySection',recipeReviewed:'#recipeReviewGuide',capacityReviewed:'#capacitySection',confirmed:'#productionEditor'};
+ const selectors={outletsReviewed:'#cards',kitchenReviewed:'#kitchenBody',equipmentReviewed:'#equipmentRows',flowReviewed:'#flowApp',dutiesComplete:'#flowApp',planningReviewed:'#planningBody',capexReviewed:'main',sideServingReviewed:'#sideServingSection',quantityReviewed:'#quantitySection > .fields',deliveryReviewed:'#deliverySection',recipeReviewed:'#recipePlanLinks',capacityReviewed:'#capacitySection',confirmed:'#productionEditor'};
  return (selectors[n.id]&&doc.querySelector(selectors[n.id]))||n.closest('[data-process],[data-capacity],.planning-component,dialog,section,article,fieldset,form')||doc.querySelector('main')||doc.body;
 }
 function targets(n){
@@ -30,7 +30,7 @@ function entry(n){let e=entries.get(n);if(!e){e={node:n,signature:signature(n),c
 function button(text,fn){const b=el('button',text);b.type='button';b.onclick=fn;return b;}
 function focus(n,review=false){
  if(!n)return;for(let p=n.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;
- root.BOBS_GUIDE?.close();if(!n.matches('input,select,textarea,button,a'))n.tabIndex=-1;n.focus({preventScroll:true});
+ if(review&&!n.closest('dialog[open]'))root.BOBS_GUIDE?.open();else if(!review&&!n.closest('#bobsCompanion'))root.BOBS_GUIDE?.close();if(!n.matches('input,select,textarea,button,a'))n.tabIndex=-1;n.focus({preventScroll:true});
  if(!review){n.scrollIntoView({block:'center',inline:'nearest'});return;}
  const position=()=>{
   // Do not recenter a visible field or change its position in the original form.
@@ -43,6 +43,7 @@ function focus(n,review=false){
     if(bar.matches('.savebar'))bottom=Math.min(bottom,r.top-12);
     else if(r.top<=top+2)top=Math.max(top,r.bottom+12);
    }
+   if(!modal&&root.innerWidth<900){const guide=doc.querySelector('#bobsCompanion:not([hidden])');if(guide)bottom=Math.min(bottom,guide.getBoundingClientRect().top-12);}
    if(modal){const r=modal.getBoundingClientRect();top=Math.max(top,r.top+12);bottom=Math.min(root.innerHeight-12,r.bottom-12);if(dialogActions)bottom=Math.min(bottom,dialogActions.getBoundingClientRect().top-12);}
    for(let p=n.parentElement;p&&p!==doc.body&&p!==doc.documentElement;p=p.parentElement){
     const css=root.getComputedStyle(p),box=p.getBoundingClientRect(),r=n.getBoundingClientRect();
@@ -73,6 +74,7 @@ function modalActions(e,target){
  }
  dialogActions.firstElementChild.textContent=e.individual?'Confirm this field & continue':'Confirm this section & continue';
 }
+function mountReview(panel,n){if(!n.closest('dialog[open]')&&root.BOBS_GUIDE?.review){root.BOBS_GUIDE.review(panel);focus(panel);return;}(n.closest('label')||n).before(panel);focus(panel);}
 function locked(n){return n.matches(':disabled')||n.getAttribute('aria-disabled')==='true';}
 function invalidate(e){
  e.confirmed.clear();e.authorised=false;if(e.method!=='guided')e.method='';e.changed=true;e.signature=signature(e.node);
@@ -106,13 +108,13 @@ function request(n){
  if(root.BOBS_REFERENCE?.ensure(n,()=>request(n)))return true;
  refresh();clearHighlight();clearDialogActions();active?.panel?.remove();const e=entry(n);active=e;e.currentTitle='';announcement.textContent='';e.panel?.remove();const panel=el('section');panel.dataset.reviewUi='choices';panel.className='bobs-review-panel';for(const type of ['input','change'])panel.addEventListener(type,e=>e.stopPropagation());e.panel=panel;
  panel.append(el('h3','Review before confirming'),el('p',caption(n)));
- if(locked(n)){panel.append(el('p','This confirmation is not available yet. Complete the page’s required loading, calculation or earlier checks first.'));(n.closest('label')||n).before(panel);focus(panel);announce();return true;}
+ if(locked(n)){panel.append(el('p','This confirmation is not available yet. Complete the page’s required loading, calculation or earlier checks first.'));mountReview(panel,n);announce();return true;}
  panel.append(el('p','Choose a review below to go to your actual entered values. BOBS will highlight and focus the original inputs so you can check or edit them. If you have already reviewed them, use the explicit shortcut below. Confirmation does not save.'));
  panel.append(button('Review my previously entered inputs',()=>start(e)));
  panel.append(button('Review each field individually →',()=>start(e,true)));
  const label=el('label'),skip=el('input');skip.type='checkbox';skip.dataset.reviewShortcut='true';label.append(skip,' I have already reviewed these inputs — continue without repeating the guided review');panel.append(label);
- const confirm=button('Confirm these inputs and continue',()=>{refresh();if(!skip.checked||locked(n))return;e.authorised=true;e.method='already-reviewed';complete(e);});confirm.disabled=true;skip.onchange=()=>{confirm.disabled=!skip.checked;};panel.append(confirm);
- (n.closest('label')||n).before(panel);focus(panel);announce();return true;
+ const confirm=button('Confirm these inputs and continue',()=>{refresh();if(!skip.checked||locked(n))return;e.authorised=true;e.method='already-reviewed';complete(e);});confirm.disabled=true;skip.onchange=()=>{confirm.disabled=!skip.checked;};panel.append(confirm,button('Return to page guide',()=>cancelReview()));
+ mountReview(panel,n);announce();return true;
 }
 function start(e,individual=false){e.individual=individual;e.method='guided';e.authorised=false;e.confirmed.clear();e.signature=signature(e.node);e.index=0;showField(e);}
 function showField(e){
@@ -134,8 +136,9 @@ function confirmField(){
  e.authorised=true;e.signature=signature(e.node);e.panel?.remove();clearHighlight();clearDialogActions();e.currentTitle='';announcement.textContent='';
  const panel=el('section');panel.dataset.reviewUi='ready';panel.className='bobs-review-panel';for(const type of ['input','change'])panel.addEventListener(type,e=>e.stopPropagation());e.panel=panel;
  panel.append(el('p','✓ You checked each section. Confirm below to continue. This does not save your data.'),button('Confirm this review and continue',()=>complete(e)));
- (e.node.closest('label')||e.node).before(panel);focus(e.node);announce();
+ mountReview(panel,e.node);announce();
 }
+function cancelReview(){active?.panel?.remove();active=null;clearHighlight();clearDialogActions();announcement.textContent='';announce();root.BOBS_GUIDE?.open();}
 function complete(e){
  refresh();if(!e.authorised||locked(e.node))return;if(root.BOBS_REFERENCE?.ensure(e.node,()=>complete(e)))return;
  ownClick=true;try{if(!e.node.checked)e.node.click();}finally{ownClick=false;}
@@ -155,7 +158,7 @@ function changed(event){if(event.target.closest?.(excluded)||isReview(event.targ
 doc.addEventListener('input',changed);doc.addEventListener('change',changed);
 const observer=new MutationObserver(records=>{if(records.every(r=>r.target.closest?.(excluded)))return;clearTimeout(timer);timer=setTimeout(()=>{refresh();announce();},30);});
 observer.observe(doc.body,{subtree:true,childList:true});
-root.BOBS_REVIEW={request,snapshot,confirmField,returnToChoices(){if(active)request(active.node);},focusCurrent(){if(active?.method==='guided')showField(active);},isReview};
+root.BOBS_REVIEW={request,snapshot,confirmField,cancel:cancelReview,returnToChoices(){if(active)request(active.node);},focusCurrent(){if(active?.method==='guided')showField(active);},isReview};
 const announcement=el('span');announcement.id='bobsCurrentReviewTitle';announcement.className='bobs-review-announcement';announcement.setAttribute('role','status');doc.body.append(announcement);
 const style=el('style');style.textContent='.bobs-review-highlight{outline:3px solid #b8860b;outline-offset:3px;background:#fffaf0;scroll-margin-top:100px}html body .bobs-review-field-highlight{outline:3px solid #a66b00!important;outline-offset:2px!important;box-shadow:0 0 0 6px #ffdf70!important;background-color:#fff3bd!important;scroll-margin-block:140px 90px;scroll-margin-inline:12px}.bobs-review-announcement{position:fixed;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none}.bobs-review-dialog-actions{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;background:inherit;padding:8px 0;z-index:1}.bobs-review-dialog-actions button{padding:8px;max-width:100%;white-space:normal}.bobs-review-panel{grid-column:1 / -1;min-width:0;border:2px solid #ad7b16;background:#fff8df;color:#193e30;padding:14px;margin:12px 0;border-radius:8px;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}.bobs-review-panel button{font:inherit;background:#214f3c;color:#fff;border:0;padding:10px;margin:6px 8px 6px 0;cursor:pointer}.bobs-review-panel button:disabled{opacity:.55;cursor:default}.bobs-review-panel dt{font-weight:bold}.bobs-review-panel dd{margin:0 0 8px}.bobs-review-panel input[type=checkbox]{width:auto;margin-right:8px}.bobs-review-panel :focus-visible{outline:3px solid #a16c00;outline-offset:3px}';doc.head.append(style);
 announce();

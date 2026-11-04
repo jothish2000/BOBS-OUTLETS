@@ -28,7 +28,26 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
  await p.fill('#intendedQuantity','360');await p.fill('#readyBy','07:00');
- await review(p.locator('#quantityReviewed'));
+
+ // The production review uses one guide frame; all three controls stay in place.
+ await p.waitForFunction(()=>!!window.BOBS_REVIEW);
+ await p.evaluate(()=>{window.reviewNodes=['intendedQuantity','readyBy','readyDay'].map(id=>{const n=document.getElementById(id),box=document.getElementById('quantitySection').getBoundingClientRect(),r=n.getBoundingClientRect();return {n,parent:n.parentNode,x:r.left-box.left,y:r.top-box.top};});BOBS_REVIEW.request('#quantityReviewed');});
+ await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ for(const id of ['intendedQuantity','readyBy','readyDay']){
+  await p.waitForFunction(id=>document.activeElement.id===id,id);
+  assert(await p.locator('#bobsCompanion').isVisible());
+  assert(await p.locator('#bobsCompanion [data-guide-choice=review-next]').isVisible());
+  assert.equal(await p.locator('#bobsNextActionBar').count(),0);
+  assert.equal(await p.locator('[data-review-ui=field]').count(),0);
+  assert(await p.evaluate(()=>{const b=document.getElementById('quantitySection').getBoundingClientRect();return reviewNodes.every(({n,parent,x,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().left-b.left-x)<1&&Math.abs(n.getBoundingClientRect().top-b.top-y)<1);}));
+  if(id==='readyBy')console.log('SINGLE_GUIDE_PRODUCTION_PNG '+(await p.screenshot()).toString('base64'));
+  await p.locator('[data-guide-choice=review-next]').click();
+ }
+ assert.equal(await p.locator('#quantityReviewed').isChecked(),false);
+ await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();
+ assert(await p.locator('#quantityReviewed').isChecked());
+ assert(await owner.locator('#productionEntry').isHidden());assert(await owner.locator('#itemGuide').isHidden());
+
  // Existing item window is reused without reload or draft loss.
  await owner.fill('#batchSize','121');
  const count=ctx.pages().length;await owner.locator('[data-guide-choice=item-open-production]').click();await owner.waitForTimeout(150);

@@ -50,7 +50,7 @@
  body.bobs-guided-dock #bobsCompanion.interactive-guide{position:fixed;top:64px;right:16px;bottom:76px;width:320px;max-width:320px;max-height:calc(100dvh - 140px);overflow:auto;margin:0}
  body.bobs-guided-dock .savebar{right:352px;padding:12px 20px}
  body.bobs-guided-dock main{min-width:0;box-sizing:border-box}
- body.bobs-guided-dock .grid,body.bobs-guided-dock .fields{grid-template-columns:minmax(0,1fr)}
+ body.bobs-guided-dock[data-bobs-guide-page="method2-item.html"] .grid,body.bobs-guided-dock[data-bobs-guide-page="production-plan.html"] .fields,body.bobs-guided-dock[data-bobs-guide-page="recipe-cost-editor.html"] .fields{grid-template-columns:minmax(0,1fr)}
  body.bobs-guided-dock #bobsFlowGuide{display:none}
 }
 
@@ -74,18 +74,24 @@
 #bobsCompanion .guide-confirmation-next button{display:block;width:100%;text-align:left;white-space:normal;min-height:44px;margin:6px 0}
 #bobsCompanion button.guide-review-again{display:inline-block;background:transparent;color:#315446;border:1px solid #9eb2a6;font-weight:400;padding:6px 9px;min-height:32px;margin-top:6px}
 
-/* A single compact reminder remains when the full guide is minimised. */
-#bobsFlowGuide[hidden],#bobsNextActionBar[hidden]{display:none!important}
-#bobsNextActionBar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px 10px 160px;background:#fff3c8;color:#173d2d;border-bottom:2px solid #b48624;font:600 14px/1.4 system-ui;box-sizing:border-box;overflow-wrap:anywhere}
-#bobsNextActionBar span{min-width:0}
-#bobsNextActionBar button{flex-shrink:0;background:#214f3c;color:#fff;border:0;border-radius:5px;padding:10px;font:inherit}
-@media(max-width:650px){#bobsNextActionBar{position:relative;padding:12px;flex-wrap:wrap}}
+
+/* Instructions are displayed only in BOBS Guide. These nodes remain read-only
+   metadata for existing adapters; editable fields and status messages stay in the form. */
+[data-bobs-page-guide],#bobsFlowGuide,#bobsNextActionBar{display:none!important}
 #bobsCompanion{overflow-anchor:none}
-
-/* Active review uses the existing compact guide; no panel is inserted among form fields. */
-#bobsReviewContinue[hidden]{display:none!important}
-#bobsNextActionBar.reviewing #bobsNextActionText{height:2.8em;line-height:1.4;overflow:auto;flex:1}
-#bobsNextActionBar.reviewing button{max-width:100%;white-space:normal}
-@media(max-width:650px){#bobsNextActionBar.reviewing{display:grid;grid-template-columns:minmax(0,1fr) auto}#bobsNextActionBar.reviewing #bobsNextActionText{grid-column:1 / -1}}
-
-#bobsNextActionBar.reviewing{position:sticky;top:0}
+#bobsReviewWorkspace:empty{display:none}
+#bobsCompanion .bobs-review-panel{border:0;background:transparent;padding:0;margin:12px 0}
+#bobsCompanion .guide-current-review{background:#fff3bd;border-left:4px solid #a66b00;padding:10px}
+#bobsCompanion .guide-current-review button{display:block;width:100%;margin-top:10px;white-space:normal}
+#bobsCompanion .guide-page-overview{border-top:1px solid #cbd5d1;margin-top:14px}
+#bobsCompanion .guide-page-overview button{display:block;margin:8px 0;text-align:left;width:100%}
+@media(min-width:900px){
+ body.bobs-guided-dock #bobsCompanion.interactive-guide{top:12px;max-height:calc(100dvh - 88px)}
+ body.bobs-guided-dock{padding-right:352px}
+}
+@media(max-width:899px){
+ body.bobs-review-active{padding-bottom:300px!important}
+ body.bobs-review-active #bobsCompanion{position:fixed;left:8px;right:8px;bottom:8px;width:auto;max-width:none;max-height:44dvh;margin:0;overflow:auto}
+ body.bobs-review-active #bobsCompanion .companion-head{position:static;padding:0 0 4px}
+ body.bobs-review-active #bobsCompanionToggle{display:none}
+}

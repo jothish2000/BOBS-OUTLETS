@@ -194,7 +194,7 @@ function guideJourney(){
  if(!guideDelivery)return {stage:'delivery'};
  return {stage:'save'};
 }
-function guideFocus(id){const target=$(id);if(!target)throw Error('This control is not available yet.');if(!target.matches('input,select,textarea,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
+function guideFocus(id){if(id==='recipeReviewGuide')id='recipePlanLinks';const target=$(id);if(!target)throw Error('This control is not available yet.');if(!target.matches('input,select,textarea,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
 function guideInput(id,value){if(!data||loading||busy||$('plannerFields').disabled)throw Error('Wait for the planning records to load.');if($(id).disabled)throw Error('Edit the receiving outlet orders to change a shared-kitchen target.');$(id).value=value;$(id).dispatchEvent(new Event('input',{bubbles:true}));}
 window.BOBS_PRODUCTION_GUIDE={snapshot:guideSnapshot,itemCostContinuation,focus:guideFocus,
  continueQuantity(){if(!data||loading||busy)throw Error('Wait for the saved records.');if(!(+$('intendedQuantity').value>0))throw Error('Enter a positive intended production quantity.');if(!$('readyBy').value)throw Error('Enter a ready-by time.');if(!$('quantityReviewed').checked){window.BOBS_REVIEW?.request('#quantityReviewed');return;}guideQuantity=true;guideChanged();},
