@@ -43,6 +43,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
 
  // Persistent exact-control highlight and both actions visible below a sticky outlet ribbon.
  await p.setViewportSize({width:1071,height:580});
+ await p.goto('about:blank');
  await p.setContent('<style>body{margin:0}header{position:sticky;top:0;background:#193e30;color:white;padding:24px;height:110px;box-sizing:border-box;z-index:6}main{padding:16px}.columns{display:grid;grid-template-columns:repeat(3,270px);gap:20px;width:100%;overflow:auto}label{display:block;margin:8px 0}input{padding:10px;box-sizing:border-box;width:100%}.savebar{position:fixed;bottom:0;left:0;right:0;height:60px;background:white;z-index:8}</style><header>GURUSAMYPALAYAM — Outlet 2</header><main><section id="flowApp"><div style="height:700px"></div><div class="columns"><article data-position="A"><h3>Cashier 1</h3><label>Monthly wage<input id="firstWage" value="15000"></label></article><article data-position="B"><h3>Cashier 2</h3><label>Monthly wage<input id="secondWage" value="16000"></label></article><article data-position="C"><h3>Cashier 3</h3><label>Monthly wage<input id="thirdWage" value="17000"></label></article></div><label><input id="flowReviewed" type="checkbox">I reviewed staff.</label><div style="height:600px"></div></section></main><div class="savebar">Save</div>');
  await p.addScriptTag({path:path.resolve(__dirname,'../bobs-guided-review.js')});
  await p.evaluate(()=>BOBS_REVIEW.request('#flowReviewed'));
