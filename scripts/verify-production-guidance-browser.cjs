@@ -32,6 +32,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  // The production review uses one guide frame; all three controls stay in place.
  await p.waitForFunction(()=>!!window.BOBS_REVIEW);
  await p.evaluate(()=>{window.reviewNodes=['intendedQuantity','readyBy','readyDay'].map(id=>{const n=document.getElementById(id),box=document.getElementById('quantitySection').getBoundingClientRect(),r=n.getBoundingClientRect();return {n,parent:n.parentNode,x:r.left-box.left,y:r.top-box.top};});BOBS_REVIEW.request('#quantityReviewed');});
+ assert(await p.locator('main [data-review-ui=choices]').isVisible());assert.equal(await p.locator('#bobsCompanion [data-review-ui],#bobsCompanion [data-review-shortcut]').count(),0);
  await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  for(const id of ['intendedQuantity','readyBy','readyDay']){
   await p.waitForFunction(id=>document.activeElement.id===id,id);
@@ -43,11 +44,13 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
   assert(await p.evaluate(()=>{const b=document.getElementById('quantitySection').getBoundingClientRect();return reviewNodes.every(({n,parent,x,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().left-b.left-x)<1&&Math.abs(n.getBoundingClientRect().top-b.top-y)<1);}));
   if(id==='readyBy')console.log('SINGLE_GUIDE_PRODUCTION_PNG '+(await p.screenshot()).toString('base64'));
   await p.locator('[data-guide-choice=review-next]').click();
+  assert.equal(await p.evaluate(()=>document.activeElement.id),'bobsReviewConfirmField');assert(await p.locator('#'+id).evaluate(n=>n.classList.contains('bobs-review-field-highlight')));
+  await p.locator('main #bobsReviewConfirmField').click();
  }
  assert.equal(await p.locator('#quantityReviewed').isChecked(),false);
  await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();
  assert(await p.locator('#quantityReviewed').isChecked());
- assert(await owner.locator('#productionEntry').isHidden());assert(await owner.locator('#itemGuide').isHidden());
+ assert(await owner.locator('#productionEntry a').isVisible());assert.equal(await owner.locator('#productionEntry h2,#productionEntry p').count(),0);assert(await owner.locator('#itemGuide').isHidden());
 
  // Existing item window is reused without reload or draft loss.
  await owner.fill('#batchSize','121');

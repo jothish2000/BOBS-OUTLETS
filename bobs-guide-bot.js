@@ -198,7 +198,6 @@ function mount(host,options){
   }
   if(s.recipeHelp&&!['loading','saving'].includes(s.recipeHelp.stage))add('Ingredient calculation complete',!!s.recipeHelp.calculated,'#scale');
   if(localList.children.length){box.append(localList);appendContinuation(s,localList);}
-  if(local?.active){const a=local.active;box.append(el('p',a.currentTitle||'Current review: '+a.title));if(a.method==='guided'&&!a.ready)box.append(button(a.individual?'Go to the highlighted field':'Go to the highlighted section','review-current',()=>root.BOBS_REVIEW.focusCurrent()),button(a.individual?'Confirm this field & continue':'Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()),button('Return to review choices','review-choices',()=>root.BOBS_REVIEW.returnToChoices()));}
   const savedBox=el('details');savedBox.dataset.savedProgress='true';savedBox.open=!!opened;savedBox.append(el('summary','View overall saved progress'));box.append(savedBox);
   savedBox.append(el('strong','Previously saved Google progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
   if(m.message)savedBox.append(el('p',m.message));
@@ -234,13 +233,21 @@ function mount(host,options){
   host.replaceChildren();host.className='bobs-guide-dialogue';
   const review=root.BOBS_REVIEW?.snapshot()?.active;
   if(review){
-   if(review.currentTitle){
-    const box=el('section',undefined,'guide-current-review');box.append(el('strong',review.currentTitle),el('p','Check or edit the yellow-highlighted input in its original location.'));
-    box.append(button(review.individual?'Confirm this field & continue':'Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()),button('Return to review choices','review-choices',()=>root.BOBS_REVIEW.returnToChoices()));
-    host.append(box);
+   const box=el('section',undefined,'guide-current-review');
+   if(review.locked){
+    box.append(el('strong','Complete the required checks first'),el('p','This confirmation is not available yet. Follow the loading, calculation or validation message in the form.'),button('Go to the review message','review-form',()=>root.BOBS_REVIEW.focusAction('review')));
+   }else if(review.currentTitle){
+    const label=review.individual?'Confirm this field & continue':'Confirm this section & continue';
+    box.append(el('strong',review.currentTitle),el('p','Check or edit the yellow-highlighted input in the form. When it is correct, click “'+label+'” in the main work area.'));
+    box.append(button('Go to '+label,'review-next',()=>root.BOBS_REVIEW.focusAction()),button('Go to Return to review choices','review-choices',()=>root.BOBS_REVIEW.focusAction('choices')));
+   }else if(review.ready){
+    box.append(el('strong','Review complete — confirm in the form'),el('p','You checked the inputs for: '+review.title+'. Click “Confirm this review and continue” in the form. This confirmation does not save to Google.'),button('Go to Confirm this review and continue','review-final',()=>root.BOBS_REVIEW.focusAction()));
+   }else if(review.shortcut){
+    box.append(el('strong','You selected: already reviewed'),el('p','Now click “Confirm these inputs and continue” in the main form. Nothing has been saved.'),button('Go to Confirm these inputs and continue','review-final',()=>root.BOBS_REVIEW.focusAction()));
+   }else{
+    box.append(el('strong','Choose how to review these inputs'),el('p',review.title),el('p','Use the review choices in the main form. You can review the original fields or explicitly confirm that you already reviewed them.'),button('Go to review choices in the form','review-form',()=>root.BOBS_REVIEW.focusAction('review')));
    }
-   // Choices/final confirmation are in the persistent review workspace within this same frame.
-   persist();host.parentElement?.scrollTo?.({top:0});return;
+   host.append(box);persist();host.parentElement?.scrollTo?.({top:0});return;
   }
   if(state.step==='kitchen-next'){
    if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){

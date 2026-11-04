@@ -79,8 +79,6 @@
    metadata for existing adapters; editable fields and status messages stay in the form. */
 [data-bobs-page-guide],#bobsFlowGuide,#bobsNextActionBar{display:none!important}
 #bobsCompanion{overflow-anchor:none}
-#bobsReviewWorkspace:empty{display:none}
-#bobsCompanion .bobs-review-panel{border:0;background:transparent;padding:0;margin:12px 0}
 #bobsCompanion .guide-current-review{background:#fff3bd;border-left:4px solid #a66b00;padding:10px}
 #bobsCompanion .guide-current-review button{display:block;width:100%;margin-top:10px;white-space:normal}
 #bobsCompanion .guide-page-overview{border-top:1px solid #cbd5d1;margin-top:14px}
@@ -96,4 +94,3 @@
  body.bobs-review-active #bobsCompanionToggle{display:none}
 }
 
-#bobsCompanion .bobs-review-panel input[type=checkbox]{width:auto;margin:0 8px 0 0}

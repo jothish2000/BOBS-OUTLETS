@@ -20,7 +20,7 @@ for(let index=0;index<3;index++){
   return document.activeElement===f&&getComputedStyle(f).outlineWidth==='3px'&&!document.querySelector('[data-review-ui=field]')&&r.top>=Math.max(0,top)&&r.right<=a.left&&r.bottom<innerHeight-68;
  });
  if(index===1)await captureRendered(baseline,'review-field-focus-live.png');
- await baseline.locator('[data-guide-choice=review-next]').click();
+ await baseline.locator('main #bobsReviewConfirmField').click();
 }
 await baseline.locator('[data-guide-choice=review-choices]').click();await baseline.getByRole('button',{name:'Return to page guide',exact:true}).click();
 assert.equal(await baseline.locator('.bobs-review-field-highlight').count(),0);

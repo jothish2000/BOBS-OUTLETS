@@ -1,6 +1,6 @@
 /* Shared walkthrough for existing review controls. No business records or saved progress are written here. */
 (function(root){'use strict';if(root.BOBS_REVIEW)return;
-const doc=root.document, entries=new Map();let active=null, timer, ownClick=false, highlighted=[], focusGeneration=0, dialogActions=null;
+const doc=root.document, entries=new Map();let active=null, timer, ownClick=false, highlighted=[], focusGeneration=0, dialogActions=null, pageActions=null;
 const el=(tag,text)=>{const n=doc.createElement(tag);if(text!=null)n.textContent=text;return n;};
 const excluded='#bobsCurrentReviewTitle,#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
 const visible=n=>{if(!n||n.closest('[hidden]'))return false;for(let p=n;p;p=p.parentElement){const s=root.getComputedStyle(p);if(s.display==='none'||s.visibility==='hidden')return false;}return true;};
@@ -33,6 +33,7 @@ function focus(n,review=false){
  if(review&&!n.closest('dialog[open]'))root.BOBS_GUIDE?.open();else if(!review&&!n.closest('#bobsCompanion'))root.BOBS_GUIDE?.close();if(!n.matches('input,select,textarea,button,a'))n.tabIndex=-1;n.focus({preventScroll:true});
  if(!review){n.scrollIntoView({block:'center',inline:'nearest'});return;}
  const position=()=>{
+  positionPageActions();
   // Do not recenter a visible field or change its position in the original form.
   for(let pass=0;pass<2;pass++){
    let scroller=null,top=12,bottom=root.innerHeight-76;
@@ -53,6 +54,7 @@ function focus(n,review=false){
     }
     if(/auto|scroll/.test(css.overflowY)&&p.scrollHeight>p.clientHeight+2&&!scroller){scroller=p;top=Math.max(top,box.top+12);bottom=Math.min(bottom,box.bottom-12);}
    }
+   if(!modal&&pageActions&&!pageActions.contains(n))bottom=Math.min(bottom,pageActions.getBoundingClientRect().top-12);
    const r=n.getBoundingClientRect(),space=bottom-top;
    const dy=r.height>space?(r.top<top||r.top>=bottom?r.top-top:0):r.top<top?r.top-top:r.bottom>bottom?r.bottom-bottom:0;
    if(dy){if(scroller)scroller.scrollTop+=dy;else root.scrollBy({top:dy,behavior:'instant'});}
@@ -65,16 +67,50 @@ function focus(n,review=false){
   if(generation===focusGeneration&&n.isConnected&&(doc.activeElement===n||n.matches(':disabled')))position();
  }));
 }
-function clearDialogActions(){dialogActions?.remove();dialogActions=null;}
+function clearDialogActions(){dialogActions?.remove();dialogActions=null;pageActions?.remove();pageActions=null;}
+function positionPageActions(){
+ if(!pageActions)return;let bottom=12;
+ for(const bar of doc.querySelectorAll('.savebar,.save')){
+  if(!visible(bar))continue;const r=bar.getBoundingClientRect(),css=root.getComputedStyle(bar);
+  if(['fixed','sticky'].includes(css.position)&&r.top>root.innerHeight/2&&r.top<root.innerHeight&&r.bottom>0)bottom=Math.max(bottom,root.innerHeight-r.top+8);
+ }
+ if(root.innerWidth<900){const guide=doc.querySelector('#bobsCompanion:not([hidden])');if(guide){const r=guide.getBoundingClientRect();if(root.getComputedStyle(guide).position==='fixed')bottom=Math.max(bottom,root.innerHeight-r.top+8);}}
+ pageActions.style.bottom=bottom+'px';
+}
+function focusFormControl(n){
+ if(!n)return false;
+ if(!n.closest('dialog[open]'))root.BOBS_GUIDE?.open();
+ focus(n,true);return true;
+}
+function focusAction(which='confirm'){
+ if(!active)return false;
+ const panel=active.panel;
+ const n=which==='choices'?(pageActions||dialogActions)?.lastElementChild:
+  panel?(which==='review'?panel.querySelector('button'):panel.querySelector('[data-review-confirm]')||panel.querySelector('button')||panel):
+  (pageActions||dialogActions)?.firstElementChild;
+ return focusFormControl(n);
+}
+root.addEventListener('resize',positionPageActions);
+root.addEventListener('scroll',positionPageActions,{passive:true});
 function modalActions(e,target){
- const modal=target.closest('dialog[open]');if(!modal){clearDialogActions();return;}
+ const modal=target.closest('dialog[open]');if(!modal){
+  dialogActions?.remove();dialogActions=null;
+  if(!pageActions){pageActions=el('div');pageActions.id='bobsReviewActions';pageActions.dataset.reviewUi='actions';pageActions.className='bobs-review-actions';pageActions.setAttribute('role','group');
+   const confirm=button('',()=>confirmField());confirm.id='bobsReviewConfirmField';
+   pageActions.append(confirm,button('Return to review choices',()=>request(active.node)));(target.closest('main')||doc.body).append(pageActions);
+  }
+  pageActions.setAttribute('aria-label',e.currentTitle);
+  pageActions.firstElementChild.textContent=e.individual?'Confirm this field & continue':'Confirm this section & continue';
+  positionPageActions();return;
+ }
+ pageActions?.remove();pageActions=null;
  if(dialogActions?.parentElement!==modal){
   clearDialogActions();dialogActions=el('div');dialogActions.dataset.reviewUi='dialog-actions';dialogActions.className='bobs-review-dialog-actions';
   dialogActions.append(button('',()=>confirmField()),button('Return to review choices',()=>request(active.node)));modal.append(dialogActions);
  }
  dialogActions.firstElementChild.textContent=e.individual?'Confirm this field & continue':'Confirm this section & continue';
 }
-function mountReview(panel,n){if(!n.closest('dialog[open]')&&root.BOBS_GUIDE?.review){root.BOBS_GUIDE.review(panel);focus(panel);return;}(n.closest('label')||n).before(panel);focus(panel);}
+function mountReview(panel,n){(n.closest('label')||n).before(panel);focusFormControl(panel);}
 function locked(n){return n.matches(':disabled')||n.getAttribute('aria-disabled')==='true';}
 function invalidate(e){
  e.confirmed.clear();e.authorised=false;if(e.method!=='guided')e.method='';e.changed=true;e.signature=signature(e.node);
@@ -113,7 +149,7 @@ function request(n){
  panel.append(button('Review my previously entered inputs',()=>start(e)));
  panel.append(button('Review each field individually →',()=>start(e,true)));
  const label=el('label'),skip=el('input');skip.type='checkbox';skip.dataset.reviewShortcut='true';label.append(skip,' I have already reviewed these inputs — continue without repeating the guided review');panel.append(label);
- const confirm=button('Confirm these inputs and continue',()=>{refresh();if(!skip.checked||locked(n))return;e.authorised=true;e.method='already-reviewed';complete(e);});confirm.disabled=true;skip.onchange=()=>{confirm.disabled=!skip.checked;};panel.append(confirm,button('Return to page guide',()=>cancelReview()));
+ const confirm=button('Confirm these inputs and continue',()=>{refresh();if(!skip.checked||locked(n))return;e.authorised=true;e.method='already-reviewed';complete(e);});confirm.dataset.reviewConfirm='true';confirm.disabled=true;skip.onchange=()=>{confirm.disabled=!skip.checked;announce();};panel.append(confirm,button('Cancel review',()=>cancelReview()));
  mountReview(panel,n);announce();return true;
 }
 function start(e,individual=false){e.individual=individual;e.method='guided';e.authorised=false;e.confirmed.clear();e.signature=signature(e.node);e.index=0;showField(e);}
@@ -135,7 +171,7 @@ function confirmField(){
  if(next>=0){e.index=next;showField(e);return;}
  e.authorised=true;e.signature=signature(e.node);e.panel?.remove();clearHighlight();clearDialogActions();e.currentTitle='';announcement.textContent='';
  const panel=el('section');panel.dataset.reviewUi='ready';panel.className='bobs-review-panel';for(const type of ['input','change'])panel.addEventListener(type,e=>e.stopPropagation());e.panel=panel;
- panel.append(el('p','✓ You checked each section. Confirm below to continue. This does not save your data.'),button('Confirm this review and continue',()=>complete(e)));
+ const confirm=button('Confirm this review and continue',()=>complete(e));confirm.dataset.reviewConfirm='true';panel.append(el('p','✓ Inputs reviewed. Confirm this review to continue. This does not save your data.'),confirm);
  mountReview(panel,e.node);announce();
 }
 function cancelReview(){active?.panel?.remove();active=null;clearHighlight();clearDialogActions();announcement.textContent='';announce();root.BOBS_GUIDE?.open();}
@@ -148,7 +184,7 @@ function rows(){
  refresh();return [...doc.querySelectorAll('input[type=checkbox]')].filter(n=>isReview(n)&&visible(n)).map(n=>{const e=entry(n);return {node:n,title:caption(n),checked:n.checked,method:e.method,changed:e.changed,
  summary:targets(n).map(t=>(t.matches(controls)?caption(t)+': ':'')+value(t)).join('; ')};});
 }
-function snapshot(){const result=rows();return {rows:result,active:active?{currentTitle:active.currentTitle||'',title:caption(active.node),method:active.method,index:active.index||0,total:groups(active.node,active.individual).length,individual:!!active.individual,ready:active.authorised}:null};}
+function snapshot(){const result=rows();return {rows:result,active:active?{phase:active.panel?.dataset.reviewUi||'field',locked:locked(active.node),shortcut:!!active.panel?.querySelector('[data-review-shortcut]')?.checked,currentTitle:active.currentTitle||'',title:caption(active.node),method:active.method,index:active.index||0,total:groups(active.node,active.individual).length,individual:!!active.individual,ready:active.authorised}:null};}
 doc.addEventListener('click',event=>{const n=event.target;if(ownClick||!isReview(n)||!n.checked)return;
  // click activation has provisionally toggled checked; cancellation restores the prior value.
  const e=entry(n);if(e.authorised&&e.signature===signature(n)&&!root.BOBS_REFERENCE?.needs(n))return;
@@ -158,8 +194,8 @@ function changed(event){if(event.target.closest?.(excluded)||isReview(event.targ
 doc.addEventListener('input',changed);doc.addEventListener('change',changed);
 const observer=new MutationObserver(records=>{if(records.every(r=>r.target.closest?.(excluded)))return;clearTimeout(timer);timer=setTimeout(()=>{refresh();announce();},30);});
 observer.observe(doc.body,{subtree:true,childList:true});
-root.BOBS_REVIEW={request,snapshot,confirmField,cancel:cancelReview,returnToChoices(){if(active)request(active.node);},focusCurrent(){if(active?.method==='guided')showField(active);},isReview};
+root.BOBS_REVIEW={request,snapshot,confirmField,focusAction,cancel:cancelReview,returnToChoices(){if(active)request(active.node);},focusCurrent(){if(active?.method==='guided')showField(active);},isReview};
 const announcement=el('span');announcement.id='bobsCurrentReviewTitle';announcement.className='bobs-review-announcement';announcement.setAttribute('role','status');doc.body.append(announcement);
-const style=el('style');style.textContent='.bobs-review-highlight{outline:3px solid #b8860b;outline-offset:3px;background:#fffaf0;scroll-margin-top:100px}html body .bobs-review-field-highlight{outline:3px solid #a66b00!important;outline-offset:2px!important;box-shadow:0 0 0 6px #ffdf70!important;background-color:#fff3bd!important;scroll-margin-block:140px 90px;scroll-margin-inline:12px}.bobs-review-announcement{position:fixed;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none}.bobs-review-dialog-actions{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;background:inherit;padding:8px 0;z-index:1}.bobs-review-dialog-actions button{padding:8px;max-width:100%;white-space:normal}.bobs-review-panel{grid-column:1 / -1;min-width:0;border:2px solid #ad7b16;background:#fff8df;color:#193e30;padding:14px;margin:12px 0;border-radius:8px;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}.bobs-review-panel button{font:inherit;background:#214f3c;color:#fff;border:0;padding:10px;margin:6px 8px 6px 0;cursor:pointer}.bobs-review-panel button:disabled{opacity:.55;cursor:default}.bobs-review-panel dt{font-weight:bold}.bobs-review-panel dd{margin:0 0 8px}.bobs-review-panel input[type=checkbox]{width:auto;margin-right:8px}.bobs-review-panel :focus-visible{outline:3px solid #a16c00;outline-offset:3px}';doc.head.append(style);
+const style=el('style');style.textContent='.bobs-review-highlight{outline:3px solid #b8860b;outline-offset:3px;background:#fffaf0;scroll-margin-top:100px}html body .bobs-review-field-highlight{outline:3px solid #a66b00!important;outline-offset:2px!important;box-shadow:0 0 0 6px #ffdf70!important;background-color:#fff3bd!important;scroll-margin-block:140px 90px;scroll-margin-inline:12px}.bobs-review-announcement{position:fixed;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none}.bobs-review-actions{position:fixed;left:20px;right:20px;bottom:12px;z-index:8000;display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:#fff8df;border:2px solid #ad7b16;border-radius:8px;box-shadow:0 2px 8px #0002;box-sizing:border-box}.bobs-review-actions button{font:inherit;background:#214f3c;color:white;border:0;border-radius:4px;padding:10px;white-space:normal;max-width:100%;cursor:pointer}.bobs-review-actions button+button{background:white;color:#193e30;border:1px solid #8aa394}.bobs-review-actions :focus-visible{outline:3px solid #a16c00;outline-offset:3px}@media(min-width:900px){body.bobs-guided-dock .bobs-review-actions{right:368px}}@media(max-width:599px){.bobs-review-actions{left:8px;right:8px;padding:6px;gap:6px}.bobs-review-actions button{font-size:14px;padding:8px}}.bobs-review-dialog-actions{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;background:inherit;padding:8px 0;z-index:1}.bobs-review-dialog-actions button{padding:8px;max-width:100%;white-space:normal}.bobs-review-panel{grid-column:1 / -1;min-width:0;border:2px solid #ad7b16;background:#fff8df;color:#193e30;padding:14px;margin:12px 0;border-radius:8px;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}.bobs-review-panel button{font:inherit;background:#214f3c;color:#fff;border:0;padding:10px;margin:6px 8px 6px 0;cursor:pointer}.bobs-review-panel button:disabled{opacity:.55;cursor:default}.bobs-review-panel dt{font-weight:bold}.bobs-review-panel dd{margin:0 0 8px}.bobs-review-panel input[type=checkbox]{width:auto;margin-right:8px}.bobs-review-panel :focus-visible{outline:3px solid #a16c00;outline-offset:3px}';doc.head.append(style);
 announce();
 })(window);

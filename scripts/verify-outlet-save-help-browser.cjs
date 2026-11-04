@@ -25,11 +25,11 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  await confirmation.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  let walked=0;while(await confirmation.evaluate(()=>document.activeElement.id!=='outletField-st-0-1')){
   assert(++walked<30,'must reach shift 2 start');
-  await confirmation.locator('[data-guide-choice=review-next]').click();
+  await confirmation.locator('main #bobsReviewConfirmField').click();
  }
  await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-st-0-1'&&document.getElementById('outletField-st-0-1').getBoundingClientRect().top>=document.querySelector('body > header').getBoundingClientRect().bottom);
  const shiftPosition=await confirmation.evaluate(()=>({scroll:scrollY,endTop:document.getElementById('outletField-en-0-1').getBoundingClientRect().top,endBottom:document.getElementById('outletField-en-0-1').getBoundingClientRect().bottom,headerBottom:document.querySelector('body > header').getBoundingClientRect().bottom,bottom:innerHeight-76}));
- await confirmation.locator('[data-guide-choice=review-next]').click();
+ await confirmation.locator('main #bobsReviewConfirmField').click();
  await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-en-0-1');
  if(shiftPosition.endTop>=shiftPosition.headerBottom+12&&shiftPosition.endBottom<=shiftPosition.bottom)assert.equal(await confirmation.evaluate(()=>scrollY),shiftPosition.scroll,'an already visible next field must not be recentered');
  assert(await confirmation.evaluate(()=>{const r=document.getElementById('outletField-en-0-1').getBoundingClientRect();return r.top>=document.querySelector('body > header').getBoundingClientRect().bottom&&r.bottom<=innerHeight-76;}),'wrapped next field must be scrolled only enough to be visible');
@@ -70,7 +70,7 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
   assert.equal(await guided.locator('.guide-current-review strong').innerText(),await guided.locator('#bobsCurrentReviewTitle').innerText());
   if(i===1)console.log('REVIEW_BASELINE_PNG '+(await guided.screenshot()).toString('base64'));
   assert.equal(await guided.locator('.bobs-review-field-highlight').evaluate(n=>getComputedStyle(n).outlineWidth),'3px');
-  await guided.locator('[data-guide-choice=review-next]').click();
+  await guided.locator('main #bobsReviewConfirmField').click();
  }
  await guided.locator('[data-guide-choice=review-choices]').click();await guided.getByRole('button',{name:'Return to page guide',exact:true}).click();assert.equal(writes.length,0);
  await guided.evaluate(()=>BOBS_GUIDE.open());
