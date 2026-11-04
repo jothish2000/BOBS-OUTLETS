@@ -40,6 +40,41 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
  assert.equal(await p.isChecked('#flowReviewed'),false);await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#flowReviewed'));
  await p.fill('#wage','15500');assert.equal(await p.isChecked('#flowReviewed'),false);
+
+ // Persistent exact-control highlight and both actions visible below a sticky outlet ribbon.
+ await p.setViewportSize({width:1071,height:580});
+ await p.goto('about:blank');
+ await p.setContent('<style>body{margin:0}header{position:sticky;top:0;background:#193e30;color:white;padding:24px;height:110px;box-sizing:border-box;z-index:6}main{padding:16px}.columns{display:grid;grid-template-columns:repeat(3,270px);gap:20px;width:100%;overflow:auto}label{display:block;margin:8px 0}input{padding:10px;box-sizing:border-box;width:100%}.savebar{position:fixed;bottom:0;left:0;right:0;height:60px;background:white;z-index:8}</style><header>GURUSAMYPALAYAM — Outlet 2</header><main><section id="flowApp"><div style="height:700px"></div><div class="columns"><article data-position="A"><h3>Cashier 1</h3><label>Monthly wage<input id="firstWage" value="15000"></label></article><article data-position="B"><h3>Cashier 2</h3><label>Monthly wage<input id="secondWage" value="16000"></label></article><article data-position="C"><h3>Cashier 3</h3><label>Monthly wage<input id="thirdWage" value="17000"></label></article></div><label><input id="flowReviewed" type="checkbox">I reviewed staff.</label><div style="height:600px"></div></section></main><div class="savebar">Save</div>');
+ await p.addScriptTag({path:path.resolve(__dirname,'../bobs-guided-review.js')});
+ await p.evaluate(()=>BOBS_REVIEW.request('#flowReviewed'));
+ await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ async function currentField(selector,title){
+  await p.waitForFunction(({selector,title})=>{
+   const f=document.querySelector(selector),panel=document.querySelector('[data-review-ui=field]'),header=document.querySelector('header'),save=document.querySelector('.savebar');
+   if(!f||!panel)return false;
+   const r=f.getBoundingClientRect(),a=panel.getBoundingClientRect(),bottom=save?.getBoundingClientRect().top||innerHeight,top=header?.getBoundingClientRect().bottom||0;
+   return document.activeElement===f&&f.classList.contains('bobs-review-field-highlight')&&document.querySelectorAll('.bobs-review-field-highlight').length===1&&document.getElementById('bobsCurrentReviewTitle')?.textContent.includes(title)&&a.top>=top&&a.bottom<=bottom&&r.top>=top&&r.bottom<=bottom&&r.left>=0&&r.right<=innerWidth;
+  },{selector,title});
+  const style=await p.locator(selector).evaluate(f=>({outline:getComputedStyle(f).outlineWidth,background:getComputedStyle(f).backgroundColor,description:f.getAttribute('aria-describedby')}));
+  assert.equal(style.outline,'3px');assert.equal(style.background,'rgb(255, 243, 189)');assert.match(style.description,/bobsCurrentReviewTitle/);
+  assert.match(await p.evaluate(()=>BOBS_REVIEW.snapshot().active.currentTitle),new RegExp(title));
+ }
+ await currentField('#firstWage','Cashier 1');
+ await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await currentField('#secondWage','Cashier 2');assert.equal(await p.locator('#firstWage').getAttribute('aria-describedby'),null);
+ await p.setViewportSize({width:390,height:844});
+ await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await currentField('#thirdWage','Cashier 3');
+ await p.getByRole('button',{name:'Return to review choices',exact:true}).click();
+ assert.equal(await p.locator('.bobs-review-field-highlight,.bobs-review-highlight').count(),0);
+ assert.equal(await p.inputValue('#thirdWage'),'17000');assert.equal(await p.isChecked('#flowReviewed'),false);
+ // A field deep in a table must be targeted in its cell, never the whole table.
+ await p.setViewportSize({width:1071,height:580});
+ await p.evaluate(()=>{document.querySelector('main').innerHTML='<section id="flowApp"><table><tbody>'+Array.from({length:20},(_,i)=>'<tr style="height:90px"><td><label>Expense '+(i+1)+'<input id="expense'+i+'" value="'+(i+1)+'" aria-describedby="expenseHelp"></label></td></tr>').join('')+'</tbody></table><p id="expenseHelp">Monthly expense</p><label><input type="checkbox" id="flowReviewed">I reviewed expenses.</label><div style="height:600px"></div></section>';});
+ await p.evaluate(()=>BOBS_REVIEW.request('#flowReviewed'));await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ for(let i=0;i<20;i++){await currentField('#expense'+i,'Expense '+(i+1));assert.equal(await p.locator('[data-review-ui=field]').evaluate(n=>n.closest('td')!==null),true);await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();}
+ assert.equal(await p.locator('.bobs-review-field-highlight').count(),0);assert.equal(await p.locator('#expense19').getAttribute('aria-describedby'),'expenseHelp');
+ await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#flowReviewed'));
  // A review inside an equipment dialog must inspect that dialog, not the page behind it.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<label>Outside quantity<input id="outside" value="360"></label><dialog id="equipmentTest"><label>Usable capacity<input id="machineAmount" value="120"></label><label><input type="checkbox" id="machineBasis">I checked the equipment capacity.</label></dialog>';document.getElementById('equipmentTest').showModal();});
  await p.click('#machineBasis');await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();assert.equal(await p.evaluate(()=>document.activeElement.id),'machineAmount');
