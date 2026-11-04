@@ -45,7 +45,7 @@ function render(){
  if(!rows.length){
   setGuide('STEP 1','Choose the categories and items this outlet will sell. Use “Choose categories & items”, tick only the items you need, and save the selection.','Your selected items appear on this page and BOBS can start item-level costing.','Choose categories & items →',$('chooseItems').href);
  }else if(incomplete){
-  setGuide('STEP 2','Click “Go to selected items ↓”. In the selected-items table, find '+firstIncomplete+', choose Purchase or Production in its Mode column, then click “Edit item ↗” in that row. For Production, start with equipment capacity, intended quantity, recipe and time. Save planning inputs before workforce and pricing; enter Sold Today when actual sales are known. For Purchase, review supplier costs and any production sides. Save actual results with “SAVE THIS ITEM”. '+(incomplete>1?'Repeat for the other '+(incomplete-1)+' item'+(incomplete===2?'':'s')+' needing attention.':''),'The item window returns you here and the row says “Saved to Google”. If it still shows an old status, click “Reload Google records”. '+'BOBS then shows the remaining shared-packing or Workload & Staffing step before Method 2 can be completed.','Go to selected items ↓','#selectedCard');
+  setGuide('STEP 2','Click “Go to selected items ↓”. In the selected-items table, find '+firstIncomplete+', choose Purchase or Production in its Mode column, then click “Edit item ↗” in that row. For Production, first confirm demand and the supplying kitchen, then review recipes, equipment capacity and time. Save planning inputs before workforce and pricing; enter Sold Today when actual sales are known. For Purchase, review supplier costs and any production sides. Save actual results with “SAVE THIS ITEM”. '+(incomplete>1?'Repeat for the other '+(incomplete-1)+' item'+(incomplete===2?'':'s')+' needing attention.':''),'The item window returns you here and the row says “Saved to Google”. If it still shows an old status, click “Reload Google records”. '+'BOBS then shows the remaining shared-packing or Workload & Staffing step before Method 2 can be completed.','Go to selected items ↓','#selectedCard');
  }else if(shared.missing.length){
   setGuide('STEP 2','The selected items are saved. Click “Open Overall COGS ↗” below, complete and save the shared order-packing choices there. Return here and click “Reload Google records”.','Shared order packing shows a cost instead of “Incomplete”. '+(embedded?'Then scroll below the Method 2 panel and click “Save & Continue”.':'Then click “Review Sold Today”.'),'Open Overall COGS ↗',$('overall').href);
  }else{
@@ -73,7 +73,7 @@ window.BOBS_METHOD2_GUIDE={
    $('search').value='';filterRows();const button=row.querySelector('[data-edit-item]');button.scrollIntoView({block:'center',inline:'center'});button.focus();return;
   }
   const action=$('guideAction');
-  if(!action.hidden){action.scrollIntoView({block:'center'});action.focus();return;}
+  if(!action.hidden){const target=[...document.querySelectorAll('main a:not(#guideAction)')].find(a=>a.href===action.href);if(target){target.scrollIntoView({block:'center'});target.focus();}else if(action.getAttribute('href')==='#refresh'){$('refresh').focus();}else{action.click();}return;}
   if(embedded){parent.BOBS_METHOD_FLOW_GUIDE.focusContinue();return;}
   $('review').scrollIntoView({block:'center'});$('review').focus();
  }
@@ -95,7 +95,7 @@ async function reload(){
  if(master)M2.installSides(master?.recipes||[],next);s=next;for(const k of Object.keys(pending))if(s.itemEditors[k]?.saveToken&&s.itemEditors[k].saveToken!==pending[k])delete pending[k];
  sessionStorage.setItem(pendingKey,JSON.stringify(pending));recipes=master?.recipes||[];try{M2.cache(outlet,s)}catch(e){}
  ready=true;$('status').textContent='Outlet '+outlet+' · Loaded from Google. Only selected items are shown.';render();
- }catch(e){if(request===generation&&status.isConnected){status.textContent=e.message;ready=false;setGuide('GOOGLE READ FAILED','BOBS could not check your saved Method 2 items. Click “Retry Google read” here (or “Reload Google records” below). Do not click “Save & Continue” until the selected items load.','Your selected items appear and the Page Guide shows the next item to edit. If the timeout repeats, keep this page open and report the error; do not reselect or overwrite items.','Retry Google read','#refresh')}}
+ }catch(e){if(request===generation&&status.isConnected){status.textContent=e.message;ready=false;setGuide('GOOGLE READ FAILED','BOBS could not check your saved Method 2 items. Click “Retry Google read” here (or “Reload Google records” below). Do not click “Save & Continue” until the selected items load.','Your selected items appear and BOBS Guide identifies the next item to edit. If the timeout repeats, keep this page open and report the error; do not reselect or overwrite items.','Retry Google read','#refresh')}}
  finally{if(request===generation)refresh.disabled=false}
 }
 window.BOBS_METHOD2_REVIEW=function(){

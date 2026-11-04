@@ -51,7 +51,7 @@ function mount(host,options){
   const key='bobs-guide-conversation-v1:'+String(s.ctx.outlet||'company');
   if(key===scope)return;scope=key;draft={};state={step:'start',history:[]};
   try{const saved=JSON.parse(sessionStorage.getItem(key));if(saved&&steps.has(saved.step))state={...state,...saved,history:Array.isArray(saved.history)?saved.history.slice(-8):[]};}catch(_){}
-  if(options.journey||s.methodFlow||s.itemHelp||(s.ctx.page==='production-plan.html'&&s.production?.journey&&state.step==='start')){
+  if(options.journey||s.methodFlow||s.method2||s.pageSupport||s.itemHelp||(s.ctx.page==='production-plan.html'&&s.production?.journey&&state.step==='start')){
    const page=s.ctx.page,stage=new URLSearchParams(location.search).get('stage');
    state.step=page==='outlets.html'?'outlet-details':page==='kitchen-flow.html'&&(!stage||stage==='locations')?'locations':page==='production-plan.html'?'production-flow':page==='recipe-cost-editor.html'?'recipes':page==='index.html'?'start':'page-task';
    state.history=[];if(state.step==='locations')state.setupOutletId='';
@@ -65,7 +65,7 @@ function mount(host,options){
  function productionRoute(s,label){const x=item(s);return route('production-plan.html',label,x?{cat:x.cat,i:x.i}:{});}
  function input(label,name,type,value){const l=el('label',label),i=el('input');i.id='bobsGuide-'+name;i.type=type;i.value=draft[name]??value??'';if(type==='number'){i.min='0.001';i.step='any';}i.oninput=()=>{draft[name]=i.value;};l.append(i);return l;}
  function focus(id){if(root.BOBS_REVIEW?.request('#'+id))return;options.minimise();adapter()?.focus(id);}
- function pageFocus(selector){if(root.BOBS_REVIEW?.request(selector))return;const target=document.querySelector(selector);if(!target)throw Error('This control is not ready yet. Wait for the page to load, or use its Retry button.');options.minimise();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
+ function pageFocus(selector){if(root.BOBS_REVIEW?.request(selector))return;const target=document.querySelector(selector);if(!target)throw Error('This control is not ready yet. Wait for the page to load, or use its Retry button.');options.work();if(!target.matches('input,select,button,a'))target.tabIndex=-1;target.scrollIntoView?.({block:'center'});target.focus();}
  function needProduction(s){
   if(s.ctx.page==='recipe-cost-editor.html'&&s.recipeHelp){
    const h=s.recipeHelp,a=root.BOBS_RECIPE_GUIDE,focus=(label,id)=>button(label,'recipe-step-'+id,()=>{if(root.BOBS_REVIEW?.request('#'+id))return;options.work();a.focus(id);});
@@ -165,7 +165,7 @@ function mount(host,options){
   const scrollBefore=host.parentElement?.scrollTop||0;
   let box=host.querySelector('.guide-checklist');
   // The verified kitchen handoff already has a tick; keep both next-action cards in view.
-  if(state?.step==='kitchen-next'){box?.remove();return;}
+  if(state?.step==='kitchen-next'||root.BOBS_REVIEW?.snapshot()?.active){box?.remove();return;}
   const opened=box?.querySelector('details')?.open;
   if(!box){box=el('section',undefined,'guide-checklist');box.setAttribute('aria-label','Your progress checklist');host.append(box);}
   box.replaceChildren();
@@ -232,6 +232,16 @@ function mount(host,options){
   if(p?.ready)state.itemKey=p.itemKey;
   const sourceState=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceState?.saved||sourceState?.busy){state.step='page-task';state.history=[];}
   host.replaceChildren();host.className='bobs-guide-dialogue';
+  const review=root.BOBS_REVIEW?.snapshot()?.active;
+  if(review){
+   if(review.currentTitle){
+    const box=el('section',undefined,'guide-current-review');box.append(el('strong',review.currentTitle),el('p','Check or edit the yellow-highlighted input in its original location.'));
+    box.append(button(review.individual?'Confirm this field & continue':'Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()),button('Return to review choices','review-choices',()=>root.BOBS_REVIEW.returnToChoices()));
+    host.append(box);
+   }
+   // Choices/final confirmation are in the persistent review workspace within this same frame.
+   persist();host.parentElement?.scrollTo?.({top:0});return;
+  }
   if(state.step==='kitchen-next'){
    if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
     host.append(el('p','✓ Kitchen Setup saved and verified. Choose your next step.','guide-question guide-checklist-done'));
@@ -311,11 +321,12 @@ function mount(host,options){
     else if(stage==='assessment'){ask(name+' — check whether production fits');host.append(el('p',j.message||'Calculate the reviewed processes to check completion time and shared equipment. Resolve any warning before continuing.'));choices(button('Calculate time and equipment usage','plan-calculate',()=>adapter().calculate()),work('Show timings and calculation result','timeAssessment'));}
     else if(stage==='delivery'){ask(name+' — review delivery');host.append(el('p','Check whether delivery staff are needed. If Yes, enter the shared rider ID and count. If No, leave Delivery staff needed unticked. This review remains a draft until the final save.'));choices(work('Review delivery choice','deliveryNeeded'),button('Delivery reviewed — continue to save','plan-delivery-next',()=>adapter().continueDelivery()));}
     else if(stage==='save'){ask(name+' — ready to save your reviewed plan');host.append(el('p','Save the reviewed plan to Google. After verification, return to the item editor, where I will explain its next required review. Other menu items may still need planning.'));choices(button('Save reviewed plan to Google & continue →','plan-save',()=>adapter().save()),work('Review the final save area','saveProductionPlan'));}
+    const overview=document.getElementById('productionPlanningHelp');if(overview){const d=el('details');d.append(el('summary','How production planning works'),el('p',overview.textContent));host.append(d);}
     break;
    }
 
    case 'page-task':{
-    const sourceGuide=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceGuide){ask(sourceGuide.title);host.append(el('p',sourceGuide.instruction));if(sourceGuide.saved){for(const next of sourceGuide.next||[]){const a=el('a',next.label,'guide-action');a.href=next.href;host.append(a);}}else choices(button('Review producing kitchens, batch choices and dispatch','source-review',()=>pageFocus(sourceGuide.selector)));break;}
+    const sourceGuide=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceGuide){ask(sourceGuide.title);host.append(el('p',sourceGuide.instruction));if(sourceGuide.saved){for(const line of sourceGuide.summary||[])host.append(el('p',line));for(const entry of sourceGuide.history||[]){const d=el('details');d.append(el('summary',entry.title));for(const line of entry.text||[])d.append(el('p',line));for(const link of entry.links||[]){const a=el('a',link.label,'guide-action');a.href=link.href;d.append(a);}host.append(d);}for(const next of sourceGuide.next||[]){const a=el('a',next.label,'guide-action');a.href=next.href;host.append(a);}}else choices(button('Review producing kitchens, batch choices and dispatch','source-review',()=>pageFocus(sourceGuide.selector)));break;}
     if(s.equipmentHelp){const h=s.equipmentHelp,work=(label,id)=>button(label,'inventory-'+id,()=>{options.work();root.BOBS_EQUIPMENT_GUIDE.focus(id);});
      ask(h.stage==='empty'?'No equipment recorded for '+h.name:h.stage==='saved'?'Equipment saved — choose your next step':h.name+' — existing equipment');
      if(h.stage==='loading')host.append(el('p','Reading the saved equipment. Wait for the result before adding anything.'));
@@ -329,16 +340,20 @@ function mount(host,options){
     }
     if(s.itemHelp){const help=s.itemHelp;if(help.notice)host.append(el('p',help.notice,'guide-confirmed'));ask(help.title);host.append(el('p',help.instruction));
      if(help.href){const u=new URL(help.href,location.href);if(u.origin!==location.origin)throw Error('Planner link must stay within BOBS.');u.searchParams.set('guide','continue');const a=el('a',help.action,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';a.dataset.guideChoice='item-open-production';host.append(a);}
-     else choices(button(help.action,'item-next-control',()=>{options.work();root.BOBS_ITEM_GUIDE.focus();}));break;}
-    const flow=s.methodFlow;
+     else choices(button(help.action,'item-next-control',()=>{options.work();root.BOBS_ITEM_GUIDE.focus();}));
+     if(help.continueAction)choices(button(help.continueAction.label,'item-continue',()=>root.BOBS_ITEM_GUIDE.continue()));
+     if(help.earlier){const earlier=el('details');earlier.append(el('summary','Review earlier planning'));const a=el('a',help.earlier.label,'guide-action');a.href=help.earlier.href;a.target='_blank';a.dataset.guideChoice='item-review-production';earlier.append(a);host.append(earlier);}
+     if(help.source?.title){const source=el('details');source.append(el('summary','Recipe / purchase source'),el('strong',help.source.title),el('p',help.source.text));host.append(source);}
+     break;}
+    const flow=s.methodFlow||(s.method2?{phase:'method2',baselineReady:true,workspace:s.method2}:null);
     if(flow){
      const work=flow.workspace;
      if(!flow.baselineReady){ask('Check the outlet prerequisites.');host.append(el('p',flow.baselineMessage));}
      else if(flow.phase==='method2'){
       ask(work?.ready?'Continue Method 2 — your selected items':'Method 2 — checking selected items');
-      if(work?.item){const x=work.item;host.append(el('p',x.name+' is selected. Its current Mode is '+(x.mode==='production'?'Production':'Purchase')+'.'),el('p','Review the Mode in the '+x.name+' row, then click “Edit item ↗” in that same row. '+(x.mode==='production'?'The item window guides you through capacity, intended quantity, recipes and production time.':'The item window guides you through supplier costs, quantities and any sides prepared here.')),el('p','Save your reviewed changes in the item window, then return here for the next requirement.'));}
+      if(work?.item){const x=work.item;host.append(el('p',x.name+' is selected. Its current Mode is '+(x.mode==='production'?'Production':'Purchase')+'.'),el('p','Review the Mode in the '+x.name+' row, then click “Edit item ↗” in that same row. '+(x.mode==='production'?'The item window first confirms demand and the supplying kitchen, then guides recipes, capacity and production time.':'The item window guides you through supplier costs, quantities and any sides prepared here.')),el('p','Save your reviewed changes in the item window, then return here for the next requirement.'));}
       else host.append(el('p',work?.instruction||'Wait for the Method 2 item list to load. If it reports a read failure, use Reload Google records inside Method 2.'));
-      choices(button(work?.action||'Show Method 2 workspace','method-flow-work',()=>{options.minimise();root.BOBS_METHOD_FLOW_GUIDE.focus();}));
+      choices(button(work?.action||'Show Method 2 workspace','method-flow-work',()=>{options.work();(root.BOBS_METHOD_FLOW_GUIDE||root.BOBS_METHOD2_GUIDE).focus();}));
      }else{
       const copy=flow.phase==='method1'?['Continue Method 1 — hourly analysis','Review the hourly customer and basket inputs in Method 1. Complete its save and review before using Save & Continue below the workspace.','Show Method 1 workspace']:flow.phase==='other'?['Method review saved — choose what to do next','Use the choices on this page to review another method or finish this outlet. Analysing both methods is optional.','Show the next decision']:flow.phase==='finish'?['Continue to outlet profitability','The selected methods have been reviewed. Use Review outlet profit & break-even to continue.','Show outlet profitability action']:['Choose an analysis method','The outlet prerequisites are verified. Choose Method 1 for hourly footfall or Method 2 for selected items.','Show method choices'];
       ask(copy[0]);host.append(el('p',copy[1]));choices(button(copy[2],'method-flow-work',()=>{options.minimise();root.BOBS_METHOD_FLOW_GUIDE.focus();}));
@@ -355,6 +370,12 @@ function mount(host,options){
      else if(action.phase==='saved')host.append(el('p',action.next||'Follow the verified save continuation on this page.'));
      if(action.phase==='error')choices(button('Show the current entries and save status','current-error',()=>pageFocus(action.save||action.review)));
      const other=el('details');other.dataset.otherChecks='true';other.append(el('summary','Other checks — previously saved progress'),el('p','This checks saved Google records. It does not save or replace your current entries.'),choose('Check saved progress & show what’s incomplete','page-progress','resume',()=>options.refresh()));host.append(other);
+     break;
+    }
+    if(s.pageSupport){
+     const support=s.pageSupport;ask(support.title);host.append(el('p',support.instruction));
+     choices(...support.actions.map((a,i)=>button(a.label,'page-support-'+i,()=>root.BOBS_PAGE_GUIDANCE.focus(a))));
+     if(support.overview?.length){const overview=el('details',undefined,'guide-page-overview');overview.append(el('summary','How this planning step works'));for(const text of support.overview)overview.append(el('p',text));host.append(overview);}
      break;
     }
     const help=s.pageHelp;
@@ -498,14 +519,14 @@ function mount(host,options){
  function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
  // Update only the read-only checklist after page edits; keep action buttons attached during clicks.
  let checklistTimer,actionStamp='';
- const actionKey=s=>JSON.stringify([root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot(),s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp?.action]);
+ const actionKey=s=>JSON.stringify([root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot(),s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp,s.method2,s.pageSupport,root.BOBS_REVIEW?.snapshot()?.active]);
  function refreshAction(){const s=snapshot(),stamp=actionKey(s);if(stamp!==actionStamp){actionStamp=stamp;update();}else renderChecklist(s);}
  const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='input'||e.type==='change')revealContinuation=false;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked&&(root.BOBS_REVIEW?.isReview?.(e.target)??true)){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
  // Keep the new action visible through asynchronous saved-progress refreshes,
  // but yield immediately when the user scrolls, navigates or clicks in the guide.
  for(const type of ['wheel','touchstart','pointerdown','keydown'])host.parentElement?.addEventListener(type,()=>{revealContinuation=false;},{passive:true});
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
- root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);});
+ let handlingReview=false;root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);if(handlingReview)return;handlingReview=true;try{refreshAction();}finally{handlingReview=false;}});
  const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog,#bobsNextActionBar')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
  actionObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['disabled','aria-busy','data-tone']});
  actionStamp=actionKey(snapshot());render();return {update,kitchenNext};

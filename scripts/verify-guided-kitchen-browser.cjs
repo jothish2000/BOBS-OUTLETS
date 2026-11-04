@@ -43,7 +43,7 @@ await p.waitForFunction(()=>!!window.BOBS_REVIEW);await p.evaluate(()=>BOBS_REVI
 await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForFunction(()=>document.getElementById('kitchenStatus').textContent.startsWith('Not saved:'));
 assert.equal(writes.length,0);assert.match(await p.locator('#kitchenStatus').innerText(),/answer whether this outlet needs a kitchen/i);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenStatus');
 for(const id of ['1','2','3'])await p.selectOption('[data-outlet-kitchen-answer="'+id+'"]','no');await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForSelector('#kitchenNextGo');assert.equal(db['COMPANY/KITCHEN_MASTER/default'].noSeparateKitchens,true);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-baseline');assert(await p.locator('#kitchenNextGo').isDisabled());assert.equal(await p.locator('#kitchenNext-equipment').count(),0);await review(p.locator('#kitchenNext-baseline'));assert(await p.locator('.kitchen-choice-selected').isVisible());assert(await p.locator('#kitchenNextGo').isEnabled());
-await p.click('#addKitchen');assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#kitchenNextPreview').isVisible());assert.equal(await p.locator('#kitchenReviewed').isChecked(),false);
+await p.click('#addKitchen');assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#kitchenNextPreview').isHidden());assert.equal(await p.locator('#kitchenReviewed').isChecked(),false);
 // Direct method entry cannot skip an unreviewed/missing kitchen register.
 delete db['COMPANY/KITCHEN_MASTER/default'];await p.goto('https://bobs.test/outlet-method-flow.html?outlet=0&outlets=1,2,3');await p.waitForFunction(()=>document.getElementById('baselineGate').textContent.includes('Cannot continue'));
 assert(await p.locator('#method1Btn').isDisabled());assert(await p.locator('#method2Btn').isDisabled());assert.match(await p.locator('#baselineGate').innerText(),/Kitchen Setup/);
@@ -62,17 +62,16 @@ const frame=flowTest.frameLocator('#methodFrame');
 await frame.locator('[data-edit-item]').first().waitFor();
 await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Idli is selected'));
 assert.doesNotMatch(await flowTest.locator('#bobsGuideDialogue').innerText(),/Complete the saved outlet baseline|Shall we work through method selection/);
-assert.equal(await flowTest.locator('#bobsCompanion').evaluate(el=>getComputedStyle(el).position),'static');
+assert.equal(await flowTest.locator('#bobsCompanion').evaluate(el=>getComputedStyle(el).position),'fixed');
 const panelBox=await flowTest.locator('#bobsCompanion').boundingBox(),frameBox=await flowTest.locator('#methodFrame').boundingBox();
-assert(panelBox.y+panelBox.height<=frameBox.y,'Inline guide cannot overlap iframe');
+assert(panelBox.x>=frameBox.x+frameBox.width,'Docked guide cannot overlap iframe');
 const pagesBefore=ctx.pages().length;
 await flowTest.locator('[data-guide-choice=method-flow-work]').click();
-assert(await flowTest.locator('#bobsCompanion').isHidden());
+assert(await flowTest.locator('#bobsCompanion').isVisible());
 assert.equal(await frame.locator('[data-edit-item]').first().evaluate(el=>document.activeElement===el),true);
 assert.equal(ctx.pages().length,pagesBefore,'Show action only focuses, never opens editor');
 const edit=frame.locator('[data-edit-item]').first();assert(await edit.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}));
 console.log('BOBS_METHOD_GUIDE_FOCUS:'+(await flowTest.screenshot({type:'jpeg',quality:60})).toString('base64'));
-await flowTest.locator('#bobsCompanionToggle').click();
 await frame.locator('select').first().selectOption('purchased');
 await flowTest.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('current Mode is Purchase'));
 const fw=flowTest.frames().find(f=>f.url().includes('method2.html'));
@@ -92,7 +91,7 @@ assert(await edit.evaluate(el=>document.activeElement===el));
 assert(await edit.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth}));
 assert(await flowTest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
 await flowTest.evaluate(()=>loadMethod('method1'));
-await flowTest.locator('#bobsCompanionToggle').click();assert.match(await flowTest.locator('#bobsGuideDialogue').innerText(),/Continue Method 1/);
+if(await flowTest.locator('#bobsCompanion').isHidden())await flowTest.locator('#bobsCompanionToggle').click();assert.match(await flowTest.locator('#bobsGuideDialogue').innerText(),/Continue Method 1/);
 await flowTest.evaluate(()=>choice());assert.match(await flowTest.locator('#bobsGuideDialogue').innerText(),/Choose an analysis method/);
 assert.equal(writes.length,flowWrites);await flowTest.close();await ctx.unroute('**/method2.html?flow=1*');
 console.log('PASS active Method2 guide: named item, modes, changed selection, loading/read failure, empty menu, Method1/back, laptop/mobile real Edit focus, no overlay and no writes.');
@@ -151,7 +150,7 @@ await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.locat
 await p.click('#kitchenNextGo');await p.waitForURL('**/kitchen-equipment.html?*');assert.equal(new URL(p.url()).searchParams.get('returnTo'),kitchenUrl);
 await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);assert.equal(await p.locator('header a').getAttribute('href'),kitchenUrl);
 // Dirty fields and failed Google reads cannot retain a saved continuation.
-await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.fill('[data-field=name]','Edited kitchen');assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#kitchenNextPreview').isVisible());
+await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.fill('[data-field=name]','Edited kitchen');assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#kitchenNextPreview').isHidden());
 failRegisterRead=true;await p.reload();await p.waitForFunction(()=>!document.getElementById('kitchenRetry').hidden);assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#saveKitchen').isDisabled());failRegisterRead=false;
 // Inventory loads saved assets, preserves ownership/financials and saves unknown/estimated values honestly.
 db['COMPANY/KITCHEN_MASTER/default']=clone(register);
@@ -238,6 +237,7 @@ assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p
 await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isHidden());
 await p.waitForFunction(()=>!!window.BOBS_REVIEW);await p.evaluate(()=>BOBS_REVIEW.request('#equipmentReviewed'));await p.locator('[data-review-ui=choices]').waitFor();
 const companionWrites=writes.length;
+await p.getByRole('button',{name:'Return to page guide',exact:true}).click();
 if(!await p.locator('#bobsCompanion').isVisible())await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
 assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Elimedu kitchen — existing equipment/);
 await p.waitForFunction(()=>!window.BOBS_ROADMAP.getState().busy);
@@ -246,7 +246,7 @@ await p.getByText('Connected planning board',{exact:true}).click();
 assert.match(await p.locator('#bobsCompanion').innerText(),/Connected planning board/);
 assert.match(await p.locator('#bobsCompanion').innerText(),/Workforce selection/);
 assert.equal(new URL(await p.getByRole('link',{name:'Open Asset Master →',exact:true}).getAttribute('href')).searchParams.get('outlet'),id);
-assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&getComputedStyle(x).position==='static'}));
+assert(await p.locator('#bobsCompanion').evaluate(x=>{const r=x.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&getComputedStyle(x).position==='static'}));
 await p.locator('#bobsCompanion').screenshot({path:path.join(require('os').tmpdir(),'bobs-connected-guide-mobile.png')});
 await p.getByRole('button',{name:'Minimise',exact:true}).click();assert(!(await p.locator('#bobsCompanion').isVisible()));assert.equal(writes.length,companionWrites);
 await p.evaluate(()=>scrollTo(0,0));console.log('BOBS_FLOW_PREVIEW:'+(await p.screenshot({type:'jpeg',quality:65})).toString('base64'));

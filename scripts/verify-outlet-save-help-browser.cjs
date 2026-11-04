@@ -25,18 +25,19 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  await confirmation.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  let walked=0;while(await confirmation.evaluate(()=>document.activeElement.id!=='outletField-st-0-1')){
   assert(++walked<30,'must reach shift 2 start');
-  await confirmation.locator('#bobsReviewContinue').click();
+  await confirmation.locator('[data-guide-choice=review-next]').click();
  }
  await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-st-0-1'&&document.getElementById('outletField-st-0-1').getBoundingClientRect().top>=document.querySelector('body > header').getBoundingClientRect().bottom);
- const shiftScroll=await confirmation.evaluate(()=>scrollY);
- await confirmation.locator('#bobsReviewContinue').click();
+ const shiftPosition=await confirmation.evaluate(()=>({scroll:scrollY,endTop:document.getElementById('outletField-en-0-1').getBoundingClientRect().top,endBottom:document.getElementById('outletField-en-0-1').getBoundingClientRect().bottom,headerBottom:document.querySelector('body > header').getBoundingClientRect().bottom,bottom:innerHeight-76}));
+ await confirmation.locator('[data-guide-choice=review-next]').click();
  await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-en-0-1');
- assert.equal(await confirmation.evaluate(()=>scrollY),shiftScroll,'same-row next field must not jump into prior position');
+ if(shiftPosition.endTop>=shiftPosition.headerBottom+12&&shiftPosition.endBottom<=shiftPosition.bottom)assert.equal(await confirmation.evaluate(()=>scrollY),shiftPosition.scroll,'an already visible next field must not be recentered');
+ assert(await confirmation.evaluate(()=>{const r=document.getElementById('outletField-en-0-1').getBoundingClientRect();return r.top>=document.querySelector('body > header').getBoundingClientRect().bottom&&r.bottom<=innerHeight-76;}),'wrapped next field must be scrolled only enough to be visible');
  assert(await confirmation.evaluate(()=>{const box=document.getElementById('cards').getBoundingClientRect();return originalOutletInputs.every(({n,parent,x,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().left-box.left-x)<1&&Math.abs(n.getBoundingClientRect().top-box.top-y)<1);}));
  assert.equal(await confirmation.locator('[data-review-ui=field]').count(),0);
  assert.equal(await confirmation.inputValue('#outletField-st-0-1'),'13:30');assert.equal(await confirmation.inputValue('#outletField-en-0-1'),'22:30');
  console.log('REVIEW_STATIONARY_SHIFTS_PNG '+(await confirmation.screenshot()).toString('base64'));
- await confirmation.locator('#bobsOpenGuide').click();await confirmation.locator('[data-guide-choice=review-choices]').click();
+ await confirmation.locator('[data-guide-choice=review-choices]').click();
  await review(confirmation.locator('#outletsReviewed'));
  const next=confirmation.locator('.guide-checklist-local [data-confirmation-next]');await next.waitFor();
  assert.match(await next.innerText(),/Next: Save outlets & go to Kitchen Setup/);
@@ -46,11 +47,11 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
 await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-confirmation-next]')?.getBoundingClientRect(),p=document.getElementById('bobsCompanion')?.getBoundingClientRect(),h=document.querySelector('#bobsCompanion .companion-head')?.getBoundingClientRect();return a&&p&&a.width>0&&a.height>0&&p.height>0&&a.y>=Math.max(p.y,h?.bottom||0)&&a.bottom<=p.bottom;});
  // The geometry wait above includes the pane and sticky heading; do not re-sample mid-layout in a separate assertion.
  assert.equal(writes.length,0,'Review confirmation must not save');
- await next.locator('button').click();await confirmation.waitForSelector('#bobsNextActionBar:not([hidden])');assert.match(await confirmation.locator('#bobsNextActionText').innerText(),/Save outlets/);assert.equal(await confirmation.evaluate(()=>document.activeElement.id),'save');assert.equal(writes.length,0,'Show Save must not auto-save');
- await confirmation.locator('#bobsOpenGuide').click();await confirmation.locator('#bobsNextActionBar').waitFor({state:'hidden'});await confirmation.locator('.guide-review-again').click();assert(await confirmation.locator('[data-review-ui=choices]').isVisible());
+ await next.locator('button').click();assert.equal(await confirmation.locator('#bobsNextActionBar').count(),0);assert.equal(await confirmation.evaluate(()=>document.activeElement.id),'save');assert.equal(writes.length,0,'Show Save must not auto-save');
+ await confirmation.locator('.guide-review-again').click();assert(await confirmation.locator('[data-review-ui=choices]').isVisible());
  assert.equal(writes.length,0);await confirmation.close();
  console.log('PASS laptop confirmation: next Save directly below tick, secondary Review again, guide-pane visibility, original Save focus, zero automatic writes.');
- await guided.click('[data-guide-choice=outlet-count]');assert.equal(await guided.evaluate(()=>document.activeElement.id),'count');await guided.fill('#count','3');assert(await guided.locator('#bobsCompanion').isHidden());assert.equal(await guided.locator('#outletsReviewed').isChecked(),false);
+ await guided.click('[data-guide-choice=outlet-count]');assert.equal(await guided.evaluate(()=>document.activeElement.id),'count');await guided.fill('#count','3');assert(await guided.locator('#bobsCompanion').isVisible());assert.equal(await guided.locator('#outletsReviewed').isChecked(),false);
  await guided.getByRole('link',{name:'Set up attached / common kitchens and shared production →',exact:true}).click();await guided.waitForSelector('[data-guide-choice=outlet-kitchen-yes]');assert(await guided.locator('#bobsCompanion').isVisible());assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Do you want a kitchen at Fixture outlet 1/);
  await guided.click('[data-guide-choice=outlet-kitchen-no]');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Do you want a kitchen at Fixture outlet 2/);await guided.click('[data-guide-choice=outlet-kitchen-no]');await guided.click('[data-guide-choice=kitchen-review]');assert(await guided.locator('[data-review-ui=choices]').isVisible());assert(await guided.locator('[data-review-ui=choices]').evaluate(el=>el===document.activeElement||el.contains(document.activeElement)));assert.equal(await guided.locator('#kitchenReviewed').isChecked(),false);assert.equal(writes.length,0);
  await guided.goto('https://bobs.test/outlet-plan.html?stage=baseline&outlet=1');await guided.waitForSelector('#bobsCompanion:not([hidden]) [data-guide-choice=current-review]');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/expenses and mandatory staff/i);
@@ -62,16 +63,16 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
  await guided.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  for(let i=0;i<3;i++){
   await guided.waitForFunction(()=>{
-   const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('#bobsNextActionBar'),h=document.querySelector('body > header');
+   const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('#bobsCompanion'),h=document.querySelector('body > header');
    if(!f||!p)return false;const fr=f.getBoundingClientRect(),pr=p.getBoundingClientRect(),hr=h.getBoundingClientRect();
-   return fr.top>=Math.max(hr.bottom,pr.bottom)&&fr.bottom<innerHeight-68&&document.activeElement===f&&!document.querySelector('[data-review-ui=field]');
+   return fr.top>=Math.max(0,hr.bottom)&&fr.bottom<innerHeight-68&&fr.right<=pr.left&&document.activeElement===f&&!document.querySelector('[data-review-ui=field]');
   });
-  assert.equal(await guided.locator('#bobsNextActionText').innerText(),await guided.locator('#bobsCurrentReviewTitle').innerText());
+  assert.equal(await guided.locator('.guide-current-review strong').innerText(),await guided.locator('#bobsCurrentReviewTitle').innerText());
   if(i===1)console.log('REVIEW_BASELINE_PNG '+(await guided.screenshot()).toString('base64'));
   assert.equal(await guided.locator('.bobs-review-field-highlight').evaluate(n=>getComputedStyle(n).outlineWidth),'3px');
-  await guided.locator('#bobsReviewContinue').click();
+  await guided.locator('[data-guide-choice=review-next]').click();
  }
- await guided.locator('#bobsOpenGuide').click();await guided.locator('[data-guide-choice=review-choices]').click();assert.equal(writes.length,0);
+ await guided.locator('[data-guide-choice=review-choices]').click();await guided.getByRole('button',{name:'Return to page guide',exact:true}).click();assert.equal(writes.length,0);
  await guided.evaluate(()=>BOBS_GUIDE.open());
  // The bot's saved-progress action checks without saving or discarding the baseline draft.
  await guided.waitForSelector('[data-field=workingDays]');await guided.fill('[data-field=workingDays]','29');
@@ -85,7 +86,7 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
  await guided.evaluate(()=>{BOBS_DATA.jsonp=window.__savedProgressRead;window.setTimeout=window.__savedProgressTimer});
  await guided.click('[data-guide-choice=refresh]');await guided.waitForFunction(()=>BOBS_ROADMAP.getState().progress.status==='ready');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Next incomplete step/);
  await guided.setViewportSize({width:1071,height:580});assert.equal(await guided.locator('#bobsCompanion').evaluate(el=>el.scrollTop),0,'Retry should reveal the explanation at the top');console.log('BOBS_PROGRESS_GUIDE:'+(await guided.screenshot({type:'jpeg',quality:65})).toString('base64'));
- await guided.click('[data-guide-choice=resume-edit]');assert(await guided.locator('#bobsCompanion').isHidden());assert.equal(await guided.inputValue('[data-field=workingDays]'),'29');await guided.click('#bobsCompanionToggle');
+ await guided.click('[data-guide-choice=resume-edit]');assert(await guided.locator('#bobsCompanion').isVisible());assert.equal(await guided.inputValue('[data-field=workingDays]'),'29');
  await guided.setViewportSize({width:390,height:844});assert(await guided.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));const guideBox=await guided.locator('#bobsCompanion').boundingBox();assert(guideBox.x>=0&&guideBox.x+guideBox.width<=390&&guideBox.y>=0&&guideBox.y+guideBox.height<=844);
  await guided.goto('https://bobs.test/outlets.html');await guided.click('#fresh');await guided.waitForSelector('#bobsCompanion:not([hidden]) [data-guide-choice=outlet-fields]');assert.equal(await guided.locator('#cards .id').inputValue(),'3');assert.equal(outletRows.length,2);assert.equal(writes.length,0);
  failOutletRead=true;await guided.goto('https://bobs.test/outlets.html');await guided.waitForFunction(()=>document.querySelector('#modalTitle').textContent==='Unable to verify saved outlet records');assert(await guided.locator('#bobsCompanion').isHidden());assert.equal(await guided.locator('#freshEmpty').count(),0);assert.equal(writes.length,0);failOutletRead=false;await guided.close();
