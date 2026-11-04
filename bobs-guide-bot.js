@@ -321,6 +321,7 @@ function mount(host,options){
     else if(stage==='assessment'){ask(name+' — check whether production fits');host.append(el('p',j.message||'Calculate the reviewed processes to check completion time and shared equipment. Resolve any warning before continuing.'));choices(button('Calculate time and equipment usage','plan-calculate',()=>adapter().calculate()),work('Show timings and calculation result','timeAssessment'));}
     else if(stage==='delivery'){ask(name+' — review delivery');host.append(el('p','Check whether delivery staff are needed. If Yes, enter the shared rider ID and count. If No, leave Delivery staff needed unticked. This review remains a draft until the final save.'));choices(work('Review delivery choice','deliveryNeeded'),button('Delivery reviewed — continue to save','plan-delivery-next',()=>adapter().continueDelivery()));}
     else if(stage==='save'){ask(name+' — ready to save your reviewed plan');host.append(el('p','Save the reviewed plan to Google. After verification, return to the item editor, where I will explain its next required review. Other menu items may still need planning.'));choices(button('Save reviewed plan to Google & continue →','plan-save',()=>adapter().save()),work('Review the final save area','saveProductionPlan'));}
+    const overview=document.getElementById('productionPlanningHelp');if(overview){const d=el('details');d.append(el('summary','How production planning works'),el('p',overview.textContent));host.append(d);}
     break;
    }
 

@@ -25,8 +25,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.waitForURL(u=>u.pathname.endsWith('/production-plan.html'),{waitUntil:'domcontentloaded'});const url=p.url();assert.equal(new URL(url).searchParams.get('returnTo'),parentURL);assert.equal(new URL(url).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(url).searchParams.get('i'),'0');
  await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);
  await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
- assert(await p.locator('#bobsCompanion').isVisible());
-  assert.match(await p.locator('.guide-current-review strong').innerText(),new RegExp(id==='intendedQuantity'?'field 1 of 3':id==='readyBy'?'field 2 of 3':'field 3 of 3'));assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
+ assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
  await p.fill('#intendedQuantity','360');await p.fill('#readyBy','07:00');
 
@@ -36,6 +35,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  for(const id of ['intendedQuantity','readyBy','readyDay']){
   await p.waitForFunction(id=>document.activeElement.id===id,id);
+  assert.match(await p.locator('.guide-current-review strong').innerText(),new RegExp(id==='intendedQuantity'?'field 1 of 3':id==='readyBy'?'field 2 of 3':'field 3 of 3'));
   assert(await p.locator('#bobsCompanion').isVisible());
   assert(await p.locator('#bobsCompanion [data-guide-choice=review-next]').isVisible());
   assert.equal(await p.locator('#bobsNextActionBar').count(),0);
