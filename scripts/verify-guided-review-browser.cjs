@@ -9,9 +9,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();
  assert.equal(await p.evaluate(()=>document.activeElement.id),'targetQty');
  assert.equal(await p.isChecked('#intendedWeightReviewed'),false,'visiting a field is not confirmation');
- await p.getByRole('button',{name:'Confirm this section & continue',exact:true}).click();
+ await p.evaluate(()=>BOBS_REVIEW.confirmField());
  assert.equal(await p.evaluate(()=>document.activeElement.id),'portion');
- await p.getByRole('button',{name:'Confirm this section & continue',exact:true}).click();
+ await p.evaluate(()=>BOBS_REVIEW.confirmField());
  assert.equal(await p.isChecked('#intendedWeightReviewed'),false,'final confirmation is still explicit');
  await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();
  assert.equal(await p.isChecked('#intendedWeightReviewed'),true);
@@ -35,9 +35,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  assert.doesNotMatch(await p.locator('[data-review-ui]').innerText(),/Review \d+ section\(s\)/);
  await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  assert.equal(await p.evaluate(()=>document.activeElement.id),'days');assert.equal(await p.inputValue('#days'),'30');
- await p.fill('#days','31');await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await p.fill('#days','31');await p.evaluate(()=>BOBS_REVIEW.confirmField());
  assert.equal(await p.evaluate(()=>document.activeElement.id),'wage');assert.equal(await p.inputValue('#wage'),'15000');
- await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await p.evaluate(()=>BOBS_REVIEW.confirmField());
  assert.equal(await p.isChecked('#flowReviewed'),false);await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#flowReviewed'));
  await p.fill('#wage','15500');assert.equal(await p.isChecked('#flowReviewed'),false);
 
@@ -50,35 +50,45 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
  await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  async function currentField(selector,title){
   await p.waitForFunction(({selector,title})=>{
-   const f=document.querySelector(selector),panel=document.querySelector('[data-review-ui=field]'),header=document.querySelector('header'),save=document.querySelector('.savebar');
-   if(!f||!panel)return false;
-   const r=f.getBoundingClientRect(),a=panel.getBoundingClientRect(),bottom=save?.getBoundingClientRect().top||innerHeight,top=header?.getBoundingClientRect().bottom||0;
-   return document.activeElement===f&&f.classList.contains('bobs-review-field-highlight')&&document.querySelectorAll('.bobs-review-field-highlight').length===1&&document.getElementById('bobsCurrentReviewTitle')?.textContent.includes(title)&&a.top>=top&&a.bottom<=bottom&&r.top>=top&&r.bottom<=bottom&&r.left>=0&&r.right<=innerWidth;
+   const f=document.querySelector(selector),header=document.querySelector('header'),save=document.querySelector('.savebar');
+   if(!f)return false;
+   const r=f.getBoundingClientRect(),bottom=save?.getBoundingClientRect().top||innerHeight,top=header?.getBoundingClientRect().bottom||0;
+   return document.activeElement===f&&f.classList.contains('bobs-review-field-highlight')&&document.querySelectorAll('.bobs-review-field-highlight').length===1&&document.getElementById('bobsCurrentReviewTitle')?.textContent.includes(title)&&!document.querySelector('[data-review-ui=field]')&&r.top>=top&&r.bottom<=bottom&&r.left>=0&&r.right<=innerWidth;
   },{selector,title});
   const style=await p.locator(selector).evaluate(f=>({outline:getComputedStyle(f).outlineWidth,background:getComputedStyle(f).backgroundColor,description:f.getAttribute('aria-describedby')}));
   assert.equal(style.outline,'3px');assert.equal(style.background,'rgb(255, 243, 189)');assert.match(style.description,/bobsCurrentReviewTitle/);
   assert.match(await p.evaluate(()=>BOBS_REVIEW.snapshot().active.currentTitle),new RegExp(title));
  }
  await currentField('#firstWage','Cashier 1');
- await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await p.evaluate(()=>BOBS_REVIEW.confirmField());
  await currentField('#secondWage','Cashier 2');assert.equal(await p.locator('#firstWage').getAttribute('aria-describedby'),null);
  await p.setViewportSize({width:390,height:844});
- await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await p.evaluate(()=>BOBS_REVIEW.confirmField());
  await currentField('#thirdWage','Cashier 3');
- await p.getByRole('button',{name:'Return to review choices',exact:true}).click();
+ await p.evaluate(()=>BOBS_REVIEW.returnToChoices());
  assert.equal(await p.locator('.bobs-review-field-highlight,.bobs-review-highlight').count(),0);
  assert.equal(await p.inputValue('#thirdWage'),'17000');assert.equal(await p.isChecked('#flowReviewed'),false);
  // A field deep in a table must be targeted in its cell, never the whole table.
  await p.setViewportSize({width:1071,height:580});
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<section id="flowApp"><table><tbody>'+Array.from({length:20},(_,i)=>'<tr style="height:90px"><td><label>Expense '+(i+1)+'<input id="expense'+i+'" value="'+(i+1)+'" aria-describedby="expenseHelp"></label></td></tr>').join('')+'</tbody></table><p id="expenseHelp">Monthly expense</p><label><input type="checkbox" id="flowReviewed">I reviewed expenses.</label><div style="height:600px"></div></section>';});
- await p.evaluate(()=>BOBS_REVIEW.request('#flowReviewed'));await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
- for(let i=0;i<20;i++){await currentField('#expense'+i,'Expense '+(i+1));assert.equal(await p.locator('[data-review-ui=field]').evaluate(n=>n.closest('td')!==null),true);await p.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();}
+ await p.evaluate(()=>{window.originalTableFields=[...document.querySelectorAll('td input')].map(n=>({n,parent:n.parentNode,y:n.getBoundingClientRect().top+scrollY}));BOBS_REVIEW.request('#flowReviewed')});await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ for(let i=0;i<20;i++){await currentField('#expense'+i,'Expense '+(i+1));assert(await p.evaluate(()=>originalTableFields.every(({n,parent,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().top+scrollY-y)<1)),'table positions stay unchanged');assert.equal(await p.locator('[data-review-ui=field]').count(),0);await p.evaluate(()=>BOBS_REVIEW.confirmField());}
  assert.equal(await p.locator('.bobs-review-field-highlight').count(),0);assert.equal(await p.locator('#expense19').getAttribute('aria-describedby'),'expenseHelp');
  await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#flowReviewed'));
+
+ // Adjacent original inputs retain their positions; changing highlight does not scroll a visible row.
+ await p.evaluate(()=>{document.querySelector('main').innerHTML='<section id="cards"><div style="height:400px"></div><div class="shift" style="display:grid;grid-template-columns:1fr 1fr;gap:20px"><label>Shift 2 start<input type="time" id="shiftStart" value="13:30"></label><label>Shift 2 end<input type="time" id="shiftEnd" value="22:30"></label></div><label><input type="checkbox" id="outletsReviewed">I reviewed all shifts.</label><div style="height:700px"></div></section>';window.originalShiftInputs=[...document.querySelectorAll('.shift input')].map(n=>({n,parent:n.parentNode,x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y+scrollY}));});
+ await p.evaluate(()=>BOBS_REVIEW.request('#outletsReviewed'));await p.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ await currentField('#shiftStart','Shift 2 start');
+ const beforeShiftScroll=await p.evaluate(()=>scrollY);await p.evaluate(()=>BOBS_REVIEW.confirmField());await currentField('#shiftEnd','Shift 2 end');
+ assert.equal(await p.evaluate(()=>scrollY),beforeShiftScroll,'visible adjacent input must not be recentered');
+ assert(await p.evaluate(()=>originalShiftInputs.every(({n,parent,x,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().x-x)<1&&Math.abs(n.getBoundingClientRect().y+scrollY-y)<1)),'original shift grid must not reflow');
+ assert.equal(await p.inputValue('#shiftStart'),'13:30');assert.equal(await p.inputValue('#shiftEnd'),'22:30');
+ await p.evaluate(()=>BOBS_REVIEW.returnToChoices());
  // A review inside an equipment dialog must inspect that dialog, not the page behind it.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<label>Outside quantity<input id="outside" value="360"></label><dialog id="equipmentTest"><label>Usable capacity<input id="machineAmount" value="120"></label><label><input type="checkbox" id="machineBasis">I checked the equipment capacity.</label></dialog>';document.getElementById('equipmentTest').showModal();});
  await p.click('#machineBasis');await p.getByRole('button',{name:'Review my previously entered inputs',exact:true}).click();assert.equal(await p.evaluate(()=>document.activeElement.id),'machineAmount');
- await p.getByRole('button',{name:'Confirm this section & continue',exact:true}).click();await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#machineBasis'));await p.evaluate(()=>document.getElementById('equipmentTest').close());
+ assert.equal(await p.locator('[data-review-ui=field]').count(),0);await p.locator('[data-review-ui=dialog-actions] button').first().click();await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();assert(await p.isChecked('#machineBasis'));await p.evaluate(()=>document.getElementById('equipmentTest').close());
  // Product allocation edits do not change the separately confirmed asset cost assumptions.
  await p.evaluate(()=>{document.querySelector('main').innerHTML='<section data-asset="S"><label>Cost<input data-field="unitCost" id="cost" value="100"></label><label>Share<input id="share" value="50"></label><label><input type="checkbox" id="costCheck" data-field="costConfirmed">I checked cost assumptions.</label></section>';});
  await p.click('#costCheck');await p.check('[data-review-shortcut]');await p.getByRole('button',{name:'Confirm these inputs and continue',exact:true}).click();await p.fill('#share','100');assert(await p.isChecked('#costCheck'),'allocation does not invalidate cost assumptions');await p.fill('#cost','101');assert.equal(await p.isChecked('#costCheck'),false,'changed cost does invalidate cost review');
