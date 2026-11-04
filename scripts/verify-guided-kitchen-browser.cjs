@@ -150,7 +150,7 @@ await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.locat
 await p.click('#kitchenNextGo');await p.waitForURL('**/kitchen-equipment.html?*');assert.equal(new URL(p.url()).searchParams.get('returnTo'),kitchenUrl);
 await p.waitForFunction(()=>!document.getElementById('equipmentEditor').disabled);assert.equal(await p.locator('header a').getAttribute('href'),kitchenUrl);
 // Dirty fields and failed Google reads cannot retain a saved continuation.
-await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.fill('[data-field=name]','Edited kitchen');assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#kitchenNextPreview').isVisible());
+await p.goto(kitchenUrl);await p.waitForSelector('#kitchenNextGo');await p.fill('[data-field=name]','Edited kitchen');assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#kitchenNextPreview').isHidden());
 failRegisterRead=true;await p.reload();await p.waitForFunction(()=>!document.getElementById('kitchenRetry').hidden);assert.equal(await p.locator('#kitchenNextGo').count(),0);assert(await p.locator('#saveKitchen').isDisabled());failRegisterRead=false;
 // Inventory loads saved assets, preserves ownership/financials and saves unknown/estimated values honestly.
 db['COMPANY/KITCHEN_MASTER/default']=clone(register);

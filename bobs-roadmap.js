@@ -153,7 +153,7 @@ function companionBoot(){
  const showKitchenNext=()=>{
   const next=document.getElementById('nextAction'),slot=document.getElementById('kitchenNextGuide');
   if(next?.dataset.guideRequested!=='true'||!slot||!guideBot?.kitchenNext())return false;
-  companion.classList.add('kitchen-next-inline');slot.append(companion);companion.hidden=false;companionOpen=true;companionToggle.hidden=true;companionToggle.setAttribute('aria-expanded','true');
+  document.body.classList.remove('bobs-guided-dock');companion.classList.add('kitchen-next-inline');slot.append(companion);companion.hidden=false;companionOpen=true;companionToggle.hidden=true;companionToggle.setAttribute('aria-expanded','true');
   window.dispatchEvent(new Event('bobs-kitchen-guide-shown'));return true;
  };
  window.addEventListener('bobs-kitchen-next-ready',showKitchenNext);
