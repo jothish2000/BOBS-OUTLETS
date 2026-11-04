@@ -2,7 +2,7 @@
 (function(root){'use strict';if(root.BOBS_REVIEW)return;
 const doc=root.document, entries=new Map();let active=null, timer, ownClick=false, highlighted=[], focusGeneration=0, dialogActions=null;
 const el=(tag,text)=>{const n=doc.createElement(tag);if(text!=null)n.textContent=text;return n;};
-const excluded='#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
+const excluded='#bobsCurrentReviewTitle,#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
 const visible=n=>{if(!n||n.closest('[hidden]'))return false;for(let p=n;p;p=p.parentElement){const s=root.getComputedStyle(p);if(s.display==='none'||s.visibility==='hidden')return false;}return true;};
 const controls='input:not([type=hidden]),select,textarea';
 const clean=s=>String(s||'').replace(/\s+/g,' ').trim();
@@ -156,7 +156,7 @@ doc.addEventListener('input',changed);doc.addEventListener('change',changed);
 const observer=new MutationObserver(records=>{if(records.every(r=>r.target.closest?.(excluded)))return;clearTimeout(timer);timer=setTimeout(()=>{refresh();announce();},30);});
 observer.observe(doc.body,{subtree:true,childList:true});
 root.BOBS_REVIEW={request,snapshot,confirmField,returnToChoices(){if(active)request(active.node);},focusCurrent(){if(active?.method==='guided')showField(active);},isReview};
-const announcement=el('span');announcement.id='bobsCurrentReviewTitle';announcement.dataset.reviewUi='announcement';announcement.className='bobs-review-announcement';announcement.setAttribute('role','status');doc.body.append(announcement);
+const announcement=el('span');announcement.id='bobsCurrentReviewTitle';announcement.className='bobs-review-announcement';announcement.setAttribute('role','status');doc.body.append(announcement);
 const style=el('style');style.textContent='.bobs-review-highlight{outline:3px solid #b8860b;outline-offset:3px;background:#fffaf0;scroll-margin-top:100px}html body .bobs-review-field-highlight{outline:3px solid #a66b00!important;outline-offset:2px!important;box-shadow:0 0 0 6px #ffdf70!important;background-color:#fff3bd!important;scroll-margin-block:140px 90px;scroll-margin-inline:12px}.bobs-review-announcement{position:fixed;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none}.bobs-review-dialog-actions{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;background:inherit;padding:8px 0;z-index:1}.bobs-review-dialog-actions button{padding:8px;max-width:100%;white-space:normal}.bobs-review-panel{grid-column:1 / -1;min-width:0;border:2px solid #ad7b16;background:#fff8df;color:#193e30;padding:14px;margin:12px 0;border-radius:8px;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}.bobs-review-panel button{font:inherit;background:#214f3c;color:#fff;border:0;padding:10px;margin:6px 8px 6px 0;cursor:pointer}.bobs-review-panel button:disabled{opacity:.55;cursor:default}.bobs-review-panel dt{font-weight:bold}.bobs-review-panel dd{margin:0 0 8px}.bobs-review-panel input[type=checkbox]{width:auto;margin-right:8px}.bobs-review-panel :focus-visible{outline:3px solid #a16c00;outline-offset:3px}';doc.head.append(style);
 announce();
 })(window);
