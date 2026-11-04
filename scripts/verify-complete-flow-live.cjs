@@ -10,21 +10,22 @@ async function served(){let last;for(let attempt=0;attempt<20;attempt++){try{for
 (async()=>{let browser;try{fs.mkdirSync(out,{recursive:true});await served();console.log('PASS served release files:',files.length);browser=await chromium.launch({channel:process.env.BOBS_BROWSER_CHANNEL||'chrome',headless:true,timeout:60000});const ctx=await browser.newContext({viewport:{width:1280,height:900}});ctx.setDefaultTimeout(90000);ctx.on('page',p=>{p.on('pageerror',e=>result.errors.push(e.message));p.on('dialog',d=>d.dismiss());});await ctx.route('**/*',r=>{const req=r.request(),u=new URL(req.url()),action=u.searchParams.get('action');if(!['GET','HEAD'].includes(req.method())||(u.hostname==='script.google.com'&&action&&!['moduleGet','moduleList','outletList'].includes(action))){result.blockedWrites++;let body;try{body=JSON.parse(req.postData()||'{}')}catch{}if(u.hostname==='script.google.com'&&body?.action==='snapshot'&&body?.source==='BOBS-TRANSITION-GUARD')result.blockedCheckpoints++;console.log('BLOCKED request',JSON.stringify({method:req.method(),host:u.hostname,action:action||body?.action||null,source:body?.source||null}));return r.abort();}return r.continue();});
 const baseline=await ctx.newPage();await baseline.goto(base+'outlet-plan.html?stage=baseline&outlet=1&from=outlet-setup&outlets=1%2C2&guide=continue',{waitUntil:'domcontentloaded'});const records=baseline.locator('#recordsLink');assert.match(await records.getAttribute('href'),/google-records.*OUTLET_BASELINE/);assert.doesNotMatch(await records.innerText(),/^Open Google records/);await baseline.waitForSelector('#mandatoryCount');result.checks.push('Real Google-backed baseline loaded; explanatory records link available');
 // Read-only current-field UAT before the independent Google progress query.
+await baseline.waitForFunction(()=>!!window.BOBS_REVIEW&&!!window.BOBS_GUIDE);
 await baseline.evaluate(()=>BOBS_REVIEW.request('#flowReviewed'));
 await baseline.getByRole('button',{name:'Review each field individually →',exact:true}).click();
 for(let index=0;index<3;index++){
  await baseline.waitForFunction(()=>{
-  const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('[data-review-ui=field]'),h=document.querySelector('body > header');
+  const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('#bobsNextActionBar'),h=document.querySelector('body > header');
   if(!f||!p)return false;const r=f.getBoundingClientRect(),a=p.getBoundingClientRect(),top=h.getBoundingClientRect().bottom;
-  return document.activeElement===f&&getComputedStyle(f).outlineWidth==='3px'&&a.top>=top&&a.bottom<innerHeight-68&&r.top>=top&&r.bottom<innerHeight-68;
+  return document.activeElement===f&&getComputedStyle(f).outlineWidth==='3px'&&!document.querySelector('[data-review-ui=field]')&&r.top>=Math.max(top,a.bottom)&&r.bottom<innerHeight-68;
  });
  if(index===1)await captureRendered(baseline,'review-field-focus-live.png');
- await baseline.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ await baseline.locator('#bobsReviewContinue').click();
 }
-await baseline.getByRole('button',{name:'Return to review choices',exact:true}).click();
+await baseline.locator('#bobsOpenGuide').click();await baseline.locator('[data-guide-choice=review-choices]').click();
 assert.equal(await baseline.locator('.bobs-review-field-highlight').count(),0);
 result.checks.push('Live outlet baseline: three exact fields highlighted; review controls and field visible below sticky outlet ribbon; original values unchanged; no Save');
-console.log('PASS live review focus: exact field, sticky outlet ribbon clearance, visible confirmation controls, no operational writes.');
+console.log('PASS live original-field review: no per-field panel, exact highlight, sticky ribbon clearance, existing guide action, no operational writes.');
 await baseline.evaluate(()=>BOBS_GUIDE.open());
 await baseline.locator('[data-other-checks] > summary').click();await baseline.locator('[data-guide-choice=page-progress]').waitFor();assert.equal(await baseline.locator('[data-guide-choice=page-progress]').innerText(),'Check saved progress & show what’s incomplete');
 const beforeProgressURL=baseline.url();await baseline.click('[data-guide-choice=page-progress]');await baseline.waitForFunction(()=>!BOBS_ROADMAP.getState().busy);
