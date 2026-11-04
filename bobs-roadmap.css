@@ -81,3 +81,11 @@
 #bobsNextActionBar button{flex-shrink:0;background:#214f3c;color:#fff;border:0;border-radius:5px;padding:10px;font:inherit}
 @media(max-width:650px){#bobsNextActionBar{position:relative;padding:12px;flex-wrap:wrap}}
 #bobsCompanion{overflow-anchor:none}
+
+/* Active review uses the existing compact guide; no panel is inserted among form fields. */
+#bobsReviewContinue[hidden]{display:none!important}
+#bobsNextActionBar.reviewing #bobsNextActionText{height:2.8em;line-height:1.4;overflow:auto;flex:1}
+#bobsNextActionBar.reviewing button{max-width:100%;white-space:normal}
+@media(max-width:650px){#bobsNextActionBar.reviewing{display:grid;grid-template-columns:minmax(0,1fr) auto}#bobsNextActionBar.reviewing #bobsNextActionText{grid-column:1 / -1}}
+
+#bobsNextActionBar.reviewing{position:sticky;top:0}
