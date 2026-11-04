@@ -25,7 +25,8 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.waitForURL(u=>u.pathname.endsWith('/production-plan.html'),{waitUntil:'domcontentloaded'});const url=p.url();assert.equal(new URL(url).searchParams.get('returnTo'),parentURL);assert.equal(new URL(url).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(url).searchParams.get('i'),'0');
  await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);
  await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
- assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
+ assert(await p.locator('#bobsCompanion').isVisible());
+  assert.match(await p.locator('.guide-current-review strong').innerText(),new RegExp(id==='intendedQuantity'?'field 1 of 3':id==='readyBy'?'field 2 of 3':'field 3 of 3'));assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
  await p.fill('#intendedQuantity','360');await p.fill('#readyBy','07:00');
 

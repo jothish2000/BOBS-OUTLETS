@@ -165,7 +165,7 @@ function mount(host,options){
   const scrollBefore=host.parentElement?.scrollTop||0;
   let box=host.querySelector('.guide-checklist');
   // The verified kitchen handoff already has a tick; keep both next-action cards in view.
-  if(state?.step==='kitchen-next'){box?.remove();return;}
+  if(state?.step==='kitchen-next'||root.BOBS_REVIEW?.snapshot()?.active){box?.remove();return;}
   const opened=box?.querySelector('details')?.open;
   if(!box){box=el('section',undefined,'guide-checklist');box.setAttribute('aria-label','Your progress checklist');host.append(box);}
   box.replaceChildren();
