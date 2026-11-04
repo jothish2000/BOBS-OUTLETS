@@ -198,7 +198,7 @@ function mount(host,options){
   }
   if(s.recipeHelp&&!['loading','saving'].includes(s.recipeHelp.stage))add('Ingredient calculation complete',!!s.recipeHelp.calculated,'#scale');
   if(localList.children.length){box.append(localList);appendContinuation(s,localList);}
-  if(local?.active){const a=local.active;box.append(el('p',a.currentTitle||'Current review: '+a.title));if(a.method==='guided'&&!a.ready)box.append(button(a.individual?'Go to the highlighted field':'Go to the highlighted section','review-current',()=>root.BOBS_REVIEW.focusCurrent()),button(a.individual?'Confirm this field & continue':'Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()));}
+  if(local?.active){const a=local.active;box.append(el('p',a.currentTitle||'Current review: '+a.title));if(a.method==='guided'&&!a.ready)box.append(button(a.individual?'Go to the highlighted field':'Go to the highlighted section','review-current',()=>root.BOBS_REVIEW.focusCurrent()),button(a.individual?'Confirm this field & continue':'Confirm this section & continue','review-next',()=>root.BOBS_REVIEW.confirmField()),button('Return to review choices','review-choices',()=>root.BOBS_REVIEW.returnToChoices()));}
   const savedBox=el('details');savedBox.dataset.savedProgress='true';savedBox.open=!!opened;savedBox.append(el('summary','View overall saved progress'));box.append(savedBox);
   savedBox.append(el('strong','Previously saved Google progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
   if(m.message)savedBox.append(el('p',m.message));

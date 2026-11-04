@@ -19,6 +19,24 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  // Confirmed checklist must show the next Save action where the tick is, not only above it.
  const confirmation=await ctx.newPage();await confirmation.setViewportSize({width:1071,height:580});
  await confirmation.goto('https://bobs.test/outlets.html?guide=start');await confirmation.click('#keep');await confirmation.waitForSelector('[data-guide-choice=outlet-count]');
+
+ // Walk original outlet controls without inserting panels or changing their grid positions.
+ await confirmation.evaluate(()=>{const box=document.getElementById('cards').getBoundingClientRect();window.originalOutletInputs=[...document.querySelectorAll('#cards input')].map(n=>({n,parent:n.parentNode,x:n.getBoundingClientRect().left-box.left,y:n.getBoundingClientRect().top-box.top}));BOBS_REVIEW.request('#outletsReviewed');});
+ await confirmation.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ let walked=0;while(await confirmation.evaluate(()=>document.activeElement.id!=='outletField-st-0-1')){
+  assert(++walked<30,'must reach shift 2 start');
+  await confirmation.locator('#bobsReviewContinue').click();
+ }
+ await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-st-0-1'&&document.getElementById('outletField-st-0-1').getBoundingClientRect().top>=document.querySelector('body > header').getBoundingClientRect().bottom);
+ const shiftScroll=await confirmation.evaluate(()=>scrollY);
+ await confirmation.locator('#bobsReviewContinue').click();
+ await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-en-0-1');
+ assert.equal(await confirmation.evaluate(()=>scrollY),shiftScroll,'same-row next field must not jump into prior position');
+ assert(await confirmation.evaluate(()=>{const box=document.getElementById('cards').getBoundingClientRect();return originalOutletInputs.every(({n,parent,x,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().left-box.left-x)<1&&Math.abs(n.getBoundingClientRect().top-box.top-y)<1);}));
+ assert.equal(await confirmation.locator('[data-review-ui=field]').count(),0);
+ assert.equal(await confirmation.inputValue('#outletField-st-0-1'),'13:30');assert.equal(await confirmation.inputValue('#outletField-en-0-1'),'22:30');
+ console.log('REVIEW_STATIONARY_SHIFTS_PNG '+(await confirmation.screenshot()).toString('base64'));
+ await confirmation.locator('#bobsOpenGuide').click();await confirmation.locator('[data-guide-choice=review-choices]').click();
  await review(confirmation.locator('#outletsReviewed'));
  const next=confirmation.locator('.guide-checklist-local [data-confirmation-next]');await next.waitFor();
  assert.match(await next.innerText(),/Next: Save outlets & go to Kitchen Setup/);
@@ -29,7 +47,7 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
  // The geometry wait above includes the pane and sticky heading; do not re-sample mid-layout in a separate assertion.
  assert.equal(writes.length,0,'Review confirmation must not save');
  await next.locator('button').click();await confirmation.waitForSelector('#bobsNextActionBar:not([hidden])');assert.match(await confirmation.locator('#bobsNextActionText').innerText(),/Save outlets/);assert.equal(await confirmation.evaluate(()=>document.activeElement.id),'save');assert.equal(writes.length,0,'Show Save must not auto-save');
- await confirmation.locator('#bobsNextActionBar button').click();await confirmation.locator('#bobsNextActionBar').waitFor({state:'hidden'});await confirmation.locator('.guide-review-again').click();assert(await confirmation.locator('[data-review-ui=choices]').isVisible());
+ await confirmation.locator('#bobsOpenGuide').click();await confirmation.locator('#bobsNextActionBar').waitFor({state:'hidden'});await confirmation.locator('.guide-review-again').click();assert(await confirmation.locator('[data-review-ui=choices]').isVisible());
  assert.equal(writes.length,0);await confirmation.close();
  console.log('PASS laptop confirmation: next Save directly below tick, secondary Review again, guide-pane visibility, original Save focus, zero automatic writes.');
  await guided.click('[data-guide-choice=outlet-count]');assert.equal(await guided.evaluate(()=>document.activeElement.id),'count');await guided.fill('#count','3');assert(await guided.locator('#bobsCompanion').isHidden());assert.equal(await guided.locator('#outletsReviewed').isChecked(),false);
@@ -44,16 +62,16 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
  await guided.getByRole('button',{name:'Review each field individually →',exact:true}).click();
  for(let i=0;i<3;i++){
   await guided.waitForFunction(()=>{
-   const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('[data-review-ui=field]'),h=document.querySelector('body > header');
+   const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('#bobsNextActionBar'),h=document.querySelector('body > header');
    if(!f||!p)return false;const fr=f.getBoundingClientRect(),pr=p.getBoundingClientRect(),hr=h.getBoundingClientRect();
-   return fr.top>=hr.bottom&&fr.bottom<innerHeight-68&&pr.top>=hr.bottom&&pr.bottom<innerHeight-68&&document.activeElement===f;
+   return fr.top>=Math.max(hr.bottom,pr.bottom)&&fr.bottom<innerHeight-68&&document.activeElement===f&&!document.querySelector('[data-review-ui=field]');
   });
   assert.equal(await guided.locator('#bobsNextActionText').innerText(),await guided.locator('#bobsCurrentReviewTitle').innerText());
   if(i===1)console.log('REVIEW_BASELINE_PNG '+(await guided.screenshot()).toString('base64'));
   assert.equal(await guided.locator('.bobs-review-field-highlight').evaluate(n=>getComputedStyle(n).outlineWidth),'3px');
-  await guided.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+  await guided.locator('#bobsReviewContinue').click();
  }
- await guided.getByRole('button',{name:'Return to review choices',exact:true}).click();assert.equal(writes.length,0);
+ await guided.locator('#bobsOpenGuide').click();await guided.locator('[data-guide-choice=review-choices]').click();assert.equal(writes.length,0);
  await guided.evaluate(()=>BOBS_GUIDE.open());
  // The bot's saved-progress action checks without saving or discarding the baseline draft.
  await guided.waitForSelector('[data-field=workingDays]');await guided.fill('[data-field=workingDays]','29');
