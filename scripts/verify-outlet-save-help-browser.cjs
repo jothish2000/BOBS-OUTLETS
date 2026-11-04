@@ -48,6 +48,7 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
    if(!f||!p)return false;const fr=f.getBoundingClientRect(),pr=p.getBoundingClientRect(),hr=h.getBoundingClientRect();
    return fr.top>=hr.bottom&&fr.bottom<innerHeight-68&&pr.top>=hr.bottom&&pr.bottom<innerHeight-68&&document.activeElement===f;
   });
+  assert.equal(await guided.locator('#bobsNextActionText').innerText(),await guided.locator('#bobsCurrentReviewTitle').innerText());
   if(i===1)console.log('REVIEW_BASELINE_PNG '+(await guided.screenshot()).toString('base64'));
   assert.equal(await guided.locator('.bobs-review-field-highlight').evaluate(n=>getComputedStyle(n).outlineWidth),'3px');
   await guided.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
