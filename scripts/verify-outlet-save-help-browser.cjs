@@ -36,6 +36,23 @@ await confirmation.waitForFunction(()=>{const a=document.querySelector('[data-co
  await guided.getByRole('link',{name:'Set up attached / common kitchens and shared production →',exact:true}).click();await guided.waitForSelector('[data-guide-choice=outlet-kitchen-yes]');assert(await guided.locator('#bobsCompanion').isVisible());assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Do you want a kitchen at Fixture outlet 1/);
  await guided.click('[data-guide-choice=outlet-kitchen-no]');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/Do you want a kitchen at Fixture outlet 2/);await guided.click('[data-guide-choice=outlet-kitchen-no]');await guided.click('[data-guide-choice=kitchen-review]');assert(await guided.locator('[data-review-ui=choices]').isVisible());assert(await guided.locator('[data-review-ui=choices]').evaluate(el=>el===document.activeElement||el.contains(document.activeElement)));assert.equal(await guided.locator('#kitchenReviewed').isChecked(),false);assert.equal(writes.length,0);
  await guided.goto('https://bobs.test/outlet-plan.html?stage=baseline&outlet=1');await guided.waitForSelector('#bobsCompanion:not([hidden]) [data-guide-choice=current-review]');assert.match(await guided.locator('#bobsGuideDialogue').innerText(),/expenses and mandatory staff/i);
+
+ // Real outlet baseline uses the shared field review, with sticky header and compact reminder.
+ await guided.setViewportSize({width:1071,height:580});
+ await guided.waitForSelector('[data-field=workingDays]');
+ await guided.evaluate(()=>BOBS_REVIEW.request('#flowReviewed'));
+ await guided.getByRole('button',{name:'Review each field individually →',exact:true}).click();
+ for(let i=0;i<3;i++){
+  await guided.waitForFunction(()=>{
+   const f=document.querySelector('.bobs-review-field-highlight'),p=document.querySelector('[data-review-ui=field]'),h=document.querySelector('body > header');
+   if(!f||!p)return false;const fr=f.getBoundingClientRect(),pr=p.getBoundingClientRect(),hr=h.getBoundingClientRect();
+   return fr.top>=hr.bottom&&fr.bottom<innerHeight-68&&pr.top>=hr.bottom&&pr.bottom<innerHeight-68&&document.activeElement===f;
+  });
+  assert.equal(await guided.locator('.bobs-review-field-highlight').evaluate(n=>getComputedStyle(n).outlineWidth),'3px');
+  await guided.getByRole('button',{name:'Confirm this field & continue',exact:true}).click();
+ }
+ await guided.getByRole('button',{name:'Return to review choices',exact:true}).click();assert.equal(writes.length,0);
+ await guided.evaluate(()=>BOBS_GUIDE.open());
  // The bot's saved-progress action checks without saving or discarding the baseline draft.
  await guided.waitForSelector('[data-field=workingDays]');await guided.fill('[data-field=workingDays]','29');
  const beforeCheck=guided.url(),beforeWrites=writes.length;
