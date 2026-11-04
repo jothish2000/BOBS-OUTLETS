@@ -325,7 +325,7 @@ function mount(host,options){
    }
 
    case 'page-task':{
-    const sourceGuide=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceGuide){ask(sourceGuide.title);host.append(el('p',sourceGuide.instruction));if(sourceGuide.saved){for(const next of sourceGuide.next||[]){const a=el('a',next.label,'guide-action');a.href=next.href;host.append(a);}}else choices(button('Review producing kitchens, batch choices and dispatch','source-review',()=>pageFocus(sourceGuide.selector)));break;}
+    const sourceGuide=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceGuide){ask(sourceGuide.title);host.append(el('p',sourceGuide.instruction));if(sourceGuide.saved){for(const line of sourceGuide.summary||[])host.append(el('p',line));for(const entry of sourceGuide.history||[]){const d=el('details');d.append(el('summary',entry.title));for(const line of entry.text||[])d.append(el('p',line));for(const link of entry.links||[]){const a=el('a',link.label,'guide-action');a.href=link.href;d.append(a);}host.append(d);}for(const next of sourceGuide.next||[]){const a=el('a',next.label,'guide-action');a.href=next.href;host.append(a);}}else choices(button('Review producing kitchens, batch choices and dispatch','source-review',()=>pageFocus(sourceGuide.selector)));break;}
     if(s.equipmentHelp){const h=s.equipmentHelp,work=(label,id)=>button(label,'inventory-'+id,()=>{options.work();root.BOBS_EQUIPMENT_GUIDE.focus(id);});
      ask(h.stage==='empty'?'No equipment recorded for '+h.name:h.stage==='saved'?'Equipment saved — choose your next step':h.name+' — existing equipment');
      if(h.stage==='loading')host.append(el('p','Reading the saved equipment. Wait for the result before adding anything.'));
@@ -525,7 +525,7 @@ function mount(host,options){
  // but yield immediately when the user scrolls, navigates or clicks in the guide.
  for(const type of ['wheel','touchstart','pointerdown','keydown'])host.parentElement?.addEventListener(type,()=>{revealContinuation=false;},{passive:true});
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
- root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);});
+ let handlingReview=false;root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);if(handlingReview)return;handlingReview=true;try{refreshAction();}finally{handlingReview=false;}});
  const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog,#bobsNextActionBar')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
  actionObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['disabled','aria-busy','data-tone']});
  actionStamp=actionKey(snapshot());render();return {update,kitchenNext};

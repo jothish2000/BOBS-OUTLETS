@@ -28,10 +28,11 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
   await confirmation.locator('[data-guide-choice=review-next]').click();
  }
  await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-st-0-1'&&document.getElementById('outletField-st-0-1').getBoundingClientRect().top>=document.querySelector('body > header').getBoundingClientRect().bottom);
- const shiftScroll=await confirmation.evaluate(()=>scrollY);
+ const shiftPosition=await confirmation.evaluate(()=>({scroll:scrollY,endTop:document.getElementById('outletField-en-0-1').getBoundingClientRect().top,endBottom:document.getElementById('outletField-en-0-1').getBoundingClientRect().bottom,headerBottom:document.querySelector('body > header').getBoundingClientRect().bottom,bottom:innerHeight-76}));
  await confirmation.locator('[data-guide-choice=review-next]').click();
  await confirmation.waitForFunction(()=>document.activeElement.id==='outletField-en-0-1');
- assert.equal(await confirmation.evaluate(()=>scrollY),shiftScroll,'same-row next field must not jump into prior position');
+ if(shiftPosition.endTop>=shiftPosition.headerBottom+12&&shiftPosition.endBottom<=shiftPosition.bottom)assert.equal(await confirmation.evaluate(()=>scrollY),shiftPosition.scroll,'an already visible next field must not be recentered');
+ assert(await confirmation.evaluate(()=>{const r=document.getElementById('outletField-en-0-1').getBoundingClientRect();return r.top>=document.querySelector('body > header').getBoundingClientRect().bottom&&r.bottom<=innerHeight-76;}),'wrapped next field must be scrolled only enough to be visible');
  assert(await confirmation.evaluate(()=>{const box=document.getElementById('cards').getBoundingClientRect();return originalOutletInputs.every(({n,parent,x,y})=>n.parentNode===parent&&Math.abs(n.getBoundingClientRect().left-box.left-x)<1&&Math.abs(n.getBoundingClientRect().top-box.top-y)<1);}));
  assert.equal(await confirmation.locator('[data-review-ui=field]').count(),0);
  assert.equal(await confirmation.inputValue('#outletField-st-0-1'),'13:30');assert.equal(await confirmation.inputValue('#outletField-en-0-1'),'22:30');
