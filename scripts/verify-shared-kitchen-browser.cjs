@@ -90,7 +90,7 @@ for(const [outlet,qty] of [['1',360],['2',180]])db[outlet+'/METHOD2/default']={i
 
  console.log('Opening next fixture page');await p.goto('https://bobs.test/kitchen-flow.html?stage=demand&outlet=2');await p.waitForFunction(()=>{const t=document.querySelector('#kitchenStatus').textContent;if(t.startsWith('Could not load'))throw Error(t);return document.querySelector('#saveKitchen')?.disabled===false;});assert.match(await p.locator('[data-demand]').innerText(),/180 piece/);await review(p.locator('#kitchenReviewed'));await p.click('#saveKitchen');await p.waitForFunction(()=>document.querySelector('#kitchenStatus').textContent.includes('Supplying kitchens saved and verified'));assert(writes.includes('2/METHOD2_BACKUPS'));assert.equal(db['2/METHOD2/default'].itemEditors[key].batchSize,180);
  await p.waitForFunction(()=>window.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot()?.saved===true);
- assert(await p.locator('#saveKitchen').isEnabled());await p.waitForSelector('#nextAction a');
+ assert(await p.locator('#saveKitchen').isEnabled());await p.waitForSelector('#bobsGuideDialogue a.guide-action');
  assert(await p.locator('#bobsFlowGuide').isHidden());
  if(await p.locator('#bobsCompanion').isHidden())await p.click('#bobsCompanionToggle');await p.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Supplying kitchens saved and verified')).catch(async e=>{console.log('SOURCE GUIDE DIAGNOSTIC',await p.locator('#bobsGuideDialogue').innerText(),JSON.stringify(errors));throw e;});
  assert(!await p.locator('#bobsGuideDialogue').innerText().then(t=>t.includes('Next: Save supplying')),'saved source guide must advance beyond Save');
