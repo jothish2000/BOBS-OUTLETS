@@ -20,9 +20,9 @@ for(let index=0;index<3;index++){
   return document.activeElement===f&&getComputedStyle(f).outlineWidth==='3px'&&!document.querySelector('[data-review-ui=field]')&&r.top>=Math.max(0,top)&&r.right<=a.left&&r.bottom<innerHeight-68;
  });
  if(index===1)await captureRendered(baseline,'review-field-focus-live.png');
- await baseline.locator('[data-guide-choice=review-next]').click();
+ await baseline.locator('main #bobsReviewConfirmField').click();
 }
-await baseline.locator('[data-guide-choice=review-choices]').click();await baseline.getByRole('button',{name:'Return to page guide',exact:true}).click();
+await baseline.locator('[data-guide-choice=review-choices]').click();await baseline.getByRole('button',{name:'Return to review choices',exact:true}).click();await baseline.getByRole('button',{name:'Cancel review',exact:true}).click();
 assert.equal(await baseline.locator('.bobs-review-field-highlight').count(),0);
 result.checks.push('Live outlet baseline: three exact fields highlighted; review controls and field visible below sticky outlet ribbon; original values unchanged; no Save');
 console.log('PASS live original-field review: no per-field panel, exact highlight, sticky ribbon clearance, existing guide action, no operational writes.');
