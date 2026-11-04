@@ -232,15 +232,6 @@ function mount(host,options){
   if(p?.ready)state.itemKey=p.itemKey;
   const sourceState=root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot();if(sourceState?.saved||sourceState?.busy){state.step='page-task';state.history=[];}
   host.replaceChildren();host.className='bobs-guide-dialogue';
-  if(state.step==='kitchen-next'){
-   if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
-    host.append(el('p','✓ Kitchen Setup saved and verified. Choose your next step.','guide-question guide-checklist-done'));
-    if(document.getElementById('kitchenNext-equipment'))host.append(el('p','Optional now: record existing equipment and capacity.'));
-    host.append(el('p','Next required: review outlet expenses and mandatory staff.'),el('p','Choose a card below, then use the highlighted button.'));
-    renderChecklist(s);return;
-   }
-   state.step=s.ctx.page==='kitchen-flow.html'?'outlet-kitchen-summary':'page-task';
-  }
   const review=root.BOBS_REVIEW?.snapshot()?.active;
   if(review){
    if(review.currentTitle){
@@ -250,6 +241,15 @@ function mount(host,options){
    }
    // Choices/final confirmation are in the persistent review workspace within this same frame.
    persist();host.parentElement?.scrollTo?.({top:0});return;
+  }
+  if(state.step==='kitchen-next'){
+   if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
+    host.append(el('p','✓ Kitchen Setup saved and verified. Choose your next step.','guide-question guide-checklist-done'));
+    if(document.getElementById('kitchenNext-equipment'))host.append(el('p','Optional now: record existing equipment and capacity.'));
+    host.append(el('p','Next required: review outlet expenses and mandatory staff.'),el('p','Choose a card below, then use the highlighted button.'));
+    renderChecklist(s);return;
+   }
+   state.step=s.ctx.page==='kitchen-flow.html'?'outlet-kitchen-summary':'page-task';
   }
   const h=el('h3','Let’s plan your next step');h.tabIndex=-1;host.append(h);
   if(state.history.length){const transcript=el('details'),summary=el('summary','Your answers so far');transcript.append(summary);for(const x of state.history.slice(-6))transcript.append(el('p','You: '+x.answer));host.append(transcript);}

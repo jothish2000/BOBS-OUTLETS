@@ -237,6 +237,7 @@ assert.equal(await p.locator('[data-equipment]').count(),2);assert.equal(await p
 await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert(await p.locator('#bobsFlowGuide').isHidden());
 await p.waitForFunction(()=>!!window.BOBS_REVIEW);await p.evaluate(()=>BOBS_REVIEW.request('#equipmentReviewed'));await p.locator('[data-review-ui=choices]').waitFor();
 const companionWrites=writes.length;
+await p.getByRole('button',{name:'Return to page guide',exact:true}).click();
 if(!await p.locator('#bobsCompanion').isVisible())await p.click('#bobsCompanionToggle');assert(await p.locator('#bobsCompanion').isVisible());
 assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Elimedu kitchen — existing equipment/);
 await p.waitForFunction(()=>!window.BOBS_ROADMAP.getState().busy);

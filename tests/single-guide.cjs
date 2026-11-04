@@ -34,3 +34,13 @@ test('standalone Method2 guide uses the same current item state as the embedded 
  assert.match(host.textContent,/Idli is selected/);assert.match(host.textContent,/supplying kitchen/);host.querySelector('[data-guide-choice=method-flow-work]').click();assert.equal(focus,1);
  }finally{w.close()}
 });
+
+test('an active field review takes priority over an earlier saved kitchen handoff',()=>{
+ const dom=new JSDOM('<div id="host"></div><button id="kitchenNextGo"></button>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations&outlet=1'}),w=dom.window;try{
+ let active=null,confirmed=0;w.BOBS_KITCHEN_GUIDE={snapshot:()=>({verified:true})};w.BOBS_REVIEW={snapshot:()=>({rows:[],active}),confirmField(){confirmed++},returnToChoices(){}};
+ w.eval(source('bobs-guide-bot.js'));const host=w.document.getElementById('host'),bot=w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{outlet:'1',page:'kitchen-flow.html'}}),minimise(){}});
+ bot.kitchenNext();active={currentTitle:'Reviewing field 2 of 3: Shift end',individual:true,method:'guided'};bot.update();
+ assert.equal(host.querySelectorAll('[data-guide-choice=review-next]').length,1);assert.match(host.textContent,/field 2 of 3: Shift end/);assert.doesNotMatch(host.textContent,/Choose your next step/);
+ host.querySelector('[data-guide-choice=review-next]').click();assert.equal(confirmed,1);
+ }finally{w.close()}
+});

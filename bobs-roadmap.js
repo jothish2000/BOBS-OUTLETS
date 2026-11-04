@@ -152,7 +152,7 @@ function companionBoot(){
  const releaseKitchenGuide=()=>{if(!companion.classList.contains('kitchen-next-inline'))return;companion.classList.remove('kitchen-next-inline');document.body.append(companion);companion.hidden=true;companionOpen=false;companionToggle.hidden=false;companionToggle.setAttribute('aria-expanded','false');};
  const showKitchenNext=()=>{
   const next=document.getElementById('nextAction'),slot=document.getElementById('kitchenNextGuide');
-  if(next?.dataset.guideRequested!=='true'||!slot||!guideBot?.kitchenNext())return false;
+  if(window.BOBS_REVIEW?.snapshot()?.active||next?.dataset.guideRequested!=='true'||!slot||!guideBot?.kitchenNext())return false;
   document.body.classList.remove('bobs-guided-dock');companion.classList.add('kitchen-next-inline');slot.append(companion);companion.hidden=false;companionOpen=true;companionToggle.hidden=true;companionToggle.setAttribute('aria-expanded','true');
   window.dispatchEvent(new Event('bobs-kitchen-guide-shown'));return true;
  };
@@ -195,7 +195,7 @@ function companionBoot(){
  const startJourney=()=>{if(!journey||autoStarted||document.getElementById('savedModal')?.classList.contains('hidden')===false)return;autoStarted=true;if(!companionOpen)companionToggle.click();};
  // The outlet's saved-data choice is the first guide question; hand off only after the user answers it.
  window.addEventListener('bobs-outlet-choice',startJourney);
- loadBot().then(()=>{if(!showKitchenNext())startJourney();});window.BOBS_GUIDE={open:()=>{if(!companionOpen)companionToggle.click();},close:closeCompanion,review(panel){reviewWorkspace.replaceChildren(panel);if(!companionOpen)companionToggle.click();companion.scrollTop=0;},focusReview(){if(!companionOpen)companionToggle.click();companion.scrollTop=0;}};
+ loadBot().then(()=>{if(!showKitchenNext())startJourney();});window.BOBS_GUIDE={open:()=>{if(!companionOpen)companionToggle.click();},close:closeCompanion,review(panel){releaseKitchenGuide();reviewWorkspace.replaceChildren(panel);if(!companionOpen)companionToggle.click();companion.scrollTop=0;},focusReview(){if(!companionOpen)companionToggle.click();companion.scrollTop=0;}};
  window.addEventListener('bobs-guide-context',()=>{guideBot?.update();if(interactivePage){const p=window.BOBS_PRODUCTION_GUIDE?.snapshot(),item=window.BOBS_ITEM_GUIDE?.snapshot();companionToggle.textContent='BOBS Guide · '+(p?.journey?.stage==='saving'?'saving and verifying':p?.name?p.name+' · next step':item?.name?item.name+' · next step':'next step');}});
  window.addEventListener('bobs-guide-resume',()=>{if(!interactivePage)return;guideBot?.update();if(!companionOpen)companionToggle.click();});
  const baselineGate=document.getElementById('baselineGate');if(baselineGate)new MutationObserver(()=>guideBot?.update()).observe(baselineGate,{childList:true,characterData:true,subtree:true});
