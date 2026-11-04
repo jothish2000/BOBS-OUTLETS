@@ -86,7 +86,7 @@ function focusAction(which='confirm'){
  if(!active)return false;
  const panel=active.panel;
  const n=which==='choices'?(pageActions||dialogActions)?.lastElementChild:
-  panel?(which==='review'?panel.querySelector('button'):panel.querySelector('[data-review-confirm]')||panel.querySelector('button')||panel):
+  panel?(which==='review'?(panel.querySelector('button')||panel):panel.querySelector('[data-review-confirm]')||panel.querySelector('button')||panel):
   (pageActions||dialogActions)?.firstElementChild;
  return focusFormControl(n);
 }
