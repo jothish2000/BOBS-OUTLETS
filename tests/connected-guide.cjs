@@ -68,7 +68,7 @@ test('verified kitchen handoff opens inline, explains actual options, and clears
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified,outlets:[]})};
   w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
   const next=w.document.getElementById('nextAction'),guide=w.document.getElementById('bobsCompanion'),first=w.document.getElementById('kitchenNext-equipment');
-  next.dataset.guideRequested='true';w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));assert(guide.hidden,'Unverified state cannot announce success');
+  next.dataset.guideRequested='true';w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));assert(!guide.classList.contains('kitchen-next-inline'),'Unverified state cannot announce a successful handoff');assert.doesNotMatch(w.document.getElementById('bobsGuideDialogue').textContent,/Kitchen Setup saved and verified/);
   verified=true;first.focus();w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));
   assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');assert(guide.classList.contains('kitchen-next-inline'));
   assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/saved and verified.*Optional now:.*Next required:/s);
