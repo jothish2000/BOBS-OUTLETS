@@ -119,7 +119,7 @@ function mount(host,options){
   // This is the same action (including recipe links and Yes/No choices) already offered above.
   const candidates=[...host.querySelectorAll('button[data-guide-choice],a.guide-action')].filter(n=>!n.closest('.guide-checklist,.guide-nav,details')&&!n.disabled);
   const first=candidates[0];if(!first)return saved?{message:a?.next||'Saved and verified. Follow the next action shown on this page.'}:null;
-  const choices=stage==='extra-sides'?candidates.filter(n=>['extra-yes','extra-no'].includes(n.dataset.guideChoice)):[first];
+  const choices=[first];
   return {choices};
  }
  function appendContinuation(s,list){

@@ -176,7 +176,12 @@ if(itemHelp.href){
  assert.equal(new URL(planner.url()).searchParams.get('returnTo'),item.url());await planner.waitForFunction(()=>window.BOBS_PRODUCTION_GUIDE?.snapshot().ready);await planner.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert.match(await planner.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await captureRendered(planner,'interactive-planner-live.png');result.checks.push('Live Idli: direct planner popup preserves immediate parent and automatically asks quantity/time');
- if(!+(await planner.inputValue('#intendedQuantity')))await planner.fill('#intendedQuantity','360');if(!await planner.inputValue('#readyBy'))await planner.fill('#readyBy','07:00');await review(planner.locator('#quantityReviewed'));await review(planner.locator('#sideServingReviewed'));
+ if(!+(await planner.inputValue('#intendedQuantity')))await planner.fill('#intendedQuantity','360');if(!await planner.inputValue('#readyBy'))await planner.fill('#readyBy','07:00');await review(planner.locator('#quantityReviewed'));
+  await planner.waitForFunction(()=>document.querySelector('.guide-checklist-local [aria-current="step"]')?.dataset.plannerStep==='side-servings');
+  assert.equal(await planner.locator('.guide-checklist-local .guide-checklist-next').count(),1);
+  const allowanceRow=planner.locator('[data-planner-step=extra-sides]');if(await allowanceRow.count())assert.equal(await allowanceRow.evaluate(n=>n.classList.contains('guide-checklist-done')),false);
+  result.checks.push('After quantity confirmation only the sides review is current; a prior allowance is not a current confirmation.');
+  await review(planner.locator('#sideServingReviewed'));
  const liveOptions=await planner.locator('[data-source-key]').first().locator('option:not([value=""]):not(:disabled)').evaluateAll(xs=>xs.map(x=>({value:x.value,name:x.textContent})));
  assert(liveOptions.length,'An operating kitchen is needed for this live source review');assert.equal(await planner.locator('[data-source-key]').first().inputValue(),'');
  await planner.locator('[data-source-key]').first().selectOption(liveOptions[0].value);await planner.click('#useSameKitchen');await review(planner.locator('#productionSourceReviewed'));

@@ -90,7 +90,7 @@ function requireSides(){requireQuantity();for(const side of selected?.d.condimen
 
 function extraNeeded(){return !selected?.job&&(selected?.d.condiments||[]).some(x=>x.source!=='purchase');}
 function clearExtraReview(){$('sideExtraYes').checked=$('sideExtraNo').checked=false;}
-function savedExtraChoice(){const value=selected?.d.sideExtraFivePercent;return typeof value==='boolean'?value:undefined;}
+function savedExtraChoice(){const value=data?.raw?.itemEditors?.[selected?.key]?.sideExtraFivePercent??selected?.d.sideExtraFivePercent;return typeof value==='boolean'?value:undefined;}
 $('keepSideExtra').onclick=()=>{const saved=savedExtraChoice();if(typeof saved==='boolean')window.BOBS_PRODUCTION_GUIDE.chooseExtra(saved);};
 function extraChoice(){return $('sideExtraYes').checked?true:$('sideExtraNo').checked?false:undefined;}
 function requireExtraChoice(){requireSides();if(needsKitchenRouting())requireSources();if(extraNeeded()&&typeof extraChoice()!=='boolean')throw Error('Choose Yes or No for optional 5% extra sides before reviewing recipes or saving the production plan.');}
