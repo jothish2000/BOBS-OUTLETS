@@ -4,9 +4,9 @@ const rawRead=M2.read.bind(M2),selected=F.selected.bind(F),requirements=F.requir
 const S={isKitchen:K.isKitchen};
 S.registry=()=>V.read('COMPANY','KITCHEN_MASTER');
 S.locations=async()=>{const [outlets,record]=await Promise.all([BOBS_DATA.listOutlets(),S.registry()]);return {outlets,record,kitchens:record?.kitchens||[]}};
-S.allDemands=async(master)=>{const [locations]=await Promise.all([S.locations()]);const rows=await Promise.all(locations.outlets.map(async o=>{const raw=await rawRead(o.id),items=F.selected(M2.state(raw),ITEM_DATA,M2);return {outlet:o,raw,items,demands:K.demands(o.id,items,master.recipes,P,F,M2,C.today())}}));return {...locations,rows,demands:rows.flatMap(r=>r.demands)}};
-S.context=async id=>{
- const master=await BOBS_OPERATIONAL_RECIPES.load(),all=await S.allDemands(master),kitchen=all.kitchens.find(k=>k.id===id);if(!kitchen)throw Error('Saved kitchen identity not found. Review production locations.');
+S.allDemands=async(master,read)=>{const [locations]=await Promise.all([S.locations()]);const rows=await Promise.all(locations.outlets.map(async o=>{const raw=read?await read(o.id,'METHOD2'):await rawRead(o.id),items=F.selected(M2.state(raw),ITEM_DATA,M2);return {outlet:o,raw,items,demands:K.demands(o.id,items,master.recipes,P,F,M2,C.today())}}));return {...locations,rows,demands:rows.flatMap(r=>r.demands)}};
+S.context=async(id,read)=>{
+ const master=await BOBS_OPERATIONAL_RECIPES.load(read?{getRawModule:read}:undefined),all=await S.allDemands(master,read),kitchen=all.kitchens.find(k=>k.id===id);if(!kitchen)throw Error('Saved kitchen identity not found. Review production locations.');
  const jobs=K.jobs(all.demands,kitchen,C.today(),F),items=K.virtualItems(jobs),recipes=jobs.map(j=>({...j.recipe,name:'Kitchen recipe '+j.key,kitchenOriginalName:j.name}));
  for(const item of items){item.item.recipeName='Kitchen recipe '+item.key;item.d.price=0;item.d.sold=item.d.batchSize;item.d.markup=0;item.d.pricingBasis='markup';item.d.packingMode='none';item.d.packingReason='Packing is budgeted at the selling outlet';item.d.uuwpPolicy='always';item.d.spoilage=0;}
  return {...all,kitchen,jobs,items,recipes,raw:{kitchenItems:items,kitchenSourceStamp:F.stamp({date:C.today(),kitchen,jobs}),kitchenRecipes:recipes},outlet:{...kitchen,name:kitchen.name+' · Production kitchen',id:kitchen.id,shiftTimes:kitchen.shiftTimes}};
@@ -20,8 +20,8 @@ F.menuStamp=items=>{const extras=items.map(x=>({key:x.key,sources:Object.fromEnt
 S.owner=async id=>K.isKitchen(id)?(await S.context(id)).outlet:(await BOBS_DATA.listOutlets()).find(o=>String(o.id)===String(id));
 S.costSnapshot=data=>F.stamp({source:data.context.raw.kitchenSourceStamp,baseline:data.baseline,staffing:data.staffing,expenses:data.expenses,production:data.production,assets:data.assets,staff:data.staff,hr:data.hr,norms:data.norms});
 S.automaticPositions=(data,assessment)=>{const keys=new Set(assessment.tasks.map(t=>t.key));return new Set([...data.baseline.positions,...data.staffing.positions].filter(p=>p.kind!=='delivery'&&(data.staffing.baselineAssignments?.find(a=>a.id===p.id)?.tasks||p.tasks||[]).some(t=>keys.has(t.key))).map(p=>(data.baseline.positions.some(x=>x.id===p.id)?'counter:':'position:')+p.id));};
-S.costData=async id=>{
- const context=await S.context(id);const [baseline,staffing,expenses,production,assets,staff,hr,norms,costs,requirements]=await Promise.all([V.read(id,'OUTLET_BASELINE'),V.read(id,'OUTLET_STAFFING'),V.read(id,'FIXED_EXPENSES'),V.read(id,'OUTLET_PRODUCTION_PLAN'),V.read(id,'ASSET_MASTER'),V.read('COMPANY','STAFF_MASTER'),V.read('COMPANY','HR_OUTLET_ALLOCATION'),V.read('COMPANY','THP_NORMS'),V.read(id,'KITCHEN_COST_PLAN',C.today()),V.read(id,'OUTLET_ITEM_REQUIREMENTS')]);return {context,baseline,staffing,expenses,production,assets,staff,hr,norms,costs,requirements};
+S.costData=async(id,scanRead)=>{
+ const read=scanRead||V.read,context=await S.context(id,scanRead);const [baseline,staffing,expenses,production,assets,staff,hr,norms,costs,requirements]=await Promise.all([read(id,'OUTLET_BASELINE'),read(id,'OUTLET_STAFFING'),read(id,'FIXED_EXPENSES'),read(id,'OUTLET_PRODUCTION_PLAN'),read(id,'ASSET_MASTER'),read('COMPANY','STAFF_MASTER'),read('COMPANY','HR_OUTLET_ALLOCATION'),read('COMPANY','THP_NORMS'),read(id,'KITCHEN_COST_PLAN',C.today()),read(id,'OUTLET_ITEM_REQUIREMENTS')]);return {context,baseline,staffing,expenses,production,assets,staff,hr,norms,costs,requirements};
 };
 S.calculate=(data,choices)=>{
  const {context,baseline,staffing,expenses,production,assets,staff,hr,norms,requirements}=data,{jobs,items,recipes,kitchen}=context;
@@ -42,13 +42,18 @@ S.calculate=(data,choices)=>{
  for(const demand of demands)if(demand.source.away&&!tripValues.some(t=>t.allocations.some(a=>a.demandId===demand.id)))throw Error(demand.name+': select this remote delivery on a shared journey.');
  return {rows,deliveries,tripValues,sourceStamp:S.costSnapshot(data),date:C.today()};
 };
-S.itemCosts=async(outlet,items)=>{
+S.itemCosts=async(outlet,items,scanRead)=>{
  const kitchenIds=[...new Set(items.flatMap(x=>Object.entries(x.d.kitchenSources||{}).filter(([key,v])=>(key===x.key||key.startsWith(x.key+':'))&&v.kitchenId).map(([,v])=>v.kitchenId)))];const totals={items:{},sources:[]};
- for(const id of kitchenIds){const data=await S.costData(id),saved=data.costs;if(!saved||saved.sourceStamp!==S.costSnapshot(data))throw Error('Shared kitchen costs changed or are incomplete: '+data.context.kitchen.name+'. Review its combined plan.');const value=S.calculate(data,saved.choices);if(F.stamp(value)!==F.stamp(saved.result))throw Error('Shared kitchen calculation changed. Review and save.');totals.sources.push({id,stamp:saved.sourceStamp});for(const row of Object.values(value.deliveries).filter(d=>d.outlet===String(outlet))){const item=totals.items[row.itemKey]||(totals.items[row.itemKey]={labour:0,overhead:0,fixedOverhead:0,variableOverhead:0,transport:0,depreciation:0});for(const key of ['labour','overhead','fixedOverhead','variableOverhead','transport','depreciation'])item[key]+=row[key];}}
+ const needsReview=message=>Object.assign(Error(message),{code:'BOBS_KITCHEN_COST_REVIEW'});
+ for(const id of kitchenIds){
+  // Verified absence of today's cost plan is an unfinished step. There is no
+  // saved calculation to reconcile, so do not load every contributing order.
+  if(scanRead&&!await scanRead(id,'KITCHEN_COST_PLAN',C.today()))throw needsReview('Review and save today’s shared kitchen costs.');
+  const data=await S.costData(id,scanRead),saved=data.costs;if(!saved||saved.sourceStamp!==S.costSnapshot(data))throw needsReview('Shared kitchen costs changed or are incomplete: '+data.context.kitchen.name+'. Review its combined plan.');const value=S.calculate(data,saved.choices);if(F.stamp(value)!==F.stamp(saved.result))throw needsReview('Shared kitchen calculation changed. Review and save.');totals.sources.push({id,stamp:saved.sourceStamp});for(const row of Object.values(value.deliveries).filter(d=>d.outlet===String(outlet))){const item=totals.items[row.itemKey]||(totals.items[row.itemKey]={labour:0,overhead:0,fixedOverhead:0,variableOverhead:0,transport:0,depreciation:0});for(const key of ['labour','overhead','fixedOverhead','variableOverhead','transport','depreciation'])item[key]+=row[key];}}
  return totals;
 };
-S.progress=async id=>{
- const data=await S.costData(id),{context,baseline,staffing,production,assets}=data,steps=[];
+S.progress=async(id,scanRead)=>{
+ const data=await S.costData(id,scanRead),{context,baseline,staffing,production,assets}=data,steps=[];
  const add=(title,page,args,verify)=>{try{verify();steps.push({title,status:'done',reason:'Saved source verified',href:page+'?'+new URLSearchParams({outlet:id,...args})})}catch(e){steps.push({title,status:'review',reason:e.message,href:page+'?'+new URLSearchParams({outlet:id,...args})})}};
  add('Kitchen identity and shifts','kitchen-flow.html',{stage:'locations'},()=>K.validateLocations({kitchens:[context.kitchen]},context.outlets));
  add('Kitchen expenses and existing positions','outlet-plan.html',{stage:'baseline'},()=>{if(!baseline?.reviewed||baseline.shiftStamp!==F.stamp(context.kitchen.shiftTimes))throw Error('Review kitchen baseline and current shifts.');});
@@ -58,7 +63,7 @@ S.progress=async id=>{
  add('Shared batch labour, expenses and journeys','kitchen-flow.html',{stage:'cost'},()=>{if(!data.costs||data.costs.sourceStamp!==S.costSnapshot(data))throw Error('Review and save costs for current orders and sources.');S.calculate(data,data.costs.choices);});
  // Funding plans share the same kitchen owner and recipes; they are verified separately from batch prices.
  for(const [module,title,page] of [['CAPITAL_EXPENDITURE','Kitchen capital expenditure','capital-expenditure.html'],['WORKING_CAPITAL','Kitchen working capital','working-capital.html']]){
-  let saved;try{saved=await V.read(id,module)}catch(e){steps.push({title,status:'unknown',reason:e.message,href:page+'?'+new URLSearchParams({outlet:id})});continue}
+  let saved;try{saved=await (scanRead||V.read)(id,module)}catch(e){steps.push({title,status:'unknown',reason:e.message,href:page+'?'+new URLSearchParams({outlet:id})});continue}
   add(title,page,{},()=>{if(module==='CAPITAL_EXPENDITURE'){BOBS_CAPITAL.savedCapital(saved,assets,context.items,context.recipes,F,M2);return}
    const op=BOBS_CAPITAL.operating({...data,state:M2.state(context.raw),items:context.items,recipes:context.recipes},id,F,M2,C);
    if(!saved?.reviewed||saved.date!==C.today()||saved.sourceStamp!==op.sourceStamp)throw Error('Review and save working capital for current kitchen orders and staffing.');

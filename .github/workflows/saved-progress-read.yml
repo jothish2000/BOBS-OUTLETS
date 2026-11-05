@@ -24,6 +24,6 @@ jobs:
       - name: Check real Google reads without writes
         env:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-progress/node_modules/playwright
-          BOBS_PROGRESS_DIAGNOSIS: '1'
-          BOBS_PROGRESS_CANDIDATE: '0'
+          BOBS_PROGRESS_DIAGNOSIS: '0'
+          BOBS_PROGRESS_CANDIDATE: '1'
         run: node scripts/verify-saved-progress-live.cjs

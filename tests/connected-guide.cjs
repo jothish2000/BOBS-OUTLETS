@@ -162,19 +162,27 @@ test('saved-progress bot explains its purpose, explicitly checks, preserves draf
 });
 
 test('saved-progress scan times out, retries, rejects late results and preserves unsaved input without writes',async()=>{
- const dom=new JSDOM('<main><input id="draft" value="15000"></main>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&stage=baseline&guide=continue'}),w=dom.window;
- const timers=new Map(),realSet=w.setTimeout.bind(w),realClear=w.clearTimeout.bind(w);let timerId=100000;w.setTimeout=(fn,ms,...args)=>{if(ms===45000||ms===12000){const id=++timerId;timers.set(id,{fn,ms});return id}return realSet(fn,ms,...args)};w.clearTimeout=id=>{timers.delete(id);realClear(id)};
- let release,mode='hang',writes=0;const blocked=new Promise(resolve=>release=resolve);
+ const dom=new JSDOM('<main><input id="draft" value="15000"></main>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&outlets=1%2C2&stage=baseline&guide=continue'}),w=dom.window;
+ const timers=new Map(),realSet=w.setTimeout.bind(w),realClear=w.clearTimeout.bind(w);let elapsed=0,timerId=100000;w.setTimeout=(fn,ms,...args)=>{if(ms===45000||ms===12000){const id=++timerId;timers.set(id,{fn,ms,at:elapsed+ms});return id}return realSet(fn,ms,...args)};w.clearTimeout=id=>{timers.delete(id);realClear(id)};
+ let release,mode='hang',writes=0,requests=[],deliver=[];const blocked=new Promise(resolve=>release=resolve);
  try{
  for(const p of ['shared_data.js','method2-core.js','bobs-cost-flow.js','idli-support-core.js','bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-production-plan-core.js','bobs-capital-core.js','bobs-outlet-report.js','bobs-roadmap-core.js','bobs-kitchen-core.js','bobs-roadmap-outlet-flow.js'])w.eval(source(p));
  w.BOBS_CONFIG={DATA_VAULT_WEB_APP_URL:'https://fixture.invalid'};w.BOBS_VERIFIED={save(){writes++}};w.BOBS_RECIPE_KNOWLEDGE={};w.BOBS_OPERATIONAL_RECIPES={};w.BOBS_KITCHENS={isKitchen:()=>false};
- w.BOBS_DATA={saveModule(){writes++},jsonp:async p=>{if(p.action==='outletList'){if(mode==='hang')return blocked;if(mode==='fail')throw Error('fixture read failure');return {ok:true,outlets:[{outletId:'1',outletName:'Current saved outlet',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}}return {ok:true,found:false}}};
+ w.BOBS_DATA={saveModule(){writes++},jsonp:async p=>{requests.push(p);if(mode==='slow')await new Promise(r=>deliver.push(r));if(p.action==='outletList'){if(mode==='hang')return blocked;if(mode==='fail')throw Error('fixture read failure');return {ok:true,outlets:[{outletId:'1',outletName:'Current saved outlet',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}}return {ok:true,found:false}}};
  w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
  const draft=w.document.getElementById('draft');draft.value='17000';draft.dispatchEvent(new w.Event('input',{bubbles:true}));const progressButton=w.document.querySelector('[data-guide-choice=page-progress]');draft.dispatchEvent(new w.Event('change',{bubbles:true}));assert(progressButton.isConnected,'Blur must not replace the guide button before click');progressButton.click();await settle();
- assert(w.BOBS_ROADMAP.getState().busy);const slow=[...timers.values()].filter(t=>t.ms===12000).at(-1);slow.fn();assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/taking longer/);
+ assert(w.BOBS_ROADMAP.getState().busy);assert.equal(requests.filter(x=>x.action==='outletList').length,1,'The guide joins an active read instead of starting a second scan');const slow=[...timers.values()].filter(t=>t.ms===12000).at(-1);slow.fn();assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/taking longer/);
  const timeout=[...timers.values()].filter(t=>t.ms===45000).at(-1);timeout.fn();await settle();assert.equal(w.BOBS_ROADMAP.getState().busy,false);assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Retry saved-progress/);
  mode='fail';w.document.querySelector('[data-guide-choice=refresh]').click();await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.equal(w.document.querySelector('#bobsGuideDialogue a'),null);
- mode='ok';w.document.querySelector('[data-guide-choice=refresh]').click();await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Next incomplete step/);
+ mode='slow';requests=[];w.document.querySelector('[data-guide-choice=refresh]').click();await settle();
+ // Ten seconds per wave, longer than 45 seconds overall, but never stuck.
+ for(let n=0;n<25&&w.BOBS_ROADMAP.getState().busy;n++){
+  elapsed+=10000;for(const [key,t] of [...timers])if(t.at<=elapsed){timers.delete(key);t.fn();}
+  deliver.splice(0).forEach(resolve=>resolve());await settle();
+ }
+ assert(elapsed>45000);assert(!requests.some(p=>p.module==='METHOD2'&&p.outletId==='2'),'Route list is not a request to scan every outlet');
+ assert.equal(requests.filter(p=>p.module==='OUTLET_REVIEW'&&p.outletId==='1').length,1,'One verified review is shared inside a scan');
+ assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Next incomplete step/);
  release({ok:true,outlets:[{outletId:'9',outletName:'OLD OUTLET'}]});await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.doesNotMatch(w.document.getElementById('bobsCompanion').textContent,/OLD OUTLET/);assert.equal(draft.value,'17000');assert.equal(writes,0);
  w.document.querySelector('[data-guide-choice=resume-edit]').click();assert(w.document.getElementById('bobsCompanion').hidden);assert.equal(draft.value,'17000');
  }finally{w.close()}
