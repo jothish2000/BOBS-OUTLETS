@@ -214,7 +214,7 @@ function companionBoot(){
  const showKitchenNext=()=>{
   const next=document.getElementById('nextAction');
   if(window.BOBS_REVIEW?.snapshot()?.active||next?.dataset.guideRequested!=='true'||!document.getElementById('kitchenNextGuide')||!guideBot?.kitchenNext())return false;
-  companion.classList.add('kitchen-handoff');placeKitchenGuide();companion.hidden=false;companionOpen=true;companionToggle.setAttribute('aria-expanded','true');
+  companion.classList.add('kitchen-handoff');placeKitchenGuide();companion.hidden=false;companion.scrollTop=0;companionOpen=true;companionToggle.setAttribute('aria-expanded','true');
   window.dispatchEvent(new Event('bobs-kitchen-guide-shown'));return true;
  };
  window.addEventListener('resize',()=>{if(companionOpen&&companion.classList.contains('kitchen-handoff'))placeKitchenGuide()});

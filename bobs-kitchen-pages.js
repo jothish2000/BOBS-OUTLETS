@@ -51,7 +51,7 @@ async function locations(){loaded=await S.locations();let model=V.clone(loaded.r
   $('locationRows').querySelectorAll('[data-add-shift],[data-remove-shift]').forEach(button=>button.onclick=()=>{const id=button.closest('[data-kitchen]').dataset.kitchen,remove=button.dataset.removeShift;read();const k=model.kitchens.find(k=>k.id===id);if(remove!==undefined)k.shiftTimes.splice(+remove,1);else k.shiftTimes.push({start:'',end:''});markChanged();render();const card=[...$('locationRows').querySelectorAll('[data-kitchen]')].find(el=>el.dataset.kitchen===id);if(remove!==undefined)card.querySelector('[data-add-shift]').focus();else card.querySelector('[data-kitchen-shift="'+(k.shiftTimes.length-1)+'"] select').focus();});
  };render();$('addKitchen').onclick=()=>{read();model.kitchens.push({id:'Kitchen-'+crypto.randomUUID(),name:'',outletId:'',status:'operating',shiftTimes:[]});markChanged();render()};
  setup=BOBS_KITCHEN_SETUP.mount({model,saved:()=>loaded.record,outlets:loaded.outlets,read,render,changed:markChanged,busy:()=>busy});
- saveAction=async()=>{read();K.requireRegistration({...model,reviewed:true},loaded.outlets);if(F.stamp(await BOBS_DATA.listOutlets())!==F.stamp(loaded.outlets))throw Error('Outlet setup changed. Reload before saving kitchen identities.');loaded.record=await V.save('COMPANY','KITCHEN_MASTER','default',{...model,schema:2,reviewed:true,reviewedOutletIds:loaded.outlets.map(o=>String(o.id)),savedAt:new Date().toISOString()},loaded.record);status('Kitchen identities saved and verified in Google. Choose your next action below.');locationNext(loaded.record);};
+ saveAction=async()=>{read();K.requireRegistration({...model,reviewed:true},loaded.outlets);if(F.stamp(await BOBS_DATA.listOutlets())!==F.stamp(loaded.outlets))throw Error('Outlet setup changed. Reload before saving kitchen identities.');loaded.record=await V.save('COMPANY','KITCHEN_MASTER','default',{...model,schema:2,reviewed:true,reviewedOutletIds:loaded.outlets.map(o=>String(o.id)),savedAt:new Date().toISOString()},loaded.record);status('Kitchen identities saved and verified in Google.');locationNext(loaded.record);};
  let savedValid=false;try{K.requireRegistration(loaded.record,loaded.outlets);savedValid=true;}catch(e){/* Unsaved or invalid registers require review first. */}if(savedValid)locationNext(loaded.record);
 }
 function costingReturn(){let value=q.get('returnTo'),seen=new Set();for(let n=0;n<16&&value&&!seen.has(value);n++){seen.add(value);const safe=BOBS_WINDOW_RETURN.safe(value);if(!safe)break;const url=new URL(safe);if(url.pathname.endsWith('/method2-item.html')){url.hash='idliLabourCost';return url.href;}value=url.searchParams.get('returnTo');}return BOBS_WINDOW_RETURN.safe(q.get('returnTo'))||'outlet-method-flow.html';}
@@ -97,7 +97,7 @@ $('saveKitchen').onclick=async()=>{
  $('kitchenSaveHint').textContent='';
  if(!$('kitchenReviewed').checked){
   // A fresh validated read already offers these actions. Reuse it without a duplicate write.
-  if(stage==='locations'&&!dirty&&$('nextAction').querySelector('input[name="kitchenNextChoice"]')){status('Using Kitchen Setup already verified in Google. Choose your next action below.');nextFocus();return;}
+  if(stage==='locations'&&!dirty&&$('nextAction').querySelector('input[name="kitchenNextChoice"]')){status('Using Kitchen Setup already verified in Google.');nextFocus();return;}
   reviewFocus();return;
  }
  busy=true;clearNext();const controls=[...$('kitchenBody').querySelectorAll('input,select,button'),$('kitchenReviewed')].map(el=>({el,disabled:el.disabled}));
@@ -109,7 +109,7 @@ $('saveKitchen').onclick=async()=>{
  catch(e){status('Not saved: '+e.message,true);$('kitchenSaveHint').textContent='Not saved: '+e.message;}
  finally{clearTimeout(slow);busy=false;controls.forEach(x=>{if(x.el.isConnected)x.el.disabled=x.disabled});$('saveKitchen').disabled=false;$('saveKitchen').removeAttribute('aria-busy');$('saveKitchen').textContent=saveLabel;}
  window.dispatchEvent(new Event('bobs-guide-context'));
- if(saved){$('kitchenSaveHint').textContent=stage==='locations'?'Kitchen Setup saved and verified. Choose your next action below.':stage==='demand'?'✓ Supplying kitchens saved and verified. The next kitchen action appears below.':'✓ Kitchen costs saved and verified. Continue to the item costs below.';nextFocus();}
+ if(saved){$('kitchenSaveHint').textContent=stage==='locations'?'':stage==='demand'?'✓ Supplying kitchens saved and verified. The next kitchen action appears below.':'✓ Kitchen costs saved and verified. Continue to the item costs below.';nextFocus();}
 };
 $('kitchenReviewed').addEventListener('change',()=>{$('kitchenSaveHint').textContent='';});
 $('kitchenBody').addEventListener('input',()=>{clearNext();dirty=true;$('kitchenReviewed').checked=false;status('Unsaved changes. Review before saving to Google.');});window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue=''}});

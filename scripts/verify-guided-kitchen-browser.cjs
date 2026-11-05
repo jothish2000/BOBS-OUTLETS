@@ -11,6 +11,7 @@ if(req.method()==='POST'){const b=JSON.parse(req.postData());if(b.action==='snap
 const key=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey'),data=u.searchParams.get('action')==='outletList'?{ok:true,outlets:['1','2','3'].map(outletId=>({outletId,outletName:'Shop '+outletId,data:{shiftTimes:shifts}}))}:(failRegisterRead&&u.searchParams.get('module')==='KITCHEN_MASTER'||failAssetRead&&u.searchParams.get('module')==='ASSET_MASTER')?{ok:false,error:'fixture register unavailable'}:{ok:true,found:key in db,data:db[key]??null};return r.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(data)+')'});});
 const p=await ctx.newPage();
 async function checkHandoff(page,desktop=true){
+ assert.equal((await page.locator('#kitchenSaveHint').textContent()).trim(),'','No duplicate next-step instructions above the saved receipt');
  const bot=page.locator('#bobsCompanion');assert(await bot.isVisible());assert.equal(await bot.evaluate(el=>getComputedStyle(el).position),desktop?'fixed':'static');
  assert.match(await page.locator('#bobsGuideDialogue').innerText(),/Kitchen Setup saved and verified/);
  assert.match(await page.locator('#bobsGuideDialogue').innerText(),/Next required: review outlet expenses/);
