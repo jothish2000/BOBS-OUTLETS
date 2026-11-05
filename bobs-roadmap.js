@@ -79,6 +79,12 @@ async function refreshAll(restart=false){
   const collect=async()=>{
    await dependencies();if(!live())return null;
    const [next,rows]=await Promise.all([readCommon(scan),Promise.all([...ids].map(async id=>[id,await readOutlet(id,scan.read)]))]);
+   // The method hub uses an outlet-list index; it is not a business outlet ID.
+   if(!ctx.outlet&&ctx.page==='outlet-method-flow.html'){
+    const choices=ctx.selected.length?ctx.selected:(next.outlets.value||[]).map(o=>o.id);
+    const owner=choices[Number(new URLSearchParams(location.search).get('outlet')||0)];
+    if(owner){ctx.outlet=owner;if(!ids.has(owner)){ids.add(owner);rows.push([owner,await readOutlet(owner,scan.read)])}}
+   }
    return {next,rows:new Map(rows)};
   };
   const checked=await Promise.race([collect(),idle]);if(!live()||!checked)return;
@@ -187,13 +193,31 @@ function companionBoot(){
  companionToggle=el('button','BOBS Guide · let’s plan');companionToggle.id='bobsCompanionToggle';companionToggle.type='button';companionToggle.setAttribute('aria-controls','bobsCompanion');companionToggle.setAttribute('aria-expanded','false');
  companion=el('aside');companion.id='bobsCompanion';companion.hidden=true;companion.setAttribute('aria-label','BOBS planning guide');
  const head=el('div',undefined,'companion-head'),heading=el('h2','BOBS Guide'),minimise=el('button','Minimise');minimise.type='button';head.append(heading,minimise);companionBody=el('div');guideHost=el('div');guideHost.id='bobsGuideDialogue';const savedPanel=el('details'),savedTitle=el('summary','Saved progress and connected modules');savedPanel.append(savedTitle,companionBody);companion.append(head,guideHost,savedPanel);
- const releaseKitchenGuide=()=>{if(!companion.classList.contains('kitchen-next-inline'))return;companion.classList.remove('kitchen-next-inline');document.body.append(companion);companion.hidden=true;companionOpen=false;companionToggle.hidden=false;companionToggle.setAttribute('aria-expanded','false');};
+ // Use one guide. Keep its normal laptop dock; only a narrow window needs
+ // the compact in-flow placement so it does not cover the form's choices.
+ const placeKitchenGuide=()=>{
+  const wide=innerWidth>=650,slot=document.getElementById('kitchenNextGuide');
+  if(!slot)return;
+  const parent=wide?document.body:slot;
+  if(companion.parentElement!==parent)parent.append(companion);
+  companion.classList.toggle('kitchen-next-inline',!wide);
+  document.body.classList.toggle('bobs-guided-dock',wide);
+  companionToggle.hidden=!wide;
+ };
+ const releaseKitchenGuide=()=>{
+  if(!companion.classList.contains('kitchen-handoff'))return;
+  const wasInline=companion.classList.contains('kitchen-next-inline');
+  companion.classList.remove('kitchen-handoff','kitchen-next-inline');
+  if(wasInline){document.body.append(companion);companion.hidden=true;companionOpen=false;companionToggle.hidden=false;companionToggle.setAttribute('aria-expanded','false');}
+  else guideBot?.update();
+ };
  const showKitchenNext=()=>{
-  const next=document.getElementById('nextAction'),slot=document.getElementById('kitchenNextGuide');
-  if(window.BOBS_REVIEW?.snapshot()?.active||next?.dataset.guideRequested!=='true'||!slot||!guideBot?.kitchenNext())return false;
-  document.body.classList.remove('bobs-guided-dock');companion.classList.add('kitchen-next-inline');slot.append(companion);companion.hidden=false;companionOpen=true;companionToggle.hidden=true;companionToggle.setAttribute('aria-expanded','true');
+  const next=document.getElementById('nextAction');
+  if(window.BOBS_REVIEW?.snapshot()?.active||next?.dataset.guideRequested!=='true'||!document.getElementById('kitchenNextGuide')||!guideBot?.kitchenNext())return false;
+  companion.classList.add('kitchen-handoff');placeKitchenGuide();companion.hidden=false;companionOpen=true;companionToggle.setAttribute('aria-expanded','true');
   window.dispatchEvent(new Event('bobs-kitchen-guide-shown'));return true;
  };
+ window.addEventListener('resize',()=>{if(companionOpen&&companion.classList.contains('kitchen-handoff'))placeKitchenGuide()});
  window.addEventListener('bobs-kitchen-next-ready',showKitchenNext);
  window.addEventListener('bobs-kitchen-next-cleared',releaseKitchenGuide);
  const closeCompanion=()=>{document.body.classList.remove('bobs-guided-dock');releaseKitchenGuide();companionOpen=false;companion.hidden=true;companionToggle.setAttribute('aria-expanded','false');companionToggle.focus();syncNextBar()};
@@ -228,7 +252,7 @@ function companionBoot(){
   return {method2:window.BOBS_METHOD2_GUIDE?.snapshot(),pageSupport:window.BOBS_PAGE_GUIDANCE?.snapshot(),methodFlow:window.BOBS_METHOD_FLOW_GUIDE?.snapshot(),itemHelp:window.BOBS_ITEM_GUIDE?.snapshot(),ctx:{...ctx,outlet:id},pageHelp:pageGuide?{title:pageGuide.querySelector('h2')?.textContent,instruction:pageGuide.querySelector('p')?.textContent,next:pageGuide.querySelector('.flow-guide-next')?.textContent,steps:[...pageGuide.querySelectorAll('[data-guide-step]')].map(el=>el.textContent),anchor:pageGuide.dataset.guideAnchor}:null,loading:busy,dirty:draftDirty,progress:{...progress},savedChecklist:{owner:id||'',name:common?.outlets?.value?.find(x=>String(x.id)===String(id))?.name||common?.kitchens?.value?.kitchens?.find(x=>x.id===id)?.name||'',stages:view?.stages||view?.steps||[]},next:progress.status==='error'?null:view?.next,readError:progress.status==='error'||row?.method2?.status==='error'||common?.outlets?.status==='error',
    items:tools&&row?.method2?.status==='ok'?BOBS_OUTLET_FLOW.selected(M2.state(row.method2.value),ITEM_DATA,M2):[],kitchens:common?.kitchens?.value?.kitchens||[]};
  };
- const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{script('bobs-window-return.js?v=reuse-workspaces-20261104',()=>!!window.BOBS_WINDOW_RETURN).catch(()=>{});await script('bobs-reference-help.js?v=inline-servings-20261104',()=>!!window.BOBS_REFERENCE);await script('bobs-guided-review.js?v=form-review-20261105',()=>!!window.BOBS_REVIEW);script('bobs-page-guidance.js?v=form-review-20261105',()=>!!window.BOBS_PAGE_GUIDANCE).then(()=>guideBot?.update()).catch(()=>{});await script('bobs-guide-bot.js?v=form-review-20261105',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
+ const loadBot=async()=>{guideHost.textContent='Preparing your planning questions…';try{script('bobs-window-return.js?v=reuse-workspaces-20261104',()=>!!window.BOBS_WINDOW_RETURN).catch(()=>{});await script('bobs-reference-help.js?v=inline-servings-20261104',()=>!!window.BOBS_REFERENCE);await script('bobs-guided-review.js?v=form-review-20261105',()=>!!window.BOBS_REVIEW);script('bobs-page-guidance.js?v=form-review-20261105',()=>!!window.BOBS_PAGE_GUIDANCE).then(()=>guideBot?.update()).catch(()=>{});await script('bobs-guide-bot.js?v=kitchen-dock-20261105',()=>!!window.BOBS_GUIDE_BOT);guideBot=BOBS_GUIDE_BOT.mount(guideHost,{snapshot:guideSnapshot,minimise:closeCompanion,work:()=>{if(!interactivePage)closeCompanion();},refresh:()=>refreshAll(true),journey});}catch(e){guideHost.textContent='The question guide could not load. Your page and saved progress remain available.';const retry=el('button','Retry guide');retry.type='button';retry.onclick=loadBot;guideHost.append(retry);}};
  let autoStarted=false;
  const startJourney=()=>{if(!journey||autoStarted||document.getElementById('savedModal')?.classList.contains('hidden')===false)return;autoStarted=true;if(!companionOpen)companionToggle.click();};
  // The outlet's saved-data choice is the first guide question; hand off only after the user answers it.

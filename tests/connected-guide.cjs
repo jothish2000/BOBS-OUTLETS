@@ -62,7 +62,7 @@ test('a recipe child resumes with its own controls, without returning to product
  }finally{w.close()}
 });
 
-test('verified kitchen handoff opens inline, explains actual options, and clears without a write or lost companion',async()=>{
+test('verified kitchen handoff stays in one laptop side guide, with choices in the form and no write',async()=>{
  const dom=new JSDOM('<div id="nextAction"><div id="kitchenNextGuide"></div><input id="kitchenNext-equipment" type="radio" name="kitchenNextChoice"><input id="kitchenNext-baseline" type="radio" name="kitchenNextChoice"><button id="kitchenNextGo" disabled>Choose first</button></div>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations&outlet=1'}),w=dom.window;let verified=false;
  try{
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified,outlets:[]})};
@@ -70,12 +70,12 @@ test('verified kitchen handoff opens inline, explains actual options, and clears
   const next=w.document.getElementById('nextAction'),guide=w.document.getElementById('bobsCompanion'),first=w.document.getElementById('kitchenNext-equipment');
   next.dataset.guideRequested='true';w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));assert(!guide.classList.contains('kitchen-next-inline'),'Unverified state cannot announce a successful handoff');assert.doesNotMatch(w.document.getElementById('bobsGuideDialogue').textContent,/Kitchen Setup saved and verified/);
   verified=true;first.focus();w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));
-  assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');assert(guide.classList.contains('kitchen-next-inline'));
+  assert(!guide.hidden);assert.equal(guide.parentElement,w.document.body);assert.equal(w.document.getElementById('kitchenNextGuide').childElementCount,0);assert(guide.classList.contains('kitchen-handoff'));assert(w.document.body.classList.contains('bobs-guided-dock'));
   assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/saved and verified.*Optional now:.*Next required:/s);
   assert.equal(w.document.activeElement,first,'Opening guide must not steal choice focus');assert.equal(first.checked,false);assert(w.document.getElementById('kitchenNextGo').disabled);
   w.dispatchEvent(new w.Event('bobs-flow-saved'));await settle();assert.equal(w.document.activeElement,first);
   w.dispatchEvent(new w.Event('bobs-kitchen-next-cleared'));delete next.dataset.guideRequested;next.replaceChildren();verified=false;
-  assert(guide.isConnected);assert(guide.hidden);assert(!guide.classList.contains('kitchen-next-inline'));assert.equal(w.document.querySelectorAll('#bobsCompanion').length,1);
+  assert(guide.isConnected);assert(!guide.hidden);assert(!guide.classList.contains('kitchen-handoff'));assert.equal(w.document.querySelectorAll('#bobsCompanion').length,1);
  }finally{w.close();}
 });
 test('handoff requested before guide loads is retained, and zero kitchens offers required expenses only',async()=>{
@@ -83,10 +83,10 @@ test('handoff requested before guide loads is retained, and zero kitchens offers
  try{
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified:true,outlets:[]})};
   w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
-  const guide=w.document.getElementById('bobsCompanion');assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
+  const guide=w.document.getElementById('bobsCompanion');assert(!guide.hidden);assert.equal(guide.parentElement,w.document.body);assert.equal(w.document.getElementById('kitchenNextGuide').childElementCount,0);
   const text=w.document.getElementById('bobsGuideDialogue').textContent;assert.match(text,/Next required: review outlet expenses/);assert.doesNotMatch(text,/Optional now/);
   guide.querySelector('button').click();assert(guide.hidden);assert(!w.document.getElementById('bobsCompanionToggle').hidden);
-  w.document.getElementById('bobsCompanionToggle').click();assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
+  w.document.getElementById('bobsCompanionToggle').click();assert(!guide.hidden);assert.equal(guide.parentElement,w.document.body);assert.equal(w.document.getElementById('kitchenNextGuide').childElementCount,0);
  }finally{w.close();}
 });
 

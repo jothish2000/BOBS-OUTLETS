@@ -11,9 +11,6 @@
 header a,header a:visited{color:#fff3d0;text-decoration:underline;text-underline-offset:3px}
 
 /* Keep next actions visible and distinct from saved-completion evidence. */
-.kitchen-next-preview{background:#fff1bb;border:2px solid #b47a00;padding:16px;border-radius:10px;margin:18px 0}
-.kitchen-next-preview h2{font-size:1.2rem;margin:0 0 8px}
-.kitchen-next-preview p{margin:6px 0}
 #saveKitchen,.kitchen-primary-action{background:#1d513b;color:#fff;font-weight:750;border:2px solid #1d513b;border-radius:8px;padding:14px 20px;min-height:48px;cursor:pointer}
 #saveKitchen:disabled,.kitchen-primary-action:disabled{background:#e2e8e3;color:#46544a;border-color:#85988b;cursor:default}
 .kitchen-next-panel{background:#f9fff9;border:3px solid #34774e;box-shadow:0 4px 14px #193e301a;padding:20px;margin:22px 0;scroll-margin-top:65px}
@@ -51,3 +48,10 @@ a.kitchen-primary-action{display:inline-block;text-decoration:none;color:white;m
 #bobsCompanion.kitchen-next-inline .bobs-guide-dialogue{padding:4px 0 0}
 #bobsCompanion.kitchen-next-inline p{margin:4px 0}
 #bobsCompanion.kitchen-next-inline .guide-question{font-size:15px}
+
+/* Keep the usual side frame in a split laptop window as well as a full one. */
+@media (min-width:650px) and (max-width:899px){
+ body.bobs-guided-dock[data-bobs-guide-page="kitchen-flow.html"]{--kitchen-guide-width:clamp(220px,31vw,280px);padding-right:calc(var(--kitchen-guide-width) + 20px);box-sizing:border-box}
+ body.bobs-guided-dock[data-bobs-guide-page="kitchen-flow.html"] #bobsCompanion.interactive-guide{position:fixed;top:12px;right:8px;bottom:70px;left:auto;width:var(--kitchen-guide-width);max-width:var(--kitchen-guide-width);max-height:calc(100dvh - 82px);overflow:auto;margin:0}
+ body.bobs-guided-dock[data-bobs-guide-page="kitchen-flow.html"] .kitchen-next-choices{grid-template-columns:minmax(0,1fr)}
+}
