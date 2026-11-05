@@ -3218,3 +3218,5 @@ Work mode / Codex continuation: Owner asked for an explanation and possible impr
 
 
 **Work / Codex verification, 5 Nov**: Candidate live test 41964451047 checked the visible shared batch controls; the full test then incorrectly indexed local recipe links on a routed selling-outlet plan (these are deliberately hidden). Updated verification to check the explicit draft Yes/No option, retained target quantity and kitchens, and the visible Save demand step on that route. Exact routed 5% calculations are covered by the existing production-plan-ui fixtures. No operational write or runtime code change. Separately, Owner's 360 Idli / 06:24 screenshot shows a stored allowance rendered as a current tick; requested scope decision for that guide presentation, separate from PR130.
+
+Work / Codex: Published runtime 28ea25f passed the full corrected read-only live flow (Actions 41965316865, job 127040869226). Temporary evidence workflow removed. Code/data rollback unchanged. Owner separately approved the current-step/saved-allowance correction after the screenshot; implement separately from this test-only checkpoint.
