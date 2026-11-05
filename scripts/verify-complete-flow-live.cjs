@@ -183,10 +183,20 @@ if(itemHelp.href){
  result.checks.push('Registered kitchens listed by name, no automatic selection; explicit same-kitchen draft choice reviewed before optional extra. No Save clicked.');
  const optional=await planner.evaluate(()=>BOBS_PRODUCTION_GUIDE.snapshot().extraSides);
  if(optional?.needed){if(optional.choice===undefined){assert.equal(await planner.locator('#sideExtraYes').isChecked(),false);assert.equal(await planner.locator('#sideExtraNo').isChecked(),false);}
- await planner.evaluate(()=>BOBS_PRODUCTION_GUIDE.chooseExtra(false));const normal=await planner.locator('#recipePlanLinks a[href*="recipe-cost-editor"]').evaluateAll(as=>as.map(a=>({name:new URL(a.href).searchParams.get('item'),qty:Number(new URL(a.href).searchParams.get('qty'))})));
- await planner.evaluate(()=>BOBS_PRODUCTION_GUIDE.chooseExtra(true));const extra=await planner.locator('#recipePlanLinks a[href*="recipe-cost-editor"]').evaluateAll(as=>as.map(a=>({name:new URL(a.href).searchParams.get('item'),qty:Number(new URL(a.href).searchParams.get('qty'))})));
- assert.equal(normal[0].qty,extra[0].qty);for(let i=1;i<normal.length;i++)assert(Math.abs(extra[i].qty-normal[i].qty*1.05)<1e-8);
- await planner.evaluate(()=>BOBS_PRODUCTION_GUIDE.chooseExtra(false));assert(await planner.locator('#sideExtraNo').isChecked());result.checks.push('Live optional reserve: no invented default, Yes adds 5% to sides only, No restores base; draft-only check, no saves');}
+ const mainQuantity=await planner.inputValue('#intendedQuantity');
+ const routed=await planner.locator('#demandSaveStep').isVisible();
+ const localRecipes=()=>planner.locator('#recipePlanLinks a[href*="recipe-cost-editor"]').evaluateAll(as=>as.map(a=>({name:new URL(a.href).searchParams.get('item'),qty:Number(new URL(a.href).searchParams.get('qty'))})));
+ async function draftAllowance(value){
+  await planner.evaluate(v=>BOBS_PRODUCTION_GUIDE.chooseExtra(v),value);
+  const state=await planner.evaluate(()=>BOBS_PRODUCTION_GUIDE.snapshot());
+  assert.equal(state.extraSides.choice,value);assert.equal(await planner.locator('#sideExtraYes').isChecked(),value);assert.equal(await planner.locator('#sideExtraNo').isChecked(),!value);
+  assert.equal(await planner.inputValue('#intendedQuantity'),mainQuantity);
+  if(routed){assert.equal(state.journey.stage,'source-save');assert(await planner.locator('#chooseProductionSource').isVisible());assert.deepEqual(await planner.locator('[data-source-key]').evaluateAll(xs=>xs.map(x=>x.value)),Array(await planner.locator('[data-source-key]').count()).fill(liveOptions[0].value));}
+  return routed?[]:localRecipes();
+ }
+ const normal=await draftAllowance(false),extra=await draftAllowance(true),restored=await draftAllowance(false);
+ if(routed){assert(await planner.locator('#recipePlanLinks').isHidden());result.checks.push('Routed outlet: unsaved Yes and No choices reflected in the guide and form, main quantity and kitchens retained, Save demand is next. Kitchen demand arithmetic covered separately by production-plan-ui fixtures.');}
+ else{assert(normal.length>1);assert.deepEqual(normal.map(r=>r.name),extra.map(r=>r.name));assert.equal(normal[0].qty,extra[0].qty);for(let i=1;i<normal.length;i++)assert(Math.abs(extra[i].qty-normal[i].qty*1.05)<1e-8);assert.deepEqual(restored,normal);result.checks.push('Local production: Yes adds 5% to side recipe targets only; No restores base amounts, no saves.');}}
  await planner.close();
 }else{await item.click('[data-guide-choice=item-next-control]');assert(await item.locator('#bobsCompanion').isVisible());assert(await item.locator(itemHelp.selector).evaluate(el=>document.activeElement===el));result.checks.push('Live Idli next saved requirement: '+itemHelp.title+'; actual control focused with guide remaining open');}
 result.checks.push('Live Idli bot reserves laptop space outside the form; zero writes');
