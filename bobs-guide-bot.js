@@ -253,7 +253,13 @@ function mount(host,options){
    if(s.ctx.page==='kitchen-flow.html'&&s.kitchenSetup?.verified&&document.getElementById('kitchenNextGo')){
     host.append(el('p','✓ Kitchen Setup saved and verified. Choose your next step.','guide-question guide-checklist-done'));
     if(document.getElementById('kitchenNext-equipment'))host.append(el('p','Optional now: record existing equipment and capacity.'));
-    host.append(el('p','Next required: review outlet expenses and mandatory staff.'),el('p','Choose a card below, then use the highlighted button.'));
+    host.append(el('p','Next required: review outlet expenses and mandatory staff.'));
+    const selected=document.querySelector('input[name="kitchenNextChoice"]:checked'),go=document.getElementById('kitchenNextGo');
+    if(selected&&!go.disabled){
+     host.append(el('p','✓ You chose '+(selected.value==='equipment'?'existing equipment and capacity.':'outlet expenses and mandatory staff.'),'guide-checklist-done'),button('Go to the “'+go.textContent.trim().replace(/\s*→$/,'')+'” button','kitchen-form-continue',()=>pageFocus('#kitchenNextGo')));
+    }else{
+     host.append(el('p','Choose a card in the form, then use its Continue button.'),button('Go to the choices in the form','kitchen-form-choices',()=>pageFocus('input[name="kitchenNextChoice"]')));
+    }
     renderChecklist(s);return;
    }
    state.step=s.ctx.page==='kitchen-flow.html'?'outlet-kitchen-summary':'page-task';

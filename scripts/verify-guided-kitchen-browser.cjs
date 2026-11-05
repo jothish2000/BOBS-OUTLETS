@@ -11,13 +11,21 @@ if(req.method()==='POST'){const b=JSON.parse(req.postData());if(b.action==='snap
 const key=u.searchParams.get('outletId')+'/'+u.searchParams.get('module')+'/'+u.searchParams.get('recordKey'),data=u.searchParams.get('action')==='outletList'?{ok:true,outlets:['1','2','3'].map(outletId=>({outletId,outletName:'Shop '+outletId,data:{shiftTimes:shifts}}))}:(failRegisterRead&&u.searchParams.get('module')==='KITCHEN_MASTER'||failAssetRead&&u.searchParams.get('module')==='ASSET_MASTER')?{ok:false,error:'fixture register unavailable'}:{ok:true,found:key in db,data:db[key]??null};return r.fulfill({contentType:'application/javascript',body:u.searchParams.get('callback')+'('+JSON.stringify(data)+')'});});
 const p=await ctx.newPage();
 async function checkHandoff(page,desktop=true){
- const bot=page.locator('#kitchenNextGuide #bobsCompanion');assert(await bot.isVisible());assert.equal(await bot.evaluate(el=>getComputedStyle(el).position),'static');
+ assert.equal((await page.locator('#kitchenSaveHint').textContent()).trim(),'','No duplicate next-step instructions above the saved receipt');
+ const bot=page.locator('#bobsCompanion');assert(await bot.isVisible());assert.equal(await bot.evaluate(el=>getComputedStyle(el).position),desktop?'fixed':'static');
  assert.match(await page.locator('#bobsGuideDialogue').innerText(),/Kitchen Setup saved and verified/);
  assert.match(await page.locator('#bobsGuideDialogue').innerText(),/Next required: review outlet expenses/);
  const guide=await bot.boundingBox(),cards=await page.locator('.kitchen-next-choices').boundingBox();
- assert(guide.y>=50&&guide.y<160,'Bot explanation starts below the fixed progress control');
- assert(cards.y>=guide.y+guide.height,'Bot must not overlap the choices');
- if(desktop)assert(cards.y+cards.height<=580,'Both laptop cards remain visible below the bot');
+ if(desktop){
+  assert.equal(await page.locator('#nextAction #bobsCompanion, #kitchenNextPreview').count(),0);assert(await page.locator('#bobsFlowGuide').isHidden());
+  assert(cards.x+cards.width<=guide.x&&guide.x+guide.width<=page.viewportSize().width,'The guide is in its own right column');
+  assert(cards.y+cards.height<=580,'Both laptop cards remain visible');
+  await page.locator('[data-guide-choice=kitchen-form-choices]').click();
+  assert.equal(await page.evaluate(()=>document.activeElement.id),'kitchenNext-equipment');
+  assert.equal(await page.locator('input[name="kitchenNextChoice"]:checked').count(),0,'Guide focus must not choose an option');
+ }else{
+  assert(guide.y>=50&&guide.y<160);assert(cards.y>=guide.y+guide.height,'Compact guide must not cover the choices');
+ }
  assert.equal(await page.locator('#bobsCompanion').count(),1);
 }
 
@@ -130,13 +138,17 @@ await p.waitForTimeout(1500);
 assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-equipment','Delayed save completion must not reclaim focus at the top');
 const settled=await p.locator('.kitchen-next-choices').boundingBox();await checkHandoff(p);assert(settled.y+settled.height<=580);assert(await p.locator('#saveKitchen').isEnabled());assert.equal(await p.locator('#saveKitchen').getAttribute('aria-busy'),null);assert(await p.locator('#kitchenReviewed').isEnabled());
 console.log('BOBS_KITCHEN_SAVE_FOCUS:'+(await p.screenshot({type:'jpeg',quality:75})).toString('base64'));
+await p.setViewportSize({width:665,height:580});
+await p.waitForFunction(()=>{const guide=document.getElementById('bobsCompanion'),cards=document.querySelector('.kitchen-next-choices');return guide.parentElement===document.body&&cards.getBoundingClientRect().right<=guide.getBoundingClientRect().left&&document.documentElement.scrollWidth<=innerWidth+1});
+assert.equal(await p.locator('#kitchenNextPreview, #nextAction #bobsCompanion').count(),0);
+await p.setViewportSize({width:1071,height:580});
 const afterSaveWrites=writes.length;
 // A later user choice is respected; there is no ongoing focus/scroll lock.
 await review(p.locator('#kitchenNext-baseline'));await p.waitForTimeout(1200);assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNext-baseline');
 await p.locator('#kitchenNext-equipment').focus();
 assert.equal(await p.locator('.kitchen-next-choice.equipment').evaluate(el=>getComputedStyle(el).outlineWidth),'4px');
 assert.equal(await p.locator('.kitchen-next-choice.equipment').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 240, 181)');
-await review(p.locator('#kitchenNext-equipment'));assert.equal(await p.locator('.kitchen-choice-selected:visible').count(),1);
+await review(p.locator('#kitchenNext-equipment'));assert.equal(await p.locator('.kitchen-choice-selected:visible').count(),1);await p.locator('[data-guide-choice=kitchen-form-continue]').click();assert.equal(await p.evaluate(()=>document.activeElement.id),'kitchenNextGo');assert.equal(writes.length,afterSaveWrites);
 await p.click('#bobsRoadmapToggle');assert(await p.getByText('This page has unsaved edits. Ticks below describe the saved version.',{exact:true}).isHidden());await p.getByRole('button',{name:'Close BOBS roadmap',exact:true}).click();
 assert(await p.locator('#kitchenNextEquipment').isVisible());assert.match(await p.locator('#kitchenNextGo').innerText(),/Open existing equipment/);
 await p.locator('.kitchen-next-panel').scrollIntoViewIfNeeded();console.log('BOBS_KITCHEN_NEXT_DESKTOP:'+(await p.screenshot({type:'jpeg',quality:75})).toString('base64'));

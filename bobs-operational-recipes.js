@@ -1,8 +1,8 @@
 /* Operational recipe reads. Legacy Recipe Master is never a fallback. */
 (function(){'use strict';
-window.BOBS_OPERATIONAL_RECIPES={load:async function(){
+window.BOBS_OPERATIONAL_RECIPES={load:async function(dataApi=BOBS_DATA){
   let standard=null,problem='';
-  try{if(!window.BOBS_RECIPE_KNOWLEDGE)throw Error('Standard recipe reader is unavailable.');standard=await BOBS_RECIPE_KNOWLEDGE.loadStandards(BOBS_DATA);}
+  try{if(!window.BOBS_RECIPE_KNOWLEDGE)throw Error('Standard recipe reader is unavailable.');standard=await BOBS_RECIPE_KNOWLEDGE.loadStandards(dataApi);}
   catch(e){problem=e.message;}
   const approved=standard&&Array.isArray(standard.records)?standard.records:[];
   const market=Array.isArray(window.BOBS_MARKET_REFERENCES)?window.BOBS_MARKET_REFERENCES:[];

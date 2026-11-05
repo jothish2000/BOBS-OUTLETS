@@ -62,7 +62,7 @@ test('a recipe child resumes with its own controls, without returning to product
  }finally{w.close()}
 });
 
-test('verified kitchen handoff opens inline, explains actual options, and clears without a write or lost companion',async()=>{
+test('verified kitchen handoff stays in one laptop side guide, with choices in the form and no write',async()=>{
  const dom=new JSDOM('<div id="nextAction"><div id="kitchenNextGuide"></div><input id="kitchenNext-equipment" type="radio" name="kitchenNextChoice"><input id="kitchenNext-baseline" type="radio" name="kitchenNextChoice"><button id="kitchenNextGo" disabled>Choose first</button></div>',{runScripts:'outside-only',url:'https://bobs.test/kitchen-flow.html?stage=locations&outlet=1'}),w=dom.window;let verified=false;
  try{
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified,outlets:[]})};
@@ -70,12 +70,12 @@ test('verified kitchen handoff opens inline, explains actual options, and clears
   const next=w.document.getElementById('nextAction'),guide=w.document.getElementById('bobsCompanion'),first=w.document.getElementById('kitchenNext-equipment');
   next.dataset.guideRequested='true';w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));assert(!guide.classList.contains('kitchen-next-inline'),'Unverified state cannot announce a successful handoff');assert.doesNotMatch(w.document.getElementById('bobsGuideDialogue').textContent,/Kitchen Setup saved and verified/);
   verified=true;first.focus();w.dispatchEvent(new w.Event('bobs-kitchen-next-ready'));
-  assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');assert(guide.classList.contains('kitchen-next-inline'));
+  assert(!guide.hidden);assert.equal(guide.parentElement,w.document.body);assert.equal(w.document.getElementById('kitchenNextGuide').childElementCount,0);assert(guide.classList.contains('kitchen-handoff'));assert(w.document.body.classList.contains('bobs-guided-dock'));
   assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/saved and verified.*Optional now:.*Next required:/s);
   assert.equal(w.document.activeElement,first,'Opening guide must not steal choice focus');assert.equal(first.checked,false);assert(w.document.getElementById('kitchenNextGo').disabled);
   w.dispatchEvent(new w.Event('bobs-flow-saved'));await settle();assert.equal(w.document.activeElement,first);
   w.dispatchEvent(new w.Event('bobs-kitchen-next-cleared'));delete next.dataset.guideRequested;next.replaceChildren();verified=false;
-  assert(guide.isConnected);assert(guide.hidden);assert(!guide.classList.contains('kitchen-next-inline'));assert.equal(w.document.querySelectorAll('#bobsCompanion').length,1);
+  assert(guide.isConnected);assert(!guide.hidden);assert(!guide.classList.contains('kitchen-handoff'));assert.equal(w.document.querySelectorAll('#bobsCompanion').length,1);
  }finally{w.close();}
 });
 test('handoff requested before guide loads is retained, and zero kitchens offers required expenses only',async()=>{
@@ -83,10 +83,10 @@ test('handoff requested before guide loads is retained, and zero kitchens offers
  try{
   w.BOBS_KITCHEN_GUIDE={snapshot:()=>({ready:true,verified:true,outlets:[]})};
   w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
-  const guide=w.document.getElementById('bobsCompanion');assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
+  const guide=w.document.getElementById('bobsCompanion');assert(!guide.hidden);assert.equal(guide.parentElement,w.document.body);assert.equal(w.document.getElementById('kitchenNextGuide').childElementCount,0);
   const text=w.document.getElementById('bobsGuideDialogue').textContent;assert.match(text,/Next required: review outlet expenses/);assert.doesNotMatch(text,/Optional now/);
   guide.querySelector('button').click();assert(guide.hidden);assert(!w.document.getElementById('bobsCompanionToggle').hidden);
-  w.document.getElementById('bobsCompanionToggle').click();assert(!guide.hidden);assert.equal(guide.parentElement.id,'kitchenNextGuide');
+  w.document.getElementById('bobsCompanionToggle').click();assert(!guide.hidden);assert.equal(guide.parentElement,w.document.body);assert.equal(w.document.getElementById('kitchenNextGuide').childElementCount,0);
  }finally{w.close();}
 });
 
@@ -162,19 +162,27 @@ test('saved-progress bot explains its purpose, explicitly checks, preserves draf
 });
 
 test('saved-progress scan times out, retries, rejects late results and preserves unsaved input without writes',async()=>{
- const dom=new JSDOM('<main><input id="draft" value="15000"></main>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&stage=baseline&guide=continue'}),w=dom.window;
- const timers=new Map(),realSet=w.setTimeout.bind(w),realClear=w.clearTimeout.bind(w);let timerId=100000;w.setTimeout=(fn,ms,...args)=>{if(ms===45000||ms===12000){const id=++timerId;timers.set(id,{fn,ms});return id}return realSet(fn,ms,...args)};w.clearTimeout=id=>{timers.delete(id);realClear(id)};
- let release,mode='hang',writes=0;const blocked=new Promise(resolve=>release=resolve);
+ const dom=new JSDOM('<main><input id="draft" value="15000"></main>',{runScripts:'outside-only',url:'https://bobs.test/outlet-plan.html?outlet=1&outlets=1%2C2&stage=baseline&guide=continue'}),w=dom.window;
+ const timers=new Map(),realSet=w.setTimeout.bind(w),realClear=w.clearTimeout.bind(w);let elapsed=0,timerId=100000;w.setTimeout=(fn,ms,...args)=>{if(ms===45000||ms===12000){const id=++timerId;timers.set(id,{fn,ms,at:elapsed+ms});return id}return realSet(fn,ms,...args)};w.clearTimeout=id=>{timers.delete(id);realClear(id)};
+ let release,mode='hang',writes=0,requests=[],deliver=[];const blocked=new Promise(resolve=>release=resolve);
  try{
  for(const p of ['shared_data.js','method2-core.js','bobs-cost-flow.js','idli-support-core.js','bobs-outlet-flow-core.js','bobs-salary-package-core.js','bobs-production-plan-core.js','bobs-capital-core.js','bobs-outlet-report.js','bobs-roadmap-core.js','bobs-kitchen-core.js','bobs-roadmap-outlet-flow.js'])w.eval(source(p));
  w.BOBS_CONFIG={DATA_VAULT_WEB_APP_URL:'https://fixture.invalid'};w.BOBS_VERIFIED={save(){writes++}};w.BOBS_RECIPE_KNOWLEDGE={};w.BOBS_OPERATIONAL_RECIPES={};w.BOBS_KITCHENS={isKitchen:()=>false};
- w.BOBS_DATA={saveModule(){writes++},jsonp:async p=>{if(p.action==='outletList'){if(mode==='hang')return blocked;if(mode==='fail')throw Error('fixture read failure');return {ok:true,outlets:[{outletId:'1',outletName:'Current saved outlet',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}}return {ok:true,found:false}}};
+ w.BOBS_DATA={saveModule(){writes++},jsonp:async p=>{requests.push(p);if(mode==='slow')await new Promise(r=>deliver.push(r));if(p.action==='outletList'){if(mode==='hang')return blocked;if(mode==='fail')throw Error('fixture read failure');return {ok:true,outlets:[{outletId:'1',outletName:'Current saved outlet',data:{shiftTimes:[{start:'04:30',end:'13:30'}]}}]}}return {ok:true,found:false}}};
  w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
  const draft=w.document.getElementById('draft');draft.value='17000';draft.dispatchEvent(new w.Event('input',{bubbles:true}));const progressButton=w.document.querySelector('[data-guide-choice=page-progress]');draft.dispatchEvent(new w.Event('change',{bubbles:true}));assert(progressButton.isConnected,'Blur must not replace the guide button before click');progressButton.click();await settle();
- assert(w.BOBS_ROADMAP.getState().busy);const slow=[...timers.values()].filter(t=>t.ms===12000).at(-1);slow.fn();assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/taking longer/);
+ assert(w.BOBS_ROADMAP.getState().busy);assert.equal(requests.filter(x=>x.action==='outletList').length,1,'The guide joins an active read instead of starting a second scan');const slow=[...timers.values()].filter(t=>t.ms===12000).at(-1);slow.fn();assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/taking longer/);
  const timeout=[...timers.values()].filter(t=>t.ms===45000).at(-1);timeout.fn();await settle();assert.equal(w.BOBS_ROADMAP.getState().busy,false);assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Retry saved-progress/);
  mode='fail';w.document.querySelector('[data-guide-choice=refresh]').click();await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'error');assert.equal(w.document.querySelector('#bobsGuideDialogue a'),null);
- mode='ok';w.document.querySelector('[data-guide-choice=refresh]').click();await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Next incomplete step/);
+ mode='slow';requests=[];w.document.querySelector('[data-guide-choice=refresh]').click();await settle();
+ // Ten seconds per wave, longer than 45 seconds overall, but never stuck.
+ for(let n=0;n<25&&w.BOBS_ROADMAP.getState().busy;n++){
+  elapsed+=10000;for(const [key,t] of [...timers])if(t.at<=elapsed){timers.delete(key);t.fn();}
+  deliver.splice(0).forEach(resolve=>resolve());await settle();
+ }
+ assert(elapsed>45000);assert(!requests.some(p=>p.module==='METHOD2'&&p.outletId==='2'),'Route list is not a request to scan every outlet');
+ assert.equal(requests.filter(p=>p.module==='OUTLET_REVIEW'&&p.outletId==='1').length,1,'One verified review is shared inside a scan');
+ assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.match(w.document.getElementById('bobsGuideDialogue').textContent,/Next incomplete step/);
  release({ok:true,outlets:[{outletId:'9',outletName:'OLD OUTLET'}]});await settle();assert.equal(w.BOBS_ROADMAP.getState().progress.status,'ready');assert.doesNotMatch(w.document.getElementById('bobsCompanion').textContent,/OLD OUTLET/);assert.equal(draft.value,'17000');assert.equal(writes,0);
  w.document.querySelector('[data-guide-choice=resume-edit]').click();assert(w.document.getElementById('bobsCompanion').hidden);assert.equal(draft.value,'17000');
  }finally{w.close()}

@@ -21,10 +21,12 @@ test('only the bot presents current guidance while the form retains its producti
  }finally{w.close()}
 });
 test('identified page-only guides are hidden without hiding operational controls',()=>{
- const cases=[['method2.html','pageGuide'],['method2-item.html','itemGuide'],['production-plan.html','recipeReviewGuide'],['kitchen-flow.html','kitchenNextPreview']];
+ const cases=[['method2.html','pageGuide'],['method2-item.html','itemGuide'],['production-plan.html','recipeReviewGuide']];
  for(const [file,id]of cases){
   const dom=new JSDOM(source(file).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'')),w=dom.window;try{const style=w.document.createElement('style');style.textContent=source('bobs-roadmap.css');w.document.head.append(style);const n=w.document.getElementById(id);assert(n.hasAttribute('data-bobs-page-guide'),file);n.hidden=false;assert.equal(w.getComputedStyle(n).display,'none',file);}finally{w.close()}
  }
+ assert.doesNotMatch(source('kitchen-flow.html'),/id="kitchenNextPreview"/,'Kitchen handoff guidance is in the one bot; its old page preview is removed');
+ assert.match(source('kitchen-flow.html'),/id="saveKitchen"/);
  for(const f of ['equipment-planner.html','idli-staffing.html','workload-planner.html'])assert.match(source(f),/data-bobs-page-guide/);
 });
 test('standalone Method2 guide uses the same current item state as the embedded workflow',()=>{
