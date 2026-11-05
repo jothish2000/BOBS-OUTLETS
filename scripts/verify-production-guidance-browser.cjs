@@ -4,7 +4,7 @@ const fs=require('fs'),path=require('path'),assert=require('node:assert/strict')
 const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright'),K=require('../recipe-market-google-store.js'),root=path.resolve(__dirname,'..');
 const timing={role:'Cook',equipment:'Steamer',setupMin:0,activeMinPerCycle:1,machineMinPerCycle:10,finishMinPerCycle:1,cleanupMin:1};
 const recipes=[{name:'Idli',yieldQty:60,yieldUnit:'piece',ingredients:[['Rice',1,'kg',60],['Urad dal',0.25,'kg',100]],productionTiming:timing},{name:'Idli Sambar',yieldQty:9,yieldUnit:'L',ingredients:[['Toor dal',1,'kg',100]],productionTiming:{...timing,equipment:'Stock pot and stove'}},{name:'Coconut Chutney',yieldQty:1,yieldUnit:'kg',ingredients:[['Coconut',500,'g',20]],productionTiming:{...timing,equipment:'Mixer'}}];
-const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{mode:'production',unit:'piece',batchSize:120,batches:1,sold:80,soldConfirmed:true,price:10,condiments:[{recipeName:'Idli Sambar',source:'production',portion:50,portionUnit:'ml'},{recipeName:'Coconut Chutney',source:'production',portion:20,portionUnit:'g'}]}}},'1/ASSET_MASTER/default':{assets:[{id:'G',name:'Existing grinder',quantity:1,ownedQty:1}]},'COMPANY/BOBS_STANDARD_RECIPE/ACTIVE_V1':K.manifest('standard',['test-chunk'],'guidance',3),'COMPANY/BOBS_STANDARD_RECIPE/test-chunk':K.chunkData('standard',recipes,'guidance',0,1)};
+const key='Breakfast Catalogue::0',db={'1/METHOD2/default':{itemEditors:{[key]:{mode:'production',unit:'piece',batchSize:120,batches:1,sold:80,soldConfirmed:true,price:10,sideExtraFivePercent:false,condiments:[{recipeName:'Idli Sambar',source:'production',portion:50,portionUnit:'ml'},{recipeName:'Coconut Chutney',source:'production',portion:20,portionUnit:'g'}]}}},'1/ASSET_MASTER/default':{assets:[{id:'G',name:'Existing grinder',quantity:1,ownedQty:1}]},'COMPANY/BOBS_STANDARD_RECIPE/ACTIVE_V1':K.manifest('standard',['test-chunk'],'guidance',3),'COMPANY/BOBS_STANDARD_RECIPE/test-chunk':K.chunkData('standard',recipes,'guidance',0,1)};
 db['COMPANY/KITCHEN_MASTER/default']={reviewed:true,kitchens:[{id:'Kitchen-Elimedu',name:'Elimedu Production Kitchen',status:'operating',outletId:'',shiftTimes:[{start:'04:30',end:'13:30'}]}],outletDecisions:{'1':{hasKitchen:false}}};
 db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Second Kitchen',status:'operating',shiftTimes:[{start:'04:30',end:'13:30'}]},{id:'Kitchen-Future',name:'Future Kitchen',status:'proposed',shiftTimes:[]});
 (async()=>{const browser=await chromium.launch({channel:process.env.BOBS_BROWSER_CHANNEL||'chrome',headless:true});try{
@@ -27,7 +27,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
- await p.fill('#intendedQuantity','360');await p.fill('#readyBy','07:00');
+ await p.fill('#intendedQuantity','360');await p.fill('#readyBy','06:24');await p.setViewportSize({width:1071,height:580});
 
  // The production review uses one guide frame; all three controls stay in place.
  await p.waitForFunction(()=>!!window.BOBS_REVIEW);
@@ -50,6 +50,13 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  assert.equal(await p.locator('#quantityReviewed').isChecked(),false);
  await p.getByRole('button',{name:'Confirm this review and continue',exact:true}).click();
  assert(await p.locator('#quantityReviewed').isChecked());
+ const current=p.locator('.guide-checklist-local [aria-current="step"]');
+ await p.waitForFunction(()=>document.querySelector('.guide-checklist-local [aria-current="step"]')?.dataset.plannerStep==='side-servings');
+ assert.equal(await p.locator('.guide-checklist-local .guide-checklist-next').count(),1);
+ const previous=p.locator('[data-planner-step=extra-sides]');assert.match(await previous.innerText(),/Previously saved: No/);assert(!await previous.evaluate(n=>n.classList.contains('guide-checklist-done')));
+ await p.waitForFunction(()=>{const row=document.querySelector('[data-planner-next]'),pane=document.querySelector('#bobsCompanion');if(!row||!pane)return false;const rr=row.getBoundingClientRect(),pr=pane.getBoundingClientRect(),top=pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||pr.top;return rr.top>=top-1&&rr.bottom<=pr.bottom+1;});
+ assert.equal(await current.locator('button').innerText(),'Review sides and serving quantities');assert.equal(writes.length,0);
+ console.log('PASS confirmed 360 / 06:24: only sides is current and visible; previously saved No is not ticked.');
  assert(await owner.locator('#productionEntry a').isVisible());assert.equal(await owner.locator('#productionEntry h2,#productionEntry p').count(),0);assert(await owner.locator('#itemGuide').isHidden());
 
  // Existing item window is reused without reload or draft loss.
@@ -71,7 +78,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.click('#chooseProductionSource');assert.match(await p.locator('#sourceSaveStatus').innerText(),/Select an operating/);assert.equal(writes.length,0);
  await p.locator('[data-source-key]').first().selectOption('Kitchen-Elimedu');await p.locator('[data-source-key]').nth(1).selectOption('Kitchen-Second');assert.equal(await p.locator('[data-source-key]').nth(1).inputValue(),'Kitchen-Second');await p.click('#useSameKitchen');
  assert.deepEqual(await p.locator('[data-source-key]').evaluateAll(xs=>xs.map(x=>x.value)),['Kitchen-Elimedu','Kitchen-Elimedu','Kitchen-Elimedu']);
- await review(p.locator('#productionSourceReviewed'));await p.locator('[data-guide-choice=extra-no]').click();
+ await review(p.locator('#productionSourceReviewed'));await p.waitForFunction(()=>document.querySelector('[data-planner-next]')?.dataset.plannerStep==='extra-sides');assert(await p.locator('#keepSideExtra').isEnabled());assert.equal(await p.locator('#sideExtraNo').isChecked(),false);await p.click('#keepSideExtra');assert.equal(await p.locator('#sideExtraNo').isChecked(),true);
  await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source-save');
  await p.click('#chooseProductionSource');await p.waitForFunction(()=>document.getElementById('sourceSaveStatus').textContent.includes('saved and verified'));
  assert.equal(p.url(),url);assert.equal(db['1/METHOD2/default'].itemEditors[key].batchSize,360);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert.equal(db['1/OUTLET_PRODUCTION_PLAN/default'],undefined);

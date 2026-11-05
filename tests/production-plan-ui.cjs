@@ -17,6 +17,19 @@ test('capacity references explain purchased-only items without adding a process 
 test('live pieces alias can select a piece-capacity steamer and retains compatible recipe demand',async()=>{const f=await fixture('pieces'),d=f.w.document;f.input('#readyBy','07:00');f.input('#quantityReviewed',true);d.querySelector('[data-help-reference="0"]').click();assert.equal(f.$('machineProcess').options.length,1);assert(f.$('machineProcess').value);f.$('machineCapacity').value='1';if(f.$('machineBasis'))f.$('machineBasis').checked=true;d.querySelector('dialog form').dispatchEvent(new f.w.Event('submit',{cancelable:true}));assert.equal(d.querySelector('dialog'),null);assert.equal(d.querySelector('.process-unit').value,'piece');assert.equal(d.querySelector('.process-capacity').value,'120');assert.match(d.querySelector('.automatic-quantity').textContent,/120 piece/);assert.equal(f.writes.length,0);f.dom.window.close()});
 
 const sideOptions={recipes:[{name:'Idli Sambar',yieldQty:9,yieldUnit:'L',ingredients:[['Toor dal',1,'kg',100]],productionTiming:{equipment:'Stock pot / stove'}},{name:'Coconut Chutney',yieldQty:1,yieldUnit:'kg',ingredients:[['Coconut',500,'g',30]],productionTiming:{equipment:'Mixer'}}],configure(db){db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].condiments=[{recipeName:'Idli Sambar',source:'production',portion:50,portionUnit:'ml'},{recipeName:'Coconut Chutney',source:'production',portion:20,portionUnit:'g'}]}};
+for(const previous of [false,true,undefined])test('allowance requires an explicit draft answer after quantity and sides: '+String(previous),async()=>{
+ const f=await fixture('piece',{...sideOptions,configure(db,...rest){sideOptions.configure(db,...rest);if(previous!==undefined)db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].sideExtraFivePercent=previous;}});
+ try{const g=f.w.BOBS_PRODUCTION_GUIDE,state=()=>g.snapshot();
+  assert.equal(state().extraSides.previous,previous);assert.equal(state().extraSides.choice,undefined);assert(f.$('sideExtraNo').disabled);
+  f.input('#intendedQuantity','360');f.input('#readyBy','06:24');f.input('#quantityReviewed',true);assert.equal(state().journey.stage,'side-servings');assert.equal(state().extraSides.choice,undefined);
+  f.input('#sideServingReviewed',true);assert.equal(state().journey.stage,'extra-sides');assert.equal(f.$('previousSideExtra').hidden,previous===undefined);assert(!f.$('sideExtraYes').disabled);
+  if(previous===undefined)f.$('sideExtraNo').click();else f.$('keepSideExtra').click();
+  assert.equal(state().extraSides.choice,previous??false);assert.notEqual(state().journey.stage,'extra-sides');
+  g.chooseExtra(!(previous??false));assert.equal(state().extraSides.choice,!(previous??false));
+  f.input('#intendedQuantity','361');assert.equal(state().journey.stage,'quantity');assert.equal(state().extraSides.choice,undefined);assert(f.$('sideExtraYes').disabled);
+  assert.equal(f.db['1/METHOD2/default'].itemEditors[f.key].sideExtraFivePercent,previous);assert.equal(f.writes.length,0);
+ }finally{f.dom.window.close();}
+});
 test('Sambar and chutney show demand and relevant equipment help together, with no unrelated steamer',async()=>{
  const f=await fixture('piece',sideOptions),d=f.w.document;f.input('#intendedQuantity','360');const cards=d.querySelectorAll('[data-capacity]');
  assert.match(cards[1].querySelector('.required-load').textContent,/360 piece.*50 ml.*18\.000 L/);assert.match(cards[1].textContent,/21.2 L/);assert.equal(cards[1].querySelector('[data-help-reference="0"]'),null);assert.equal(cards[1].querySelector('[data-help-reference="1"]'),null);

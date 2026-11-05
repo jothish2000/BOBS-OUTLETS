@@ -54,12 +54,13 @@ test('recipe confirmations advance locally from intended review to Calculate to 
  stage='saving';w.dispatchEvent(new w.Event('bobs-review-context'));await settle();assert.match(host.querySelector('[data-confirmation-next]').textContent,/Saving and verifying/);assert.equal(host.querySelector('[data-confirmation-next] button'),null);
  }finally{w.close();}
 });
-test('production confirmation keeps explicit Yes and No choices and then offers the actual kitchen-source action',async()=>{
- const d=new JSDOM('<main><input id="quantityReviewed" type="checkbox" checked><input id="sideServingReviewed" type="checkbox" checked><section id="sideExtraSection"></section><button id="chooseProductionSource">Save confirmed demand & choose supplying kitchens</button></main><aside><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/production-plan.html?guide=continue'}),w=d.window;
- try{let stage='extra-sides',choice,selected;w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_PRODUCTION_GUIDE={snapshot:()=>({ready:true,itemKey:'Idli',name:'Idli',journey:{stage},checks:{quantity:true},sides:{needed:true,reviewed:true},extraSides:{needed:true,choice}}),chooseExtra:v=>{choice=v;selected=v;stage='source-save';w.dispatchEvent(new w.Event('bobs-review-context'));},focus:id=>w.document.getElementById(id).focus()};
- w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{journey:true,minimise(){},snapshot:()=>({ctx:{page:'production-plan.html'},progress:{status:'idle'}})});
- let next=host.querySelector('[data-confirmation-next]');assert.equal(next.querySelectorAll('button').length,2);assert.equal(selected,undefined);next.querySelectorAll('button')[1].click();await settle();assert.equal(selected,false);
- next=host.querySelector('[data-confirmation-next]');assert.match(next.textContent,/selected kitchen’s next step/);next.querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');
+test('current production step guides the user to the original allowance control, then to Save demand',async()=>{
+ const d=new JSDOM('<main><section id="sideExtraSection"><label><input type="radio" id="sideExtraNo">No — normal quantities only</label></section><button id="chooseProductionSource">Save demand</button></main><aside><div id="guide"></div></aside>',{runScripts:'outside-only',url:'https://bobs.test/production-plan.html?guide=continue'}),w=d.window;
+ try{let stage='extra-sides',choice;w.HTMLElement.prototype.scrollIntoView=function(){};w.BOBS_PRODUCTION_GUIDE={snapshot:()=>({ready:true,itemKey:'Idli',name:'Idli',journey:{stage},checks:{quantity:true},sides:{needed:true,reviewed:true},sources:{needed:true,reviewed:true},extraSides:{needed:true,previous:false,choice}}),focus:id=>w.document.getElementById(id).focus()};
+ w.document.getElementById('sideExtraNo').onchange=()=>{choice=false;stage='source-save';w.dispatchEvent(new w.Event('bobs-review-context'));};
+ w.eval(fs.readFileSync('bobs-guide-bot.js','utf8'));const host=w.document.getElementById('guide');w.BOBS_GUIDE_BOT.mount(host,{journey:true,minimise(){},work(){},snapshot:()=>({ctx:{page:'production-plan.html'},progress:{status:'idle'}})});
+ const current=()=>host.querySelector('.guide-checklist-local [aria-current="step"]');assert.match(current().textContent,/Previously saved: No/);current().querySelector('button').click();assert.equal(w.document.activeElement.id,'sideExtraSection');assert.equal(choice,undefined);
+ w.document.getElementById('sideExtraNo').click();await settle();assert.equal(current().dataset.plannerStep,'source-save');current().querySelector('button').click();assert.equal(w.document.activeElement.id,'chooseProductionSource');assert.equal(host.querySelectorAll('.guide-checklist-local .guide-checklist-next').length,1);
  }finally{w.close();}
 });
 
