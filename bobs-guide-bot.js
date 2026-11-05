@@ -43,7 +43,7 @@ function currentAction(s){
 
 function mount(host,options){
  options.work=options.work||options.minimise;
- let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null,lastConfirmedNode=null,revealContinuation=false;
+ let state,scope='',draft={},error='',methodPhase='',recipeWatch=null,recipeWatched=null,lastConfirmedNode=null,revealContinuation=false,previousPlanStep=null;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const adapter=()=>root.BOBS_PRODUCTION_GUIDE;
  function snapshot(){const s=options.snapshot();return {...s,currentAction:currentAction(s),recipeHelp:root.BOBS_RECIPE_GUIDE?.snapshot(),production:adapter()?.snapshot(),equipmentHelp:root.BOBS_EQUIPMENT_GUIDE?.snapshot(),kitchenSetup:root.BOBS_KITCHEN_GUIDE?.snapshot()};}
@@ -146,12 +146,13 @@ function mount(host,options){
 
  function revealNext(){
   if(!revealContinuation)return;
-  const pane=host.parentElement,next=host.querySelector('[data-confirmation-next]');
+  const pane=host.parentElement,next=host.querySelector('[data-planner-next]')||host.querySelector('[data-confirmation-next]');
   if(pane)pane.style.overflowAnchor='none';
   if(!next||!pane?.clientHeight)return;
   const b=next.getBoundingClientRect(),p=pane.getBoundingClientRect();
   const top=Math.max(p.top,pane.querySelector('.companion-head')?.getBoundingClientRect().bottom||p.top);
-  if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
+  if(b.height>p.bottom-top-24)pane.scrollTop+=b.top-top-8;
+  else if(b.bottom>p.bottom)pane.scrollTop+=b.bottom-p.bottom+12;
   else if(b.top<top)pane.scrollTop-=top-b.top+12;
  }
  if(root.ResizeObserver){const resize=new root.ResizeObserver(()=>{if(revealContinuation)root.requestAnimationFrame(revealNext);});resize.observe(host);if(host.parentElement)resize.observe(host.parentElement);}
@@ -175,29 +176,49 @@ function mount(host,options){
   const localList=el('ol',undefined,'guide-checklist-local');
   const add=(title,done,selector,detail)=>{const li=el('li',undefined,done?'guide-checklist-done':'guide-checklist-next');li.append(el('span',(done?'✓ ':'○ ')+title));if(detail)li.append(el('small',detail));if(selector){li.reviewNode=document.querySelector(selector);const b=button(done?'Review again':'Review these inputs','review-inputs-'+localList.children.length,()=>pageFocus(selector));if(done)b.classList.add('guide-review-again');li.append(b);}localList.append(li);};
   if(s.production?.ready){
-   const p=s.production,c=p.checks||{};
-   add(c.quantity?'You confirmed: '+p.quantity+' '+p.unit+' of '+p.name+', ready by '+p.readyBy+' '+(String(p.readyDay)==='1'?'tomorrow':'today'):'Confirm quantity and ready-by time',!!c.quantity,'#intendedQuantity');
-   if(p.sides?.needed)add('Sides and serving quantities',!!p.sides.reviewed,'#sideServingSection',p.sides.summary);
-   if(p.sources?.needed)add('Producing kitchens',!!p.sources.reviewed,'#productionSourceStep',p.sources.summary);
-   if(p.extraSides?.needed)add(typeof p.extraSides.choice==='boolean'?'You selected: '+(p.extraSides.choice?'5% extra produced sides':'normal side quantities; no extra'):'Choose Yes or No for 5% extra sides',typeof p.extraSides.choice==='boolean','#sideExtraSection');
-   add('Recipe review',!!p.recipeReviewed,'#recipeReviewed');
-   let nextRecipe=false;for(const r of p.recipeSteps||[]){const next=!r.reviewed&&!nextRecipe;if(next)nextRecipe=true;add(r.name+' — '+(r.reviewed?(r.reviewMethod==='saved'?'saved and verified':'you confirmed the saved recipe still applies'):next?'next recipe to complete':'not reviewed yet'),!!r.reviewed,'#recipePlanLinks');}
-   add('Equipment and capacity review',!!p.capacityReviewed,'#capacityReviewed');
-   add('Process timing reviews',!!c.timing,'#processes');
-   add('Capacity calculation completed without warnings',!!c.assessment,'#timeAssessment');
-   add('Delivery choice confirmed',!!c.delivery,'#deliveryNeeded');
-   box.append(el('p',p.journey?.stage==='saved'&&!p.dirty?'✓ Production plan saved and verified in Google.':'Production plan not saved yet. Finish the remaining reviews, then use Save reviewed plan to Google & continue.'));
+   const p=s.production,c=p.checks||{},stage=p.journey?.stage;
+   if(previousPlanStep?.item===p.itemKey&&previousPlanStep.stage!==stage&&!['quantity','saving','error'].includes(stage))revealContinuation=true;
+   previousPlanStep={item:p.itemKey,stage};
+   // The planner's own journey selects a single current row. Saved values alone cannot move it.
+   let marked=false;
+   const step=(key,label,done,selector,detail,action)=>{
+    add(label,done,selector,detail);const row=localList.lastElementChild,current=!marked&&key===stage&&!done;
+    row.classList.toggle('guide-checklist-next',current);row.dataset.plannerStep=key;
+    if(current){marked=true;row.dataset.plannerNext='true';row.setAttribute('aria-current','step');row.firstElementChild.textContent='→ Next: '+label;if(action&&row.querySelector('button'))row.querySelector('button').textContent=action;}
+   };
+   step('quantity',c.quantity?'You confirmed: '+p.quantity+' '+p.unit+' of '+p.name+', ready by '+p.readyBy+' '+(String(p.readyDay)==='1'?'tomorrow':'today'):'Confirm quantity and ready-by time',!!c.quantity,'#intendedQuantity');
+   if(p.sides?.needed)step('side-servings','Sides and serving quantities',!!p.sides.reviewed,'#sideServingSection',p.sides.summary,'Review sides and serving quantities');
+   if(p.sources?.needed)step('source','Producing kitchens',!!p.sources.reviewed,'#productionSourceStep',p.sources.summary,'Choose producing kitchens');
+   if(p.extraSides?.needed){
+    const x=p.extraSides,answered=typeof x.choice==='boolean',word=v=>v?'Yes — 5% extra':'No — normal quantities only';
+    step('extra-sides',answered?'You selected: '+word(x.choice):'Choose Yes or No for 5% extra sides',answered,'#sideExtraSection',!answered&&typeof x.previous==='boolean'?'Previously saved: '+word(x.previous)+'. Keep or change it at this step.':'','Review the extra allowance');
+   }
+   if(p.sources?.needed){
+    step('source-save','Save demand and supplying kitchens',stage==='source-saved','#chooseProductionSource',null,'Go to Save demand');
+    if(stage==='source-saved')step('source-saved','Continue at the supplying kitchen',false,'#sourceNextActions',null,'Go to the kitchen’s next step');
+    box.append(el('p',stage==='source-saved'?'✓ Outlet demand and supplying kitchens saved and verified.':'Confirm the outlet demand, then save it to continue at the supplying kitchen.'));
+   }else{
+    const recipes=p.recipeSteps||[],first=recipes.find(r=>!r.reviewed);
+    step(first?'recipe-summary':'recipes','Recipe review',!!p.recipeReviewed,'#recipeReviewed');
+    for(const r of recipes)step(r===first?'recipes':'recipe-detail',r.name+' — '+(r.reviewed?(r.reviewMethod==='saved'?'saved and verified':'you confirmed the saved recipe still applies'):'to review'),!!r.reviewed,'#recipePlanLinks');
+    step('equipment','Equipment and capacity review',!!p.capacityReviewed,'#capacityReviewed');
+    step('timing','Process timing reviews',!!c.timing,'#processes');
+    step('assessment','Capacity calculation completed without warnings',!!c.assessment,'#timeAssessment');
+    step('delivery','Delivery choice confirmed',!!c.delivery,'#deliveryNeeded');
+    step('save','Save reviewed production plan',stage==='saved'&&!p.dirty,'#saveProductionPlan',null,'Go to Save reviewed plan');
+    box.append(el('p',stage==='saved'&&!p.dirty?'✓ Production plan saved and verified in Google.':'Production plan not saved yet. Finish the remaining reviews, then use Save reviewed plan to Google & continue.'));
+   }
   }
   const omit=s.production?.ready?new Set(['recipeReviewed','capacityReviewed','quantityReviewed','sideServingReviewed','productionSourceReviewed','deliveryReviewed']):new Set();
   for(const r of local?.rows||[])if(!omit.has(r.node.id)){
-   const li=el('li',undefined,r.checked?'guide-checklist-done':'guide-checklist-next');li.reviewNode=r.node;
+   const li=el('li',undefined,r.checked?'guide-checklist-done':s.production?.ready?'':'guide-checklist-next');li.reviewNode=r.node;
    li.append(el('span',(r.checked?'✓ Confirmation ticked: ':'○ Confirm: ')+r.title));
    if(r.checked&&r.method)li.append(el('small',r.method==='already-reviewed'?'You chose to confirm previously reviewed inputs without repeating the walkthrough.':'You confirmed after the guided input review.'));
    if(r.changed&&!r.checked)li.append(el('small','An input changed. Review the current values again.'));
    const reviewButton=button(r.checked?'Review again':'Review these inputs','review-field-'+localList.children.length,()=>root.BOBS_REVIEW.request(r.node));if(r.checked)reviewButton.classList.add('guide-review-again');li.append(reviewButton);localList.append(li);
   }
   if(s.recipeHelp&&!['loading','saving'].includes(s.recipeHelp.stage))add('Ingredient calculation complete',!!s.recipeHelp.calculated,'#scale');
-  if(localList.children.length){box.append(localList);appendContinuation(s,localList);}
+  if(localList.children.length){box.append(localList);if(!s.production?.ready)appendContinuation(s,localList);}
   const savedBox=el('details');savedBox.dataset.savedProgress='true';savedBox.open=!!opened;savedBox.append(el('summary','View overall saved progress'));box.append(savedBox);
   savedBox.append(el('strong','Previously saved Google progress'+(m.name?' — '+m.name:m.owner?' — '+m.owner:'')));
   if(m.message)savedBox.append(el('p',m.message));
@@ -327,7 +348,7 @@ function mount(host,options){
     else if(stage==='source-save'){ask(name+' — save demand and kitchen choices');host.append(el('p','Serving quantities and producing kitchens are confirmed for this draft. Save to verify them in Google and show the selected kitchen’s next required step.'));choices(work('Show Save demand & selected kitchen’s next step','chooseProductionSource'));}
     else if(stage==='source-saved'){ask('✓ Demand and supplying kitchens saved and verified');host.append(el('p','Continue using the selected kitchen’s next action below. Its equipment and workers serve the combined outlet demand.'));choices(work('Show selected kitchen’s next step','sourceNextActions'));}
     else if(stage==='source'){ask(name+' — choose the supplying kitchen');host.append(el('p','Choose a named kitchen from the dropdown for each produced item and side. Nothing is selected automatically. You may explicitly use the first selected kitchen for all produced items. Confirm the choices here before the optional extra allowance.'));choices(work('Choose producing kitchens','productionSourceStep'),work('Confirm producing kitchens','productionSourceReviewed'));}
-    else if(stage==='extra-sides'){ask('Would you like 5% extra produced sides and condiments?');host.append(el('p','Choose Yes or No for '+name+'. No is a complete choice. Neither is preselected; main quantity and normal serving portions stay unchanged.'));choices(button('Yes — prepare 5% extra','extra-yes',()=>adapter().chooseExtra(true)),button('No — normal requirement only','extra-no',()=>adapter().chooseExtra(false)));}
+    else if(stage==='extra-sides'){ask('Would you like 5% extra produced sides and condiments?');const prev=p.extraSides.previous;host.append(el('p',typeof prev==='boolean'?'Previously saved: '+(prev?'Yes — 5% extra.':'No — normal quantities only.')+' Keep that choice or select Yes or No in the form.':'Choose Yes or No in the form. Neither is selected. The main quantity and normal serving portions stay unchanged.'));choices(work('Review the extra allowance in the form','sideExtraSection'));}
     else if(stage==='recipes'){const rows=p.recipeSteps||p.recipes,current=rows.find(r=>!r.reviewed);if(current){ask('Next recipe: '+current.name);host.append(el('p','Review this recipe now. I will guide the next unfinished recipe after its verified save or your explicit review of an unchanged saved recipe.'),el('small',current.status));const a=el('a','Open '+current.name+' recipe →','guide-action');a.href=current.href;a.target='_blank';a.rel='opener';host.append(a);if(current.current)choices(button('Saved recipe still applies — continue','recipe-reuse',()=>adapter().confirmRecipe(current.reviewKey)));}else{ask('Each recipe has been reviewed');host.append(el('p','Tick the final recipe confirmation to continue with equipment and capacity.'));choices(work('Show recipe confirmation','recipeReviewed'));}const all=el('details');all.append(el('summary','See all recipes in this plan'));for(const r of rows)all.append(el('p',(r.reviewed?'◐ Reviewed: ':'○ To review: ')+r.name));host.append(all);if(p.extraSides?.needed)host.append(el('p',p.extraSides.summary));}
     else if(stage==='equipment'){ask(name+' — choose equipment and usable capacity');host.append(el('p','For each process, reuse suitable existing equipment or compare the equipment references. Enter the usable capacity per cycle and compatible unit. After checking every process, tick the equipment review confirmation.'));choices(work('Review process equipment and capacity','capacitySection'),work('Show equipment confirmation','capacityReviewed'));}
     else if(stage==='timing'){ask('Review timing for '+j.process);host.append(el('p','Check start and finish times, hands-on work, machine time, supervision and cleaning. Include preparation stages where needed. Tick this process’s timing/skill review only when it is correct.'));choices(button('Review '+j.process+' timings','plan-process',()=>{options.work();adapter().focusProcess(j.processId);}));}
@@ -534,7 +555,7 @@ function mount(host,options){
  let checklistTimer,actionStamp='';
  const actionKey=s=>JSON.stringify([root.BOBS_KITCHEN_SOURCE_GUIDE?.snapshot(),s.currentAction,s.recipeHelp?.stage,s.recipeHelp?.calculated,s.production?.journey,s.equipmentHelp?.stage,s.itemHelp,s.method2,s.pageSupport,root.BOBS_REVIEW?.snapshot()?.active]);
  function refreshAction(){const s=snapshot(),stamp=actionKey(s);if(stamp!==actionStamp){actionStamp=stamp;update();}else renderChecklist(s);}
- const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='input'||e.type==='change')revealContinuation=false;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked&&(root.BOBS_REVIEW?.isReview?.(e.target)??true)){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
+ const checklistUpdate=e=>{if(host.contains(e.target))return;if(e.type==='input'||e.type==='change')revealContinuation=false;if(e.type==='input'&&['sideExtraYes','sideExtraNo'].includes(e.target.id))revealContinuation=true;if(e.type==='change'&&['sideExtraYes','sideExtraNo'].includes(e.target.id))revealContinuation=true;if(e.type==='change'&&e.target.matches?.('input[type=checkbox]')&&e.target.checked&&(root.BOBS_REVIEW?.isReview?.(e.target)??true)){lastConfirmedNode=e.target;revealContinuation=true;}clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,0);};
  // Keep the new action visible through asynchronous saved-progress refreshes,
  // but yield immediately when the user scrolls, navigates or clicks in the guide.
  for(const type of ['wheel','touchstart','pointerdown','keydown'])host.parentElement?.addEventListener(type,()=>{revealContinuation=false;},{passive:true});
