@@ -27,6 +27,12 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
+ await p.selectOption('#readyDay','1');await p.click('#chooseProductionSource');
+ await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='deadline');
+ assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Choose Today in Deadline day/);
+ const deadlineLink=p.getByRole('button',{name:'Go to Deadline day — choose Today',exact:true});await deadlineLink.click();
+ assert.equal(await p.evaluate(()=>document.activeElement.id),'readyDay');assert.equal(writes.length,0);
+ await p.selectOption('#readyDay','0');
  await p.fill('#intendedQuantity','360');await p.fill('#readyBy','06:24');await p.setViewportSize({width:1071,height:580});
 
  // The production review uses one guide frame; all three controls stay in place.
