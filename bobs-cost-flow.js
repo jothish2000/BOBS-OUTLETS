@@ -2,6 +2,10 @@
 (function(root){'use strict';
 const C={},copy=x=>JSON.parse(JSON.stringify(x)),norm=x=>String(x||'').trim().toLowerCase().replace(/idly/g,'idli');
 C.number=v=>v!==null&&v!==undefined&&String(v).trim()!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;
+C.serviceDate=(today,day)=>{
+ if(!['0','1'].includes(String(day)))throw Error('Choose Today or Tomorrow for the deadline.');
+ const date=new Date(today+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+Number(day));return date.toISOString().slice(0,10);
+};
 C.today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 C.days=date=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))throw Error('Choose a business date.');const [y,m,d]=date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();if(m<1||m>12||d<1||d>days)throw Error('Invalid business date.');return days};
 C.norm=norm;
