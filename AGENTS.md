@@ -148,3 +148,13 @@ Follow the 111QS BOBS annex quantity-numbering rule in OVERALL_DESIGN_MASTER_111
 
 ## Owner standing live-delivery and dual handover rule — 7 October 2026
 Canonical **111QS =111QS5PVDRT** (master v5.0). For this live BOBS site, approved fixes include tested source publication, PR/merge, deployment and proportionate live verification; do not ask the same release approval again. Preserve explicit destructive-data/scope gates and higher-priority restrictions. Update the continuous ledger and both named sections in111QS_HANDOVER_CURRENT.md at each material checkpoint, publish them during the authorized cycle, and keep local/deployed/live/UAT status distinct. Work mode must be able to continue from repository links on phone/laptop; Codex must have exact refs/files/tests/commands. Documentation does not automatically grant access or synchronize conversations.
+
+## 111QS mandatory time-estimation gate — Owner instruction 11 November 2026
+
+For every new BOBS fix, enhancement or material development task, after initial inspection and **before implementation**, tell the Owner in plain language: task summary, complexity (very small/small/medium/large/major), approximate elapsed-time **range**, and expected testing. Estimates are rough planning aids, not promises or deadlines. If scope is unclear, state assumptions and uncertainty rather than inventing precision.
+
+After giving the estimate, **proceed automatically** under existing Owner approvals and 111QS governance; do not wait solely for confirmation of the estimate. Existing Owner approval, mode-switch, destructive-data, architectural-decision, and deployment gates remain fully in force.
+
+Provide brief milestone progress reports when feasible, especially if work materially exceeds the initial estimate; explain the reason and revise the range when supportable. Do not interrupt execution just to manufacture updates, imply a live countdown, or claim work continues after the session stops.
+
+At completion, report actual elapsed time only if reliably measurable, together with implementation, testing, publication and handover statuses. Record the initial estimate, significant revisions and actual duration (if known) in the contemporaneous 111QS/WACP continuity ledger. This communication gate is **part of 111QS**, not a replacement for 5PVDRT or existing safeguards.
