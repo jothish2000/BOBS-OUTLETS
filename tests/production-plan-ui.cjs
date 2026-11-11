@@ -137,10 +137,10 @@ test('shared kitchen inherits optional side reserve once; purchased sides and ma
 });
 
 test('selling outlet must choose a supplying kitchen before equipment; demand saves preserve sales',async()=>{
- const f=await fixture('piece',{setup(w){w.BOBS_KITCHENS={isKitchen:()=>false,locations:async()=>({kitchens:[]})};}});
+ const f=await fixture('piece',{setup(w){w.BOBS_KITCHENS={isKitchen:()=>false,serviceDate:w.BOBS_COST_FLOW.serviceDate,locations:async()=>({kitchens:[]})};}});
  try{
   assert.equal(f.$('capacitySection').hidden,true);assert.match(f.$('productionSourceStep').textContent,/Selling outlet: Rasipuram/);assert.equal(f.writes.length,0);
-  f.input('#intendedQuantity','360');f.input('#readyBy','07:00');f.input('#quantityReviewed',true);f.input('#sideServingReviewed',true);
+  f.input('#intendedQuantity','360');f.input('#readyBy','07:00');f.input('#readyDay','1');f.input('#quantityReviewed',true);f.input('#sideServingReviewed',true);
   assert.equal(f.w.BOBS_PRODUCTION_GUIDE.snapshot().journey.stage,'source');
   f.$('saveProductionPlan').click();await flush();assert.equal(f.writes.length,0);assert.match(f.$('planSaveStatus').textContent,/operating producing kitchen/);
   f.$('chooseProductionSource').click();await flush();assert.match(f.$('sourceSaveStatus').textContent,/operating producing kitchen/);assert.equal(f.db['1/METHOD2/default'].itemEditors[f.key].batchSize,120);assert.equal(f.db['1/METHOD2/default'].itemEditors[f.key].sold,80);assert.equal(f.db['1/OUTLET_PRODUCTION_PLAN/default'],undefined);assert.equal(f.db['1/ASSET_MASTER/default'].assets.length,1);

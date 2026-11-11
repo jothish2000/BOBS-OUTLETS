@@ -186,7 +186,7 @@ function mount(host,options){
     row.classList.toggle('guide-checklist-next',current);row.dataset.plannerStep=key;
     if(current){marked=true;row.dataset.plannerNext='true';row.setAttribute('aria-current','step');row.firstElementChild.textContent='→ Next: '+label;if(action&&row.querySelector('button'))row.querySelector('button').textContent=action;}
    };
-   step(stage==='deadline'?'deadline':'quantity',stage==='deadline'?'Choose Today in Deadline day':c.quantity?'You confirmed: '+p.quantity+' '+p.unit+' of '+p.name+', ready by '+p.readyBy+' '+(String(p.readyDay)==='1'?'tomorrow':'today'):'Confirm quantity and ready-by time',!!c.quantity&&stage!=='deadline',stage==='deadline'?'#readyDay':'#intendedQuantity');
+   step(stage==='deadline'?'deadline':'quantity',stage==='deadline'?'Review the deadline day':c.quantity?'You confirmed: '+p.quantity+' '+p.unit+' of '+p.name+', ready by '+p.readyBy+' '+(p.serviceDate||(String(p.readyDay)==='1'?'tomorrow':'today')):'Confirm quantity and ready-by time',!!c.quantity&&stage!=='deadline',stage==='deadline'?'#readyDay':'#intendedQuantity');
    if(p.sides?.needed)step('side-servings','Sides and serving quantities',!!p.sides.reviewed,'#sideServingSection',p.sides.summary,'Review sides and serving quantities');
    if(p.sources?.needed)step('source','Producing kitchens',!!p.sources.reviewed,'#productionSourceStep',p.sources.summary,'Choose producing kitchens');
    if(p.extraSides?.needed){
@@ -244,6 +244,25 @@ function mount(host,options){
   restoreGuideScroll(scrollBefore);
  }
 
+ function kitchenContinuation(panel) {
+  if (!panel || panel.hidden) return;
+  if (panel.dataset.state === 'checking') {
+   host.append(el('p','Checking the supplying kitchen’s next step…'));
+   return;
+  }
+  for (const link of panel.querySelectorAll('a[data-kitchen-name]')) {
+   const next = link.cloneNode(false);
+   next.textContent = link.dataset.kitchenName + ' — ' + link.textContent;
+   next.dataset.guideChoice = 'kitchen-continuation';
+   host.append(next);
+  }
+  const retry = panel.querySelector('[data-kitchen-retry]');
+  if (retry) {
+   host.append(el('p','Kitchen progress could not be verified.'));
+   host.append(button('Retry kitchen progress','retry-kitchen-continuation',()=>retry.click()));
+  }
+  if (panel.dataset.state === 'complete') host.append(el('p','All supplying kitchen stages are verified. Return to the item to review costs.'));
+ }
  function render(){
   const scrollBefore=host.parentElement?.scrollTop||0;
   const s=snapshot();restore(s);const p=s.production;
@@ -342,13 +361,13 @@ function mount(host,options){
     const work=(label,id)=>button(label,'plan-'+id,()=>{if(root.BOBS_REVIEW?.request('#'+id))return;options.work();adapter().focus(id);});
     if(stage==='loading'||stage==='load-error'){ask(stage==='loading'?'Loading your production plan…':'Production records need attention');host.append(el('p',j.message||'Wait for the saved quantities, recipes and equipment to load.'));if(stage==='load-error')choices(work('Show Retry Google reads','plannerRetry'));break;}
     if(stage==='saving'||stage==='saved'){ask(stage==='saving'?'Saving and verifying your plan…':'Production plan saved and verified');host.append(el('p',j.message));if(stage==='saving')host.append(el('p','Please keep this window open. I will guide the next step after verification.'));break;}
-    if(stage==='deadline'){ask(name+' — check the deadline day');host.append(el('p',j.message));choices(work('Go to Deadline day — choose Today','readyDay'));break;}
+    if(stage==='deadline'){ask(name+' — check the deadline day');host.append(el('p',j.message));choices(work('Review the deadline day','readyDay'));break;}
     if(stage==='source-error'){ask(name+' — demand could not be saved');host.append(el('p',j.message));choices(work('Review the demand save message','sourceSaveStatus'),button('Check the corrected demand','plan-retry-step',()=>adapter().retryStep()));break;}
     if(stage==='error'){ask('The plan is not fully saved');host.append(el('p',j.message));choices(button('Review the unfinished step','plan-retry-step',()=>adapter().retryStep()),work('Show save message','planSaveStatus'));break;}
-    if(stage==='quantity'){ask(name+' — how much, and ready by when?');host.append(el('p','Review the intended production quantity, ready-by time and day. These are planning inputs; Sold Today is entered separately as the actual result.'));choices(work('Review quantity and ready-by time','intendedQuantity'),button('Quantity and time reviewed — continue','plan-quantity-next',()=>adapter().continueQuantity()));}
+    if(stage==='quantity'){ask(p.serviceDate?name+' — review the kitchen’s confirmed demand':name+' — how much, and ready by when?');host.append(el('p',p.serviceDate?'The outlets require '+p.quantity+' '+p.unit+' by '+p.readyBy+' on '+p.serviceDate+'. Confirm this demand before reviewing recipes.':'Enter the intended production quantity, ready-by time and day for this demand.'));choices(work('Review quantity and ready-by time','intendedQuantity'),button('Quantity and time reviewed — continue','plan-quantity-next',()=>adapter().continueQuantity()));}
     else if(stage==='side-servings'){ask(name+' — review sides and serving quantities first');host.append(el('p',p.sides.summary),el('p','Review which sides are supplied, whether each is produced or purchased, and the amount per main item. Edit the serving amounts in this section. Review the serving examples in the help popup, then confirm this review. Next, choose the producing kitchens.'));choices(work('Review sides and serving quantities','sideServingSection'),work('Confirm the sides review','sideServingReviewed'));}
     else if(stage==='source-save'){ask(name+' — save demand and kitchen choices');host.append(el('p','Serving quantities and producing kitchens are confirmed for this draft. Save to verify them in Google and show the selected kitchen’s next required step.'));choices(work('Show Save demand & selected kitchen’s next step','chooseProductionSource'));}
-    else if(stage==='source-saved'){ask('✓ Demand and supplying kitchens saved and verified');host.append(el('p','Continue using the selected kitchen’s next action below. Its equipment and workers serve the combined outlet demand.'));choices(work('Show selected kitchen’s next step','sourceNextActions'));}
+    else if(stage==='source-saved'){ask('✓ Demand and supplying kitchens saved and verified');kitchenContinuation(document.getElementById('sourceNextActions'));choices(work('Show selected kitchen’s next step','sourceNextActions'));}
     else if(stage==='source'){ask(name+' — choose the supplying kitchen');host.append(el('p','Choose a named kitchen from the dropdown for each produced item and side. Nothing is selected automatically. You may explicitly use the first selected kitchen for all produced items. Confirm the choices here before the optional extra allowance.'));choices(work('Choose producing kitchens','productionSourceStep'),work('Confirm producing kitchens','productionSourceReviewed'));}
     else if(stage==='extra-sides'){ask('Would you like 5% extra produced sides and condiments?');const prev=p.extraSides.previous;host.append(el('p',typeof prev==='boolean'?'Previously saved: '+(prev?'Yes — 5% extra.':'No — normal quantities only.')+' Keep that choice or select Yes or No in the form.':'Choose Yes or No in the form. Neither is selected. The main quantity and normal serving portions stay unchanged.'));choices(work('Review the extra allowance in the form','sideExtraSection'));}
     else if(stage==='recipes'){const rows=p.recipeSteps||p.recipes,current=rows.find(r=>!r.reviewed);if(current){ask('Next recipe: '+current.name);host.append(el('p','Review this recipe now. I will guide the next unfinished recipe after its verified save or your explicit review of an unchanged saved recipe.'),el('small',current.status));const a=el('a','Open '+current.name+' recipe →','guide-action');a.href=current.href;a.target='_blank';a.rel='opener';host.append(a);if(current.current)choices(button('Saved recipe still applies — continue','recipe-reuse',()=>adapter().confirmRecipe(current.reviewKey)));}else{ask('Each recipe has been reviewed');host.append(el('p','Tick the final recipe confirmation to continue with equipment and capacity.'));choices(work('Show recipe confirmation','recipeReviewed'));}const all=el('details');all.append(el('summary','See all recipes in this plan'));for(const r of rows)all.append(el('p',(r.reviewed?'◐ Reviewed: ':'○ To review: ')+r.name));host.append(all);if(p.extraSides?.needed)host.append(el('p',p.extraSides.summary));}
@@ -551,7 +570,7 @@ function mount(host,options){
   if(state.step!=='start')nav.append(button('Choose a different task','restart',()=>{state={step:'start',history:[]};draft={};persist();render();}));host.append(nav);
   persist();restoreGuideScroll(scrollBefore);
  }
- function update(){if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
+ function update(){if(state?.step==='production-flow'&&error&&['intendedQuantity','readyBy','readyDay'].includes(document.activeElement?.id))error='';if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;render();}
  function kitchenNext(){const s=snapshot();restore(s);if(s.ctx.page!=='kitchen-flow.html'||!s.kitchenSetup?.verified||!document.getElementById('kitchenNextGo'))return false;error='';state.step='kitchen-next';persist();render();return true;}
  // Update only the read-only checklist after page edits; keep action buttons attached during clicks.
  let checklistTimer,actionStamp='';

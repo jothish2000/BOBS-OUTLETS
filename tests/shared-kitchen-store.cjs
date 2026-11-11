@@ -16,3 +16,50 @@ test('progress distinguishes an absent cost plan from a failed read without load
   assert.equal(f.reads.length,0);assert.equal(f.writes.length,0);
  }finally{f.dom.window.close()}
 });
+
+test('verified demand shows every distinct supplying kitchen; an unreadable step can retry without writing',async()=>{
+ const f=await fixture(),w=f.w,S=w.BOBS_KITCHENS,host=w.document.createElement('div');
+ try{
+  const side=f.key+':Sambar',side2=f.key+':Chutney',keys=[f.key,side,side2];
+  const record={kitchenSources:{[f.key]:{date:f.date,kitchenId:f.kitchen.id},[side]:{date:f.date,kitchenId:f.kitchen.id},[side2]:{date:f.date,kitchenId:'Kitchen-Second'}}};
+  let failed=true;const ids=[];
+  S.progress=async id=>{ids.push(id);if(id==='Kitchen-Second'&&failed)throw Error('Fixture read failure');return {name:id,next:{title:'Kitchen expenses',href:'outlet-plan.html?outlet='+id+'&stage=baseline'}}};
+  const opts={record,keys,itemKey:f.key};
+  await S.showDemandContinuation(host,opts);
+  assert.deepEqual(ids,[f.kitchen.id,'Kitchen-Second']);assert.equal(host.querySelectorAll('a').length,1);assert(host.querySelector('[data-kitchen-retry]'));assert.match(host.textContent,/Fixture read failure/);
+  failed=false;host.querySelector('[data-kitchen-retry]').click();await S.showDemandContinuation(host,opts);
+  assert.equal(host.querySelectorAll('a').length,2);assert.equal(host.querySelector('[data-kitchen-retry]'),null);
+  S.progress=async id=>({name:id,next:null});await S.showDemandContinuation(host,{...opts,child:true,refresh:true});assert(host.hidden);
+  const before=ids.length;record.kitchenSources[side].date='1999-01-01';await S.showDemandContinuation(host,opts);
+  assert(host.hidden);assert.equal(host.querySelectorAll('a').length,0);assert.equal(ids.length,before);assert.equal(f.writes.length,0);
+ }finally{f.dom.window.close()}
+});
+test('a delayed previous assignment cannot replace the current kitchen link',async()=>{
+ const f=await fixture(),w=f.w,S=w.BOBS_KITCHENS,host=w.document.createElement('div');
+ try{
+  let finish;S.progress=id=>id===f.kitchen.id?new Promise(r=>finish=r):Promise.resolve({name:id,next:{title:'Combined orders',href:'production-plan.html?outlet='+id}});
+  const show=id=>S.showDemandContinuation(host,{record:{kitchenSources:{[f.key]:{kitchenId:id,date:f.date}}},keys:[f.key],itemKey:f.key});
+  const first=show(f.kitchen.id);await show('Kitchen-Second');finish({name:'Old',next:null});await first;
+  assert.equal(new URL(host.querySelector('a').href).searchParams.get('outlet'),'Kitchen-Second');assert.equal(f.writes.length,0);
+ }finally{f.dom.window.close()}
+});
+
+test('tomorrow demand is separate from today and retains its service date through the kitchen handoff',async()=>{
+ const f=await fixture();try{
+  const S=f.w.BOBS_KITCHENS, tomorrow=S.serviceDate(f.date,1);
+  assert.equal(S.serviceDate('2026-12-31',1),'2027-01-01');
+  assert.equal(S.serviceDate('2028-02-28',1),'2028-02-29');
+  const source={kitchenId:f.kitchen.id,date:tomorrow,readyBy:'07:00',away:true};
+  const daily={date:tomorrow,items:{[f.key]:{cat:'Breakfast Catalogue',i:0,name:'Idli',inputs:{mode:'production',unit:'piece',batchSize:240,batches:1,condiments:[]},sources:{[f.key]:source}}}};
+  f.db['1/OUTLET_DEMAND/'+tomorrow]=daily;
+  const todayJobs=await S.context(f.kitchen.id),next=await S.context(f.kitchen.id,undefined,tomorrow);
+  assert.equal(todayJobs.jobs[0].quantity,540);assert.equal(next.jobs.length,1);assert.equal(next.jobs[0].quantity,240);
+  assert.equal(next.jobs[0].readyBy,'07:00');assert.equal(next.jobs[0].orders[0].source.date,tomorrow);
+  f.db[f.kitchen.id+'/OUTLET_PRODUCTION_PLAN/default']={date:f.date};
+  assert.equal(await S.readPlan(f.kitchen.id,'OUTLET_PRODUCTION_PLAN',tomorrow),null);
+  const record=S.applyOrders(f.db['1/METHOD2/default'],daily,tomorrow),host=f.w.document.createElement('div');
+  await S.showDemandContinuation(host,{record,date:tomorrow,keys:[f.key],itemKey:f.key});
+  assert.equal(new URL(host.querySelector('a').href).searchParams.get('serviceDate'),tomorrow);
+  assert.equal(f.writes.length,0);
+ }finally{f.dom.window.close();}
+});

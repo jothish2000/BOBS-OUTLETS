@@ -26,13 +26,8 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);
  await p.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert(await p.locator('#bobsCompanion').isVisible());assert.match(await p.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
- await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/ready-by time/);
- await p.selectOption('#readyDay','1');await p.click('#chooseProductionSource');
- await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='deadline');
- assert.match(await p.locator('#bobsGuideDialogue').innerText(),/Choose Today in Deadline day/);
- const deadlineLink=p.getByRole('button',{name:'Go to Deadline day — choose Today',exact:true});await deadlineLink.click();
- assert.equal(await p.evaluate(()=>document.activeElement.id),'readyDay');assert.equal(writes.length,0);
- await p.selectOption('#readyDay','0');
+ await p.locator('[data-guide-choice=plan-quantity-next]').click();assert.match(await p.locator('.guide-error').innerText(),/positive intended production quantity/);
+ await p.selectOption('#readyDay','1');assert.equal(writes.length,0);
  await p.fill('#intendedQuantity','360');await p.fill('#readyBy','06:24');await p.setViewportSize({width:1071,height:580});
 
  // The production review uses one guide frame; all three controls stay in place.
@@ -87,11 +82,12 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  await review(p.locator('#productionSourceReviewed'));await p.waitForFunction(()=>document.querySelector('[data-planner-next]')?.dataset.plannerStep==='extra-sides');assert(await p.locator('#keepSideExtra').isEnabled());assert.equal(await p.locator('#sideExtraNo').isChecked(),false);await p.click('#keepSideExtra');assert.equal(await p.locator('#sideExtraNo').isChecked(),true);
  await p.waitForFunction(()=>BOBS_PRODUCTION_GUIDE.snapshot().journey.stage==='source-save');
  await p.click('#chooseProductionSource');await p.waitForFunction(()=>document.getElementById('sourceSaveStatus').textContent.includes('saved and verified'));
- assert.equal(p.url(),url);assert.equal(db['1/METHOD2/default'].itemEditors[key].batchSize,360);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert.equal(db['1/OUTLET_PRODUCTION_PLAN/default'],undefined);
+ assert.equal(p.url(),url);assert.equal(db['1/METHOD2/default'].itemEditors[key].batchSize,120);assert.equal(db['1/METHOD2/default'].itemEditors[key].sold,80);assert.equal(db['1/OUTLET_PRODUCTION_PLAN/default'],undefined);
  await p.waitForSelector('#sourceNextActions a');assert.match(await p.locator('#sourceNextActions').innerText(),/Elimedu.*next required action/);
- const saved=db['1/METHOD2/default'];assert.equal(Object.keys(saved.kitchenSources).length,3);assert(Object.values(saved.kitchenSources).every(x=>x.kitchenId==='Kitchen-Elimedu'));assert.equal(saved.itemEditors[key].sideExtraFivePercent,false);assert.equal(db['1/ASSET_MASTER/default'].assets.length,1);
- const context=await p.evaluate(()=>BOBS_KITCHENS.context('Kitchen-Elimedu'));assert.equal(context.jobs.length,3);assert.equal(context.jobs.find(j=>j.name==='Idli').quantity,360);assert.equal(context.jobs.find(j=>j.name==='Idli Sambar').quantity,7.2);assert.equal(context.jobs.find(j=>j.name==='Coconut Chutney').quantity,2.88);
- const local=await p.evaluate(async()=>{const items=BOBS_OUTLET_FLOW.selected(M2.state(await M2.read('1')),ITEM_DATA,M2),recipes=(await BOBS_OPERATIONAL_RECIPES.load()).recipes;return BOBS_OUTLET_FLOW.requirements(items,recipes,M2)});assert.equal(local.length,0,'kitchen production must not also count at the shop');
+ const day=await p.evaluate(()=>BOBS_COST_FLOW.serviceDate(BOBS_COST_FLOW.today(),1)),order=db['1/OUTLET_DEMAND/'+day].items[key];
+ assert.equal(order.inputs.batchSize,360);assert.equal(order.inputs.sideExtraFivePercent,false);assert.equal(Object.keys(order.sources).length,3);assert(Object.values(order.sources).every(x=>x.kitchenId==='Kitchen-Elimedu'&&x.date===day));
+ const context=await p.evaluate(day=>BOBS_KITCHENS.context('Kitchen-Elimedu',undefined,day),day);
+ assert.equal(context.jobs.length,3);assert.equal(context.jobs.find(j=>j.name==='Idli').quantity,360);assert.equal(context.jobs.find(j=>j.name==='Idli Sambar').quantity,7.2);assert.equal(context.jobs.find(j=>j.name==='Coconut Chutney').quantity,2.88);
  await p.locator('#sourceNextActions > section > a').click();await p.waitForURL('**/outlet-plan.html?**');assert.equal(new URL(p.url()).searchParams.get('outlet'),'Kitchen-Elimedu');
  assert(!owner.isClosed());assert.equal(owner.url(),parentURL);assert.deepEqual(errors,[]);
  console.log('PASS production sourcing: confirmed demand, explicit per-side kitchen, missing choice blocked, exact quantities, no shop equipment writes, verified next kitchen step and retained parent.');
