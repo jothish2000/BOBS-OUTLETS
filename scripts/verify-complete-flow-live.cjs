@@ -176,7 +176,10 @@ if(itemHelp.href){
  assert.equal(new URL(planner.url()).searchParams.get('returnTo'),item.url());await planner.waitForFunction(()=>window.BOBS_PRODUCTION_GUIDE?.snapshot().ready);await planner.locator('[data-guide-choice=plan-quantity-next]').waitFor();
  assert.match(await planner.locator('#bobsGuideDialogue').innerText(),/how much, and ready by when/);
  await captureRendered(planner,'interactive-planner-live.png');result.checks.push('Live Idli: direct planner popup preserves immediate parent and automatically asks quantity/time');
- if(!+(await planner.inputValue('#intendedQuantity')))await planner.fill('#intendedQuantity','360');if(!await planner.inputValue('#readyBy'))await planner.fill('#readyBy','07:00');await review(planner.locator('#quantityReviewed'));
+ await planner.fill('#intendedQuantity','360');
+  await planner.fill('#readyBy','07:00');
+  await planner.selectOption('#readyDay','1');
+  await review(planner.locator('#quantityReviewed'));
   await planner.waitForFunction(()=>document.querySelector('.guide-checklist-local [aria-current="step"]')?.dataset.plannerStep==='side-servings');
   assert.equal(await planner.locator('.guide-checklist-local .guide-checklist-next').count(),1);
   const allowanceRow=planner.locator('[data-planner-step=extra-sides]');if(await allowanceRow.count())assert.equal(await allowanceRow.evaluate(n=>n.classList.contains('guide-checklist-done')),false);
