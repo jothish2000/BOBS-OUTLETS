@@ -25,7 +25,7 @@ const db={'COMPANY/KITCHEN_MASTER/default':{reviewed:true,kitchens:[],noSeparate
  await page.waitForFunction(()=>document.getElementById('idliLabourCost').textContent.includes('request failed'));
  assert(await page.locator('#editor').isVisible());assert.equal(await page.locator('#save').isEnabled(),true);console.log('PASS Chrome: first network failure retried; optional failures isolated; quantities retained; zero initial writes');
  await page.fill('#sold','288');assert.match(await page.locator('#packingSummary').textContent(),/288 sold → 144 whole sets/);
- await page.click('#save');await page.waitForURL('**/method2.html?outlet=1');
+ await page.click('#save');await page.waitForURL(u=>u.pathname.endsWith('/method2.html')&&u.searchParams.get('outlet')==='1');
  assert.deepEqual(writes,['METHOD2_BACKUPS','METHOD2']);assert.equal(Number(db['1/METHOD2/default'].itemEditors['Breakfast Catalogue::0'].sold),288);
  await page.goto(route);await page.waitForFunction(()=>document.getElementById('controls')?.disabled===false);assert.equal(await page.inputValue('#sold'),'288');assert.match(await page.locator('#packingSummary').textContent(),/2 sales units/);assert.equal(await page.inputValue('#batches'),'3');
  await page.setViewportSize({width:390,height:844});assert(await page.locator('#save').isVisible());assert.equal(errors.length,0,errors.join('\n'));console.log('PASS Chrome: protected mock save/readback/reload, narrow viewport, zero runtime errors');
