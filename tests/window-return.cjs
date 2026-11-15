@@ -62,3 +62,11 @@ test('preview is opt-in and follows workflow and helper links without changing t
  assert.equal(new URL(f.nav.child('recipe-cost-editor.html?item=Idli')).searchParams.get('preview'),'1');
  assert.equal(f.nav.identity('method2.html?outlet=2&preview=1'),f.nav.identity('method2.html?outlet=2'));
 });
+
+
+test('serving return hint matches its live caller while different recipe quantities stay distinct',()=>{
+ const address='https://bobs.test/recipe-cost-editor.html?outlet=2&item=Sambar&qty=7.2',p=parent(address),f=fixture({opener:p,href:'https://bobs.test/method2-item.html?servingRecipe=Sambar&returnTo='+encodeURIComponent(address+'&servingBaseline=0.02')});
+ f.nav.afterSave();assert(p.focused);assert.deepEqual(f.calls,[['close']]);
+ const main=fixture({href:address});const supplied=address+'&servingBaseline=0.02',child=new URL(main.nav.child('method2-item.html?servingRecipe=Sambar&returnTo='+encodeURIComponent(supplied)));assert.equal(child.searchParams.get('returnTo'),supplied);
+ assert.notEqual(main.nav.identity(address),main.nav.identity(address.replace('7.2','9')));
+});

@@ -8,7 +8,7 @@ let preview=false;
 try{const choice=new URL(root.location.href).searchParams.get('preview');if(choice==='1'||choice==='0')root.sessionStorage?.setItem('bobs-navigation-preview',choice);preview=choice==='1'||choice!=='0'&&root.sessionStorage?.getItem('bobs-navigation-preview')==='1';}catch(_){preview=new URL(root.location.href).searchParams.get('preview')==='1';}
 function previewAddress(value){const address=safe(value);if(!address)return value;const u=new URL(address);if(preview)u.searchParams.set('preview','1');return u.href;}
 
-function child(value){const address=safe(value);if(!address)return value;const u=new URL(previewAddress(address));let parent=root.location.href;try{parent=root.top.location.href}catch(e){}u.searchParams.set('returnTo',parent);return u.href}
+function child(value){const address=safe(value);if(!address)return value;const u=new URL(previewAddress(address));let parent=root.location.href;try{parent=root.top.location.href}catch(e){}const supplied=safe(u.searchParams.get('returnTo'));if(supplied&&identity(supplied)===identity(parent))parent=supplied;u.searchParams.set('returnTo',parent);return u.href}
 function notify(message,channels=[]){try{if(root.opener&&!root.opener.closed)root.opener.postMessage(message,root.location.origin)}catch(e){console.warn('Parent notification failed',e)}for(const name of channels){let channel;try{if(root.BroadcastChannel){channel=new root.BroadcastChannel(name);channel.postMessage(message)}}catch(e){console.warn('Window notification failed',e)}finally{try{channel?.close()}catch(e){}}}}
 function resumeAddress(address,resume){const target=new URL(address);if(resume?.page===target.pathname.split('/').pop()&&/^[a-z][a-z0-9_-]*$/i.test(resume.hash||''))target.hash=resume.hash;if(resume?.page===target.pathname.split('/').pop()&&/^[-\w]{1,100}$/.test(resume.salaryPackageKey||''))target.searchParams.set('salaryPackageKey',resume.salaryPackageKey);return target.href;}
 function liveCaller(address){
@@ -30,7 +30,7 @@ function afterSave(fallback,resume){if(!recordedParent&&!fallback){try{if(!root.
 
 /* Reuse an already-open same-site working page without reloading its draft.
    Registry is shared by related opener windows; unrelated browser sessions are not enumerable. */
-function identity(value){const address=safe(value);if(!address)return null;const u=new URL(address);for(const k of ['returnTo','guide','preview'])u.searchParams.delete(k);if(['method2-item.html','production-plan.html'].includes(u.pathname.split('/').pop()))u.searchParams.delete('mode');u.searchParams.sort();u.hash='';return u.href;}
+function identity(value){const address=safe(value);if(!address)return null;const u=new URL(address);for(const k of ['returnTo','guide','preview','servingBaseline'])u.searchParams.delete(k);if(['method2-item.html','production-plan.html'].includes(u.pathname.split('/').pop()))u.searchParams.delete('mode');u.searchParams.sort();u.hash='';return u.href;}
 function owner(){let w=root.top;try{const seen=new Set();while(w.opener&&!w.opener.closed&&!seen.has(w.opener)&&safe(w.opener.top.location.href)){seen.add(w);w=w.opener.top;}}catch(_){}return w;}
 function registry(){try{const w=owner();return w.__BOBS_OPEN_WORKSPACES||(w.__BOBS_OPEN_WORKSPACES=new Set());}catch(_){return root.__BOBS_OPEN_WORKSPACES||(root.__BOBS_OPEN_WORKSPACES=new Set());}}
 function findOpen(address){const key=identity(address);if(!key)return null;const windows=registry();windows.add(root.top);for(const w of [...windows]){try{if(w.closed){windows.delete(w);continue;}if(identity(w.location.href)===key)return w;}catch(_){windows.delete(w);}}return null;}
@@ -45,7 +45,7 @@ function openWorkspace(address,options={}){
   // Native beforeunload guards still run if this page contains unsaved inputs.
   root.top.location.assign(url);return root.top;
  }
- const w=root.open(url,'_blank');if(w)registry().add(w);return w;
+ const w=root.open(url,'_blank',options.features);if(w)registry().add(w);return w;
 }
 registry().add(root.top);
 
