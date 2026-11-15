@@ -2,7 +2,7 @@
 (function(root){'use strict';if(root.BOBS_REVIEW)return;
 const doc=root.document, entries=new Map();let active=null, timer, ownClick=false, highlighted=[], focusGeneration=0, dialogActions=null, pageActions=null;
 const el=(tag,text)=>{const n=doc.createElement(tag);if(text!=null)n.textContent=text;return n;};
-const excluded='#bobsCurrentReviewTitle,#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
+const excluded='#bobsClickPreview,#bobsCurrentReviewTitle,#bobsReferenceDialog,#bobsRoadmap,#bobsCompanion,[data-review-ui],#bobsFlowGuide';
 const visible=n=>{if(!n||n.closest('[hidden]'))return false;for(let p=n;p;p=p.parentElement){const s=root.getComputedStyle(p);if(s.display==='none'||s.visibility==='hidden')return false;}return true;};
 const controls='input:not([type=hidden]),select,textarea';
 const clean=s=>String(s||'').replace(/\s+/g,' ').trim();

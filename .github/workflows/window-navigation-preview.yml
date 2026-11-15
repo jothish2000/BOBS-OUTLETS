@@ -1,0 +1,55 @@
+name: Window navigation and Edge preview
+on:
+  push:
+    branches: ['codex/single-window-preview-20261115']
+  pull_request:
+    paths:
+      - 'bobs-window-return.js'
+      - 'bobs-outlet-plan.js'
+      - 'scripts/browser-preview-hooks.cjs'
+      - 'scripts/verify-window-navigation-browser.cjs'
+      - '.github/workflows/window-navigation-preview.yml'
+  workflow_dispatch:
+concurrency:
+  group: window-preview-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  edge-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: ubuntu24.04-x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --prefix "$RUNNER_TEMP/bobs-nav" playwright@1.58.2 jsdom@30.1.1 --no-audit --no-fund
+      - name: Install Microsoft Edge for isolated testing
+        run: |
+          sudo "$RUNNER_TEMP/bobs-nav/node_modules/.bin/playwright" install --with-deps msedge
+          "$RUNNER_TEMP/bobs-nav/node_modules/.bin/playwright" install ffmpeg
+      - name: Navigation and prerequisite regressions
+        env:
+          JSDOM_PATH: ${{ runner.temp }}/bobs-nav/node_modules/jsdom
+        run: node --test tests/window-return.cjs tests/workforce-navigation.cjs tests/navigation-preview.cjs tests/connected-guide.cjs tests/current-action-guide.cjs
+      - name: Record Edge navigation and complete fixture journeys
+        env:
+          PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-nav/node_modules/playwright
+          BOBS_BROWSER_CHANNEL: msedge
+          BOBS_PREVIEW_DIR: ${{ runner.temp }}/edge-preview
+          BOBS_TEST_SLOW_MS: '150'
+        run: |
+          status=0
+          for script in scripts/verify-window-navigation-browser.cjs scripts/verify-production-guidance-browser.cjs scripts/verify-outlet-save-help-browser.cjs scripts/verify-vault-browser.cjs scripts/verify-shared-kitchen-browser.cjs scripts/verify-salary-capital-browser.cjs; do
+            node --require ./scripts/browser-preview-hooks.cjs "$script" || status=1
+          done
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: edge-highlighted-setup-preview
+          path: ${{ runner.temp }}/edge-preview
+          retention-days: 7

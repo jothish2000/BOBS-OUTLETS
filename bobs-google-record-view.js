@@ -3,12 +3,13 @@ const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),o
 const labels={KITCHEN_MASTER:'Production locations — attached shop kitchens and separate common kitchens',KITCHEN_COST_PLAN:'Shared production costs and vehicle journey allocations',OUTLET_BASELINE:'Outlet expenses and mandatory staff coverage',OUTLET_STAFFING:'Production workforce, riders and salary budgets',FIXED_EXPENSES:'Selected outlet expenses',OUTLET_PRODUCTION_PLAN:'Equipment capacity, intended quantities and production timings',ASSET_MASTER:'Machinery assets and product depreciation shares',OUTLET_COST_ALLOCATIONS:'Item shares of staff and outlet expenses',OUTLET_ITEM_REQUIREMENTS:'Item delivery choices',WORKING_CAPITAL:'Daily working-capital plan',CAPITAL_EXPENDITURE:'Equipment purchase budget',OUTLET_SETUP:'Outlet names and shifts',METHOD2:'Selected menu and saved item quantities'};
 const title=labels[m]||m||'Saved BOBS record',isKitchen=/^Kitchen-/.test(o||'');
 $('title').textContent=m==='ASSET_MASTER'?'Saved equipment and capacity':title;
+if(window.BOBS_WINDOW_RETURN&&(q.get('returnTo')||window.opener)){const back=document.createElement('button');back.type='button';back.textContent='Return to calling window';back.onclick=()=>BOBS_WINDOW_RETURN.returnToParent();$('title').after(back);}
 let busy=false;
 function node(tag,text){const el=document.createElement(tag);el.textContent=text;return el;}
 function date(value){if(!value)return 'Not recorded in this version';const d=new Date(value);return isNaN(d)?String(value):d.toLocaleString('en-IN');}
 function qty(value,unit){return value==null||value===''?'Not recorded':window.BOBS_NUMBERS?.quantity(value,unit)??String(value);}
 function safeReturn(){try{const u=new URL(q.get('returnTo'),location.href);if(q.get('returnTo')&&u.origin===location.origin&&/^https?:$/.test(u.protocol))return u.href;}catch(_){}return new URL((isKitchen?'kitchen-equipment.html':'asset-master.html')+'?'+new URLSearchParams({outlet:o||''}),location.href).href;}
-function guide(message,label){const box=$('recordGuide');box.replaceChildren(node('h2','BOBS Guide — next step'),node('p',message));if(label){const a=node('a',label);a.href=safeReturn();a.className='record-action';box.append(a);}box.hidden=false;}
+function guide(message,label){const box=$('recordGuide');box.replaceChildren(node('h2','BOBS Guide — next step'),node('p',message));if(label){const a=node('a',label);a.href=safeReturn();a.className='record-action';a.onclick=e=>{if(window.BOBS_WINDOW_RETURN){e.preventDefault();BOBS_WINDOW_RETURN.returnToParent(a.href);}};box.append(a);}box.hidden=false;}
 async function identity(){
  if(isKitchen){const r=await BOBS_VERIFIED.read('COMPANY','KITCHEN_MASTER');const x=r?.kitchens?.find(x=>x.id===o);if(!x)throw Error('Kitchen name is not available in the saved register.');return x.name||'Unnamed kitchen';}
  const outlets=await BOBS_DATA.listOutlets();return outlets.find(x=>String(x.id)===o)?.name||'Outlet '+o;
