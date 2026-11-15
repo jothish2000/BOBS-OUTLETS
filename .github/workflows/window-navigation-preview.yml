@@ -10,6 +10,9 @@ on:
       - 'scripts/verify-window-navigation-browser.cjs'
       - '.github/workflows/window-navigation-preview.yml'
   workflow_dispatch:
+concurrency:
+  group: window-preview-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -27,7 +30,7 @@ jobs:
       - name: Navigation and prerequisite regressions
         env:
           JSDOM_PATH: ${{ runner.temp }}/bobs-nav/node_modules/jsdom
-        run: node --test tests/window-return.cjs tests/workforce-navigation.cjs tests/connected-guide.cjs tests/current-action-guide.cjs
+        run: node --test tests/window-return.cjs tests/workforce-navigation.cjs tests/navigation-preview.cjs tests/connected-guide.cjs tests/current-action-guide.cjs
       - name: Record Edge navigation and complete fixture journeys
         env:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-nav/node_modules/playwright
