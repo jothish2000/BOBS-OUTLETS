@@ -3,6 +3,7 @@ const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),o
 const labels={KITCHEN_MASTER:'Production locations — attached shop kitchens and separate common kitchens',KITCHEN_COST_PLAN:'Shared production costs and vehicle journey allocations',OUTLET_BASELINE:'Outlet expenses and mandatory staff coverage',OUTLET_STAFFING:'Production workforce, riders and salary budgets',FIXED_EXPENSES:'Selected outlet expenses',OUTLET_PRODUCTION_PLAN:'Equipment capacity, intended quantities and production timings',ASSET_MASTER:'Machinery assets and product depreciation shares',OUTLET_COST_ALLOCATIONS:'Item shares of staff and outlet expenses',OUTLET_ITEM_REQUIREMENTS:'Item delivery choices',WORKING_CAPITAL:'Daily working-capital plan',CAPITAL_EXPENDITURE:'Equipment purchase budget',OUTLET_SETUP:'Outlet names and shifts',METHOD2:'Selected menu and saved item quantities'};
 const title=labels[m]||m||'Saved BOBS record',isKitchen=/^Kitchen-/.test(o||'');
 $('title').textContent=m==='ASSET_MASTER'?'Saved equipment and capacity':title;
+if(window.BOBS_WINDOW_RETURN&&(q.get('returnTo')||window.opener)){const back=document.createElement('button');back.type='button';back.textContent='Return to calling window';back.onclick=()=>BOBS_WINDOW_RETURN.returnToParent();$('title').after(back);}
 let busy=false;
 function node(tag,text){const el=document.createElement(tag);el.textContent=text;return el;}
 function date(value){if(!value)return 'Not recorded in this version';const d=new Date(value);return isNaN(d)?String(value):d.toLocaleString('en-IN');}

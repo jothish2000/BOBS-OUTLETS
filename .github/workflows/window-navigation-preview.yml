@@ -17,8 +17,10 @@ permissions:
   contents: read
 jobs:
   edge-preview:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
+    env:
+      PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: ubuntu24.04-x64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
