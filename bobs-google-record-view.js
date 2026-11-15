@@ -8,7 +8,7 @@ function node(tag,text){const el=document.createElement(tag);el.textContent=text
 function date(value){if(!value)return 'Not recorded in this version';const d=new Date(value);return isNaN(d)?String(value):d.toLocaleString('en-IN');}
 function qty(value,unit){return value==null||value===''?'Not recorded':window.BOBS_NUMBERS?.quantity(value,unit)??String(value);}
 function safeReturn(){try{const u=new URL(q.get('returnTo'),location.href);if(q.get('returnTo')&&u.origin===location.origin&&/^https?:$/.test(u.protocol))return u.href;}catch(_){}return new URL((isKitchen?'kitchen-equipment.html':'asset-master.html')+'?'+new URLSearchParams({outlet:o||''}),location.href).href;}
-function guide(message,label){const box=$('recordGuide');box.replaceChildren(node('h2','BOBS Guide — next step'),node('p',message));if(label){const a=node('a',label);a.href=safeReturn();a.className='record-action';box.append(a);}box.hidden=false;}
+function guide(message,label){const box=$('recordGuide');box.replaceChildren(node('h2','BOBS Guide — next step'),node('p',message));if(label){const a=node('a',label);a.href=safeReturn();a.className='record-action';a.onclick=e=>{if(window.BOBS_WINDOW_RETURN){e.preventDefault();BOBS_WINDOW_RETURN.returnToParent(a.href);}};box.append(a);}box.hidden=false;}
 async function identity(){
  if(isKitchen){const r=await BOBS_VERIFIED.read('COMPANY','KITCHEN_MASTER');const x=r?.kitchens?.find(x=>x.id===o);if(!x)throw Error('Kitchen name is not available in the saved register.');return x.name||'Unnamed kitchen';}
  const outlets=await BOBS_DATA.listOutlets();return outlets.find(x=>String(x.id)===o)?.name||'Outlet '+o;

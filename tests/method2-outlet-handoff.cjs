@@ -29,7 +29,8 @@ function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_d
   const raw={selection:{[cat]:{indices:[i]}},qtys:{[cat+'|'+i]:290},prod:{[cat+'::'+i]:{unitsPerBatch:120,batchesToday:3}},orderPacking:{mode:'none'}};
   const recipes=[{name:'Idli',yieldQty:120,yieldUnit:'piece',ingredients:[['Rice',1,'kg',55]]}];
   const reads=[];l.M2.read=async(o,m)=>(reads.push(o),o==='COMPANY'?{recipes}:raw);l.M2.cache=()=>{};
-  let opened;l.open=(url,name)=>(opened={url,name});
+  // JSDOM cannot navigate documents; capture the shared helper call. Its route policy is tested in window-return.cjs.
+  let opened;l.BOBS_WINDOW_RETURN.openWorkspace=url=>(opened={url},l);
   for(const s of l.document.scripts)if(s.textContent.includes('equipment'))l.eval(s.textContent);
   l.eval(source('method2-list.js'));
   await until(()=>l.document.getElementById('status').textContent.includes('Loaded from Google'));

@@ -582,7 +582,7 @@ function mount(host,options){
  for(const type of ['wheel','touchstart','pointerdown','keydown'])host.parentElement?.addEventListener(type,()=>{revealContinuation=false;},{passive:true});
  for(const type of ['input','change','click'])document.addEventListener(type,checklistUpdate);
  let handlingReview=false;root.addEventListener('bobs-review-context',()=>{clearTimeout(checklistTimer);if(handlingReview)return;handlingReview=true;try{refreshAction();}finally{handlingReview=false;}});
- const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog,#bobsNextActionBar')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
+ const actionObserver=new MutationObserver(records=>{if(records.every(r=>host.contains(r.target)||r.target.closest?.('#bobsClickPreview,#bobsCompanion,#bobsRoadmap,[data-review-ui],#bobsFlowGuide,#bobsReferenceDialog,#bobsNextActionBar')))return;clearTimeout(checklistTimer);checklistTimer=setTimeout(refreshAction,30);});
  actionObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['disabled','aria-busy','data-tone']});
  actionStamp=actionKey(snapshot());render();return {update,kitchenNext};
 }
