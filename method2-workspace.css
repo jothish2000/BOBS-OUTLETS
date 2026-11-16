@@ -7,3 +7,20 @@
 [type="checkbox"]{width:22px;height:22px;accent-color:#24563d}.category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.category-tile{text-decoration:none;display:block;margin:0}.category-tile:hover{border-color:#24563d;background:#edf6ef}.selection-table td:first-child{width:70px}.selected-row.item{display:table-row}.selected-row.item select{min-width:125px}.selected-row td:last-child{white-space:nowrap}.packing-row-cost{grid-column:1/-1;font-size:14px;color:#24563d;padding-bottom:10px}#packingSummary{margin-top:16px}#idliPackingPreset{margin-bottom:14px}
 .purchase-summary,.side-cost{display:block;margin:14px 0;padding:12px;background:#edf5ee;color:#214932;border-radius:7px;line-height:1.5}.purchase-fields .fields{margin-bottom:10px}input[readonly]{background:#eff2ef}
 .packing-editor{margin-top:18px;padding:16px;background:#f4f7f2;border:1px solid #ccd8cb;border-radius:10px}.packing-editor h4{margin:0 0 12px}.packing-editor>button{margin-top:12px}.packing-settings{padding:12px;margin:12px 0;background:#fff}.packing-settings>summary{margin-bottom:14px}.packing-material{padding:14px 0;border-bottom:1px solid #d8dfd6;margin-bottom:14px}.packing-summary{display:block;margin-top:14px}.cost-component{padding:10px 12px;margin:10px 0}.cost-component summary.line{border:0;align-items:flex-start}.cost-component summary:after{content:'▾';color:#607267}.cost-component[open] summary:after{content:'▴'}.cost-component .muted{margin-bottom:4px}
+
+#selectedCard .setup-actions {white-space:normal;vertical-align:top}
+#selectedCard [data-edit-item] {font-weight:700;white-space:nowrap}
+#selectedCard .row-options {padding:0;margin:9px 0 0;border:0}
+#selectedCard .row-options summary {font-size:.85rem;font-weight:500;color:#405e4b;cursor:pointer}
+#selectedCard .row-options p {font-size:.85rem;line-height:1.45;max-width:24em;margin:.5rem 0}
+#selectedCard .row-options button {padding:6px 10px;font-size:.85rem}
+@media (max-width:700px) {
+ #selectedCard table,#selectedCard tbody {display:block}
+ #selectedCard thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ #selectedCard .selected-row.item {display:block;margin:10px 0 0;padding:10px 0}
+ #selectedCard .selected-row td {display:block;border:0;padding:4px 0}
+ #selectedCard .selected-row td[data-label] {display:grid;grid-template-columns:minmax(6.5em,40%) 1fr;align-items:baseline;gap:8px}
+ #selectedCard .selected-row td[data-label]::before {content:attr(data-label);color:#506052;font-size:.875rem}
+ #selectedCard .selected-row .muted {margin:3px 0}
+ #selectedCard .setup-actions {margin-top:6px}
+}

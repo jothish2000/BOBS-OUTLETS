@@ -18,10 +18,12 @@ function savedPageContext(s,href){
  const owner=s.savedChecklist?.name||s.ctx?.outlet&&'Outlet '+s.ctx.outlet||'the selected scope';
  let current;try{
  const here=new URL(href),matches=[];
- function visit(rows){for(const row of rows||[]){if(row.href){try{const u=new URL(row.href,here),page=u.pathname.split('/').pop();
- if(u.origin===here.origin&&page===here.pathname.split('/').pop()&&['stage','cat','i','item'].every(key=>{
+ const pagePath=url=>url.pathname.replace(/\/$/,'').replace(/\.html$/,'');
+ const currentPath=pagePath(here);
+ function visit(rows){for(const row of rows||[]){if(row.href){try{const u=new URL(row.href,here);
+ if(u.origin===here.origin&&pagePath(u)===currentPath&&['stage','cat','i','item'].every(key=>{
  const wanted=u.searchParams.get(key),actual=here.searchParams.get(key);
- return wanted==null?!(key==='stage'&&page==='outlet-plan.html'&&actual):wanted===actual||(key==='stage'&&wanted==='baseline'&&!actual);
+ return wanted==null?!(key==='stage'&&currentPath.endsWith('/outlet-plan')&&actual):wanted===actual||(key==='stage'&&wanted==='baseline'&&!actual);
  }))matches.push(row);}catch(_){}}
  visit(row.children);}}
  visit(s.savedChecklist?.stages);
@@ -171,8 +173,11 @@ function mount(host,options){
   if(!box){box=el('section',undefined,'guide-checklist');box.setAttribute('aria-label','Your progress checklist');host.append(box);}
   box.replaceChildren();
   const m=checklistModel(s),local=root.BOBS_REVIEW?.snapshot();
-  box.append(el('strong','Your actions on this page'));
-  box.append(el('p','A green tick below means you confirmed that specific review or choice. Saving to Google is a separate action.'));
+  const currentSetup=s.method2?.item||s.methodFlow?.workspace?.item||s.itemHelp?.onPage;
+  if(!currentSetup||local?.rows?.length){
+   box.append(el('strong','Your actions on this page'));
+   box.append(el('p','A green tick below means you confirmed that specific review or choice. Saving to Google is a separate action.'));
+  }
   const localList=el('ol',undefined,'guide-checklist-local');
   const add=(title,done,selector,detail)=>{const li=el('li',undefined,done?'guide-checklist-done':'guide-checklist-next');li.append(el('span',(done?'✓ ':'○ ')+title));if(detail)li.append(el('small',detail));if(selector){li.reviewNode=document.querySelector(selector);const b=button(done?'Review again':'Review these inputs','review-inputs-'+localList.children.length,()=>pageFocus(selector));if(done)b.classList.add('guide-review-again');li.append(b);}localList.append(li);};
   if(s.production?.ready){
@@ -395,7 +400,7 @@ function mount(host,options){
     }
     if(s.itemHelp){const help=s.itemHelp;if(help.notice)host.append(el('p',help.notice,'guide-confirmed'));ask(help.title);host.append(el('p',help.instruction));
      if(help.href){const u=new URL(help.href,location.href);if(u.origin!==location.origin)throw Error('Planner link must stay within BOBS.');u.searchParams.set('guide','continue');const a=el('a',help.action,'guide-action');a.href=u.href;a.target='_blank';a.rel='opener';a.dataset.guideChoice='item-open-production';host.append(a);}
-     else choices(button(help.action,'item-next-control',()=>{options.work();root.BOBS_ITEM_GUIDE.focus();}));
+     else if(!help.onPage)choices(button(help.action,'item-next-control',()=>{options.work();root.BOBS_ITEM_GUIDE.focus();}));
      if(help.continueAction)choices(button(help.continueAction.label,'item-continue',()=>root.BOBS_ITEM_GUIDE.continue()));
      if(help.earlier){const earlier=el('details');earlier.append(el('summary','Review earlier planning'));const a=el('a',help.earlier.label,'guide-action');a.href=help.earlier.href;a.target='_blank';a.dataset.guideChoice='item-review-production';earlier.append(a);host.append(earlier);}
      if(help.source?.title){const source=el('details');source.append(el('summary','Recipe / purchase source'),el('strong',help.source.title),el('p',help.source.text));host.append(source);}
@@ -405,10 +410,18 @@ function mount(host,options){
      const work=flow.workspace;
      if(!flow.baselineReady){ask('Check the outlet prerequisites.');host.append(el('p',flow.baselineMessage));}
      else if(flow.phase==='method2'){
-      ask(work?.ready?'Continue Method 2 — your selected items':'Method 2 — checking selected items');
-      if(work?.item){const x=work.item;host.append(el('p',x.name+' is selected. Its current Mode is '+(x.mode==='production'?'Production':'Purchase')+'.'),el('p','Review the Mode in the '+x.name+' row, then click “Edit item ↗” in that same row. '+(x.mode==='production'?'The item window first confirms demand and the supplying kitchen, then guides recipes, capacity and production time.':'The item window guides you through supplier costs, quantities and any sides prepared here.')),el('p','Save your reviewed changes in the item window, then return here for the next requirement.'));}
-      else host.append(el('p',work?.instruction||'Wait for the Method 2 item list to load. If it reports a read failure, use Reload Google records inside Method 2.'));
-      choices(button(work?.action||'Show Method 2 workspace','method-flow-work',()=>{options.work();(root.BOBS_METHOD_FLOW_GUIDE||root.BOBS_METHOD2_GUIDE).focus();}));
+      if(work?.item){
+       const x=work.item;
+       ask(x.name+' setup');
+       const next=el('p');
+       next.append('In the '+x.name+' row, click ',el('strong',x.setupLabel||'the setup button'),'.');
+       host.append(next);
+       host.append(el('p',x.mode==='production'?'Production mode opens the demand, supplying kitchen and recipe steps.':'Purchase mode opens supplier costs, quantities and any sides prepared here.'));
+      }else{
+       ask(work?.ready?'Your selected items':'Checking selected items');
+       host.append(el('p',work?.instruction||'Wait for the Method 2 item list to load.'));
+       if(work?.action)choices(button(work.action,'method-flow-work',()=>{options.work();(root.BOBS_METHOD_FLOW_GUIDE||root.BOBS_METHOD2_GUIDE).focus();}));
+      }
      }else{
       const copy=flow.phase==='method1'?['Continue Method 1 — hourly analysis','Review the hourly customer and basket inputs in Method 1. Complete its save and review before using Save & Continue below the workspace.','Show Method 1 workspace']:flow.phase==='other'?['Method review saved — choose what to do next','Use the choices on this page to review another method or finish this outlet. Analysing both methods is optional.','Show the next decision']:flow.phase==='finish'?['Continue to outlet profitability','The selected methods have been reviewed. Use Review outlet profit & break-even to continue.','Show outlet profitability action']:['Choose an analysis method','The outlet prerequisites are verified. Choose Method 1 for hourly footfall or Method 2 for selected items.','Show method choices'];
       ask(copy[0]);host.append(el('p',copy[1]));choices(button(copy[2],'method-flow-work',()=>{options.minimise();root.BOBS_METHOD_FLOW_GUIDE.focus();}));

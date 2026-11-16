@@ -52,7 +52,7 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  await page.evaluate(()=>{window.dispatchEvent(new Event('focus'));window.dispatchEvent(new Event('focus'));window.dispatchEvent(new Event('focus'))});
  await page.waitForTimeout(450);assert.equal(methodReads,readsBefore);assert.equal(await page.evaluate(()=>scrollY),scrollBefore);assert.equal(await page.locator('#catList tr').first().getAttribute('data-probe'),'original');
  await page.setViewportSize({width:1366,height:900});await page.locator('#catList tr').first().locator('select').selectOption('production');
- assert.equal(context.pages().length,1);const editorOpened=page.waitForEvent('popup');await page.locator('#catList tr').first().getByRole('button',{name:'Edit item'}).click();const editor=await editorOpened;await editor.waitForSelector('#editor:not([hidden])');
+ assert.equal(context.pages().length,1);const editorOpened=page.waitForEvent('popup');await page.locator('#catList tr').first().getByRole('button',{name:/Set up|Continue setup|Open setup/}).click();const editor=await editorOpened;await editor.waitForSelector('#editor:not([hidden])');
  assert.equal(await editor.locator('#mainPackingChoice').inputValue(),'');
  await editor.locator('#batchSize').fill('120');await editor.locator('#batches').fill('5');await editor.locator('#sold').fill('600');await editor.locator('#spoilage').fill('0');
  await editor.locator('#idliPackingPreset').click();await editor.getByLabel('Price ₹ each',{exact:true}).fill('3');
@@ -80,9 +80,9 @@ assert.equal(odd.parcels,2);assert.equal(odd.totalPacking,8);assert.equal(odd.pa
  const firstScreen=page.waitForEvent('popup');await page.locator('#method2Btn').click();const menu=await firstScreen;await menu.waitForSelector('.category-tile');assert.equal(await menu.locator('.category-tile').count(),14);
  const mainFrame=page.frameLocator('#methodFrame');await mainFrame.locator('#catList tr').first().waitFor();
  assert.equal(await mainFrame.locator('#review').isVisible(),false);
- assert.match(await mainFrame.locator('#guideText').textContent(),/find Idl[iy], choose Purchase or Production in its Mode column, then click “Edit item ↗” in that row/);
- assert.match(await mainFrame.locator('#guideExpected').textContent(),/Save & Continue/);
- assert.equal(await mainFrame.locator('#guideAction').getAttribute('href'),'#selectedCard');
+ const rowAction=await mainFrame.locator('#catList tr').first().locator('[data-edit-item]').innerText();
+ assert((await mainFrame.locator('#guideText').textContent()).includes(rowAction));
+ assert.equal(await mainFrame.locator('#guideAction').isVisible(),false);
  const menuClosed=menu.waitForEvent('close');await menu.locator('#returnToMethod').click();await menuClosed;
  assert(!requested.some(x=>/method2-production-(runtime|input-fix)|method2-condiments\.js/.test(x)));
  await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('status').textContent.includes('Loaded from Google'));

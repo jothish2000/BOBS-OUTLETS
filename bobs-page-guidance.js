@@ -1,5 +1,5 @@
 /* Page-only guidance joins the single BOBS Guide. Reads current controls; no data writes. */
-(function(root){'use strict';const doc=root.document,$=id=>doc.getElementById(id),page=location.pathname.split('/').pop();
+(function(root){'use strict';const doc=root.document,$=id=>doc.getElementById(id),page=root.BOBS_ROADMAP_CORE?.pageName(location.pathname) || location.pathname.split('/').pop();
 const action=(label,selector,run=false)=>({label,selector,run});
 function snapshot(){
  if(page==='equipment-planner.html'){

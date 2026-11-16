@@ -44,7 +44,7 @@ function core(w){w.eval(source('bobs-number-format.js'));w.eval(source('shared_d
    const editor=dom('method2-item.html',route.href),e=editor.window;core(e);
    e.M2.read=async(o)=>o==='COMPANY'?{recipes}:raw;e.BOBS_PORIYAL=[];
    e.BOBS_OPERATIONAL_RECIPES={load:async()=>({recipes,source:'Google BOBS Standard Recipe',notice:''})};e.BOBS_FULL_COST={load:async()=>({}),render:()=>{}};e.IdliSupportReaders={renderItem:()=>{}};
-   e.eval(source('method2-packing-ui.js'));e.eval(source('method2-item.js'));
+   e.eval(source('bobs-cost-flow.js'));e.eval(source('bobs-cost-detail-links.js'));e.eval(source('method2-packing-ui.js'));e.eval(source('method2-item.js'));
    await until(()=>!e.document.getElementById('editor').hidden);
    assert.equal(e.document.getElementById('mode').value,mode);
    assert.equal(e.document.getElementById('outletLabel').textContent,'Outlet '+id+' · Google-backed item editor');

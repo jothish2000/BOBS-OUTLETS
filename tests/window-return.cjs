@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const code=fs.readFileSync('bobs-window-return.js','utf8');
-function fixture({href='https://bobs.test/method2-item.html?outlet=2',referrer='',opener=null,closeWorks=true}={}){const calls=[],root={location:{href,origin:'https://bobs.test',assign:u=>calls.push(['navigate',u])},document:{referrer,readyState:'loading',addEventListener(){}},opener,closed:false,close(){calls.push(['close']);if(closeWorks)this.closed=true},setTimeout:f=>f()};root.top=root;vm.runInNewContext(code,{window:root,URL,console});return {nav:root.BOBS_WINDOW_RETURN,calls,root}}
+function fixture({href='https://bobs.test/method2-item.html?outlet=2',referrer='',opener=null,closeWorks=true,embed}={}){const calls=[],root={location:{href,origin:'https://bobs.test',assign:u=>calls.push(['navigate',u])},document:{referrer,readyState:'loading',addEventListener(){}},opener,closed:false,close(){calls.push(['close']);if(closeWorks)this.closed=true},setTimeout:f=>f()};root.top=root;if(embed)embed(root);vm.runInNewContext(code,{window:root,URL,console});return {nav:root.BOBS_WINDOW_RETURN,calls,root}}
 function parent(href='https://bobs.test/outlet-method-flow.html?from=outlet-setup&outlets=1%2C2'){const p={closed:false,location:{href},focus(){this.focused=true},postMessage(){}};p.top=p;return p}
 test('live opener is focused and child closes without navigating parent',()=>{const p=parent(),f=fixture({opener:p});f.nav.returnToParent('method2.html?outlet=2');assert(p.focused);assert.deepEqual(f.calls,[['close']]);assert.equal(p.location.href,'https://bobs.test/outlet-method-flow.html?from=outlet-setup&outlets=1%2C2')});
 test('recorded immediate parent retains outlet list and fragment when opener closes',()=>{const p=parent(),f=fixture({opener:p});p.closed=true;f.nav.returnToParent('method2.html?outlet=2');assert.deepEqual(f.calls,[['navigate',p.location.href]])});
@@ -69,4 +69,28 @@ test('serving return hint matches its live caller while different recipe quantit
  f.nav.afterSave();assert(p.focused);assert.deepEqual(f.calls,[['close']]);
  const main=fixture({href:address});const supplied=address+'&servingBaseline=0.02',child=new URL(main.nav.child('method2-item.html?servingRecipe=Sambar&returnTo='+encodeURIComponent(supplied)));assert.equal(child.searchParams.get('returnTo'),supplied);
  assert.notEqual(main.nav.identity(address),main.nav.identity(address.replace('7.2','9')));
+});
+
+
+test('a hosted kitchen navigates its own frame and accepts a clean Site return URL',()=>{
+ const host={get document(){throw Error('External host')},get location(){throw Error('External host')}};
+ const f=fixture({href:'https://bobs.test/kitchen-flow?stage=locations',embed(w){w.parent=w.top=host}});
+ assert.equal(f.nav.identity(f.root.location.href),f.nav.identity('kitchen-flow.html?stage=locations'));
+ assert.equal(f.nav.safe(null),null);
+ assert.equal(f.nav.openWorkspace('outlet-plan.html?stage=baseline'),f.root);
+ assert.equal(new URL(f.calls[0][1]).searchParams.get('returnTo'),f.root.location.href);
+ assert.equal(f.nav.resumeAt(f.root.location.href),true);
+ assert.equal(f.calls.at(-1)[1],'https://bobs.test/kitchen-flow.html?stage=locations');
+});
+
+test('an embedded Method 2 item opens in its BOBS owner inside the Site, leaving the host in place',()=>{
+ const host={get location(){throw Error('External host')}},visited=[];
+ const owner={location:{pathname:'/outlet-method-flow',href:'https://bobs.test/outlet-method-flow',assign:url=>visited.push(url)},parent:host,top:host};
+ const f=fixture({href:'https://bobs.test/method2?flow=1',embed(w){
+  owner.document={getElementById:id=>id==='methodFrame'?{contentWindow:w}:null};
+  w.parent=owner;w.top=host;
+ }});
+ assert.equal(f.nav.openWorkspace('method2-item.html?outlet=1&i=0'),owner);
+ assert.equal(new URL(visited[0]).searchParams.get('returnTo'),owner.location.href);
+ assert.equal(f.calls.length,0);
 });

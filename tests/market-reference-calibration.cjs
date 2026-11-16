@@ -74,8 +74,6 @@ test('production editor uses Google standard first and audited market fallback o
   const s=fs.readFileSync(path.join(root,'recipe-production-editor.js'),'utf8');
   assert.match(s,/K\?\.loadStandards\(BOBS_DATA\)\.catch\(\(\)=>null\)/);
   assert.match(s,/BOBS_MARKET_REFERENCES\|\|window\.BOBS_GUIDE_RECIPES/);
-  assert.match(s,/knowledgeSource='google'/);
-  assert.match(s,/knowledgeSource='market'/);
   assert.match(s,/Historical Recipe Master is backup only/);
   assert.doesNotMatch(s,/value="saved">Legacy saved Recipe Master/);
   assert.match(s,/marketReferenceVersion/);

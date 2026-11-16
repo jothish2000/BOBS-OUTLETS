@@ -213,6 +213,37 @@ function calculate(d,item,recipes){
  suggested:withUuwp===null?null:margin?(percent!==null&&percent<100?withUuwp/(1-percent/100):null):withUuwp*(1+(percent||0)/100),soldCost:sold===null?null:final*sold,
  revenue:sold===null?null:(number(d.price)||0)*sold,missing};
 }
+// Freeze the evidence used for this confirmed day before recipe rates or menu plans change.
+function directCostEvidence(d,item,recipes,c,date) {
+ const ingredients=[],sides=[],packing=[];
+ const requirements=[{name:item.recipeName||item.name,source:d.mode,quantity:c.made*c.baseQty,unit:c.sourceUnit},
+  ...d.condiments.map((side,index)=>{
+   const component=c.components[index+1],quantity=c.sold*Number(side.portion);
+   sides.push({name:side.recipeName,portion:Number(side.portion),unit:side.portionUnit,quantity,food:component.food*c.sold,packing:component.packingCost.total});
+   return {name:side.recipeName,source:component.source,quantity,unit:side.portionUnit};
+  })];
+ for(const req of requirements){
+  if(req.source!=='production')continue;
+  const base=recipe(recipes,req.name);
+  if(!base)continue;
+  const override=d.recipeOverrides?.[norm(base.name)]?.recipe;
+  const actual=override?{...base,...override}:base;
+  const yieldQty=number(actual.yieldQty||actual.standardYield||actual.yield),output=convert(req.quantity,req.unit,actual.yieldUnit);
+  if(!yieldQty||output===null)continue;
+  for(const row of actual.ingredients||[]){
+   const reference=number(row[1]),rate=number(row[3]);
+   if(reference===null||rate===null)continue;
+   const quantity=reference*output/yieldQty;
+   ingredients.push({recipe:req.name,name:row[0],quantity,unit:row[2],rate,amount:quantity*rate,energy:/lpg|fuel|electricity|gas/i.test(row[0])});
+  }
+ }
+ const owners=packingOwners(d);
+ const packs=[{name:item.name,owner:owners.main,cost:c.packingCost},...d.condiments.map((side,i)=>({name:side.recipeName,owner:side,cost:c.components[i+1].packingCost})),{name:'Common / order',owner:owners.common,cost:c.commonCost}];
+ for(const {name,owner,cost} of packs){
+  packing.push({name,mode:cost.mode,sets:cost.parcels,amount:cost.total,materials:cost.mode==='required'?(owner.packaging||[]).map(r=>({name:r.name||r.label,quantity:Number(r.qty)*cost.parcels,unitCost:Number(r.unitCost)})):[]});
+ }
+ return {date,name:item.name,unit:d.unit,made:c.made,sold:c.sold,ingredients,sides,packing,direct:c.actualDayCost,main:c.actualMainFood,condiments:c.actualCondiments,totalPacking:c.totalPacking};
+}
 async function read(outlet,module='METHOD2',key='default'){
  if(String(module).toUpperCase()==='RECIPE_MASTER'&&BOBS_DATA.getModule){return BOBS_DATA.getModule(outlet,module,key)}
  const r=await BOBS_DATA.jsonp({action:'moduleGet',outletId:outlet,module,recordKey:key});
@@ -291,7 +322,7 @@ async function saveItemUnlocked(outlet,cat,i,item,d,baseline,recipes){
  latest.packaging[k]=packingEntries.flatMap(({owner,pc,kind,name})=>pc.mode!=='required'?[]:(owner.packaging||[]).map(x=>({...x,qty:Number(x.qty)*(c.sold>0?pc.parcels/c.sold:1/(pc.per||1)),packingOwner:kind,ownerName:name})));
  if(latest.catalogueBasePrices[k]===undefined){const base=basePrice(baseline,cat,i,item);if(base!==null)latest.catalogueBasePrices[k]=base}
  latest.pricing[k]={...latest.pricing[k],markupPct:Number(d.markup),pricingBasis:d.pricingBasis||'markup',currentPrice:Number(d.price),priceSavedAt:new Date().toISOString()};
- latest.commercial[k]={...latest.commercial[k],mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.base:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,actualDayCost:c.actualDayCost,actualMainFoodCost:c.actualMainFood,pricingCogs:c.withUuwp,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
+ latest.commercial[k]={...latest.commercial[k],costEvidence:directCostEvidence(d,item,recipes,c,savedDraft.businessDate),mode:d.mode,finalCogs:c.final,cogsWithUuwp:c.withUuwp,foodSpoilagePct:Number(d.spoilage),safetyPct:Number(d.uuwp),uuwpApplies:c.apply,unsold:c.unsold,todaysProduction:d.mode==='production'?c.made:0,purchasedQuantity:d.mode==='purchased'?c.made:0,totalProductionCost:d.mode==='production'?c.made*c.base:0,soldQuantity:c.sold,totalSoldCogs:c.soldCost,actualDayCost:c.actualDayCost,actualMainFoodCost:c.actualMainFood,pricingCogs:c.withUuwp,packingParcelSize:c.parcelSize,packingParcels:c.parcels,totalPackingCost:c.totalPacking,packingCogsPerUnit:c.pack,commonPackingCogsPerUnit:c.commonPacking,totalCommonPackingCost:c.commonCost.total,packingBreakdown:c.components.map(x=>({name:x.name,mode:x.packingCost.mode,unitsPerSet:x.packingCost.per,sets:x.packingCost.parcels,perUnit:x.packing,total:x.packingCost.total}))};
  latest.prod[k]={...latest.prod[k],mode:d.mode,unitsPerBatch:d.mode==='production'?Number(d.batchSize):(purchaseConfig(d,item.side?d.servingUnit:d.unit).basis==='batch'?Number(purchaseConfig(d,item.side?d.servingUnit:d.unit).qty):1),batchesToday:Number(d.batches),todaysProduction:d.mode==='production'?c.made:0};
  if(d.mode==='production')latest.prod[legacy]={...latest.prod[legacy],format:d.unit==='kg'?'kg':'batch',batchSize:d.batchSize,numBatches:d.batches,kgBatchSize:d.batchSize,kgNumBatches:d.batches,spoil:d.spoilage,capacity:d.capacity};
  else delete latest.prod[legacy];
@@ -309,5 +340,5 @@ function cache(outlet,s){
  const savedKeys=Object.keys(s.itemEditors||{}),summary=(savedKeys.length||s.orderPacking)?{method2DailySales:savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.soldQuantity)||0)*(number(s.pricing?.[k]?.currentPrice)||0),0),method2PurchaseCost:orderPackingCost(s).total+savedKeys.reduce((sum,k)=>sum+(number(s.commercial?.[k]?.actualDayCost??s.commercial?.[k]?.totalSoldCogs)||0),0)}:{};
  all[outlet]={...all[outlet],method2:s,...summary};localStorage.setItem('outlet-analysis-data',JSON.stringify(all));
 }
-root.M2={orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,saveSellingPrices,basePrice,currentPrice,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,savePlanning,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
+root.M2={directCostEvidence,orderPackingCost,saveOrderPacking,backup,backups,restore,clone,number,norm,keys,state,hasItem,selected,saveSelection,saveSellingPrices,basePrice,currentPrice,packing,packingCharge,recipe,unitCost,convert,draft,calculate,read,write,project,saveItem,savePlanning,cache,SIDES,purchaseKey,purchaseConfig,purchaseRate,isSide,sideCatalogue,installSides,hydratePurchases,savePurchase,sideRecipes,canonicalRecipeName,masterEntry};
 })(typeof window==='undefined'?globalThis:window);

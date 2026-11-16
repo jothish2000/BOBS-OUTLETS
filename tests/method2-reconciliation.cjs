@@ -18,7 +18,10 @@ assert.equal(d.purchase.qty,120);assert.equal(d.purchase.total,840);assert.equal
 assert.equal(c.base,7);assert.equal(c.cond,1.2);assert.equal(c.totalPacking,900);assert(Math.abs(c.soldCost-5820)<1e-8);
 assert.deepEqual(state.itemEditors[main],original.itemEditors[main]);assert.deepEqual(original.itemEditors[side],oldSide);
 const sd=M2.draft(state,M2.SIDES,0,catalogue[0]),sc=M2.calculate(sd,catalogue[0],recipes);
-assert.equal(sd.servingQty,200);assert.equal(sd.price,20);assert.equal(sc.base,10);assert.equal(sc.apply,false);
+assert.equal(sd.servingQty,200);assert.equal(sd.price,20);assert.equal(sc.base,10);assert.equal(sc.apply,true);
+// Five packs made, two sold. Three unused packs are 60%; this allowance is for pricing only.
+assert.equal(sc.uuwpPctApplied,60);assert.equal(sc.actualDayCost,52);
+assert(Math.abs(sc.withUuwp-17.6)<1e-9); // ₹10 food + ₹1 pouch, multiplied by 1.6.
 assert.equal(M2.calculate({...sd,uuwpPolicy:'always'},catalogue[0],recipes).apply,true);
 assert.equal(M2.purchaseRate(M2.purchaseConfig({basis:'unit',unitCost:60,batchUnit:'L'},'ml')),60);
 assert.equal(M2.calculate(oldDraft,{name:'Idli'},recipes).base,7);
@@ -29,7 +32,13 @@ const latestRecord=M2.state({...original,itemEditors:{...original.itemEditors,[m
 const remoteDraft=M2.draft(latestRecord,'Breakfast Catalogue',0,{name:'Idli'}),remoteCalc=M2.calculate(remoteDraft,{name:'Idli'},recipes);
 assert.equal(remoteCalc.packingCost.total,498);assert.equal(remoteCalc.components[1].packingCost.total,166);assert.equal(remoteCalc.commonCost.total,166);
 assert.equal(remoteCalc.totalPacking,830);assert(Math.abs(remoteCalc.soldCost-3544.2)<1e-8);
-assert.equal(remoteCalc.apply,true);assert.equal(M2.calculate({...remoteDraft,mode:'production'},{name:'Idli'},recipes).apply,false);assert.deepEqual(latestRecord.itemEditors[main],remotePacking);
+assert.equal(remoteCalc.apply,true);
+const produced=M2.calculate({...remoteDraft,mode:'production'},{name:'Idli'},recipes);
+assert.equal(produced.apply,true);
+assert(Math.abs(produced.uuwpPctApplied-269/600*100)<1e-9);
+assert(Math.abs(produced.actualDayCost-(600+331*1.2+830))<1e-9);
+assert(Math.abs(produced.withUuwp-(1+1.2+830/331)*(1+269/600))<1e-9);
+assert.deepEqual(latestRecord.itemEditors[main],remotePacking);
 const newDraft=M2.draft(M2.state({}),'Breakfast Catalogue',0,{name:'Idli',purchasedCost:7.14});
 assert.equal(newDraft.purchase.total,'');assert(M2.calculate(newDraft,{name:'Idli'},recipes).components[0].foodMissing);
 let db=clone(original),writes=0;const backups={};

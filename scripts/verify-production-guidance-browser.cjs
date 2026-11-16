@@ -19,9 +19,9 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
  const owner=await ctx.newPage();owner.on('pageerror',e=>errors.push(e.message));owner.on('dialog',d=>d.accept());
  await owner.goto('https://bobs.test/method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode=production');
  await owner.waitForFunction(()=>document.getElementById('controls')?.disabled===false);
- await owner.locator('[data-guide-choice=item-open-production]').waitFor();
- await owner.locator('[data-guide-choice=item-open-production]').evaluate(a=>a.dataset.bobsWindow='auxiliary');
- const parentURL=owner.url(),opening=owner.waitForEvent('popup');await owner.locator('[data-guide-choice=item-open-production]').click();
+ await owner.locator('#productionEntry a').waitFor();
+ await owner.locator('#productionEntry a').evaluate(a=>a.dataset.bobsWindow='auxiliary');
+ const parentURL=owner.url(),opening=owner.waitForEvent('popup');await owner.locator('#productionEntry a').click();
  const p=await opening;p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());
  await p.waitForURL(u=>u.pathname.endsWith('/production-plan.html'),{waitUntil:'domcontentloaded'});const url=p.url();assert.equal(new URL(url).searchParams.get('returnTo'),parentURL);assert.equal(new URL(url).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(url).searchParams.get('i'),'0');
  await p.waitForFunction(()=>document.getElementById('plannerFields')?.disabled===false);
@@ -63,7 +63,7 @@ db['COMPANY/KITCHEN_MASTER/default'].kitchens.push({id:'Kitchen-Second',name:'Se
 
  // Existing item window is reused without reload or draft loss.
  await owner.fill('#batchSize','121');
- const count=ctx.pages().length;await owner.locator('[data-guide-choice=item-open-production]').evaluate(a=>a.dataset.bobsWindow='auxiliary');await owner.locator('[data-guide-choice=item-open-production]').click();await owner.waitForTimeout(150);
+ const count=ctx.pages().length;await owner.locator('#productionEntry a').evaluate(a=>a.dataset.bobsWindow='auxiliary');await owner.locator('#productionEntry a').click();await owner.waitForTimeout(150);
  assert.equal(ctx.pages().length,count);assert.equal(await p.inputValue('#intendedQuantity'),'360');assert.equal(await owner.inputValue('#batchSize'),'121');
  assert.equal(await p.locator('[data-serving-row]').count(),2);
  await p.locator('#servingAmount-0').fill('20');await p.locator('#servingAmount-1').fill('8');

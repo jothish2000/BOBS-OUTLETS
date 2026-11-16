@@ -50,6 +50,17 @@ on:
       - 'apps-script/04_ModuleData.gs'
       - 'google-vault-apps-script.gs'
       - 'tests/*vault*.cjs'
+      - 'tests/method2-menu-results.cjs'
+      - 'tests/operating-day-expenses.cjs'
+      - 'tests/daily-cost-details.cjs'
+      - 'tests/method2-cost-view-handoff.cjs'
+      - 'bobs-daily-cost-details.js'
+      - 'bobs-cost-detail-links.js'
+      - 'method2-core.js'
+      - 'method2-list.js'
+      - 'method2-overall.js'
+      - 'bobs-cost-flow.js'
+      - 'scripts/verify-serving-recipes-browser.cjs'
       - 'scripts/verify-vault-browser.cjs'
       - 'scripts/verify-production-guidance-browser.cjs'
       - '.github/workflows/vault-read-reliability.yml'
@@ -103,6 +114,17 @@ on:
       - 'apps-script/04_ModuleData.gs'
       - 'google-vault-apps-script.gs'
       - 'tests/*vault*.cjs'
+      - 'tests/method2-menu-results.cjs'
+      - 'tests/operating-day-expenses.cjs'
+      - 'tests/daily-cost-details.cjs'
+      - 'tests/method2-cost-view-handoff.cjs'
+      - 'bobs-daily-cost-details.js'
+      - 'bobs-cost-detail-links.js'
+      - 'method2-core.js'
+      - 'method2-list.js'
+      - 'method2-overall.js'
+      - 'bobs-cost-flow.js'
+      - 'scripts/verify-serving-recipes-browser.cjs'
       - 'scripts/verify-vault-browser.cjs'
       - 'scripts/verify-production-guidance-browser.cjs'
       - '.github/workflows/vault-read-reliability.yml'
@@ -123,6 +145,7 @@ jobs:
         run: |
           node --test tests/asset-guidance-transition.cjs tests/single-guide.cjs tests/window-return.cjs tests/current-action-guide.cjs tests/kitchen-outlet-guide.cjs tests/connected-guide.cjs tests/kitchen-equipment-help.cjs tests/shared-kitchen-flow.cjs tests/shared-kitchen-store.cjs tests/staff-table.cjs tests/complete-production-flow.cjs tests/production-plan-ui.cjs tests/outlet-save-help.cjs tests/salary-summary.cjs tests/capex-salary-history.cjs tests/salary-capital.cjs tests/outlet-thp-norms.cjs tests/outlet-first-flow.cjs tests/outlet-item-builder.cjs tests/outlet-roadmap.cjs tests/outlet-late-read.cjs tests/transition-input-generation.cjs
           node --test tests/vault-read-reliability.cjs tests/method2-vault-editor.cjs tests/bobs-roadmap.cjs
+          node --test tests/method2-menu-results.cjs tests/operating-day-expenses.cjs tests/daily-cost-details.cjs tests/method2-cost-view-handoff.cjs
           node tests/method2-outlet-handoff.cjs
           node tests/method2-setup-before-workload.cjs
           node --test tests/query1-cost-flow.cjs tests/method2-selling-price.cjs tests/method2-workload-gate.cjs
@@ -133,7 +156,7 @@ jobs:
           PLAYWRIGHT_PATH: ${{ runner.temp }}/bobs-vault-tests/node_modules/playwright
         run: |
           browser_status=0
-          for script in scripts/verify-production-guidance-browser.cjs scripts/verify-outlet-save-help-browser.cjs scripts/verify-guided-review-browser.cjs scripts/verify-guided-kitchen-browser.cjs scripts/verify-vault-browser.cjs scripts/verify-shared-kitchen-browser.cjs scripts/verify-salary-capital-browser.cjs; do
+          for script in scripts/verify-serving-recipes-browser.cjs scripts/verify-production-guidance-browser.cjs scripts/verify-outlet-save-help-browser.cjs scripts/verify-guided-review-browser.cjs scripts/verify-guided-kitchen-browser.cjs scripts/verify-vault-browser.cjs scripts/verify-shared-kitchen-browser.cjs scripts/verify-salary-capital-browser.cjs; do
             node "$script" || browser_status=1
           done
           exit "$browser_status"
