@@ -175,7 +175,7 @@ await methodFlow.close();
 const item=await ctx.newPage();await item.goto(base+'method2-item.html?outlet=1&cat=Breakfast+Catalogue&i=0&mode=production#idliLabourCost',{waitUntil:'domcontentloaded'});await item.waitForFunction(()=>document.getElementById('controls')?.disabled===false);await item.waitForFunction(()=>/Break.even/i.test(document.body.innerText));assert.match(await item.locator('body').innerText(),/Ideal Price Builder/);assert(await item.locator('a[href*="production-plan.html"]').count()>0);assert(await item.locator('a[href*="asset-master.html"]').count()>0);result.checks.push('Ideal Price Builder exposes production, assets and break-even with truthful current prerequisites');
 assert.equal(await item.locator('#dailyCostViews details a[href*="daily-cost-details.html"]').count(),8);
 const detailPromise=item.waitForEvent('popup');await item.locator('#dailyCostViews > a').click();const costDetail=await detailPromise;
-await costDetail.waitForFunction(()=>document.getElementById('refresh')?.disabled===false);
+await costDetail.waitForFunction(()=>{const status=document.getElementById('status'),refresh=document.getElementById('refresh');return status&&status.textContent!=='Reading saved daily costs…'&&refresh?.disabled===false;});
 assert.match(await costDetail.locator('#status').innerText(),/Read-only/);
 assert.equal(new URL(costDetail.url()).searchParams.get('outlet'),'1');assert.equal(new URL(costDetail.url()).searchParams.get('cat'),'Breakfast Catalogue');assert.equal(new URL(costDetail.url()).searchParams.get('i'),'0');
 assert.equal(await costDetail.locator('#sections a').count(),8);
