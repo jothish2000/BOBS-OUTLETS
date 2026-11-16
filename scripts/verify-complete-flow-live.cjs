@@ -157,7 +157,7 @@ if(await methodFlow.evaluate(()=>!!window.BOBS_BASELINE_READY)){
  const selectionPromise=methodFlow.waitForEvent('popup');await methodFlow.click('#method2Btn');const selection=await selectionPromise;await selection.close();
  await methodFlow.waitForFunction(()=>window.BOBS_METHOD_FLOW_GUIDE?.snapshot().workspace?.ready);
  const workspace=await methodFlow.evaluate(()=>BOBS_METHOD_FLOW_GUIDE.snapshot().workspace);
- await methodFlow.waitForFunction(()=>document.getElementById('bobsGuideDialogue').textContent.includes('Continue Method 2'));
+ await methodFlow.waitForFunction(()=>{const work=BOBS_METHOD_FLOW_GUIDE.snapshot().workspace,dialogue=document.getElementById('bobsGuideDialogue').textContent;return work?.item?dialogue.includes(work.item.name+' setup')&&dialogue.includes(work.item.setupLabel):dialogue.includes('Your selected items');});
  assert.equal(await methodFlow.locator('#bobsCompanion').evaluate(el=>getComputedStyle(el).position),'fixed');
  assert.equal(await methodFlow.frameLocator('#methodFrame').locator('#grandTotalSale,#grandTotalCost,#grandTotalProfit,#sharedPackingTotal').count(),0);
  if(workspace.item){
