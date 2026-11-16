@@ -1,8 +1,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const source=p=>fs.readFileSync(p,'utf8');
-test('only the bot presents current guidance while the form retains its production-plan control',()=>{
+test('a direct Ideal Price Builder link presents its delivery action while retaining the earlier plan control',()=>{
  const html=source('method2-item.html').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
- const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://bobs.test/method2-item.html?outlet=1&mode=production'}),w=dom.window;
+ const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://bobs.test/method2-item.html?outlet=1&mode=production#idliLabourCost'}),w=dom.window;
  try{
  const d=w.document,style=d.createElement('style');style.textContent=source('bobs-roadmap.css');d.head.append(style);
  d.getElementById('title').textContent='Idli';d.getElementById('controls').disabled=false;d.getElementById('editor').hidden=false;d.getElementById('itemGuide').hidden=false;d.getElementById('mode').value='production';
@@ -32,8 +32,8 @@ test('identified page-only guides are hidden without hiding operational controls
 test('standalone Method2 guide uses the same current item state as the embedded workflow',()=>{
  const dom=new JSDOM('<div id="host"></div>',{runScripts:'outside-only',url:'https://bobs.test/method2.html?outlet=1'}),w=dom.window;try{
  let focus=0;w.BOBS_METHOD2_GUIDE={focus(){focus++}};w.eval(source('bobs-guide-bot.js'));const host=w.document.getElementById('host');
- w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{page:'method2.html'},method2:{ready:true,item:{name:'Idli',mode:'production'},action:'Go to Idli — Edit item ↗'}}),minimise(){}});
- assert.match(host.textContent,/Idli is selected/);assert.match(host.textContent,/supplying kitchen/);host.querySelector('[data-guide-choice=method-flow-work]').click();assert.equal(focus,1);
+ w.BOBS_GUIDE_BOT.mount(host,{snapshot:()=>({ctx:{page:'method2.html'},method2:{ready:true,item:{name:'Idli',mode:'production',setupLabel:'Continue setup'}}}),minimise(){}});
+ assert.match(host.textContent,/Idli row, click Continue setup/);assert.match(host.textContent,/supplying kitchen/);assert.equal(host.querySelector('[data-guide-choice=method-flow-work]'),null);assert.equal(focus,0);
  }finally{w.close()}
 });
 

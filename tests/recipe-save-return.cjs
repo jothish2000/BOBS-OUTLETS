@@ -23,3 +23,18 @@ test('notification failures do not prevent verified return',async()=>{const f=fi
 test('no category returns to outlet workspace; failed navigation keeps return link',async()=>{const f=fixture({fallback:true,navFail:true});await f.click();assert.equal(f.result.urls[0],'method2.html?outlet=1');assert.match(f.elements.productionStatus.textContent,/Use the return link/);assert.equal(f.elements.productionStatus.items[1].href,'method2.html?outlet=1');assert.equal(f.ctx.dirty,false)});
 
 test('liquid save retains legacy metadata without substituting hidden control values',async()=>{const f=fixture({volume:true});f.ctx.state.recipeOverrides={idli:{referencePortion:'0.001',portion:'60'},other:{keep:true}};f.elements.referencePortion.value='999';f.elements.portion.value='50';await f.click();assert.equal(f.result.saves,1);assert.equal(f.ctx.state.recipeOverrides.idli.referencePortion,'0.001');assert.equal(f.ctx.state.recipeOverrides.idli.portion,'60');assert.equal(f.ctx.state.recipeOverrides.other.keep,true)});
+
+test('verified main recipe advances the same editor to the precise caller’s next side',async()=>{
+ const f=fixture(),parent='https://bobs.test/production-plan.html?outlet=1',origin='https://bobs.test';
+ f.ctx.URL=URL;
+ Object.assign(f.ctx.location,{pathname:'/recipe-cost-editor.html',href:origin+'/recipe-cost-editor.html?item=Idli',replace:href=>f.result.urls.push(href)});
+ f.ctx.q.set('returnTo',parent);
+ f.ctx.window.BOBS_WINDOW_RETURN={identity:x=>x,afterSave(){throw Error('closed before recipe continuation')}};
+ f.ctx.window.opener={closed:false,location:{href:parent},postMessage(){},async BOBS_NEXT_RECIPE(receipt){
+  assert.equal(f.result.saves,1);assert.equal(receipt.recipeName,'Idli');assert.equal(receipt.savedAt,f.ctx.state.recipeOverrides.idli.savedAt);
+  return 'recipe-cost-editor.html?item=Idli+Sambar&qty=18&outlet=1';
+ }};
+ await f.click();
+ const url=new URL(f.result.urls[0]);assert.equal(url.searchParams.get('item'),'Idli Sambar');
+ assert.equal(url.searchParams.get('qty'),'18');assert.equal(url.searchParams.get('returnTo'),parent);
+});

@@ -13,9 +13,9 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await page.addStyleTag({content:fs.readFileSync('style.css','utf8')});
  await page.addScriptTag({content:fs.readFileSync('bobs-number-format.js','utf8')});
  await page.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
+ await page.addScriptTag({content:fs.readFileSync('method2-core.js','utf8')});
  await page.evaluate(()=>{
  window.saves=0;window.failSave=false;window.recipe={name:'Idli',yieldQty:120,yieldUnit:'pieces',portionGrams:50,ingredients:[['Rice',1.6,'kg',55],['Fenugreek',0.004,'kg',160],['LPG fuel',0.2,'kg',153.5]],referenceEvidence:[]};
- window.M2={purchaseKey:s=>s.toLowerCase()};
  window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[window.recipe]})};window.BOBS_DATA={};
  window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>({recipeOverrides:{}}),save:async(outlet,module,key,next)=>{window.saves++;if(window.failSave)throw Error('Simulated verification failure');window.savedNext=next;await window.captureFixture({recipe:window.recipe,state:next});return next}};
  });
@@ -108,7 +108,8 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
  await reopen.setContent(html.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
  await reopen.addScriptTag({content:fs.readFileSync('bobs-number-format.js','utf8')});
  await reopen.addScriptTag({content:fs.readFileSync('bobs-cost-flow.js','utf8')});
- await reopen.evaluate(f=>{window.M2={purchaseKey:s=>s.toLowerCase()};window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
+ await reopen.addScriptTag({content:fs.readFileSync('method2-core.js','utf8')});
+ await reopen.evaluate(f=>{window.BOBS_DATA={};window.BOBS_RECIPE_KNOWLEDGE={loadStandards:async()=>({records:[f.recipe]})};window.BOBS_VERIFIED={clone:x=>JSON.parse(JSON.stringify(x)),read:async()=>f.state,save:async()=>{throw Error('Unexpected write on reopen')}};},fixture);
  await reopen.addScriptTag({content:fs.readFileSync('recipe-production-editor.js','utf8')});await reopen.evaluate(()=>BOBSRecipeProduction.start());
  assert.equal(await reopen.locator('#confirmed').getAttribute('aria-disabled'),'true');await reopen.locator('#confirmed').click({force:true});assert.equal(await reopen.locator('#confirmed').isChecked(),false);await dismissGuidance(reopen);assert.equal(await reopen.evaluate(()=>document.activeElement.id),'referencePortion');
  assert(await reopen.locator('#customPortion').isEnabled());assert.equal(await reopen.locator('#portion').inputValue(),'custom');assert.equal(await reopen.locator('#customPortion').inputValue(),'110');

@@ -112,16 +112,19 @@ S.progress=async(id,scanRead,date=S.pageDate(id))=>{
    BOBS_CAPITAL.workingCapital(op,saved.inputs);
   });
  }
- return {name:context.kitchen.name,steps,completed:steps.filter(s=>s.status==='done').length,next:steps.find(s=>s.status!=='done')};
+ const productionIndex=steps.findIndex(step=>step.href.startsWith('production-plan.html?'));
+ const productionSteps=steps.slice(0,productionIndex+1);
+ const orders=context.jobs.flatMap(job=>job.orders).map(order=>({outlet:order.outlet,itemKey:order.itemKey,key:order.requirementKey}));
+ return {name:context.kitchen.name,productionNext:productionSteps.find(step=>step.status!=='done'),orders,steps,completed:steps.filter(s=>s.status==='done').length,next:steps.find(s=>s.status!=='done')};
 };
 
 // Both the selling item and the saved-demand receipt display the same kitchen progress.
 const continuationViews = new WeakMap();
-S.showDemandContinuation = function(host, {record, keys, itemKey, returnTo, child = false, refresh = false,date = C.today()}) {
+S.showDemandContinuation = function(host, {record, keys, itemKey, returnTo, child = false, refresh = false,date = C.today(), productionOutlet = null, retry:refreshDemand}) {
  const sources = keys.map(key => record?.kitchenSources?.[key]);
  const ids = sources.length && sources.every(s => s?.date === date && K.isKitchen(s.kitchenId))
    ? [...new Set(sources.map(s => s.kitchenId))] : [];
- const signature = JSON.stringify([date, itemKey, record?.itemEditors?.[itemKey]?.planningToken, ids, returnTo]);
+ const signature = JSON.stringify([date, itemKey, record?.itemEditors?.[itemKey]?.planningToken, keys,ids,returnTo,productionOutlet]);
  const prior = continuationViews.get(host);
  if (prior?.signature === signature && (!refresh || prior.loading)) return prior.task;
  const view = {signature, loading: ids.length > 0};
@@ -136,7 +139,13 @@ S.showDemandContinuation = function(host, {record, keys, itemKey, returnTo, chil
  const task = async () => {
    const steps = await Promise.all(ids.map(async id => {
      try {
-       const {name, next} = await S.progress(id,undefined,date);
+       const progress=await S.progress(id,undefined,date),name=progress.name;
+       let next=progress.next;
+       if(productionOutlet!==null){
+         next=progress.productionNext;
+         const required=keys.filter(key=>record.kitchenSources[key]?.kitchenId===id);
+         if(!required.every(key=>progress.orders?.some(o=>String(o.outlet)===String(productionOutlet)&&o.itemKey===itemKey&&o.key===key)))throw Error('The current kitchen orders do not contain every selected item and accompaniment for this outlet.');
+       }
        if (!next) return {id, name};
        const url = new URL(next.href, location.href);
        if (url.origin !== location.origin) throw Error('Kitchen route is outside BOBS.');
@@ -168,7 +177,7 @@ S.showDemandContinuation = function(host, {record, keys, itemKey, returnTo, chil
      } else {
        const note = document.createElement('p');
        note.textContent = step.error ? 'Could not check the kitchen’s next step: ' + step.error :
-         'All saved kitchen stages are verified. Continue reviewing the item costs.';
+         productionOutlet!==null?'Kitchen production is verified for this item and date.':'All saved kitchen stages are verified. Continue reviewing the item costs.';
        section.append(note);
      }
      host.append(section);
@@ -176,7 +185,7 @@ S.showDemandContinuation = function(host, {record, keys, itemKey, returnTo, chil
    if (steps.some(step => step.error)) {
      const retry = document.createElement('button');
      retry.type='button';retry.dataset.kitchenRetry='true';retry.textContent='Retry kitchen progress';
-     retry.onclick=()=>S.showDemandContinuation(host,{record,keys,itemKey,returnTo,child,date,refresh:true});
+     retry.onclick=refreshDemand||(()=>S.showDemandContinuation(host,{record,keys,itemKey,returnTo,child,date,productionOutlet,refresh:true}));
      host.append(retry);
    }
    if (child && host.dataset.state === 'complete') host.hidden = true;

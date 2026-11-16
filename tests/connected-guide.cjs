@@ -96,27 +96,27 @@ test('menu selection guide names the real save, mode and item-editor controls wi
   w.document.getElementById('saveReturn').onclick=()=>saves++;
   w.eval(source('bobs-roadmap-core.js'));w.eval(source('bobs-guide-bot.js'));w.BOBS_REFERENCE={ensure:()=>false};w.eval(source('bobs-guided-review.js'));w.eval(source('bobs-roadmap.js'));await settle();
   const steps=[...w.document.querySelectorAll('#bobsGuideDialogue ol li')].map(el=>el.textContent);
-  assert.equal(steps.length,4);assert.match(steps[1],/bottom.*Save selection & return to Method 2/);assert.match(steps[2],/Mode column/);assert.match(steps[3],/Edit item ↗/);
+  assert.equal(steps.length,4);assert.match(steps[1],/bottom.*Save selection & return to Method 2/);assert.match(steps[2],/Mode column/);assert.match(steps[3],/setup button/);
   assert.equal(w.document.getElementById('selectedItem').checked,true);assert.equal(saves,0);assert.doesNotMatch(w.document.getElementById('bobsGuideDialogue').textContent,/After this: Item quantities/);
  }finally{w.close();}
 });
 
 test('method-flow guide follows active workspace and item without restarting baseline or claiming completion',()=>{
  const dom=new JSDOM('<div id="host"></div>',{runScripts:'outside-only',url:'https://bobs.test/outlet-method-flow.html?outlets=1,2,3'}),w=dom.window;let focus=0,minimise=0;
- let flow={outlet:'1',phase:'method2',baselineReady:true,workspace:{ready:true,item:{name:'Idli',mode:'production'},action:'Show Idli — Edit item ↗'}};
+ let flow={outlet:'1',phase:'method2',baselineReady:true,workspace:{ready:true,item:{name:'Idli',mode:'production',setupLabel:'Set up Idli'}}};
  try{
  w.BOBS_METHOD_FLOW_GUIDE={focus(){focus++}};w.eval(source('bobs-guide-bot.js'));
  const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'outlet-method-flow.html',outlet:'1'},methodFlow:flow}),minimise(){minimise++},refresh(){}});
  const text=()=>w.document.getElementById('host').textContent;
- assert.match(text(),/Idli is selected.*Production.*Edit item/s);assert.doesNotMatch(text(),/Complete the saved outlet baseline|Shall we work through method selection/);
- w.document.querySelector('[data-guide-choice=method-flow-work]').click();assert.equal(focus,1);assert.equal(minimise,1);
- flow.workspace.item={name:'Vada',mode:'purchased'};flow.workspace.action='Show Vada — Edit item ↗';bot.update();assert.match(text(),/Vada is selected.*Purchase.*supplier/s);assert.doesNotMatch(text(),/Idli/);
+ assert.match(text(),/Set up Idli/);assert.match(text(),/Production/i);assert.doesNotMatch(text(),/Complete the saved outlet baseline|Shall we work through method selection/);
+ assert.equal(w.document.querySelector('[data-guide-choice=method-flow-work]'),null);assert.equal(focus,0);assert.equal(minimise,0);
+ flow.workspace.item={name:'Vada',mode:'purchased',setupLabel:'Continue setup'};bot.update();assert.match(text(),/Vada/);assert.match(text(),/Continue setup/);assert.match(text(),/supplier/i);assert.doesNotMatch(text(),/Idli/);
  flow.workspace={ready:false,instruction:'GOOGLE READ FAILED — Reload Google records',action:'Show Reload Google records'};bot.update();assert.match(text(),/GOOGLE READ FAILED/);assert.doesNotMatch(text(),/Vada is selected/);
  flow.workspace={ready:true,items:[],instruction:'Choose categories & items',action:'Choose categories & items'};bot.update();assert.match(text(),/Choose categories & items/);
  flow.phase='method1';bot.update();assert.match(text(),/Continue Method 1/);assert.doesNotMatch(text(),/Idli|Choose categories/);
  flow.phase='other';bot.update();assert.match(text(),/Method review saved/);
  flow.phase='choice';flow.baselineReady=false;flow.baselineMessage='Review outlet expenses for 2';bot.update();assert.match(text(),/Review outlet expenses for 2/);assert.doesNotMatch(text(),/prerequisites are verified/);
- assert.equal(focus,1,'Guide updates never activate navigation or item controls');
+ assert.equal(focus,0,'Guide updates never activate navigation or item controls');
  }finally{w.close()}
 });
 
@@ -126,10 +126,12 @@ test('item guide follows capacity, saved next requirement, verified recipe retur
  w.HTMLElement.prototype.scrollIntoView=function(){};w.document.querySelectorAll('a,button').forEach(x=>x.onclick=e=>{e.preventDefault();clicks++});w.addEventListener('bobs-guide-context',()=>events++);
  w.eval(source('bobs-item-guide.js'));w.eval(source('bobs-guide-bot.js'));
  const bot=w.BOBS_GUIDE_BOT.mount(w.document.getElementById('host'),{snapshot:()=>({ctx:{page:'method2-item.html',outlet:'1'},itemHelp:w.BOBS_ITEM_GUIDE.snapshot()}),minimise(){},refresh(){}});
- let state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/Idli.*quantity, recipes, equipment/);
- const direct=w.document.querySelector('[data-guide-choice=item-open-production]');assert.equal(direct.tagName,'A');assert.match(direct.textContent,/Open Idli production plan/);assert.equal(new URL(direct.href).pathname,'/production-plan.html');assert.equal(new URL(direct.href).searchParams.get('guide'),'continue');assert.equal(direct.target,'_blank');assert.equal(clicks,0);
+ let state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/Idli.*production plan/);
+ const host=w.document.getElementById('host'),entry=w.document.getElementById('productionEntry'),direct=entry.querySelector('a');
+ assert.equal(host.querySelector('a[href*="production-plan.html"]'),null);
+ assert.match(host.textContent,/Open Idli production plan/);assert.equal(new URL(direct.href).pathname,'/production-plan.html');assert.equal(clicks,0);
  const full=w.document.getElementById('idliLabourCost');
- full.dataset.productionReady='true';full.innerHTML='<p class="flow-current"><a href="outlet-plan.html?stage=workforce">Next: review combined menu workforce and riders →</a></p>';await settle();bot.update();
+ entry.dataset.planReview='verified';full.dataset.productionReady='true';full.innerHTML='<p class="flow-current"><a href="outlet-plan.html?stage=workforce">Next: review combined menu workforce and riders →</a></p>';await settle();bot.update();
  assert.match(w.document.getElementById('host').textContent,/review combined menu workforce/);assert.doesNotMatch(w.document.getElementById('host').textContent,/first, review production capacity/);w.BOBS_ITEM_GUIDE.focus();assert.equal(w.document.activeElement,full.querySelector('a'));
  full.dataset.guideState='error';full.innerHTML='<p id="fullCostStatus">Read failed</p><button id="refreshFullCost">Refresh verified cost records</button>';state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/could not be checked/);assert.equal(state.selector,'#refreshFullCost');
  w.document.getElementById('guideStep2').setAttribute('aria-current','step');state=w.BOBS_ITEM_GUIDE.snapshot();assert.match(state.title,/actual quantities/);

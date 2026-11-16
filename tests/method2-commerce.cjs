@@ -102,14 +102,14 @@ assert.deepEqual(reordered.slice(0,2).map(x=>x.recipeId),catalogue.map(x=>x.reci
  await page.locator('#mainPackingChoice').selectOption('required');await page.locator('#addPacking').click();await page.getByLabel('Price ₹ each',{exact:true}).fill('1.3');
  assert.match(await page.locator('#costs').textContent(),/10.00/);assert.match(await page.locator('#totals').textContent(),/11.30/);
  await page.screenshot({path:path.join(root,'method2-commerce-test.png'),fullPage:true});
- await page.locator('#save').click();await page.waitForURL('**/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('grandTotalCost').textContent.includes('51.30'));
- assert.match(await page.locator('#grandTotalSale').textContent(),/80.00/);
+ await page.locator('#save').click();await page.waitForURL('**/method2.html?outlet=1');await page.waitForFunction(()=>window.BOBS_METHOD2_TOTALS()?.cost.toFixed(2)==='51.30');
+ assert.equal(await page.evaluate(()=>window.BOBS_METHOD2_TOTALS().sales),80);
  await page.goto('https://bobs.test/method2-overall.html?outlet=1');await page.waitForFunction(()=>document.querySelectorAll('#usageRows tr').length===1);
  assert.match(await page.locator('#usageRows').textContent(),/80.00 ml.*200.00 ml.*280.00 ml/);
  // Delayed legacy COGS enhancement must not replace component-inclusive saved totals.
- db['1/METHOD2/default'].orderPacking={enabled:true,rows:[{name:'Mixed-product carry bag',qty:2,unitCost:2}]};
- await page.reload();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('55.30'));
- await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>document.getElementById('grandTotalCost').textContent.includes('55.30'));
+ db['1/METHOD2/default'].orderPacking={enabled:true,businessDate:await page.evaluate(()=>BOBS_COST_FLOW.today()),rows:[{name:'Mixed-product carry bag',qty:2,unitCost:2}]};
+ await page.reload();await page.waitForFunction(()=>document.getElementById('dayCost').textContent.includes('55.30'));
+ await page.goto('https://bobs.test/method2.html?outlet=1');await page.waitForFunction(()=>window.BOBS_METHOD2_TOTALS()?.cost.toFixed(2)==='55.30');
  await page.goto('https://bobs.test/cogs-outlet-analysis.html?outlet=1');
  await page.waitForFunction(()=>document.getElementById('analysisTable').textContent.includes('COGS / Day'));
  await page.waitForTimeout(1800);

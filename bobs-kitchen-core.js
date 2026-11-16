@@ -74,7 +74,7 @@ K.labour=(positions,assignments,assessment,jobs,F)=>{
  for(const p of positions){const identity=p.staffId?'employee:'+p.staffId:'position:'+p.id;if(people.has(identity))throw Error('A person or position is funded twice in this kitchen.');people.add(identity);
   const own=assignments.find(a=>a.id===p.id),taskKeys=new Set((own?.tasks||p.tasks||[]).map(t=>t.key)),tasks=assessment.tasks.filter(t=>taskKeys.has(t.key));
   const minutes=tasks.reduce((n,t)=>n+t.activeMinutes,0);if(!minutes)throw Error(p.id+': no reviewed production duty; allocate non-production work separately.');
-  const amount=F.salary(p)/31;for(const t of tasks){const members=t.members||[],sum=members.reduce((n,m)=>n+m.quantity,0);if(!(sum>0))throw Error('Shared task quantities are missing.');for(const m of members){const job=jobs.find(j=>j.key===m.requirementKey);if(!job)throw Error('Task belongs to an obsolete kitchen demand.');result[job.key]+=amount*t.activeMinutes/minutes*m.quantity/sum;}}
+  const amount=F.monthlyToDaily(F.salary(p));for(const t of tasks){const members=t.members||[],sum=members.reduce((n,m)=>n+m.quantity,0);if(!(sum>0))throw Error('Shared task quantities are missing.');for(const m of members){const job=jobs.find(j=>j.key===m.requirementKey);if(!job)throw Error('Task belongs to an obsolete kitchen demand.');result[job.key]+=amount*t.activeMinutes/minutes*m.quantity/sum;}}
  }
  return result;
 };

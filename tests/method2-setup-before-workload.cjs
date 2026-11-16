@@ -20,6 +20,10 @@ async function wait(fn){for(let i=0;i<100;i++){if(fn())return;await new Promise(
  w.BOBS_DATA={getModule:async()=>clone(plan)};
  w.eval(src('method2-list.js'));w.eval(src('method2-workload-gate.js'));
  await wait(()=>w.BOBS_METHOD2_ITEMS_COMPLETE()&&w.document.getElementById('guideStage').textContent==='STEP 3');
+ assert.match(w.document.querySelector('#catList tr').textContent,/Daily results saved · kitchen setup pending/);
+ assert.equal(w.document.getElementById('selectedCount').textContent,'1 selected item');
+ assert.equal(w.document.getElementById('grandTotalCost'),null);
+ assert.equal(w.BOBS_METHOD2_TOTALS().sales,290*draft.price);
  console.log('PASS completed saved item can reach staffing');
  // Actual unchanged selector -> opener notification -> actual list + workload gate.
  const select=dom('method2-select.html','https://bobs.test/method2-select.html?'+new URLSearchParams({outlet:'1',cat})),s=select.window;core(s);let closed=false,notified=false;
@@ -28,7 +32,7 @@ async function wait(fn){for(let i=0;i<100;i++){if(fn())return;await new Promise(
  s.eval(src('method2-select.js'));await wait(()=>s.document.getElementById('status').textContent.includes('Selections loaded'));
  s.document.getElementById('selectionForm').dispatchEvent(new s.Event('submit',{bubbles:true,cancelable:true}));
  await wait(()=>closed&&w.document.getElementById('guideStage').textContent==='STEP 2');assert(notified);assert.equal(writes,0);
- assert.match(w.document.getElementById('guideText').textContent,/choose Purchase or Production/);assert.equal(w.document.getElementById('guideAction').getAttribute('href'),'#selectedCard');assert(!w.BOBS_METHOD2_WORKLOAD_REVIEW());
+ assert.match(w.document.getElementById('guideText').textContent,/choose Purchase or Production/);assert(w.document.getElementById('guideAction').hidden);assert(w.document.getElementById('guideText').textContent.includes(w.document.querySelector('#catList [data-edit-item]').textContent));assert(!w.BOBS_METHOD2_WORKLOAD_REVIEW());
  await new Promise(r=>setTimeout(r,100));assert.equal(w.document.getElementById('guideStage').textContent,'STEP 2');
  console.log('PASS unchanged Idli selection returns mode/quantity/Sold Today stage; staffing cannot overwrite it; zero writes');
  for(const mode of ['purchased','production']){const row=w.document.querySelector('#catList tr');row.querySelector('select').value=mode;row.querySelector('button').click();assert.equal(new URL(opened,'https://bobs.test').searchParams.get('mode'),mode);assert.equal(w.document.getElementById('guideStage').textContent,'STEP 2')}
