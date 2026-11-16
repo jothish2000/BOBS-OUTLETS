@@ -57,6 +57,7 @@ const db = {
       await review(editor.locator('#referenceWeightReviewed'));
       await review(editor.locator('#intendedWeightReviewed'));
       await editor.click('#scale');
+      await editor.waitForFunction(()=>document.getElementById('confirmed')?.getAttribute('aria-disabled')==='false');
       await review(editor.locator('#confirmed'));
       const done=recipe===recipes.at(-1)?editor.waitForEvent('close'):Promise.resolve();
       await editor.click('#saveProduction');await done;
